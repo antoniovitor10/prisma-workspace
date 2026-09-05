@@ -1,0 +1,230 @@
+version: "2.0"
+name: "story_first_feature_development_workflow"
+description: "Grafo determinístico story-first para desenvolvimento orientado por IA"
+
+nodes:
+  story_creation:
+    type: "human_input"
+    description: "PO registra primeiro a necessidade e o comportamento esperado em stories/."
+
+  spec_generation:
+    type: "automated"
+    description: "A IA cria ou revisa a especificação técnica relacionada em specs/*.md com status draft ou review."
+    status: "draft"
+
+  spec_review:
+    type: "human_gate"
+    gate_id: "G-SPEC"
+    description: "Aprovação humana obrigatória da spec; histórias não recebem gate individual."
+    allowed_roles: ["PO", "Lead Architect"]
+    auto_approval: false
+
+  task_planning:
+    type: "automated"
+    description: "A IA decompõe a spec aprovada em tarefas rastreáveis e evita duplicidades."
+
+  context_assembly:
+    type: "automated"
+    description: "Carregamento estrito de história, spec, código, testes e gates pelo context/index.yaml."
+
+  implementation:
+    type: "automated"
+    description: "Agentes implementam somente o comportamento coberto pela spec aprovada."
+
+  check_human_gates:
+    type: "decision"
+    description: "Avalia gates especiais de migration, workflow, histórico, escopo ou deploy."
+
+  paused_blocked:
+    type: "human_gate_paused"
+    status: "PAUSED"
+    description: "Execução pausada aguardando intervenção humana explícita; autoaprovação é proibida."
+    gates:
+      - gate_id: "G-MIGRATION"
+        condition: "Alterações de schema no SQL Server ou EF Core Migrations"
+        auto_approval: false
+      - gate_id: "G-WORKFLOW"
+        condition: "Alterações nas regras de workflow, transições e limites WIP"
+        auto_approval: false
+      - gate_id: "G-HISTORY"
+        condition: "Alterações na estrutura imutável de auditoria ou histórico"
+        auto_approval: false
+      - gate_id: "G-SCOPE"
+        condition: "Dúvidas de escopo ou mudança funcional não coberta"
+        auto_approval: false
+      - gate_id: "G-DEPLOY"
+        condition: "Liberação ou promoção para ambiente institucional"
+        auto_approval: false
+
+  gate_execution:
+    type: "automated"
+    description: "Execução sequencial de build, testes, lint e demais verificações exigidas."
+
+  story_validation:
+    type: "human_validation"
+    description: "PO confere o sistema pela história, sem aprová-la como gate."
+
+  validation_decision:
+    type: "decision"
+    description: "Separa comportamento conforme de observação, ajuste ou funcionalidade ausente."
+
+  feedback_task:
+    type: "automated"
+    description: "Cria ou atualiza tarefa vinculada à história e à spec, sem duplicar tarefa ativa."
+
+  ai_triage:
+    type: "automated"
+    description: "A IA classifica defeito, ausência, mudança de requisito ou impedimento de teste."
+
+  pr_creation:
+    type: "automated"
+    description: "Geração de Pull Request com resumo, rastreabilidade e evidências dos testes."
+
+  completed:
+    type: "terminal"
+    description: "Mudança integrada; tarefas de correção ficam arquivadas e o histórico é preservado."
+
+  story_revalidation:
+    type: "state"
+    description: "Após correção, a observação ativa é limpa e a história aguarda nova homologação."
+
+edges:
+  - from: "story_creation"
+    to: "spec_generation"
+    condition: "story_written_or_changed"
+  - from: "spec_generation"
+    to: "spec_review"
+    condition: "spec_draft_written"
+  - from: "spec_review"
+    to: "task_planning"
+    condition: "human_approved == true"
+  - from: "spec_review"
+    to: "spec_generation"
+    condition: "human_approved == false"
+  - from: "task_planning"
+    to: "context_assembly"
+    condition: "tasks_linked_to_story_and_spec"
+  - from: "context_assembly"
+    to: "implementation"
+    condition: "context_loaded"
+  - from: "implementation"
+    to: "check_human_gates"
+    condition: "code_written"
+  - from: "check_human_gates"
+    to: "paused_blocked"
+    condition: "special_human_gate_required"
+  - from: "paused_blocked"
+    to: "gate_execution"
+    condition: "human_gate_approved == true"
+  - from: "check_human_gates"
+    to: "gate_execution"
+    condition: "no_special_human_gate_required"
+  - from: "gate_execution"
+    to: "implementation"
+    condition: "any_automated_gate_failed == true"
+  - from: "gate_execution"
+    to: "story_validation"
+    condition: "all_automated_gates_passed == true"
+  - from: "story_validation"
+    to: "validation_decision"
+    condition: "human_checked_behavior"
+  - from: "validation_decision"
+    to: "pr_creation"
+    condition: "story_is_conform"
+  - from: "validation_decision"
+    to: "feedback_task"
+    condition: "observation_saved || adjustment_requested || not_implemented"
+  - from: "feedback_task"
+    to: "ai_triage"
+    condition: "task_created_or_updated"
+  - from: "ai_triage"
+    to: "task_planning"
+    condition: "defect_or_missing_implementation"
+  - from: "ai_triage"
+    to: "story_creation"
+    condition: "story_or_scope_change"
+  - from: "pr_creation"
+    to: "completed"
+    condition: "pr_merged == true"
+  - from: "completed"
+    to: "story_revalidation"
+    condition: "correction_task_archived"
+  - from: "story_revalidation"
+    to: "story_validation"
+    condition: "ready_for_human_recheck"
+
+human_gates:
+  G-SPEC:
+    description: "Aprovação da especificação gerada pela IA (draft/review -> approved)"
+    declared_in_node: "spec_review"
+    auto_approval: false
+    always_required: true
+  G-MIGRATION:
+    description: "Alterações de schema no SQL Server ou EF Core Migrations"
+    declared_in_node: "paused_blocked"
+    auto_approval: false
+    always_required: false
+  G-WORKFLOW:
+    description: "Alterações nas regras de workflow, transições de status e limites WIP"
+    declared_in_node: "paused_blocked"
+    auto_approval: false
+    always_required: false
+  G-HISTORY:
+    description: "Alterações na estrutura imutável de auditoria ou histórico"
+    declared_in_node: "paused_blocked"
+    auto_approval: false
+    always_required: false
+  G-SCOPE:
+    description: "Dúvidas ou alterações de escopo não previstas"
+    declared_in_node: "paused_blocked"
+    auto_approval: false
+    always_required: false
+  G-DEPLOY:
+    description: "Liberação ou promoção para ambientes institucionais"
+    declared_in_node: "paused_blocked"
+    auto_approval: false
+    always_required: false
+  G-COMPLETION:
+    description: "Aprovação humana antes da conclusão somente quando human_completion_required == true"
+    declared_in_node: "completed"
+    auto_approval: false
+    always_required: false
+    condition: "human_completion_required == true"
+    enforced_by: "tools/agent-loop/lib/loop.js completionGuard"
+
+engine_mapping:
+  description: "O workflow conceitual story-first envolve etapas humanas e documentais sem estado equivalente no runtime."
+  engine_source: "tools/agent-loop/lib/constants.js"
+  graph_to_engine:
+    story_creation: []
+    spec_generation: ["spec-draft"]
+    spec_review: ["spec-review"]
+    task_planning: []
+    context_assembly: ["context-loading"]
+    implementation: ["implementing"]
+    check_human_gates: []
+    paused_blocked: ["blocked"]
+    gate_execution: ["gating"]
+    story_validation: ["human-review"]
+    validation_decision: []
+    feedback_task: []
+    ai_triage: []
+    pr_creation: ["pr-created"]
+    completed: ["merged"]
+    story_revalidation: ["human-review"]
+  engine_only_states:
+    idle:
+      reason: "Estado inicial antes de qualquer execução técnica."
+    failed:
+      reason: "Falha técnica terminal; o processo conceitual também pode retornar para correção ou triagem."
+  graph_only_nodes:
+    story_creation:
+      reason: "Entrada humana anterior ao runtime."
+    task_planning:
+      reason: "Planejamento documental fora da máquina de estados."
+    validation_decision:
+      reason: "Decisão conceitual da homologação."
+    feedback_task:
+      reason: "Persistência operacional da pendência de homologação."
+    ai_triage:
+      reason: "Classificação feita por agente antes de uma nova execução."

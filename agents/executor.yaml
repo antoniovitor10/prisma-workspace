@@ -1,0 +1,32 @@
+id: executor
+description: Implements features and bug fixes according to approved plans and specs, adhering strictly to codebase conventions.
+role: Executor Agent
+capability:
+  strength: max
+context:
+  requires:
+    - execution_plan
+    - approved_specifications
+  forbids:
+    - secrets
+    - out_of_scope_files
+tools:
+  allowed:
+    - read
+    - edit
+    - write
+    - bash
+    - glob
+    - grep
+  forbidden:
+    - git_push
+    - git_commit
+outputs:
+  produces:
+    - code_changes
+    - execution_result
+constraints:
+  cannot:
+    - auto_approve_human_gates
+    - modify_decisions_or_roadmap
+    - commit_secrets

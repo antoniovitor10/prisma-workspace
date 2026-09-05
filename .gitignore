@@ -1,0 +1,51 @@
+# .NET / IDE
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Frontend
+**/node_modules/
+**/dist/
+**/coverage/
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/e2e/.auth/
+
+# Runtime data and logs
+**/App_Data/
+logs/
+*.log
+*.bak
+publish/
+packages/
+*.nupkg
+tmp/
+.runlogs/
+.artifacts/
+.agent-state/
+
+# Local configuration and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+**/secrets.json
+**/*secrets*.json
+**/Properties/launchSettings.json
+
+# Generated Context Explorer snapshots
+tools/context-explorer/model.json
+tools/context-explorer/web/public/model.json
+docs/context-explorer.html
+tools/context-explorer/web/vite-output*.txt
+
+# Operating system files
+.DS_Store
+Thumbs.db

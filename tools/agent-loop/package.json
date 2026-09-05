@@ -1,0 +1,13 @@
+{
+  "name": "agent-loop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic AI-Native task state machine with governed product-gate execution",
+  "main": "cli.js",
+  "scripts": {
+    "test": "node --test \"test/*.js\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

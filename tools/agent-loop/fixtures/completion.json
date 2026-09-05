@@ -1,0 +1,10 @@
+{
+  "id": "fixture-completion",
+  "title": "Human completion",
+  "objective": "Demonstrate completion approval",
+  "overrides": {
+    "graph": { "current_node": "human-review" },
+    "loop": { "human_completion_required": true }
+  },
+  "gate": "G-COMPLETION"
+}

@@ -1,0 +1,101 @@
+version: "1.0"
+name: "runrun-loop"
+description: "Perfil de execução do loop AI-Native com comandos reais e registro de gates ausentes"
+
+working_directories:
+  root: "."
+  backend: "."
+  frontend: "src/Detran.Kanban.Web"
+
+gates:
+  backend_build:
+    name: "Backend Compilation Gate"
+    command: "dotnet build Detran.Kanban.sln"
+    cwd: "."
+    required: true
+    status: "active"
+
+  backend_test:
+    name: "Backend Unit & Integration Tests Gate"
+    command: "dotnet test tests/Detran.Kanban.Tests/"
+    cwd: "."
+    required: true
+    status: "active"
+
+  frontend_build:
+    name: "Frontend Typecheck & Build Gate"
+    command: "npm run build"
+    cwd: "src/Detran.Kanban.Web"
+    required: true
+    status: "active"
+
+  frontend_test:
+    name: "Frontend Unit & Component Tests Gate"
+    command: "npm run test"
+    cwd: "src/Detran.Kanban.Web"
+    required: true
+    status: "active"
+
+  frontend_lint:
+    name: "Frontend Static Analysis Gate"
+    command: "npm run lint"
+    cwd: "src/Detran.Kanban.Web"
+    required: true
+    status: "active"
+
+missing_gates:
+  missing_e2e:
+    name: "End-to-End Testing Gate"
+    status: "missing"
+    reason: "Inexistente no repositório (sem Cypress ou Playwright configurado)."
+
+  missing_migration_validation:
+    name: "EF Core Migration Schema Validation Gate"
+    status: "missing"
+    reason: "Script automatizado de verificação de schema/migrations no pipeline não configurado."
+
+  missing_ci_pipeline:
+    name: "CI Build, Test & Lint Pipeline Gate"
+    status: "missing"
+    reason: "O workflow deploy.yml atual realiza apenas deploy SSH via Docker Compose, sem etapas prévias de build, test e lint automatizados em CI."
+
+  missing_backend_analyzer:
+    name: "Backend Strict Static Analysis & Formatting Gate"
+    status: "missing"
+    reason: "Ferramenta de análise estática e formatação estrita do backend (ex: dotnet format / Roslyn Analyzers strict check) não configurada no CI."
+
+human_gates_enforcement:
+  strict_mode: true
+  auto_approval: false
+  blocked_state: "PAUSED"
+  registered_human_gates:
+    - "G-SPEC"
+    - "G-MIGRATION"
+    - "G-WORKFLOW"
+    - "G-HISTORY"
+    - "G-DEPLOY"
+    - "G-SCOPE"
+    - "G-COMPLETION"
+  conditional_gates:
+    G-COMPLETION:
+      required_when: "human_completion_required == true"
+      always_required: false
+      note: "Gate condicional de conclusão. Não se aplica a todas as tasks."
+
+# Política de execução da SEQUÊNCIA de product gates (build/test/lint).
+# Escopo: uma única execução da bateria de gates.
+# NÃO representa quantidade de tentativas do agente.
+gate_execution:
+  run_product_gates_on_artifact_creation: false
+  stop_on_first_gate_failure: true
+
+# Política de correção/retry do AGENTE no Loop Engine.
+# Escopo: quantas vezes o agente tenta corrigir antes de bloquear.
+# Implementada e testada em tools/agent-loop (lib/loop.js, lib/constants.js).
+# NÃO confundir com gate_execution.stop_on_first_gate_failure.
+loop:
+  max_attempts: 3
+  retry_on_fail_code: true
+  block_on_repeated_failure: 2
+  external_failure_counts_as_attempt: false
+  block_on_external_failure: true

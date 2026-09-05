@@ -1,0 +1,66 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: TelemetryEvent
+type: object
+description: Schema for execution audit and event logging. Chain-of-thought and secrets are explicitly forbidden from storage.
+required:
+  - event_id
+  - task_id
+  - agent_id
+  - event_type
+  - timestamp
+  - human_gates
+properties:
+  event_id:
+    type: string
+    description: Unique telemetry event identifier.
+  task_id:
+    type: string
+    description: Identifier of associated task.
+  agent_id:
+    type: string
+    description: ID of agent emitting event.
+  event_type:
+    type: string
+    description: Category of event emitted.
+  timestamp:
+    type: string
+    format: date-time
+  details:
+    type: object
+    description: Metadata and event telemetry data.
+  human_gates:
+    type: array
+    description: Associated human gates status at event emission time.
+    items:
+      type: object
+      required:
+        - type
+        - reason
+        - status
+        - requested_at
+      properties:
+        type:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        requested_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        resolved_by:
+          type: string
+        note:
+          type: string
+      additionalProperties: false
+additionalProperties: true
+forbidden_storage:
+  - chain_of_thought
+  - secrets

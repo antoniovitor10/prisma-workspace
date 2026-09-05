@@ -1,0 +1,18 @@
+{
+  "name": "context-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-dependency context exploration tooling for runrun-copia",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "scan": "node scan.js",
+    "build": "node build.js",
+    "test": "node --test test/*.js",
+    "serve": "node server.js",
+    "dev": "start /B node server.js && cd web && npm run dev"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

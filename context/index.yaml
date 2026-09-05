@@ -1,0 +1,302 @@
+version: "1.0"
+description: "Indice deterministico de contexto por dominio para runrun-copia"
+
+authority_hierarchy:
+  - "1. Usuário Humano (PO)"
+  - "2. AGENTS.md / DECISIONS.md / ROADMAP.md"
+  - "3. Histórias de usuário em stories/"
+  - "4. Especificações em specs/*.md (status: approved)"
+  - "5. Grafo de Workflow (workflows/feature.yaml) e Perfil de Execução (profiles/runrun-loop.yaml)"
+  - "6. Agent Contracts (agents/*.yaml) e saídas do loop engine"
+
+story_catalog: "stories/catalog.json"
+
+exclusions:
+  - "**/node_modules/**"
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/.git/**"
+  - "**/.agent-state/**"
+  - "**/*.env*"
+  - "**/*.dll"
+  - "**/*.exe"
+  - "**/*.pdb"
+
+domains:
+  organizations:
+    spec: "specs/organizations.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/Organization.cs"
+      - "src/Detran.Kanban.Application/Features/Organizations/OrganizationsFeature.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IOrganizationRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/OrganizationRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs"
+      - "src/Detran.Kanban.Api/Middleware/OrganizationContextMiddleware.cs"
+      - "src/Detran.Kanban.Api/Controllers/OrganizationsController.cs"
+      - "src/Detran.Kanban.Web/src/features/organizations/OrganizationContext.tsx"
+      - "src/Detran.Kanban.Web/src/layout/Topbar.tsx"
+      - "src/Detran.Kanban.Web/src/pages/OrganizationSettings.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/OrganizationDomainTests.cs"
+      - "tests/Detran.Kanban.Tests/MultitenancyPersistenceTests.cs"
+      - "src/Detran.Kanban.Web/e2e/organization-switch.spec.ts"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  projects:
+    spec: "specs/project-management.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/Project.cs"
+      - "src/Detran.Kanban.Domain/Entities/Board.cs"
+      - "src/Detran.Kanban.Domain/Entities/WorkItem.cs"
+      - "src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IProjectRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/ProjectRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/ProjectsController.cs"
+      - "src/Detran.Kanban.Web/src/pages/Projects.tsx"
+      - "src/Detran.Kanban.Web/src/pages/Home.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/ProjectFeatureTests.cs"
+      - "src/Detran.Kanban.Web/src/pages/Home.test.tsx"
+      - "src/Detran.Kanban.Web/e2e/smoke.spec.ts"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  work_items:
+    spec: "specs/work-item-management.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/WorkItem.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/WorkItemsController.cs"
+      - "src/Detran.Kanban.Web/src/pages/Kanban.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/MoveWorkItemCommandHandlerTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  backlog:
+    spec: "specs/backlog.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/WorkItem.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IBacklogRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/BacklogRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/BacklogController.cs"
+      - "src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/BacklogFeatureTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  workflow:
+    spec: "specs/workflow-status.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/WorkflowStatus.cs"
+      - "src/Detran.Kanban.Domain/Entities/Stage.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IWorkflowRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/WorkflowRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/WorkflowController.cs"
+      - "src/Detran.Kanban.Web/src/features/workflow/ProjectWorkflowSettings.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/WorkflowDomainTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  history:
+    spec: "specs/task-history.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/StageHistory.cs"
+      - "src/Detran.Kanban.Domain/Entities/TaskEvent.cs"
+      - "src/Detran.Kanban.Domain/Entities/AuditLog.cs"
+      - "src/Detran.Kanban.Application/Features/TaskFeed/Queries/GetTaskFeedQueries.cs"
+      - "src/Detran.Kanban.Application/Features/TaskFeed/Dtos/TaskFeedDtos.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IStageHistoryRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/StageHistoryRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/TaskFeedController.cs"
+      - "src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx"
+      - "src/Detran.Kanban.Web/src/features/task/TaskStateGraph.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/PlatformCrossCuttingTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  sprints:
+    spec: "specs/sprints.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/Sprint.cs"
+      - "src/Detran.Kanban.Application/Interfaces/ISprintRepository.cs"
+      - "src/Detran.Kanban.Infrastructure/Repositories/SprintRepository.cs"
+      - "src/Detran.Kanban.Api/Controllers/SprintsController.cs"
+    tests:
+      - "tests/Detran.Kanban.Tests/ScrumDomainTests.cs"
+      - "tests/Detran.Kanban.Tests/ScrumApplicationTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  dependencies:
+    spec: "specs/dependencies.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/WorkItemCollaboration.cs"
+      - "src/Detran.Kanban.Domain/Enums/WorkItemLinkType.cs"
+      - "src/Detran.Kanban.Domain/Services/DependencyGraphService.cs"
+      - "src/Detran.Kanban.Domain/Entities/WorkItem.cs"
+      - "src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs"
+      - "src/Detran.Kanban.Application/Features/Backlog/BacklogFeature.cs"
+      - "src/Detran.Kanban.Application/Features/Me/MyWorkDashboardFeature.cs"
+      - "src/Detran.Kanban.Application/Features/Reports/ReportBuilderFeature.cs"
+      - "src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx"
+      - "src/Detran.Kanban.Web/src/features/task/DependencyAutocomplete.tsx"
+      - "src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/DependencyGraphTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  work_nature:
+    spec: "specs/work-nature.md"
+    code:
+      - "src/Detran.Kanban.Domain/Entities/Project.cs"
+      - "src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs"
+      - "src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs"
+      - "src/Detran.Kanban.Api/Controllers/ProjectsController.cs"
+      - "src/Detran.Kanban.Web/src/pages/Projects.tsx"
+    tests:
+      - "tests/Detran.Kanban.Tests/ProjectFeatureTests.cs"
+      - "src/Detran.Kanban.Web/e2e/project-management.spec.ts"
+    gates:
+      g_spec: "pending"
+      g_migration: "pending"
+      g_workflow: "conditional"
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  open_source_distribution:
+    spec: "specs/open-source-distribution.md"
+    stories:
+      - "stories/US-OPEN-SOURCE-001.md"
+    code:
+      - "docker-compose.yml"
+      - ".github"
+      - "scripts"
+      - "src"
+    tests:
+      - "tests"
+      - "src/Detran.Kanban.Web/e2e"
+    docs:
+      - "docs/OPEN-SOURCE-PLAN.md"
+    gates:
+      g_scope: "approved-2026-09-05"
+      g_spec: "approved-2026-09-05"
+      g_license: "pending"
+      g_migration: "conditional"
+      g_deploy: "pending"
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+      frontend_e2e: "npm run e2e"
+
+  access:
+    spec: "specs/user-access-permissions.md"
+    code:
+      - "src/Detran.Kanban.Domain/Enums/OrganizationRole.cs"
+      - "src/Detran.Kanban.Domain/Enums/ProjectRole.cs"
+      - "src/Detran.Kanban.Domain/Enums/PlatformPermission.cs"
+      - "src/Detran.Kanban.Domain/Enums/PermissionScope.cs"
+      - "src/Detran.Kanban.Domain/Authorization/RolePermissionCatalog.cs"
+      - "src/Detran.Kanban.Infrastructure/Identity/PermissionService.cs"
+      - "src/Detran.Kanban.Infrastructure/Identity/ProjectAccessService.cs"
+      - "src/Detran.Kanban.Infrastructure/Identity/BoardAccessService.cs"
+    tests:
+      - "tests/Detran.Kanban.Tests/OrganizationDomainTests.cs"
+      - "tests/Detran.Kanban.Tests/MultitenancyPersistenceTests.cs"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+
+  visual_experience:
+    spec: "specs/prisma-visual-system.md"
+    stories:
+      - "stories/US-UX-001.md"
+    code:
+      - "src/Detran.Kanban.Web/src/styles/theme.ts"
+      - "src/Detran.Kanban.Web/src/styles/global.ts"
+      - "src/Detran.Kanban.Web/src/pages/Auth.tsx"
+      - "src/Detran.Kanban.Web/src/layout/AppShell.tsx"
+      - "src/Detran.Kanban.Web/src/layout/Topbar.tsx"
+      - "src/Detran.Kanban.Web/src/layout/ContextBar.tsx"
+      - "src/Detran.Kanban.Web/src/pages/Kanban.tsx"
+      - "src/Detran.Kanban.Web/src/pages/MinhasTarefas.tsx"
+      - "src/Detran.Kanban.Web/src/pages/Projects.tsx"
+      - "src/Detran.Kanban.Web/src/pages/Reports.tsx"
+      - "src/Detran.Kanban.Web/src/pages/OrganizationSettings.tsx"
+      - "src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx"
+    tests:
+      - "src/Detran.Kanban.Web/src/pages"
+      - "src/Detran.Kanban.Web/src/layout"
+      - "src/Detran.Kanban.Web/e2e"
+    gates:
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+      frontend_e2e: "npm run e2e"
+
+  project_queries:
+    spec: "specs/project-work-item-queries.md"
+    stories:
+      - "stories/US-PROJECT-QUERIES-001.md"
+    code:
+      - "src/Detran.Kanban.Application/Features"
+      - "src/Detran.Kanban.Api/Controllers"
+      - "src/Detran.Kanban.Web/src/features"
+      - "src/Detran.Kanban.Web/src/pages"
+    tests:
+      - "tests/Detran.Kanban.Tests"
+      - "src/Detran.Kanban.Web/src"
+      - "src/Detran.Kanban.Web/e2e"
+    gates:
+      backend_build: "dotnet build Detran.Kanban.sln"
+      backend_test: "dotnet test tests/Detran.Kanban.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+      frontend_e2e: "npm run e2e"

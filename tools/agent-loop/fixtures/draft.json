@@ -1,0 +1,9 @@
+{
+  "id": "fixture-draft",
+  "title": "Draft specification",
+  "objective": "Demonstrate implementation blocked by draft spec",
+  "overrides": {
+    "spec": { "id": "SPEC-DRAFT", "status": "draft" },
+    "graph": { "current_node": "context-loading" }
+  }
+}

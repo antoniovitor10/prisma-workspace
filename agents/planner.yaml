@@ -1,0 +1,30 @@
+id: planner
+description: Analyzes discovery outputs and specs to build structured execution plans without modifying product code.
+role: Planner Agent
+capability:
+  strength: strong
+context:
+  requires:
+    - discovery_summary
+    - approved_specifications
+  forbids:
+    - secrets
+    - unvalidated_assumptions
+tools:
+  allowed:
+    - read
+    - glob
+    - grep
+  forbidden:
+    - edit
+    - write
+    - bash
+outputs:
+  produces:
+    - execution_plan
+    - task_breakdown
+constraints:
+  cannot:
+    - execute_plan_directly
+    - modify_source_code
+    - write_to_disk

@@ -1,0 +1,7 @@
+{
+  "id": "fixture-migration",
+  "title": "Migration gate",
+  "objective": "Demonstrate explicit migration approval",
+  "gate": "G-MIGRATION",
+  "reason": "Schema change requires human approval"
+}

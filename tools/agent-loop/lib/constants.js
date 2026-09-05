@@ -1,0 +1,142 @@
+'use strict';
+
+const STATES = {
+  IDLE: 'idle',
+  SPEC_DRAFT: 'spec-draft',
+  SPEC_REVIEW: 'spec-review',
+  CONTEXT_LOADING: 'context-loading',
+  IMPLEMENTING: 'implementing',
+  GATING: 'gating',
+  PR_CREATED: 'pr-created',
+  HUMAN_REVIEW: 'human-review',
+  MERGED: 'merged',
+  BLOCKED: 'blocked',
+  FAILED: 'failed'
+};
+
+const EDGES = {
+  [STATES.IDLE]: [STATES.SPEC_DRAFT],
+  [STATES.SPEC_DRAFT]: [STATES.SPEC_REVIEW, STATES.SPEC_DRAFT],
+  [STATES.SPEC_REVIEW]: [STATES.CONTEXT_LOADING, STATES.SPEC_DRAFT],
+  [STATES.CONTEXT_LOADING]: [STATES.IMPLEMENTING],
+  [STATES.IMPLEMENTING]: [STATES.GATING, STATES.BLOCKED, STATES.FAILED],
+  [STATES.GATING]: [STATES.PR_CREATED, STATES.IMPLEMENTING, STATES.BLOCKED, STATES.FAILED],
+  [STATES.PR_CREATED]: [STATES.HUMAN_REVIEW],
+  [STATES.HUMAN_REVIEW]: [STATES.MERGED, STATES.IMPLEMENTING, STATES.BLOCKED, STATES.FAILED],
+  [STATES.BLOCKED]: [STATES.IMPLEMENTING, STATES.SPEC_DRAFT, STATES.FAILED],
+  [STATES.MERGED]: [],
+  [STATES.FAILED]: []
+};
+
+const GATES = {
+  G_SPEC: 'G-SPEC',
+  G_MIGRATION: 'G-MIGRATION',
+  G_WORKFLOW: 'G-WORKFLOW',
+  G_HISTORY: 'G-HISTORY',
+  G_DEPLOY: 'G-DEPLOY',
+  G_SCOPE: 'G-SCOPE',
+  G_COMPLETION: 'G-COMPLETION'
+};
+
+const GATE_STATES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected'
+};
+
+const FAIL_CODES = {
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  GATE_FAILURE: 'GATE_FAILURE',
+  EDGE_VIOLATION: 'EDGE_VIOLATION',
+  SELF_APPROVAL: 'SELF_APPROVAL',
+  EXTERNAL_FAILURE: 'EXTERNAL_FAILURE',
+  MAX_ATTEMPTS: 'MAX_ATTEMPTS',
+  REPEATED_FAILURE: 'REPEATED_FAILURE'
+};
+
+const DEFAULT_MAX_ATTEMPTS = 3;
+
+const TERMINAL_STATES = [STATES.MERGED, STATES.FAILED];
+
+const BLOCKABLE_STATES = [
+  STATES.IMPLEMENTING,
+  STATES.GATING,
+  STATES.HUMAN_REVIEW
+];
+
+const SPEC_STATUSES = {
+  DRAFT: 'draft',
+  REVIEW: 'review',
+  APPROVED: 'approved',
+  CHANGED: 'changed'
+};
+
+const SPEC_STATUSES_BLOCKING_IMPLEMENTATION = [
+  SPEC_STATUSES.DRAFT,
+  SPEC_STATUSES.REVIEW,
+  SPEC_STATUSES.CHANGED
+];
+
+const VALIDATION_RESULTS = {
+  PASS: 'pass',
+  FAIL: 'fail',
+  COVERAGE_GAP: 'coverage_gap'
+};
+
+const KNOWN_PRODUCT_GATES = [
+  'backend_build',
+  'backend_test',
+  'frontend_build',
+  'frontend_test',
+  'frontend_lint'
+];
+
+const FORBIDDEN_GATE_RESOLVERS = ['agent', 'engine', 'ai', 'bot', 'system', 'loop', 'llm'];
+
+const SANITIZE_KEY_PATTERNS = [/secret/i, /token/i, /password/i, /credential/i];
+
+const SANITIZE_VALUE_PATTERNS = [/\.env/i, /chain[-_]?of[-_]?thought/i, /secret/i, /token/i, /password/i, /credential/i];
+
+const EVENT_TYPES = {
+  TASK_CREATED: 'task_created',
+  TRANSITION: 'transition',
+  TRANSITION_BLOCKED: 'transition_blocked',
+  GATE_REQUESTED: 'gate_requested',
+  GATE_RESOLVED: 'gate_resolved',
+  GATE_RECORDED: 'gate_recorded',
+  FAIL: 'fail',
+  BLOCK: 'block',
+  RESUME: 'resume',
+  CONTEXT_LOADED: 'context_loaded',
+  COMPLETION_REQUESTED: 'completion_requested',
+  COMPLETED: 'completed'
+};
+
+const TASK_STATUSES = {
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  PAUSED: 'paused',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled'
+};
+
+module.exports = {
+  STATES,
+  EDGES,
+  GATES,
+  GATE_STATES,
+  FAIL_CODES,
+  DEFAULT_MAX_ATTEMPTS,
+  TERMINAL_STATES,
+  BLOCKABLE_STATES,
+  SPEC_STATUSES,
+  SPEC_STATUSES_BLOCKING_IMPLEMENTATION,
+  VALIDATION_RESULTS,
+  KNOWN_PRODUCT_GATES,
+  FORBIDDEN_GATE_RESOLVERS,
+  SANITIZE_KEY_PATTERNS,
+  SANITIZE_VALUE_PATTERNS,
+  EVENT_TYPES,
+  TASK_STATUSES
+};

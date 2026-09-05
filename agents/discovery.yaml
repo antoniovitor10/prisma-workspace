@@ -1,0 +1,31 @@
+id: discovery
+description: Discovers system context, reads code structure, gathers dependencies and specifications without modifying codebase.
+role: Discovery Agent
+capability:
+  strength: balanced
+context:
+  requires:
+    - workspace_index
+    - specifications
+  forbids:
+    - secrets
+    - raw_credentials
+tools:
+  allowed:
+    - glob
+    - grep
+    - read
+  forbidden:
+    - edit
+    - write
+    - bash
+outputs:
+  produces:
+    - discovery_summary
+    - context_manifest
+constraints:
+  cannot:
+    - edit_files
+    - write_files
+    - execute_shell_commands
+    - alter_product_code

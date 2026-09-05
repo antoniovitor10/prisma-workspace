@@ -1,0 +1,30 @@
+id: reviewer
+description: Validates implemented changes against specifications, architecture rules, linters, tests, and security guidelines.
+role: Reviewer Agent
+capability:
+  strength: strong
+context:
+  requires:
+    - code_changes
+    - execution_result
+    - approved_specifications
+  forbids:
+    - secrets
+tools:
+  allowed:
+    - read
+    - glob
+    - grep
+    - bash
+  forbidden:
+    - edit
+    - write
+outputs:
+  produces:
+    - review_report
+    - validation_status
+constraints:
+  cannot:
+    - modify_code
+    - ignore_lint_failures
+    - skip_required_gates

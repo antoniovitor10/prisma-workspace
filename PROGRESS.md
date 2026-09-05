@@ -1,0 +1,897 @@
+# PROGRESS — log de handoff (append-only)
+
+Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
+É o bastão passado entre Codex, Antigravity e Claude. Não apague entradas antigas.
+
+---
+
+## [2026-09-05] — Codex — Início da distribuição open source em repositório limpo
+- **Fiz:** Formalizei a Fase 13, D75, `US-OPEN-SOURCE-001`, `SPEC-OPEN-SOURCE-DISTRIBUTION` e TASK-041. Criei via Git Bash/GitHub CLI o repositório privado `antoniovitor10/prisma-workspace`, sem importar o histórico do `runrun`, e montei um snapshot por allowlist. Excluí documentos de entrada, migração de cliente, estados de agentes, deploy privado, `.env*`, artefatos e outputs. O Gitleaks detectou um token no storage state do Playwright; removi somente sua cópia do snapshot, mantive a origem privada e adicionei bloqueios permanentes em `.gitignore` e scripts de auditoria Windows/Linux. Corrigi o materializador para preservar histórias humanas e atualizei os contadores canônicos para o novo domínio/spec/tarefa.
+- **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `backlog.md`, `context/index.yaml`, `stories/US-OPEN-SOURCE-001.md`, `stories/US-WORK-NATURE-001.md`, `stories/catalog.json`, `specs/open-source-distribution.md`, `docs/OPEN-SOURCE-PLAN.md`, Context Explorer e `PROGRESS.md`; novo repositório privado em `C:\Users\Vitor\Desktop\prisma-workspace`.
+- **Decisões novas:** D75 define novo histórico limpo, origem preservada, preparação privada, allowlist e limites do Cursor CLI. `G-SCOPE` e `G-SPEC` foram aprovados pela autorização direta do PO; licença, eventual `G-MIGRATION` e `G-DEPLOY` continuam pendentes.
+- **Testes:** snapshot com Gitleaks **0 achados** e denylist aprovada; .NET build 0 erros/2 avisos e **105/105** testes; frontend build aprovado, Vitest **46/46** em 21 arquivos e lint 0 erros/8 avisos; Context Explorer **42/42** na origem e no snapshot. `npm audit`: 28 vulnerabilidades moderadas, 5 altas e 0 críticas, registradas para correção controlada.
+- **Próximo passo:** fechar e enviar o primeiro checkpoint privado; inventariar referências legadas; executar rename técnico e modernização em lotes testados; escolher a licença antes de tornar o repositório público.
+- **Bloqueios:** promoção pública bloqueada pela escolha da licença e auditoria final. O Cursor CLI está autenticado, mas as duas consultas read-only amplas não retornaram dentro da janela operacional; a delegação será reduzida a tarefas mais atômicas.
+
+## [2026-09-04] — Codex — Domínio canônico Prisma configurado
+- **Fiz:** Defini `https://prisma.nordevs.com.br` como domínio canônico e exclusivo do Prisma WorkSpace. O registro DNS A aponta para o VPS `187.77.233.45`, o host HTTPS foi ativado no Caddy, `FrontendBaseUrl` foi atualizado e `runrun.nordevs.com.br` removido do Caddy.
+- **Arquivos tocados:** `docker-compose.yml`, `DECISIONS.md` (D74), `.agent-state/gate-decisions.json` e configuração de produção do Caddy.
+- **Decisões novas:** D74 torna `prisma.nordevs.com.br` canônico e remove o host anterior, conforme esclarecimento do PO. `G-DEPLOY` aprovado pela instrução direta do PO.
+- **Testes:** configuração do Caddy validada e reiniciada; DNS confirmado nos dois nameservers autoritativos, Cloudflare e Google; certificado Let's Encrypt emitido; HTTPS respondeu 200; página `Prisma WorkSpace` abriu no Google Chrome controlado pelo Codex. O resolvedor local ainda pode conservar NXDOMAIN negativo durante a propagação.
+- **Próximo passo:** remover o registro DNS legado `runrun` no painel e aguardar a expiração dos caches negativos dos provedores locais.
+- **Bloqueios:** nenhum no servidor; propagação DNS local depende do TTL/cache do provedor.
+
+## [2026-09-04] — Codex — Natureza/Tipo do projeto e correção dos cards publicadas
+- **Fiz:** Implementei a `SPEC-WORK-NATURE` no recorte escolhido pelo PO: `Project` agora persiste Natureza (`Projeto`, `Melhoria`, `Sustentação`) e um dos nove Tipos de Trabalho, ambos obrigatórios para novas criações e editáveis nas configurações. A lista ganhou rótulos, busca e filtros; projetos legados permanecem `Não classificado`, sem backfill semântico falso; `Solicitações` e seu modelo externo não foram alterados. Registrei auditoria antes/depois e corrigi a atomicidade da movimentação multi-quadro antes de falhas de compatibilidade. Também corrigi o card clicável da visão segmentada: indicador interno, borda ativa preservada no hover, recorte correto e foco visível.
+- **Arquivos tocados:** enums e entidade `Project`; features/DTOs/validators/controllers/configuração EF e migration `20260904154816_Add_Project_Work_Classification`; `Projects.tsx`, `ProjectSettings.tsx`, `ProjectItemsQuery.tsx`, cliente API, catálogo visual e testes; história/spec/decisão/backlog/roadmap e gates.
+- **Decisões novas:** complemento da D73 aprovado pelo PO: classificação pertence ao projeto; não há entidade `Demand`, renomeação de `Solicitações`, IA nem automação de workflow. `G-SPEC`, `G-MIGRATION` e `G-DEPLOY` registrados como aprovados pela instrução humana direta; `G-WORKFLOW` não aplicável.
+- **Testes:** `dotnet test` **105/105**; Vitest **46/46**; build frontend local e Docker de produção aprovados; lint sem erros; Playwright E2E final **37/37** desktop/mobile. Inspeção no Google Chrome controlado pelo Codex confirmou criação e cards em desktop/mobile. Produção responde HTTP 200, migration confirmada em `__EFMigrationsHistory` e bundles publicados contêm os novos campos e o ajuste visual.
+- **Deploy/recuperação:** publicado em `https://runrun.nordevs.com.br`; backup SQL `DetranKanban-before-task040-20260904-1315.bak` (9,4 MB) e backup de código `/tmp/runrun-source-before-task040-20260904-1315.tgz` (11 MB) no VPS.
+- **Próximo passo:** homologação funcional do PO nos dados reais; projetos legados podem ser classificados gradualmente nas configurações.
+- **Bloqueios:** nenhum.
+
+## [2026-09-03] — Codex — Home autenticada publicada e natureza do trabalho incluída no escopo
+- **Fiz:** Substituí o alias de `/home` por uma página inicial autenticada orientada ao trabalho real, com boas-vindas, resumo de atribuídas/hoje/atrasadas/bloqueadas, prioridades, projetos recentes e atalhos. Adicionei `Início` à navegação desktop/mobile, preservei Solicitações como entrada do portal externo e publiquei o novo chunk da Home em `https://runrun.nordevs.com.br`. Também registrei, sem implementar, o novo escopo de natureza da estrutura de trabalho: Projeto, Melhoria ou Sustentação, com subdivisões configuráveis e qualquer função de IA explicitamente excluída.
+- **Arquivos tocados:** `Home.tsx` e teste, `App.tsx`, `Topbar.tsx` e teste, smoke E2E; `US-HOME-001`, `SPEC-AUTHENTICATED-HOME`, D72, TASK-039; `US-WORK-NATURE-001`, `SPEC-WORK-NATURE`, D73, TASK-040, roadmap, catálogo/contexto e modelos/testes do Context Explorer.
+- **Decisões novas:** D72 define `/home` como entrada autenticada orientada a dados reais. D73 define as três naturezas e exclui IA; a implementação da natureza continua condicionada a `G-SPEC` e `G-MIGRATION`, com `G-WORKFLOW` somente se etapas forem automatizadas.
+- **Testes:** frontend build aprovado; lint sem erros e com 8 avisos legados; Vitest **46/46**; Playwright E2E **37/37** desktop/mobile; Context Explorer **42/42**. Build Docker de produção aprovado; `/health`, `/`, bundle principal e `Home-BsOxAk8M.js` responderam 200, e o chunk publicado contém a nova mensagem da Home. Logs pós-deploy sem erros de inicialização.
+- **Próximo passo:** PO revisar e aprovar a `SPEC-WORK-NATURE` antes de qualquer alteração de domínio/schema; depois definir backfill e aprovar `G-MIGRATION`. A home pode ser homologada visualmente pela extensão do Codex no Chrome quando ela estiver exposta à sessão.
+- **Bloqueios:** a extensão do Codex no Chrome não está disponível nas ferramentas desta sessão; por orientação do PO, Orca não foi usado. Backup recuperável do frontend anterior: `/tmp/runrun-web-before-home-task039-20260903.tgz` no VPS.
+
+## [2026-09-03] — Codex — Consultas segmentadas publicadas; revisão visual no Chrome pendente
+- **Fiz:** Registrei as aprovações humanas de `G-SCOPE` e `G-SPEC`, consolidei a D71 e implementei a aba `Itens` no workspace do projeto. A entrega segmenta Todos, Épicos, Features, Product backlog, Bugs e Tarefas; mostra contagens e propriedades; oferece compositor E/OU com busca, prioridade, quadro, etapa, agrupamento e ordenação; serializa a consulta na URL; permite salvar/excluir consultas pessoais reutilizando `SavedFilter`; e impede que essas definições apareçam no seletor de filtros do Kanban. Refinei também o login para se aproximar do mockup D68, com melhor ocupação vertical, prisma maior e ondas espectrais. O frontend foi sincronizado no VPS com preservação dos arquivos de ambiente, reconstruído e publicado em `https://runrun.nordevs.com.br`.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/pages/ProjectItemsQuery.tsx`, `ProjectItemsQuery.logic.ts`, `ProjectItemsQuery.test.ts`, `ProjectWorkspace.tsx`, `Auth.tsx`, `Kanban.tsx`, `src/Detran.Kanban.Web/src/App.tsx`, `src/Detran.Kanban.Web/e2e/project-items-query.spec.ts`, `DECISIONS.md`, `ROADMAP.md`, `backlog.md`, `specs/project-work-item-queries.md`, `.agent-state/gate-decisions.json` e `PROGRESS.md`.
+- **Decisões novas:** D71 — primeira versão usa compositor visual, URL não sensível e consultas pessoais; linguagem textual, SQL, API/exportação e persistência nova ficam fora do escopo.
+- **Testes:** build local e Docker de produção aprovados; Vitest **45/45**; Playwright E2E **37/37** desktop/mobile; lint sem erros e apenas 8 avisos legados; HTTPS `/` e `/health` responderam 200; bundles publicados contêm `Compositor visual` e `Minhas consultas`. Backup recuperável do frontend anterior em `/tmp/runrun-web-before-task038-20260903.tgz` no VPS.
+- **Próximo passo:** conectar/ativar a extensão do Codex no Chrome, abrir a URL de produção e concluir a inspeção visual iterativa solicitada; só então encerrar TASK-038/Fase 10.
+- **Bloqueios:** a extensão do Codex no Chrome não foi exposta à sessão atual. Por solicitação do PO, Orca não será usado como substituto. A entrega permanece `in_progress` até essa inspeção visual final.
+
+## [2026-09-03] — Codex — Renovação visual Prisma concluída e validada
+- **Fiz:** Executei a `SPEC-PRISMA-VISUAL-SYSTEM` aprovada: consolidei tokens e primitivas reutilizáveis, refiz o login responsivo com a composição do mockup oficial, reforcei marca e tema claro/escuro e refinei topbar, contexto, Projetos, Meu trabalho, Kanban, Relatórios e Configurações. No mobile, preservei o seletor de organização em formato compacto e garanti nome acessível ao CTA de novo item. Incorporei padrões de densidade útil, troca de contexto e ações rápidas inspirados no ClickUp, sem copiar sua identidade. Também registrei o novo pedido funcional em `US-PROJECT-QUERIES-001`, `SPEC-PROJECT-WORK-ITEM-QUERIES` e TASK-038, mantida pausada para definição humana de escopo e aprovação da spec.
+- **Arquivos tocados:** fundação visual em `src/Detran.Kanban.Web/src/styles`, `BrandMark.tsx` e `PageLayout.tsx`; login, shell e páginas principais; testes Playwright; `vite.config.ts` e `scripts/run-api-e2e.ps1`; governança em história/spec/contexto/backlog/roadmap e modelos do Context Explorer.
+- **Decisões novas:** nenhuma além da D70 já aprovada. O escopo de queries não foi presumido: compositor visual, linguagem textual e API/exportação continuam alternativas explícitas para G-SCOPE.
+- **Testes:** inspeção iterativa em Chromium real, incluindo login claro/escuro e viewport móvel final; React/Vitest **43/43**; Playwright E2E **35/35** desktop/mobile; Context Explorer **42/42** e modelo regenerado; builds do frontend e Context Explorer aprovados; lint sem erros (8 avisos legados). A suíte E2E foi estabilizada ao impedir o Vite de observar `playwright-report`/`test-results` e ao reduzir o logging SQL do runner dedicado.
+- **Próximo passo:** PO escolher o significado de “query” da TASK-038 e então aprovar a `SPEC-PROJECT-WORK-ITEM-QUERIES` revisada antes de qualquer implementação funcional.
+- **Bloqueios:** somente TASK-038, aguardando `G-SCOPE` e `G-SPEC`; a renovação visual TASK-035/036/037 está concluída.
+
+## [2026-09-03] — Codex — Pesquisa e especificação da renovação visual Prisma
+- **Fiz:** Auditei o login atual em 1440x900 e 390x844, li D68/D69, a LP Prisma hospedada em `antoniovitordev.com.br/prisma` e referências oficiais de Linear, Jira, ClickUp, monday.com e Asana. Registrei a história `US-UX-001`, a decisão D70 que reabre a evolução visual sistêmica e a `SPEC-PRISMA-VISUAL-SYSTEM` em draft. A proposta troca vazios acidentais por densidade útil, unifica primitivas de página e divide a execução em fundação/login, shell/páginas operacionais e QA final. TASK-035/036/037 foram criadas pausadas até G-SPEC.
+- **Arquivos tocados:** `stories/US-UX-001.md`, `stories/catalog.json`, `specs/prisma-visual-system.md`, `DECISIONS.md`, `ROADMAP.md`, `backlog.md`, `context/index.yaml`, constantes/testes/modelo do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** D70 reabre o redesign visual antes limitado pela D66/D69, mantendo D68, React + Styled Components e a topbar sem sidebar global.
+- **Testes:** inspeção visual local desktop/mobile; Context Explorer 42/42 e modelo regenerado com 309 histórias, 35 specs e 37 tasks. O baseline visual também revelou o aviso preexistente de `@import` dentro de `createGlobalStyle`, incorporado à spec. Nenhum código de produto foi alterado, portanto D40/E2E não se aplica nesta etapa documental.
+- **Próximo passo:** PO revisar e aprovar ou rejeitar a `SPEC-PRISMA-VISUAL-SYSTEM` no G-SPEC. Após aprovação, executar TASK-035 primeiro e estabelecer baseline E2E antes da mudança.
+- **Bloqueios:** implementação React obrigatoriamente pausada no G-SPEC; agentes não podem autoaprovar o gate.
+
+## [2026-09-03] — Cursor — Deploy Prisma em runrun.nordevs (VPS)
+- **Fiz:** Corrigi o alvo de publicação: **não** Napoleão. Confirmei ausência de `prisma-app` em `antoniovitordev.com.br` (LP `/prisma` intacta). Sincronizei o working tree local para `/home/dev/painel-projects/runrun` via `ssh vps` (preservando `.env`) e rodei `docker compose up -d --build`. Container `detran-kanban-api` recriado; site em produção com título **Prisma WorkSpace**; `/health` healthy.
+- **Arquivos tocados:** sync do código de produto no VPS; `PROGRESS.md`.
+- **Decisões novas:** nenhuma.
+- **Testes:** smoke HTTPS `https://runrun.nordevs.com.br` → 200 + marca Prisma; health OK. Build Docker completo (frontend `tsc`+vite + `dotnet publish`) sem falha.
+- **Próximo passo:** commit + `git push origin master` no repo local para o deploy automático (Actions) espelhar o mesmo estado — o sync manual no VPS fica atrás do `origin/master` até isso.
+- **Bloqueios:** nenhum.
+
+## [2026-09-02] — Cursor — Rebrand Prisma WorkSpace (D68/D69)
+- **Fiz:** Migração de identidade do Detran-SE para **Prisma WorkSpace** (open source / consultoria). Extrai tokens e marca da LP em `antoniovitordev.com.br/prisma` e do mockup de login; registrei **D68** (produto + identidade) e **D69** (feedback do PDF de análise). Frontend: tema light/dark Prisma, login alinhado ao mockup (prisma, features, gradiente, SSO informativo, LGPD), shell com BrandMark, storage keys `prisma_workspace_*` com migração das chaves legadas, seed/org preview sem marca Detran, projetos mais compactos com busca (sem chave, D56). Backend: `DELETE` de anexos de tarefa com confirmação na UI (lixeira 7 dias continua gap até `G-MIGRATION`). Ícone/seletor de responsável no topo do modal da tarefa.
+- **Arquivos tocados:** `DECISIONS.md`, `AGENTS.md`, `ROADMAP.md`, `theme.ts`, `ThemeMode.tsx`, `Auth.tsx`, `Topbar.tsx`, `Sidebar.tsx`, `Projects.tsx`, `TaskDetailDrawer.tsx`, `api.ts`, `AttachmentsFeature.cs`, `WorkItemAttachmentsController.cs`, `DbInitializer.cs`, e2e fixtures/specs, docs/entrada do PDF.
+- **Decisões novas:** D68, D69; D9/D13/D66 atualizadas.
+- **Testes:** `dotnet build` API OK; `npm run build` Web OK; Vitest Topbar/Projects/OrganizationSettings **6/6**. E2E completo depende de `.\scripts\run-api-e2e.ps1` + `npm run e2e` no ambiente local (não executado nesta sessão — API/frontend E2E não estavam ativos).
+- **Próximo passo:** Homologar login/tema; seguir backlog D69 (Backlog/Sprint lado a lado, Sprints compactas, Relatórios em abas, Configurações com menu lateral); planejar rename de namespaces `Detran.Kanban.*` → `Prisma.*` em tarefa dedicada; `G-MIGRATION` para lixeira de anexos.
+- **Bloqueios:** Nenhum bloqueante. Demais itens do PDF ficam para tasks posteriores cobertas por specs.
+
+## [2026-08-26] — Codex — Anonimização do responsável humano como PO
+- **Fiz:** Substituí referências pessoais pelo papel genérico `PO` em todo o conteúdo textual do repositório, incluindo painel, workflow, specs, histórias, decisões, documentação, testes, exemplos de gates e dados de teste/migração. E-mails de teste passaram para `po@detran.local`, IDs pessoais para `po`, caminhos locais para `%USERPROFILE%` ou `C:/Users/PO` e proprietário de GitHub para `<github-owner>`. O scanner deixou de publicar o caminho absoluto do perfil local e agora apresenta caminhos ausentes como `%WORKSPACE%/...`. Catálogo de 308 histórias, `model.json`, snapshot web e HTML legado foram regenerados.
+- **Testes:** Busca textual e nomes de arquivo: zero ocorrências remanescentes do nome anterior. Context Explorer **42/42**, Agent Loop **47/47**, build React/Vite aprovado e smoke nas rotas principais sem referência pessoal. A suíte .NET ficou em **103/104** por uma falha preexistente e reproduzível em `MultiBoardPlacementTests.MoveWorkItem_BoardIncompativel_LancaDomainException`, sem relação com a anonimização; o teste esperava rollback em memória, mas o placement já estava alterado.
+- **Próximo passo:** Usar `PO` como identidade genérica em novos documentos, gates e dados de exemplo. Investigar separadamente a atomicidade do movimento multi-quadro antes de declarar a suíte .NET integralmente verde.
+- **Bloqueios:** Nenhum para o painel anonimizado. Painel e API reiniciados localmente.
+
+## [2026-08-26] — Codex — Context Explorer story-first com retorno automático da homologação
+- **Fiz:** Remodelei a governança e o painel para o fluxo aprovado em D67: PO escreve a história; a IA gera/revisa a spec; somente a spec recebe `G-SPEC`; a IA planeja tarefas, monta contexto e implementa; build/testes precedem a homologação pelas histórias. Materializei 308 histórias canônicas em `stories/catalog.json` como baseline das specs já aprovadas e criei a área `Histórias do produto`. Homologação deixou de aprovar histórias individualmente: `Está conforme` apenas registra aderência; observações, `Precisa de ajuste` e `Isso não está implementado` criam/atualizam uma tarefa rastreável em `.agent-state/story-tasks.json`. A API também permite triagem por IA e resolução que arquiva a tarefa, limpa a observação ativa e devolve a história para revalidação. A observação existente de `US-ATTACHMENTS-001` foi migrada automaticamente para uma tarefa ativa, sem duplicação. Atualizei visão geral, specs, trabalho dos agentes, contexto, rastreabilidade, arquitetura e documentação.
+- **Processos e grafos:** `workflows/feature.yaml` agora possui 16 etapas e 21 transições story-first. O mapa estilo Bizagi mostra história, spec gerada, G-SPEC, execução, testes, homologação, criação da tarefa, triagem e retornos; uma leitura rápida numerada melhora a compreensão. O grafo técnico canônico foi preservado na Arquitetura de IA e lê diretamente o workflow. A arquitetura conceitual agora começa em História de usuário e inclui Homologação → Tarefa de correção → Triagem da IA.
+- **Arquivos tocados:** governança (`AGENTS.md`, `DECISIONS.md`, `ROADMAP.md`, `AI-NATIVE-V0.md`, `context/index.yaml`, `workflows/feature.yaml`, `specs/_template.md`); catálogo `stories/`; scanner/API/testes e frontend em `tools/context-explorer`; `PROGRESS.md`.
+- **Decisões novas:** D67 formaliza histórias antes das specs, G-SPEC exclusivo da spec e retorno automático da homologação por tarefas; mudança de necessidade volta à história/spec e exige nova aprovação da spec.
+- **Testes:** Context Explorer **42/42**; scanner/modelo gerados com 308 histórias, 16 nós, 21 arestas e 7 human gates; TypeScript/Vite aprovado; smoke Playwright read-only confirmou rotas principais, grafo técnico com **16 nós/21 arestas** e zero erros de console. Aviso não bloqueante: bundle acima de 500 kB.
+- **Próximo passo:** PO homologar módulo a módulo; os agentes analisam as tarefas geradas, classificam o destino (código ou história/spec), corrigem e devolvem a história para nova conferência.
+- **Bloqueios:** Nenhum. Painel disponível em `http://localhost:5174` com API local em `http://localhost:3847`.
+
+## [2026-08-25] — Codex — Homologação por histórias de usuário no Context Explorer
+- **Fiz:** Troquei a unidade principal da homologação manual de critérios soltos/spec inteira para histórias de usuário rastreáveis. O modelo agora deriva IDs estáveis, ator, narrativa e cenário `Dado/Quando/Então` exclusivamente dos critérios de aceite já aprovados, sem inventar novas regras. As 29 specs ativas ficaram cobertas por 308 histórias. A tela `Histórias e homologação` permite revisar cada cenário, marcar `Ainda não testei`, `Funcionou como esperado`, `Precisa de ajuste`, `Isso não está implementado` ou `Não consegui testar` e registrar observação por um botão explícito de salvamento. A barra agora informa quantidade e percentual aprovados e permanece realmente vazia em 0%. Com a API local ativa, as respostas ficam em `.agent-state/manual-validation.json`; sem API, permanecem como fallback no navegador. Visão geral, cards de specs e navegação passaram a apresentar histórias. O Inspector ganhou apresentação legível de narrativa e cenário, sem JSON bruto; expandir um módulo na homologação não abre mais o Inspector. O template de specs passou a orientar histórias explícitas nas novas especificações.
+- **Arquivos tocados:** `specs/_template.md`; gerador, API, testes e modelos em `tools/context-explorer`; views, tipos, Inspector, navegação e documentação em `tools/context-explorer/web`; `PROGRESS.md`.
+- **Decisões novas:** A spec continua como fonte técnica canônica, mas a história passa a ser a unidade principal de revisão humana. Uma observação marcada como ajuste poderá gerar tarefa vinculada à história; após correção, a observação ativa será limpa, a história voltará para nova homologação e a tarefa será concluída/arquivada, preservando rastreabilidade em vez de exclusão física.
+- **Testes:** Context Explorer **42/42**; build TypeScript/Vite aprovado; smoke Playwright read-only confirmou 308 histórias, expansão por módulo, Inspector legível, legenda da barra, opção `Isso não está implementado`, botão de salvar observação e zero erros de console. Persistência GET/POST vazia validada na API local. Permanece apenas o aviso não bloqueante do bundle acima de 500 kB.
+- **Próximo passo:** PO revisar as histórias no painel, registrar diferenças e depois solicitar a análise das observações para decomposição em tarefas vinculadas.
+- **Bloqueios:** Nenhum. Painel disponível em `http://localhost:5174/#/validation`.
+
+## [2026-08-25] — Codex — Remodelagem operacional do Context Explorer
+- **Fiz:** Remodelagem aprovada do painel, sem alterar o produto. Reduzi a navegação para oito áreas: Visão geral, Especificações, Trabalho dos agentes, Testes e homologação, Lacunas e decisões, Aprovações, Processos e Arquitetura de IA. As tarefas técnicas continuam visíveis, mas são identificadas explicitamente como trabalho a ser executado pelos agentes. Removi da leitura principal a porcentagem subjetiva de prontidão e passei a exibir contagens derivadas de specs, tarefas, critérios e gates. A homologação manual agora é gerada das specs ativas e deixa explícito que seus resultados são rascunho local, enquanto gates de teste são obrigações e não resultados de CI. Lacunas funcionais e alertas do scanner foram separados e agrupados. Aprovações concluídas e gates operacionais de referência ficam recolhidos; a tela destaca o que realmente aguarda ação humana. Criei dois mapas React Flow inspirados em BPMN/Bizagi (desenvolvimento do projeto e operação do produto), com raias, responsáveis, human gates e retornos. Contexto, motor, loop, agentes e rastreabilidade foram preservados como abas da Arquitetura de IA. O modelo tenta atualização pela API local e usa o snapshot como fallback identificado no topo.
+- **Arquivos tocados:** `tools/context-explorer/web/src` (shell, views, insights e mapas), `tools/context-explorer/web/README.md` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma regra de produto ou arquitetura foi alterada; esta entrega reorganiza somente a ferramenta de exploração conforme aprovação explícita do PO.
+- **Testes:** `tools/context-explorer` com **40/40** testes; `tools/context-explorer/web` com build TypeScript/Vite OK; smoke Playwright read-only em 13 rotas/subrotas, dois mapas carregados e zero erros de console. O bundle mantém aviso não bloqueante de chunk acima de 500 kB.
+- **Próximo passo:** Iniciar a execução módulo a módulo pelas specs aprovadas: homologar o comportamento atual, transformar divergências reais em tarefas pequenas, implementar em worktree isolada, executar testes automatizados e solicitar homologação humana antes de fechar o módulo.
+- **Bloqueios:** Nenhum para uso local do painel.
+
+## [2026-08-24] — Codex — Specs as-built, homologação recente e correção da criação rápida
+- **Fiz:** Sincronizei as specs com o sistema atual por solicitação explícita do PO: 28 specs estão `approved`, `SPEC-PROJECT-STRUCTURE` permanece `superseded` e somente `SPEC-PROJECTS-VISUAL-REFRESH` fica em `review`. Inventários de anexos, segurança, auditoria, automações, relatórios, portal, Gantt, notificações, SLA, sprints, horas e wiki foram marcados como baseline as-built; a chave de projeto foi reescrita conforme o formulário atual (opcional com geração automática). Diferenças reais de navegação, ordenação de colunas, modal e filtros foram registradas nas specs e as TASK-025/027/030/031 voltaram para `in_progress`. O painel agora não trata specs `superseded` como pendentes. Também adicionei a área `Homologação manual` para TASK-020 e TASK-025–032 e corrigi o layout dos checkboxes na criação rápida, com teste React e cenário Playwright.
+- **Arquivos tocados:** specs e `backlog.md`; Context Explorer/modelo/painel de gates e documentação de homologação; `GlobalActions.tsx` e seus testes; `PROGRESS.md`.
+- **Decisões novas:** Baselines atuais aprovados pelo PO sem expansão de produto; requisitos desejados/lacunas permanecem informativos. O refresh visual continua bloqueado por G-SPEC e `Projects.tsx` não foi alterado.
+- **Testes:** Context Explorer `40/40` e build web OK; build do frontend do produto OK; teste direcionado da criação rápida `1/1` OK. A suíte Vitest global ficou em `39/43`: quatro falhas em testes locais alheios (`OrganizationSettings.test.tsx` e `Topbar.test.tsx`). O Playwright não foi executado porque SQL Server e Docker locais estão desligados; produção não foi usada para testes mutáveis.
+- **Próximo passo:** Revisar/aprovar somente a `SPEC-PROJECTS-VISUAL-REFRESH`; ligar SQL Server/Docker E2E para executar o cenário da criação rápida antes de publicar a correção.
+- **Bloqueios:** G-SPEC da TASK-033 e ambiente E2E local indisponível.
+
+## [2026-08-22] — Composer — G-DEPLOY concluído (TASK-020/025–032 em produção)
+- **Fiz:** Fechamento do deploy autorizado em `https://runrun.nordevs.com.br`. Commit em produção `f264792` (anterior `45f95df`). GitHub Actions run **32557960436** success (~1m43s). Backup SQL verificado: `/home/dev/backups/runrun/DetranKanban_20260822T064710Z.bak` (SHA-256 `6034abaf…d785c`, RESTORE VERIFYONLY OK). Pós-checks: migration `20260822041655_MultiBoard_WorkItemPlacements` aplicada; Projects=7, Boards=12, WorkItemsActive=456, Placements=456, ActiveWithoutPlacement=0, OrphanPlacements=0; `/health` e `/` → 200; `/api/projects` sem auth → 401; bundle JS sem `Sidebar`, nav superior com “Projetos” confirmada. API estável pós-restart (sem erros, só warnings EF/DataProtection). **Aviso não bloqueante:** 4 quadros de teste sem coluna Backlog-like (`4dsrwerewr`, `Quadro de teste` x2, `Quadro de Teste`) — afetam criação rápida nesses quadros apenas.
+- **Arquivos tocados:** `PROGRESS.md` (handoff).
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Smoke interativo humano (login, Backlog↔Quadro, menu mobile, QuickCreate); opcional corrigir colunas Backlog nos 4 quadros de teste; TASK-021–024 permanecem pendentes.
+- **Bloqueios:** Nenhum para G-DEPLOY.
+
+## [2026-08-22] — Composer — Release TASK-020/025–032 + G-DEPLOY
+- **Fiz:** Implementei e validei o pacote autorizado (shell superior, multi-quadro N:N com migration `MultiBoard_WorkItemPlacements`, criação rápida multi-board, novo/excluir/reordenar quadros/colunas, modal de tarefa, filtros compactos, navegação Backlog↔Quadro). Specs promovidas a `approved` sob autorização humana (`continua` após G-DEPLOY). Testes: `dotnet build` OK; xUnit **93/93**; Vitest **38/38**; Playwright E2E **15/15** no banco `DetranKanban_E2E` (CORS E2E + resolução dinâmica do projeto seed). Auditoria: sem `.env`/segredos no release. Próximo passo imediato deste turno: commit único, backup/verificação em produção, push `master` e smoke.
+- **Arquivos tocados:** domínio/API/web das TASK-020/025–032, migration, specs aprovadas, E2E, `backlog.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma além de D49–D51 já registradas; execução sob G-SPEC/G-SCOPE/G-MIGRATION/G-WORKFLOW/G-DEPLOY autorizados.
+- **Próximo passo:** Backup SQL produção + deploy via procedimento existente + smoke não destrutivo + monitoramento 10 min.
+- **Bloqueios:** Nenhum para o deploy após testes verdes.
+
+## [2026-08-22] — Claude Sonnet 4.6 — TASK-020/026/027/028 (Frontend wiring multi-board)
+
+- **Fiz:**
+  - **api.ts:** `createWorkItem` recebe `boardIds?: string[]` e `projectId?: string` (compat. com boardId antigo). Adicionados `deleteBoard(id, destinationBoardId?)` e `reorderStages(boardId, orderedStageIds[])`.
+  - **ProjectsFeature.cs:** `ProjectDto` recebe `Guid? DefaultBoardId = null` (opcional, sem migration); `Map` calcula como `orderedBoards.FirstOrDefault()?.Id`.
+  - **Projects.tsx `ProjectSummary`:** campo `defaultBoardId?: string` adicionado (forward-compat).
+  - **TASK-020 — GlobalActions.tsx `QuickCreateDialog`:** schema migrou de `boardId: string` para `boardIds: string[]` (min 1). UI substituída por lista de checkboxes com `BoardCheckboxList`/`BoardCheckboxItem`. Default = `project.defaultBoardId ?? boards[0]`. Ao trocar projeto, reset de seleção. Submit desabilitado se `boardIds` vazio. Chama `api.createWorkItem({ boardId: boardIds[0], boardIds, projectId, ... })`. Invalida `['project-backlog', projectId]` e `['workItems']`. Exibe mensagem de erro da API (não genérica).
+  - **TASK-026 — Kanban.tsx `handleCreateBoard`:** Passa `projectId` do quadro atual. Loading state (`createBoardPending`). Erro inline (não `alert`). Mantém `newBoardName` no erro. Após sucesso mostra estado interno com "Quadro criado com sucesso" + botão "Ir para o quadro" (navega para `/boards/{id}`).
+  - **TASK-028 — Kanban.tsx "Excluir Quadro":** Botão visível quando `visibleBoards.length > 1`. Dialog de confirmação com nome do board. Select de destino para tarefas. Chama `api.deleteBoard`. Em sucesso, navega para o board destino.
+  - **TASK-027 — Kanban.tsx reordenação de colunas:** Botões ◀/▶ em cada `ColumnHeader`. `handleMoveStage` atualiza `stages` otimisticamente e persiste via `api.reorderStages`; reverte em falha.
+  - **Build:** `npm run build` com **0 erros TS**. Corrigidos 2 erros pré-existentes (unused import em `KanbanFilterBar.tsx`, unused styled component em `Topbar.tsx`).
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/services/api.ts`
+  - `src/Detran.Kanban.Web/src/pages/Projects.tsx`
+  - `src/Detran.Kanban.Web/src/components/GlobalActions.tsx`
+  - `src/Detran.Kanban.Web/src/pages/Kanban.tsx`
+  - `src/Detran.Kanban.Web/src/features/board/KanbanFilterBar.tsx`
+  - `src/Detran.Kanban.Web/src/layout/Topbar.tsx`
+  - `src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Testes E2E para os 4 fluxos; eventuais ajustes de UX após revisão humana.
+- **Bloqueios:** Nenhum.
+
+---
+
+## [2026-08-22] — Claude Sonnet 4.6 — TASK-029/020/026/027/028 (Backend multi-board e placements N:N)
+
+- **Fiz:**
+  - **TASK-001 ProjectConfiguration:** Adicionado FK `DefaultBoardId → Boards` com `DeleteBehavior.ClientSetNull` (evita ciclo de cascata detectado pelo SQL Server).
+  - **TASK-002 CreateBoardCommandHandler:** Injetados `IStageRepository` e `IProjectRepository`; handler agora cria Stage "Backlog" (Category=Ready, Position=100) atomicamente e define `Project.DefaultBoardId` quando ainda nulo.
+  - **TASK-003 ProjectsController:** Removida criação duplicada de "A fazer" (substituída pelo Backlog do handler); apenas "Em andamento" e "Concluído" são criados explicitamente.
+  - **TASK-004 CreateWorkItemCommand/Handler:** Adicionados campos opcionais `BoardIds` e `ProjectId`; handler resolve lista de boards (prioridade: BoardIds > BoardId > ProjectId.DefaultBoardId), localiza stage Backlog por nome/categoria em cada board, cria `WorkItem` com board home = primeiro da lista, e adiciona `WorkItemBoardPlacement` para cada board extra.
+  - **TASK-005 WorkItemsController:** `CreateWorkItemRequest` recebe `BoardIds?` e `ProjectId?`; passados ao command.
+  - **TASK-006 MoveWorkItemCommandHandler:** Inclui `BoardPlacements` no `GetForMoveAsync`; move atualiza placement do board de destino, sincroniza placements de outros boards pelo `WorkflowStatusId`; lança `DomainException` se algum board não tiver stage compatível; notifica todos os boards via SignalR.
+  - **TASK-007 WorkItemRepository.GetByBoardIdAsync:** Inclui `BoardPlacements`; filtro expandido para `BoardId == boardId OR BoardPlacements.Any(p => p.BoardId == boardId)`; ordena por posição do placement quando disponível.
+  - **TASK-008 GetWorkItemsByBoardIdQueryHandler:** Usa placement do board requisitado para preencher `BoardId`, `StageId` e `Position` do DTO; popula `BoardIds` com todos os boards do item.
+  - **TASK-009 DeleteBoardCommand/Handler/Validator + BoardsController DELETE:** Valida ProjectAdmin; bloqueia exclusão do último board; realoca itens exclusivos para Backlog do destino; atualiza `Project.DefaultBoardId`; nunca deleta WorkItems.
+  - **TASK-010 ReorderStagesCommand/Handler + StagesController PUT board/{boardId}/order:** Reordena stages por lista de GUIDs, assina Position = (índice+1)*100.
+  - **TASK-011 Testes:** `MultiBoardPlacementTests.cs` com 3 novos testes (CreateWorkItem cria N placements, Move sincroniza board compatível, Move lança DomainException em board incompatível). Total: 93/93 ✅.
+  - **TASK-012 Migration:** `MultiBoard_WorkItemPlacements` gerada; Up editado com SQL de backfill (placements existentes + DefaultBoardId de projetos sem padrão).
+  - **TASK-013 WorkItemDto:** Campo `BoardIds?` adicionado; populado no `GetWorkItemsByBoardIdQueryHandler`.
+  - **IBoardRepository/IWorkItemRepository:** Adicionados `GetByProjectIdAsync` e `GetExclusiveToBoardAsync` com implementações em seus repositórios.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Infrastructure/Persistence/Configurations/ProjectConfiguration.cs`
+  - `src/Detran.Kanban.Application/Features/Boards/Commands/CreateBoardCommandHandler.cs`
+  - `src/Detran.Kanban.Application/Features/Boards/Commands/DeleteBoardCommand.cs` (novo)
+  - `src/Detran.Kanban.Application/Features/Boards/Commands/DeleteBoardCommandHandler.cs` (novo)
+  - `src/Detran.Kanban.Application/Features/Stages/Commands/ReorderStagesCommand.cs` (novo)
+  - `src/Detran.Kanban.Application/Features/Stages/Commands/ReorderStagesCommandHandler.cs` (novo)
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommand.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommandValidator.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Dtos/WorkItemDto.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetWorkItemsByBoardIdQueryHandler.cs`
+  - `src/Detran.Kanban.Application/Interfaces/IBoardRepository.cs`
+  - `src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/Repositories/BoardRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/Persistence/Migrations/20260822041655_MultiBoard_WorkItemPlacements.cs` (novo)
+  - `src/Detran.Kanban.Api/Controllers/BoardsController.cs`
+  - `src/Detran.Kanban.Api/Controllers/ProjectsController.cs`
+  - `src/Detran.Kanban.Api/Controllers/StagesController.cs`
+  - `src/Detran.Kanban.Api/Controllers/WorkItemsController.cs`
+  - `tests/Detran.Kanban.Tests/MultiBoardPlacementTests.cs` (novo)
+  - `tests/Detran.Kanban.Tests/MoveWorkItemCommandHandlerTests.cs` (correção interface)
+  - `tests/Detran.Kanban.Tests/CanonicalPersonNameTests.cs` (correção interface)
+- **Decisões novas:** Nenhuma arquitetural nova; implementação dentro de D50 (quadro como projeção N:N). `DeleteBehavior.ClientSetNull` para FK `DefaultBoardId` é detalhe de implementação compatível com decisões existentes.
+- **Próximo passo:** Aplicar migration no banco E2E (`dotnet ef database update`); rodar Playwright E2E; G-DEPLOY após fumaça verde.
+- **Bloqueios:** Migration não aplicada em produção (aguarda G-MIGRATION/G-DEPLOY). E2E Playwright depende de banco e2e configurado.
+
+## [2026-08-22] — Claude Sonnet 4.6 — TASK-032/025/030/031 (Fase 6B — UX de navegação e layout)
+
+- **Fiz:**
+  - **TASK-032 (completo):** Reescrevi `AppShell.tsx` com layout full-width (sem sidebar), `Topbar.tsx` com nav global horizontal (Meu trabalho, Projetos, Solicitações, Relatórios, Equipes), dropdown de conta (Configurações + Sair), menu mobile com overlay/popover, foco na abertura, Escape fecha e devolve foco, clique externo fecha. Criei `ContextBar.tsx` com `ContextBarProvider`, `ContextBarSlot` (div-alvo montado com `useCallback` ref estável) e `ContextBarInjector` (usa `createPortal` — sem risco de loop de re-render). Permissões idênticas às que estavam em `Sidebar.tsx`. Removido uso de `sidebar-collapsed` no localStorage.
+  - **TASK-025 (leve):** Em `ProjectWorkspace.tsx`, o breadcrumb "Projetos" virou `<Link>` real apontando para `/projects`; nome do projeto recebe `aria-current="page"`. Crumb movido para a ContextBar via `ContextBarInjector`. `ProjectBacklog` e `ProjectBoards` injetam um seletor compacto `Backlog | Quadro` na ContextBar quando a sub-rota correspondente está ativa.
+  - **TASK-030 (completo):** `TaskDetailDrawer.tsx` convertido de gaveta lateral (`inset: 0 0 0 auto`) para modal centrado (`position:fixed; left:50%; top:50%; transform:translate(-50%,-50%)`). Largura `min(900px,95vw)`, `max-height:92vh`. Estrutura interna: `Header` fixo no topo (fora do scroll), `Body` com `flex:1; overflow-y:auto`. `Tabs` sticky em `top:0` dentro do Body. Mobile: ancora na parte inferior. `aria-label` do fechar atualizado para "Fechar modal"; teste atualizado.
+  - **TASK-031 (completo):** `KanbanFilterBar.tsx` compactado: linha primária com campo de busca + botão "Filtros (N)" (contador de filtros ativos) + select de ordenação + contagem de resultados. Painel expansível (toggle) agrupa todos os selects por categoria (Pessoas/equipes, Classificação, Prazo/origem, Outros), agrupamento, filtros salvos e conteúdo do cartão.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/layout/AppShell.tsx` (reescrito)
+  - `src/Detran.Kanban.Web/src/layout/Topbar.tsx` (reescrito)
+  - `src/Detran.Kanban.Web/src/layout/ContextBar.tsx` (novo)
+  - `src/Detran.Kanban.Web/src/pages/ProjectWorkspace.tsx` (breadcrumbs + switch)
+  - `src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx` (modal centrado)
+  - `src/Detran.Kanban.Web/src/components/TaskDetailDrawer.test.tsx` (atualizado aria-label)
+  - `src/Detran.Kanban.Web/src/features/board/KanbanFilterBar.tsx` (compactado)
+- **Decisões novas:** Nenhuma arquitetural nova. Implementação dentro de D7/D9/D13/D49/D51. ContextBar usa portal (`createPortal`) para evitar loop de re-render; essa escolha de implementação não altera contratos de API.
+- **Próximo passo:** TASK-020 (entidades/migration de placements N:N — exige G-MIGRATION); TASK-026/027 (multi-board views e portal externo); rodar E2E Playwright após ambiente configurado (`.\scripts\run-api-e2e.ps1`).
+- **Bloqueios:** Teste flaky pré-existente em `OrganizationSettings.test.tsx` (falha intermitente por contenção de recursos na suíte completa, passa isolado — não causado por esta sessão). E2E Playwright exige banco e2e configurado antes de executar.
+
+Formato:
+```
+## [AAAA-MM-DD] — <IA> — Fase <n>
+- **Fiz:** ...
+- **Arquivos tocados:** ...
+- **Decisões novas:** (cite o ID em DECISIONS.md, se houver)
+- **Próximo passo:** ...
+- **Bloqueios:** ...
+```
+
+---
+
+## [2026-08-21] — Composer — G-DEPLOY pausado (pré-condições não atendidas)
+- **Fiz:** Recebi autorização humana de G-DEPLOY condicionada à implementação prévia de TASK-020 e TASK-025–032 com testes verdes. Auditei o workspace e a produção sem alterar código de produto nem o servidor. Confirmado na VPS (`ssh vps`): hostname `srv1768230`, user `dev`, path `/home/dev/painel-projects/runrun`, branch `master`, commit `45f95df`, containers `detran-kanban-api` e `detran-kanban-db` Up, banco `DetranKanban` (connection string redigida). Localmente HEAD = mesmo commit; working tree só com specs/docs/Context Explorer (sem implementação das tasks). Specs críticas ainda em `draft`/`review`; backlog marca TASK-020/025–032 como `pending`; shell ainda usa Sidebar; não existe entidade/migration de placements N:N.
+- **Arquivos tocados:** `PROGRESS.md` (somente este registro).
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Aprovar via G-SPEC (e, onde couber, G-SCOPE/G-MIGRATION/G-WORKFLOW) as specs das TASK-020 e TASK-025–032; implementar; rodar build/xUnit/Vitest/Playwright E2E; só então retomar o protocolo de backup → migration → deploy → smoke.
+- **Bloqueios:** G-DEPLOY não pode avançar: implementação ausente + specs não aprovadas (constituição SDD / Human Gates). Produção já está no commit atual; não há release de produto novo para publicar.
+
+## [2026-08-20] — Codex — UX de quadros, filtros, detalhe e navegação
+- **Fiz:** Consolidei o brainstorm nas specs sem alterar código de produto. Formalizei a D50 e a nova `SPEC-MULTI-BOARD-VIEWS`: tarefa é canônica no projeto, deve aparecer em ao menos um quadro, pode aparecer em vários sem duplicação e usa o quadro padrão/coluna `Backlog` quando não houver escolha explícita. Revisei criação, reordenação e exclusão de quadros para preservar tarefas e realocar somente projeções. Pela D49, o detalhe troca a gaveta lateral por modal centralizado, amplo, responsivo e acessível, mantendo as seis abas. Redesenhei a experiência de filtros com busca compacta, `Filtros (N)`, grupos, chips removíveis, visualizações salvas, estado vazio explicativo e comportamento mobile. Também defini breadcrumbs reais: `Projetos` e o nome do projeto são links acionáveis por mouse/teclado, e o segmento terminal usa `aria-current`. Por fim, formalizei a D51 e a `SPEC-TOP-NAVIGATION-SHELL`: a sidebar desaparece, a navegação global migra para o topo e filtros/breadcrumbs/ações da tela passam a uma barra contextual superior, mantendo o conteúdo em largura total.
+- **Arquivos tocados:** `DECISIONS.md` (D49–D51), `specs/multi-board-views.md`, `specs/top-navigation-shell.md`, `specs/boards-stages-wip.md`, `specs/quick-create-work-item.md`, `specs/backlog.md`, `specs/task-history.md`, `specs/search-saved-filters.md`, `specs/work-item-management.md`, `backlog.md`, metadados/modelo do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** D49 — detalhe da tarefa em modal centralizado; D50 — quadro como projeção N:N do `WorkItem`, com quadro padrão e status canônico; D51 — navegação global e contextual no topo, sem sidebar persistente. Foram abertas TASK-026 a TASK-032.
+- **Próximo passo:** Revisar e aprovar as specs via G-SPEC; a arquitetura multi-quadro também exige G-SCOPE, G-MIGRATION e G-WORKFLOW, e o novo shell exige G-SCOPE antes da implementação. Executar TASK-032 antes de TASK-025/TASK-031; em paralelo, seguir TASK-029 → TASK-020/TASK-028 e as independentes TASK-026/TASK-027/TASK-030.
+- **Bloqueios:** Alteração exclusivamente documental; E2E do produto dispensado pela D40. Context Explorer validado com 40/40 testes, build React/Vite aprovado e `git diff --check` sem erros. O app web não possui script `npm test`; a suíte canônica fica em `tools/context-explorer`.
+
+## [2026-08-20] — Codex — Navegação contextual Backlog e Quadro
+- **Fiz:** Registrei na `SPEC-B-001` uma navegação SPA de mão dupla entre Product Backlog e Kanban. O fluxo preserva projeto, quadro, item em foco, filtros, expansão da árvore, seleção e posição de rolagem quando válidos, além de respeitar o histórico voltar/avançar, foco acessível e responsividade. Criei a TASK-025 para a futura implementação.
+- **Arquivos tocados:** `specs/backlog.md`, `backlog.md`, metadados/testes canônicos do Context Explorer, modelo gerado e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma arquitetural; foram reutilizadas as rotas React existentes `/projects/:projectId/backlog` e `/boards/:boardId`, com contexto transportado por parâmetros de rota/query estáveis.
+- **Próximo passo:** Continuar consolidando o brainstorm e aprovar a revisão da `SPEC-B-001` via G-SPEC antes de executar a TASK-025.
+- **Bloqueios:** Implementação bloqueada pelo G-SPEC. Alteração exclusivamente documental/metadados; E2E do produto dispensado pela D40.
+
+## [2026-08-20] — Codex — Brainstorm de entrada da tarefa no quadro
+- **Fiz:** Registrei na `SPEC-QUICK-CREATE-WORK-ITEM` as duas experiências propostas durante a homologação: tarefa nova escolhe `Projeto → Quadro → Coluna` e nasce imediatamente visível no Kanban; item legado com quadro, mas sem coluna, recebe a ação `Enviar ao quadro` para definir sua etapa sem copiar o registro. A spec prioriza a criação já posicionada e permite que os dois fluxos coexistam.
+- **Arquivos tocados:** `specs/quick-create-work-item.md`, `backlog.md`, modelo do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma decisão arquitetural. Foi preservado o modelo atual em que `BoardId` é obrigatório e `StageId` pode estar ausente; `Enviar ao quadro` significa atribuir etapa ao mesmo item, nunca importar/duplicar.
+- **Próximo passo:** Continuar registrando o brainstorm; na revisão G-SPEC, confirmar se os dois fluxos coexistem ou se somente a criação já posicionada será implementada.
+- **Bloqueios:** Implementação permanece bloqueada pelo G-SPEC da `SPEC-QUICK-CREATE-WORK-ITEM`. Alteração exclusivamente documental; E2E dispensado pela D40.
+
+## [2026-08-20] — Codex — Concorrência dinâmica e início da sprint
+- **Fiz:** Localizei o aviso `O registro foi alterado por outro usuário` no tratamento global de `DbUpdateConcurrencyException` (HTTP 409) e documentei na `SPEC-S-003` uma recuperação dinâmica: invalidar e recarregar apenas sprint/backlog/itens afetados, reavaliar a intenção e informar o resultado sem exigir reload manual ou repetir efeitos cegamente. Registrei também a decisão de remover `Iniciar sprint`, deixando explícito que o botão não pode ser apenas ocultado enquanto `Planned → Active` continuar dependente dele.
+- **Arquivos tocados:** `specs/sprints.md`, `backlog.md`, modelo do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** A recuperação de concorrência será dinâmica. O gatilho substituto para ativar sprint ainda exige G-SCOPE/G-WORKFLOW: pela data inicial, imediatamente na criação ou por um novo ciclo formal.
+- **Próximo passo:** PO escolher o gatilho de ativação e aprovar a revisão da `SPEC-S-003`; então implementar a remoção do botão e a reconciliação automática com testes React, .NET e Playwright.
+- **Bloqueios:** Não é seguro remover somente o botão: novas sprints ficariam permanentemente planejadas e não poderiam ser concluídas pelo fluxo atual. Alteração apenas documental nesta etapa; E2E dispensado pela D40. Context Explorer: 40/40 testes e build React/Vite aprovados.
+
+## [2026-08-20] — Codex — Especificação de criação, exclusão e planejamento hierárquico
+- **Fiz:** Registrei a correção da criação rápida com validação específica de organização/projeto/quadro/etapa; a lixeira por item no Product Backlog com arquivamento lógico e confirmação transacional de pai mais descendentes; o agrupamento visual contínuo entre pai e subtarefas; o fechamento hierárquico no planejamento da sprint; a criação da primeira sprint sem perder os itens selecionados; as opções de editar e excluir sprint respeitando seu ciclo de vida; e a remoção da chave manual no cadastro de projetos, mantendo a geração automática no backend. Para preservar a D21/D36, um pai não pode ser arquivado sozinho deixando filhas ativas. Para preservar a D25, somente sprint planejada e nunca iniciada pode ser excluída; seus itens retornam atomicamente ao Product Backlog, enquanto sprint ativa deve ser cancelada e o histórico terminal permanece imutável.
+- **Arquivos tocados:** `specs/quick-create-work-item.md`, `specs/project-key-auto-generation.md`, `specs/backlog.md`, `specs/sprints.md`, `backlog.md`, metadados canônicos do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma decisão arquitetural; os requisitos foram detalhados sobre D21, D25 e D36. As specs novas/revisadas permanecem em `review` aguardando G-SPEC antes de alterar código de produto.
+- **Próximo passo:** PO revisar e aprovar via G-SPEC a `SPEC-QUICK-CREATE-WORK-ITEM`, `SPEC-PROJECT-KEY-AUTO-GENERATION`, a revisão da `SPEC-B-001` e a revisão da `SPEC-S-003`; depois executar TASK-020 a TASK-024 com testes .NET, React e Playwright.
+- **Bloqueios:** Implementação bloqueada somente pelo G-SPEC das quatro revisões. Esta entrega alterou exclusivamente documentação e metadados do painel, portanto não exige E2E pela D40. Context Explorer: 40/40 testes e build React/Vite aprovados; `git diff --check` sem erros.
+
+## [2026-08-20] — Codex — Remigração seletiva do Canal Mobile e troca de organização
+- **Fiz:** Integrei a carga seletiva preparada na worktree `remigrate-canal-mobile`, regenerei o SQL com a ordem canônica `Backlog → A fazer → Em desenvolvimento → Testes → Em impedimento → Implantação → Entregue` e mantive o artefato gerado fora do Git por conter dados internos. Corrigi a listagem de projetos para reagir imediatamente à troca da organização ativa e descartar respostas pendentes do tenant anterior. Publiquei o commit `592f2ad` em produção. Antes da remigração, gerei e validei com `RESTORE VERIFYONLY` o backup `/var/opt/mssql/backup/DetranKanban_before_CANALM4_20260820_1320.bak` (8.863.744 bytes; SHA-256 `49ed67e3664066af85b7f432f8260ad901a0c7ca0c97d7499116eae3f5e814b9`). Com a API pausada e sem escritores concorrentes, removi somente o recorte migrado da organização alvo e recarreguei exclusivamente `CANALM4 / Canal Mobile`. A validação final confirmou 1 projeto, 1 quadro, 7 etapas, 42 transições, 424 itens, 945 participantes, 535 vínculos de tags, 486 apontamentos e 8.957 comentários; dez verificações relacionais ficaram em zero e `DBCC CHECKCONSTRAINTS` passou. Os arquivos temporários foram removidos e a API/site voltaram com HTTP 200.
+- **Arquivos tocados:** `specs/organization-switch-refresh.md`, `backlog.md`, `src/Detran.Kanban.Web/src/pages/Projects.tsx`, testes Vitest/Playwright correspondentes e `PROGRESS.md`. A worktree isolada mantém o gerador/auditoria local; o SQL com dados não foi versionado.
+- **Decisões novas:** Nenhuma decisão arquitetural. A autorização humana deste turno cobriu G-DEPLOY e a remigração destrutiva após backup verificável; a correção de UI foi formalizada na spec aprovada `SPEC-ORGANIZATION-SWITCH-REFRESH`.
+- **Próximo passo:** Homologar visualmente o Canal Mobile em produção com a conta real do usuário e manter o backup até a confirmação humana.
+- **Bloqueios:** Nenhum para o estado publicado. Validações: Vitest 38/38, build React aprovado e Playwright 15/15. O smoke autenticado automatizado de produção não reutilizou a senha seed configurada porque a conta já existente possui outra senha; saúde pública, banco e integridade foram validados sem alterar credenciais.
+
+## [2026-08-20] — Codex — Release candidate e ordem do quadro migrado
+- **Fiz:** Consolidei o release candidate das implementações orientadas pelo documento e defini a ordem do quadro migrado `Canal Mobile` como `Backlog`, `A fazer`, `Em desenvolvimento`, `Testes`, `Em impedimento`, `Implantação` e `Entregue`, tanto na base atual quanto nas próximas cargas. O Kanban agora abre com os cartões mais recentes no topo. Auditei os arquivos candidatos ao commit, mantive `.env`, export bruto do Runrun, SQL gerado, credenciais E2E, logs e temporários fora do Git, e substituí senhas locais encontradas em documentação/scripts por placeholders ou variáveis externas. O alvo SSH foi confirmado como repositório limpo em `/home/dev/painel-projects/runrun`, atendendo `https://runrun.nordevs.com.br`.
+- **Arquivos tocados:** `migracao/build-sql.cjs`, `.gitignore`, `HANDOFF.md`, `RODAR-LOCAL.md`, `run-slc-local.ps1` e `PROGRESS.md`, além do release candidate já validado nas entradas anteriores.
+- **Decisões novas:** Nenhuma. A mudança é somente de ordenação visual/dado importado; não altera transições nem regras do workflow.
+- **Próximo passo:** Homologação visual do quadro publicado; a ordem completa das sete colunas já foi aplicada e confirmada de forma transacional nas bases local e de produção.
+- **Bloqueios:** Nenhum. Validação acumulada do release: xUnit 89/89, Vitest 37/37, build React aprovado, Context Explorer 40/40 e Playwright 14/14; a geração do SQL confirmou as sete posições canônicas.
+
+## [2026-08-20] — Codex — Suspensão da metodologia na interface
+- **Fiz:** Por decisão explícita do PO, suspendi a escolha de metodologia/estrutura de trabalho na experiência do produto. Removi os controles do cadastro e das configurações de projeto, retirei metodologia da busca global e do catálogo de novos relatórios, mantive `Kanban = 1` como padrão interno de novos projetos e preservei valores legados durante edições. O enum, a coluna e os contratos foram mantidos para retrocompatibilidade, sem migration.
+- **Arquivos tocados:** `DECISIONS.md` (D48), `specs/project-methodology-hidden.md`, `specs/project-structure.md`, `Projects.tsx`, `ProjectSettings.tsx`, busca global, construtor de relatórios, testes Vitest/Playwright e `PROGRESS.md`.
+- **Decisões novas:** D48 — metodologia suspensa na interface, com persistência interna temporária e sem alteração de schema.
+- **Próximo passo:** Reavaliar o conceito somente quando existirem comportamentos de produto claramente distintos e especificados para cada estrutura.
+- **Bloqueios:** Nenhum. Validação final: xUnit 89/89, Vitest 35/35, build React aprovado e Playwright 13/13 com API, frontend e SQL Server E2E reais.
+
+## [2026-08-20] — Codex — Fase 8: homologação do documento e correções finais
+- **Fiz:** Concluí a homologação funcional dos requisitos do `docs/ProjetoRunrun-Detran.docx.pdf` no ambiente E2E real. Responsáveis, participantes, aprovações, apontamentos, comentários, histórico e grafo de estados agora priorizam `OrganizationMember.DisplayName` e não usam e-mail como rótulo principal; snapshots antigos são resolvidos para o nome atual quando o membro ainda existe. O Product Backlog representa subtarefas com recuo e conector visual, preserva ancestrais durante filtros e sinaliza subtarefas órfãs sem inventar vínculo. O Sprint Board ganhou drag-and-drop persistente, alternativa acessível por seleção de etapa e separação por `BoardId`. Corrigi também a conversão de workflow `Custom -> Inherited`: projeções locais novas passam a ser registradas explicitamente como `Added`, eliminando o falso conflito de concorrência do EF Core.
+- **Arquivos tocados:** utilitário e superfícies React de nomes funcionais; `BacklogPlanner.tsx`; `SprintKanbanBoard.tsx`; handlers/DTOs de responsáveis, comentários, aprovações, tempo e histórico; projeção/repositório de workflow; testes xUnit, Vitest e `e2e/document-alignment.spec.ts`; `PROGRESS.md`.
+- **Decisões novas:** Nenhuma. Foram aplicadas D36, D40, D43, D44, D45, D46 e D47; XP permanece oculto conforme decisão humana.
+- **Próximo passo:** Homologação visual humana no piloto institucional e, quando autorizado, abertura de G-DEPLOY.
+- **Bloqueios:** Nenhum técnico. Validação final: solution Debug compilada sem erros/avisos; build Release local sem erros e com dois avisos nullable já identificados; xUnit 89/89; Vitest 35/35; build React aprovado; Playwright 13/13 com frontend, API e SQL Server E2E reais.
+
+## [2026-08-20] — Codex — Correção da inicialização local
+- **Fiz:** Diagnostiquei o erro `Failed to fetch` no login local: o Vite havia herdado `VITE_API_URL=http://localhost:5400`, mas a API iniciada por `run-local.ps1` opera em `5216`. Reiniciei somente o frontend com a URL correta, validei a credencial pela API e concluí o login pela interface até a listagem de projetos. Tornei o script determinístico para sempre configurar a API local em `http://localhost:5216` ao iniciar o Vite.
+- **Arquivos tocados:** `scripts/run-local.ps1`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Continuar a homologação visual usando o ambiente local já autenticado.
+- **Bloqueios:** Nenhum. API e frontend responderam; login validado no navegador com a organização `DETRAN Sergipe — Migrado` selecionada.
+
+## [2026-08-20] — Codex + agentes — Fase 8: alinhamento integral ao documento
+- **Fiz:** Executei em paralelo as TASK-004 a TASK-017 liberadas pelos Human Gates e alinhei o produto ao `ProjetoRunrun-Detran.docx.pdf`: Story Points ficam ocultos em projetos Kanban; backlog ganhou árvore pai/subtarefas; dependências têm busca por código/título e bloqueio transacional de ciclos; Sprint Board ganhou drag-and-drop por quadro; workflows de organização são herdados dinamicamente ou personalizados por projeto; o detalhe da tarefa foi unificado em seis abas com comentários, histórico estruturado e grafo de estados em React Flow; responsáveis usam `OrganizationMember.DisplayName` por tenant; XP continua oculto. Criei e apliquei ao banco E2E a migration `Fase8_Document_Alignment`, incluindo metadados de histórico, nome funcional e templates de workflow. O E2E encontrou uma consulta EF não traduzível no diretório de usuários; corrigi a projeção e validei novamente no SQL Server real.
+- **Arquivos tocados:** specs e `backlog.md`; decisões D45–D47 e `ROADMAP.md`; domínios de WorkItem, histórico, organização e workflow; handlers/repositórios/controllers correspondentes; migration `20260820055828_Fase8_Document_Alignment`; telas de Kanban, Backlog, Sprint, configurações e detalhe da tarefa; testes xUnit, Vitest e Playwright; `PROGRESS.md`.
+- **Decisões novas:** D45 — workflow organizacional herdado/personalizado; D46 — nome funcional por organização; D47 — autoria e motivo no histórico. A hierarquia e a proteção de dependências seguem a D36 e as specs aprovadas; as decisões D42–D44 foram preservadas.
+- **Próximo passo:** Homologação humana no piloto institucional e, quando autorizado, G-DEPLOY para promoção de ambiente.
+- **Bloqueios:** Nenhum técnico. Validação final: solution Release sem erros/avisos; xUnit 83/83; Vitest 31/31; build frontend aprovado; Playwright 6/6 com API, SQL Server E2E e frontend reais.
+
+## [2026-08-20] — Codex — Decisões de produto e executor real do Agent Loop
+- **Fiz:** Registrei nas specs as decisões explícitas do PO: XP permanece oculto/adiado; Story Points ocultos em todas as superfícies de projetos Kanban com persistência somente para retrocompatibilidade; participantes podem editar, mover e apontar horas mantendo um responsável principal; status devem ser herdados dinamicamente; e o detalhe será uma gaveta com seis abas, incluindo Histórico e Grafo de Estados em React Flow. Atualizei backlog, D36 e documentação AI-Native. Corrigi a limitação operacional do Agent Loop com `run-gates`: o motor agora executa os product gates ativos do profile somente no estado `gating`, sem Human Gates pendentes, em ordem, com allowlist, contenção de `cwd`, parada na primeira falha e persistência segura de resultado/duração/código de saída sem stdout/stderr. Adicionei testes unitários e integração CLI real. Concluí a TASK-001 sem XP, adicionando `IsInEnum()` aos validadores de criação/atualização de projetos e testes para as quatro opções da D20 e para o valor inválido 5.
+- **Arquivos tocados:** `DECISIONS.md` (D41), `specs/work-items.md`, `specs/work-item-management.md`, `specs/workflow-status.md`, `specs/task-history.md`, `backlog.md`, `AI-NATIVE-V0.md`, `tools/agent-loop/lib/executor.js`, `tools/agent-loop/lib/engine.js`, `tools/agent-loop/cli.js`, README/package/testes do Agent Loop, modelo/build do Context Explorer e `PROGRESS.md`.
+- **Decisões novas:** D41 — execução governada de product gates; D42 — XP adiado; D43 — Story Points ocultos em Kanban; D44 — seis abas, State Graph com React Flow e operações dos participantes.
+- **Próximo passo:** PO escolher se a árvore respeita a D36 ou aceita profundidade ilimitada; confirmar a composição integrada do detalhe; definir se a herança dinâmica de status parte da organização ou de configuração global única; depois promover as specs pelos respectivos G-SPEC/G-SCOPE. Representar o E2E condicional de D40 no profile exige G-WORKFLOW.
+- **Bloqueios:** TASK-001/002/003 concluídas. TASK-004 a TASK-016 continuam bloqueadas enquanto suas specs permanecerem `draft`. O executor local está funcional, mas ativar a política condicional de E2E no profile ainda requer G-WORKFLOW explícito.
+
+## [2026-08-20] — Codex + agentes Orca — Execução SDD orientada pelo documento de requisitos
+- **Fiz:** Auditei visualmente as 7 páginas de `docs/ProjetoRunrun-Detran.docx.pdf`, confrontei requisitos, 21 specs, backlog e código com cinco agentes coordenados em paralelo. Pelo fluxo SDD, executei apenas tarefas cobertas pela `SPEC-PROJECT-STRUCTURE` aprovada: concluí a TASK-002, substituindo os rótulos visuais "Metodologia" por "Estrutura de Trabalho" e adicionando cobertura Vitest/Playwright; concluí a TASK-003 ao confirmar que projetos Kanban já não criam Sprint automaticamente e adicionar um teste de regressão EF Core. Corrigi o ambiente E2E local, seletores Playwright, isolamento Vitest, um teste .NET incompatível com a janela de tolerância de refresh token, paths reais do backlog e contadores canônicos do Context Explorer para as 21 specs. Atualizei specs/backlog apenas com inconsistências comprovadas; nenhuma spec foi autoaprovada, nenhuma migration foi criada e nenhum gate humano foi contornado.
+- **Arquivos tocados:** `backlog.md`, specs auditadas em `specs/`, `src/Detran.Kanban.Web/src/pages/Projects.tsx`, `src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx`, testes Vitest/Playwright/xUnit, configuração Playwright/Vitest, scripts E2E, scanner/testes do `tools/context-explorer` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma decisão de produto. A inclusão de XP continua bloqueada em G-SCOPE porque contradiz D20; as demais implementações continuam bloqueadas por G-SPEC nas specs em `draft` e por perguntas de escopo registradas nas próprias specs.
+- **Próximo passo:** PO decidir o G-SCOPE de XP e revisar/aprovar via G-SPEC as specs funcionais por ondas; então distribuir as tarefas liberadas em worktrees isoladas e repetir todos os gates, incluindo E2E.
+- **Bloqueios:** TASK-001 bloqueada em G-SCOPE. TASK-004 a TASK-016 não podem alterar produto enquanto suas specs permanecerem `draft`; alguns requisitos do PDF ainda exigem decisão humana sobre Story Points no Kanban, significado operacional dos participantes, composição das quatro abas e herança versus cópia dos status globais.
+
+## [2026-08-19] — Claude — Verificação E2E obrigatória como Definition of Done
+- **Fiz:** Adicionei regra de processo que obriga execução dos testes E2E como verificação final de tarefas que modificam frontend, API ou banco de dados. Registrei como decisão D40 em DECISIONS.md. Adicionei nova seção "Verificação final E2E (obrigatória)" em AGENTS.md com instruções detalhadas: quando aplicar (mudanças em React, endpoints, schema), como executar (ambiente ativo + npm run e2e), como interpretar resultado (passa/conclui vs falha/investiga), exceções (documentação, lint, refatoração interna), e procedimento se ambiente não estiver configurado. Referenciei documentação existente (e2e/README.md) e decisão formal (D40).
+- **Arquivos tocados:** `DECISIONS.md`, `AGENTS.md`, `PROGRESS.md`.
+- **Decisões novas:** D40 — E2E obrigatório como Definition of Done para tarefas que modificam comportamento externo (ver DECISIONS.md).
+- **Próximo passo:** Validar que a regra é clara e aplicável nas próximas tarefas. Monitorar se IAs seguem a verificação E2E automaticamente.
+- **Bloqueios:** Nenhum. A regra está documentada e referenciada em AGENTS.md, que é lido por todas as IAs antes de começar tarefas.
+
+## [2026-08-19] — Claude — Cobertura funcional em specs de estado atual + auditoria de consistência
+- **Fiz:** Inventariei o sistema inteiro (Domain com 35+ entidades e 21 enums, Application com 29 features, Api com 34 controllers e ~108 endpoints, Web com rotas e api client, 12 classes de teste xUnit, 17 migrations e snapshot com 53 tabelas) e comparei com as specs existentes. Criei 14 specs novas de ESTADO ATUAL, todas em `draft`: auth-security, boards-stages-wip, work-item-management, attachments, time-tracking, audit-leadtime-history, dashboards-reports, search-saved-filters, bulk-actions-automations, external-portal, wiki-knowledge, sla-approvals, notifications-realtime e gantt-planning. Em seguida rodei auditoria cruzada das 14 specs contra o código e corrigi inconsistências objetivas. Padrão dominante encontrado: várias specs SUBESTIMAVAM o código, marcando como "não comprovado" o que existe — corrigi wiki-knowledge (4 tabelas, locks de 3 min, revisões com janela de 15 min, soft-delete com lixeira/restore, anexos), sla-approvals (ProjectSlaPolicy com defaults reais, enum SlaStatus com 6 valores, ApprovalStatus com 3 valores em PT-BR), external-portal (controllers públicos, rate limits, enum de flags de acesso), boards-stages-wip (Position, WipLimit, bloqueio por WIP no WorkflowMoveGuard, StageHistory) e time-tracking (3 controllers e campos reais das entidades). Padrão inverso também apareceu: specs que INVENTAVAM endpoints REST — removi endpoints inexistentes de search-saved-filters (`/api/work-items/search`, `/api/saved-filters`, GET por id, PUT), bulk-actions-automations (`/preview`, `/execute`, `/bulk-executions/{id}`, `/activate`, `/deactivate`, `/executions` e as entidades AutomationRuleVersion/AutomationExecution/AutomationExecutionItem), audit-leadtime-history (`/api/work-items/{id}/history`, `/stage-history`, `/lead-time`) e dashboards-reports (5 endpoints inventados), substituindo pelos reais. Corrigi ainda auth-security (classe RefreshTokenConfiguration dentro de Configurations/AuditLogConfiguration.cs; isenções reais do OrganizationContextMiddleware) e confirmei que notifications-realtime já estava correta quanto a JoinBoard(organizationId, boardId), LeaveBoard(boardId) e grupo `board:{boardId:N}`.
+- **Arquivos tocados:** 14 specs criadas em `specs/` (auth-security.md, boards-stages-wip.md, work-item-management.md, attachments.md, time-tracking.md, audit-leadtime-history.md, dashboards-reports.md, search-saved-filters.md, bulk-actions-automations.md, external-portal.md, wiki-knowledge.md, sla-approvals.md, notifications-realtime.md, gantt-planning.md) e `PROGRESS.md`. Nenhum código de produto, migration, workflow, profile ou agent contract foi alterado.
+- **Decisões novas:** Nenhuma. Todas as specs permanecem em `draft` e nenhuma decisão foi registrada em DECISIONS.md. Conflitos identificados foram deixados como Pending Decisions, incluindo os que exigem G-SCOPE por contradizerem decisões travadas (automações além do gatilho de entrada em coluna contradizem D37).
+- **Próximo passo:** Faltam 3 specs de estado atual para fechar a cobertura: `users-orgs-teams-permissions`, `custom-fields-tags-catalog` e `projects-lifecycle`. Depois disso, submeter ao G-SPEC na ordem de risco: auth-security, users-orgs-teams-permissions, boards-stages-wip, work-item-management, time-tracking, bulk-actions-automations, external-portal e sla-approvals primeiro; as demais em seguida.
+- **Bloqueios:** Nenhum bloqueio técnico. Aguarda decisão humana sobre as perguntas abertas registradas nas specs (entre elas: WIP como limite rígido ou apenas alerta; aprovações como fluxo obrigatório ou opcional; compartilhamento de filtros salvos; detecção automática da condição "aguardando solicitante" no SLA; existência ou não de um conceito próprio de release/roadmap separado de Projects e Sprints).
+
+## [2026-08-19] — Claude — Banco de dados dedicado para E2E
+- **Fiz:** Criei infraestrutura completa de banco de dados dedicado para testes E2E. O banco `DetranKanban_E2E` é isolado do banco de desenvolvimento, garantindo que os testes não interfiram com dados de trabalho. Criei script SQL para criação do banco (`scripts/e2e-create-database.sql`), script de reset rápido (`scripts/e2e-reset-database.sql`), script PowerShell de setup completo (`scripts/setup-e2e-database.ps1`) que cria o banco, aplica migrations e configura arquivos de conexão, e script para iniciar a API com banco E2E (`scripts/run-api-e2e.ps1`). Atualizei `.gitignore` para ignorar `.env.e2e.connection` e `.env.e2e.seedpassword` (arquivos locais com credenciais). Atualizei `src/Detran.Kanban.Web/e2e/README.md` com duas opções de setup: banco dedicado (recomendado) ou banco de dev (com aviso de interferência), e seção de reset entre execuções.
+- **Arquivos tocados:** `scripts/e2e-create-database.sql`, `scripts/e2e-reset-database.sql`, `scripts/setup-e2e-database.ps1`, `scripts/run-api-e2e.ps1`, `.gitignore`, `src/Detran.Kanban.Web/e2e/README.md`.
+- **Decisões novas:** Nenhuma. Complementa D39 (Playwright) com estratégia de banco isolado.
+- **Próximo passo:** Testar o fluxo completo localmente: `setup-e2e-database.ps1` → `run-api-e2e.ps1` → `npm run dev` → `npm run e2e`. Depois, validar reset entre execuções.
+- **Bloqueios:** Requer SQL Server acessível e credencial SA válida. Usuário precisa executar `setup-e2e-database.ps1` interativamente para fornecer senha e senha seed.
+
+## [2026-08-19] — Claude — Fundação E2E com Playwright
+- **Fiz:** Adicionei @playwright/test ao frontend (src/Detran.Kanban.Web) como fundação de testes E2E. Criei playwright.config.ts com Chromium como único projeto de execução, baseURL configurável por variável de ambiente (E2E_BASE_URL), trace on-first-retry, screenshot e video em falha, e relatório HTML. Criei fixture de autenticação (e2e/fixtures/auth.setup.ts) que faz login via API e persiste storageState reutilizável entre testes, sem versionar tokens ou senhas. Criei fixture base (e2e/fixtures/test.ts) com helper authenticatedGoto. Escrevi smoke test real (e2e/smoke.spec.ts) cobrindo página de login, acesso autenticado ao dashboard e logout, usando locators por role. Adicionei scripts npm e2e, e2e:ui, e2e:debug e e2e:report. Criei e2e/.env.e2e como template de credenciais (sem valores reais) e garanti que e2e/.auth/ e .env.e2e.local ficam fora do versionamento. Documentei tudo em e2e/README.md.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/playwright.config.ts`, `src/Detran.Kanban.Web/e2e/fixtures/auth.setup.ts`, `src/Detran.Kanban.Web/e2e/fixtures/test.ts`, `src/Detran.Kanban.Web/e2e/smoke.spec.ts`, `src/Detran.Kanban.Web/e2e/README.md`, `src/Detran.Kanban.Web/e2e/.auth/.gitignore`, `src/Detran.Kanban.Web/.env.e2e`, `src/Detran.Kanban.Web/.gitignore`, `src/Detran.Kanban.Web/package.json`, `DECISIONS.md`.
+- **Decisões novas:** D39 — adoção do Playwright para testes E2E (Chromium em cada PR, Firefox/WebKit em execução noturna/pré-release; ver DECISIONS.md).
+- **Próximo passo:** Configurar `.env.e2e.local` com credenciais reais de um usuário seed, rodar `npm run e2e` localmente com API + frontend + SQL Server ativos, e então expandir a suíte com fluxos críticos adicionais (Kanban drag-and-drop, criação de tarefa) de forma incremental.
+- **Bloqueios:** Nenhum. A suíte depende de ambiente local rodando (API na porta 5400, frontend na porta 5450, SQL Server na 1433) e de credenciais de teste que não são versionadas.
+
+## [2026-08-19] — Codex — Fluxos mecânicos e interface em português no Context Explorer
+- **Fiz:** Traduzi a camada visual do Context Explorer para pt-BR mantendo IDs, estados e condições canônicas intactos no `model.json`. Reorganizei as 21 transições do Grafo do Motor em três faixas mecânicas visíveis na mesma página, sem abas. Transformei o Grafo do Processo em um fluxo único integrado, com caminho normal, aprovação humana e retorno de falha diferenciados por cor e rota. Corrigi o Mapa do Projeto: “Todas as áreas” agora apresenta um catálogo selecionável e cada domínio abre somente `Domínio → Especificação → Tarefas`, eliminando nós desconectados. Reescrevi Contexto como um plano de arquivos que a IA precisa ler, removi a comparação de leitura realizada e traduzi verificações técnicas para nomes humanos. Removi a prontidão do OmniRoute da interface de Arquitetura. Sidebar, títulos, métricas, Inspetor, tipos de nós, relações, estados, lacunas, agentes e aprovações humanas receberam rótulos em português. Preservei React Flow, scanner, parsers, specs, backlog, `model.json` e código de produto.
+- **Arquivos tocados:** `tools/context-explorer/web/src/lib/i18n.ts`, componentes, grafos e views em `tools/context-explorer/web/src/`, build gerado em `tools/context-explorer/web/dist/`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma decisão de produto ou arquitetura canônica. Tradução é somente de apresentação; termos técnicos e IDs continuam estáveis nas fontes.
+- **Próximo passo:** Informar ao repositório onde e como o OmniRoute está configurado; depois classificar decisões humanas das specs e aprovar a primeira onda de implementação.
+- **Bloqueios:** Nenhum no painel. TypeScript passou sem erros e `npm run build` foi concluído; existe apenas aviso não bloqueante de bundle principal acima de 500 kB.
+
+## [2026-08-19] — Codex — Context Explorer Web React/Vite
+- **Fiz:** Finalizei a aplicação separada em `tools/context-explorer/web/` com React 18, TypeScript, Vite, Styled Components e React Flow. Mantive 12 views distintas (Home/Project Map, Specs, Context, Backlog, Traceability, Process Graph, Engine Graph, Loop, Human Gates, Gaps, Agents e Architecture), sidebar fixa, canvas principal e Inspector lateral acionável por entidades. A Home agora filtra o mapa por domínio; Context diferencia Candidate/Actual e Minimum/Expanded; Traceability filtra uma spec por vez; Gaps separa referências/artefatos, cobertura e verificação manual; Specs apresenta aderência observada ao código; e uma fila de perguntas dinâmicas persiste respostas apenas no `localStorage`, sem editar documentos canônicos. Preservei scanner, parsers, `model.json`, testes e código de produto. Na revisão das 7 specs, encontrei 5 gaps atuais confirmados, 1 funcionalidade futura ainda ausente e 1 spec parcialmente desatualizada porque a criação automática de Sprint já não ocorre; também identifiquei que `broken_path` mistura artefatos planejados com referências obsoletas. Documentei execução e build no README da aplicação.
+- **Arquivos tocados:** `tools/context-explorer/web/src/` (shell, componentes, análise editorial e 12 views), `tools/context-explorer/web/index.html`, `tools/context-explorer/web/vite.config.ts`, `tools/context-explorer/web/README.md`, `tools/context-explorer/web/public/model.json` e `tools/context-explorer/web/dist/` gerados pelo build; `PROGRESS.md`. Nenhum arquivo de produto, spec, backlog, scanner, parser ou `model.json` canônico foi alterado.
+- **Decisões novas:** Nenhuma decisão arquitetural de produto. A aplicação web usa a porta local `5174` para não conflitar com a SPA principal em `5173`; respostas do painel são locais e não alteram fontes canônicas.
+- **Próximo passo:** Usar a fila de perguntas do painel para classificar paths planejados versus obsoletos e obter aprovação humana das specs draft via G-SPEC antes de qualquer implementação de produto.
+- **Bloqueios:** Nenhum. `npm test` em `tools/context-explorer` passou 40/40; `npm exec tsc -- --noEmit` passou; `npm run build` gerou o bundle estático; smoke do Vite confirmou HTTP 200 para `/` e `/model.json` em `127.0.0.1:5174`.
+
+## [2026-08-19] — Claude — Verificação Final V0 Hardening (.agent-state / tools/agent-loop)
+- **Fiz:** Rodei verificação de fechamento do V0 hardening sem alterar produto/specs/backlog/CI/migrations/DB/ROADMAP/DECISIONS. Confirmei via `git check-ignore -v` que `.agent-state/tasks`, `.agent-state/telemetry`, `.agent-state/handoffs` e `.agent-state/runtime` estão ignorados pela regra `.agent-state/` em `.gitignore` (linha 32) e que `tools/agent-loop/schemas` NÃO está ignorado (check-ignore retornou exit code 1, sem match). Confirmei que `.agent-state/schema` não existe no repositório (não há schemas versionados fora de `tools/agent-loop/schemas`) e que os 4 diretórios runtime de `.agent-state/` contêm apenas markers `.gitkeep` vazios, sem arquivos de schema. Rodei `git status --short` e `git diff --name-only`: alterações preexistentes de sessões anteriores são `.gitignore`, `AGENTS.md` e `PROGRESS.md` (modificados) e diversos arquivos/pastas untracked (`AI-NATIVE-V0.md`, `HANDOFF.md`, `OMNIROUTE-READINESS.md`, `RODAR-LOCAL.md`, `agents/`, `backlog.md`, `context/`, `docs/entrada/`, `migracao/`, `profiles/`, `run-slc-local.ps1`, `specs/`, `tools/`, `workflows/`, docs docx/pdf). Nenhum arquivo foi revertido. Não repeti testes: reaproveitei o resultado já reportado de `npm test` em `tools/agent-loop` (32 passed, 0 failed).
+- **Arquivos tocados:** `PROGRESS.md` (única alteração desta etapa, fora de `tools/agent-loop`/runtime markers).
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Nenhum item pendente identificado neste escopo de verificação.
+- **Bloqueios:** Nenhum. Nenhuma alteração de produto, spec, backlog, migration, banco, CI, deploy, API ou agente automático foi feita.
+
+## [2026-08-18] — Claude — Correção de Paths Inválidos em context/index.yaml
+- **Fiz:** Corrigi os 4 paths inválidos detectados em `context/index.yaml` (domínios `work_items`, `backlog`, `workflow`) substituindo por paths reais confirmados no repositório: `src/Detran.Kanban.Web/src/components/kanban/` -> `src/Detran.Kanban.Web/src/pages/Kanban.tsx`; `src/Detran.Kanban.Web/src/pages/Backlog.tsx` -> `src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx`; `src/Detran.Kanban.Api/Controllers/WorkflowsController.cs` -> `src/Detran.Kanban.Api/Controllers/WorkflowController.cs`; `src/Detran.Kanban.Web/src/pages/WorkflowSettings.tsx` -> `src/Detran.Kanban.Web/src/features/workflow/ProjectWorkflowSettings.tsx`. Confirmei `.agent-state/runtime/.gitkeep`, `.agent-state/telemetry/.gitkeep`, `.agent-state/handoffs/.gitkeep` existentes e `.agent-state/` já presente em `.gitignore`. Não alterei código de produto, specs, backlog, DECISIONS, ROADMAP, migrations, DB ou CI/deploy. Não rodei gates de produto (testes já haviam passado 7/7 em execução isolada anterior de `tools/agent-loop`).
+- **Arquivos tocados:** `context/index.yaml`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Nenhum item pendente identificado neste escopo; aguardar próxima tarefa AI-Native.
+- **Bloqueios:** Nenhum.
+
+## [2026-08-17] — Antigravity — Materialização AI-Native V0 & Verificação OmniRoute
+- **Fiz:** Verifiquei a ausência de `.omniroute.json` na raiz do projeto. Como o schema e mapeamentos não puderam ser confirmados, criei `OMNIROUTE-READINESS.md` documentando o estado observer mode / readiness sem inventar configurações ou mapeamentos domínio->modelo. Confirmei que o registro `SOURCE_MISSING` permanece ativo e mantido em `AI-NATIVE-V0.md` e `PROGRESS.md`.
+- **Arquivos tocados:** `OMNIROUTE-READINESS.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Aguardar fornecimento de `.omniroute.json` ou especificações adicionais mantendo o pipeline intacto.
+- **Bloqueios:** Nenhum. `SOURCE_MISSING` continua registrado.
+
+## [2026-08-17] — Codex — Conclusão da Fase de Descoberta (Specs + Backlog + AI-Native V0)
+- **Fiz:** Concluí a fase de descoberta documental com a criação de 7 especificações canônicas em `specs/` (project-structure, work-items, backlog, dependencies, sprints, workflow-status, task-history), template de spec (`specs/_template.md`), backlog implementável (`backlog.md`) com 16 tarefas priorizadas (P0-P3) e mapeamento de dependências/human gates, e proposta de arquitetura AI-Native V0 (`AI-NATIVE-V0.md`) com gates mapeados (.NET + React), human gates, telemetria e roadmap de adoção. Realizei verificação final documental confirmando que todas as specs estão em status draft (sem autoaprovação), backlog possui formato YAML correto com prioridades P0/P1/P2/P3/NEEDS HUMAN PRIORITY, e AI-Native-V0 não inventa comandos/gates (marcando E2E, backend linter strict e SAST como inexistentes).
+- **Arquivos tocados:** `specs/_template.md`, `specs/project-structure.md`, `specs/work-items.md`, `specs/backlog.md`, `specs/dependencies.md`, `specs/sprints.md`, `specs/workflow-status.md`, `specs/task-history.md`, `backlog.md`, `AI-NATIVE-V0.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Iniciar execução das tarefas do backlog (`backlog.md`) respeitando a ordem de execução, dependências e human gates (TASK-001, TASK-009, TASK-010, TASK-011 requerem aprovação humana).
+- **Bloqueios:** Nenhum. Verificação documental concluída com sucesso: todas as specs em draft, backlog estruturado, AI-Native V0 com gates reais mapeados e SOURCE_MISSING registrado para requisito de PDF adicional.
+
+## [2026-08-17] — Antigravity — Proposta Arquitetura AI-Native V0
+- **Fiz:** Criei a proposta de arquitetura AI-Native V0 adaptada ao projeto real (`AI-NATIVE-V0.md`), detalhando a visao geral, Context Index, fluxo de trabalho, Agent Contracts, gates mapeados (.NET + React), human gates, telemetria e roadmap de adocao.
+- **Arquivos tocados:** `AI-NATIVE-V0.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Seguir o roadmap de adocao da arquitetura AI-Native V0.
+- **Bloqueios:** Nenhum.
+
+## [2026-08-17] — Antigravity — Criacao do Backlog Implementavel
+- **Fiz:** Criei o arquivo `backlog.md` contendo 16 tarefas priorizadas (P0 a P3), mapeadas com os campos YAML solicitados, mapeamento de dependencias, human gates, riscos e ordem de execucao com base em todas as especificacoes tecnicas (`specs/`).
+- **Arquivos tocados:** `backlog.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Iniciar a execucao das tarefas do backlog respeitando a ordem e os human gates.
+- **Bloqueios:** Nenhum.
+
+## [2026-08-17] — Antigravity — Especificacoes Canonicas (Project Structure e Work Items)
+- **Fiz:** Criei as especificacoes canonicas `specs/project-structure.md` (CAND-P-001, CAND-P-002, CAND-P-003) e `specs/work-items.md` (CAND-F-003) seguindo o template `specs/_template.md` sem implementar codigo.
+- **Arquivos tocados:** `specs/project-structure.md`, `specs/work-items.md`, `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Implementar as especificacoes criadas.
+- **Bloqueios:** Nenhum.
+
+## [2026-07-20] — Codex — Fechamento técnico do MVP
+- **Fiz:** Concluí a produtividade pendente da Fase 6E com seleção e ações em massa no Kanban, editor CRUD de automações, validação de alvos/workflow/WIP, proteção contra ciclos e limite defensivo; fechei a matriz de autorização por organização, projeto, quadro e tarefa nos endpoints legados. Consolidei hierarquia, módulos, dependências, dados, backlog, especificações, segurança, testes e homologação dos requisitos 42–50. Removi segredos do Compose, criei configuração de exemplo e inicializador local, corrigi o bloqueio do Smart App Control executando a API em `Release` e atualizei as dependências .NET 8 vulneráveis para versões estáveis corrigidas.
+- **Arquivos tocados:** features/controllers/repositórios/serviços de produtividade e autorização; `Kanban.tsx`, toolbar em massa, editor de automações, API client e testes React; projetos `.csproj`, teste xUnit ajustado, `scripts/run-local.ps1`, `.env.example`, `docker-compose.yml`, `README.md`, `DEPLOY.md`, `docs/MVP-ESPECIFICACAO.md`, `docs/MVP-HOMOLOGACAO.md`, `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** D36 (hierarquia funcional), D37 (limite do MVP e automações básicas) e D38 (atualizações estáveis de segurança).
+- **Próximo passo:** Executar o piloto com uma equipe real, configurar SMTP/cofre institucional e aplicar a liberação gradual com o checklist de homologação; esses passos dependem do ambiente e do aceite do Detran-SE.
+- **Bloqueios:** Nenhum bloqueio técnico no ambiente local. Build `Release` com zero avisos/erros, 57 testes .NET e 21 Vitest aprovados, lint e bundle React aprovados, migrations atualizadas, auditorias NuGet/npm sem vulnerabilidades e smoke autenticado de ações em massa/automações aprovado. Frontend, API e Swagger estão ativos em `5173`/`5216`; o Docker CLI não está instalado neste shell, portanto o Compose não foi executado localmente.
+
+## [2026-07-20] — Codex — Funcionalidades 25–30 (Notificações, Pesquisa, Auditoria e Segurança)
+- **Fiz:** Entreguei a central persistente de notificações com 13 eventos, leitura, preferências por canal, e-mail assíncrono e lembretes deduplicados de prazo/SLA; pesquisa global autorizada de seis fontes com `Ctrl + K` e comandos rápidos; auditoria transacional multitenant com ator, IP, correlação, valores anterior/novo e redação; e hardening de Identity/JWT com confirmação e recuperação de e-mail, lockout, refresh token HttpOnly rotativo com detecção de reutilização, rate limiting, headers de segurança e segredos externos. Padronizei validações/erros, ampliei OpenAPI, integrei os módulos ao React por features e corrigi o `localhost`: o `AuthController` recuperou `/api/auth`, a SPA permanece em `5173` e a API em `5216`.
+- **Arquivos tocados:** domínio/configurações/repositórios/serviços de notificações, auditoria e refresh token; CQRS e controllers de notificações, pesquisa e auditoria; autenticação, middlewares, Serilog, OpenAPI, `AppDbContext`, migration `20260720173316_Fase7_Notifications_Search_Audit_Security`; central de notificações, busca global, auditoria administrativa e fluxos de autenticação React; testes, `.gitignore`, `README.md`, `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** D32 (notificações persistentes/outbox/preferências), D33 (pesquisa autorizada e comandos fechados), D34 (auditoria imutável/redigida) e D35 (sessão rotativa, Identity e Problem Details).
+- **Próximo passo:** Configurar SMTP e cofre institucional em homologação; depois continuar o restante da Fase 7 — mural, releases, roadmap, Gantt avançado, templates e integrações.
+- **Bloqueios:** Nenhum. Migration aplicada; build .NET sem avisos, 53 testes .NET, lint, build React e 17 Vitest aprovados. Smoke HTTP real validou login/refresh rotativo, pesquisa, 13 preferências, notificação de atribuição e leitura, auditoria filtrada com IP, erro `validation_error`, política de senha, Swagger/JWT e headers de segurança. API, Vite e SQL Server estão ativos nas portas 5216, 5173 e 1433.
+
+## [2026-07-20] — Codex — Funcionalidades 18–24 (Comunicação, SLA, Horas, Relatórios e Dashboards)
+- **Fiz:** Separei definitivamente comentários internos de respostas públicas, reduzi o contrato de acompanhamento por protocolo e mantive anexos privados fora do portal. Implementei SLA por projeto com calendário útil, feriados, regras, snapshot, pausa/retomada, alertas e indicadores. Integrei cronômetro, lançamento manual e histórico ao painel da tarefa e relatórios de previsto versus realizado sem dados financeiros. Ampliei e validei os tipos de campos personalizados. Entreguei relatórios prontos, construtor sem SQL com oito fontes e sete visualizações, salvar/duplicar/compartilhar/exportar, além dos dashboards de colaborador, gestor e projeto. Corrigi o ambiente local e mantive SQL Server, API e Vite ativos.
+- **Arquivos tocados:** entidades/enums/configurações/repositórios de SLA, relatórios e analytics; features CQRS e controllers de comunicação externa, SLA, horas, relatórios, construtor e dashboards; migration `20260720162720_Fase7_Communication_Sla_Reports`; telas/tipos/API React de tarefa, solicitações, configurações, relatórios e dashboards; testes, `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** D28 (fronteira pública/interna), D29 (SLA com snapshot e minutos úteis), D30 (horas sem dados financeiros) e D31 (relatórios declarativos e dashboards derivados).
+- **Próximo passo:** Configurar o SMTP institucional antes de publicar o portal externamente; depois seguir com mural, releases, roadmap, Gantt avançado, templates e as pendências registradas da Fase 6E.
+- **Bloqueios:** Nenhum bloqueio funcional. Migration aplicada em `DetranKanban` e `DetranKanban_Dev`; build .NET sem avisos, 47 testes .NET, lint limpo, build React e 17 Vitest aprovados. Smoke autenticado real validou oito fontes, campo personalizado no construtor, relatórios prontos, dashboards, SLA, horas, CSV e separação da comunicação. API, Vite e SQL Server estão ativos nas portas 5216, 5173 e 1433. A habilidade de navegador foi usada, mas nenhum navegador estava conectado; a validação visual automatizada ficou indisponível e foi substituída por build, testes e HTTP.
+
+## [2026-07-20] — Codex — Funcionalidades 15–17 (Formulários, Conversão e Triagem)
+- **Fiz:** Completei o Portal Externo com múltiplos formulários administráveis, campos padrão e personalizados, obrigatoriedade/opcionalidade, seleção, regex, condições simples, mensagens de confirmação, limites de anexos e regras ordenadas de atribuição. A submissão multipart aplica rate limiting, honeypot e tempo mínimo, valida extensão/MIME/tamanho, e persiste protocolo, `ExternalRequest`, o mesmo `WorkItem`, valores, campos internos, anexos e auditoria. A fila de triagem agora aceita, recusa com justificativa, solicita informações com mensagem/e-mail, altera categoria/prioridade/responsável/equipe/projeto, roteia para backlog/Kanban e cria vínculos de duplicidade/relação; todas as ações geram evento imutável e histórico da tarefa. Mantive o ambiente local ativo e deixei os protocolos 2026-001021 (aceito, atribuído, relacionado e encaminhado) e 2026-001022 (recusado com justificativa) para inspeção.
+- **Arquivos tocados:** domínio/enums de `ExternalForm` e triagem; feature CQRS, contratos, repositório, serviço SMTP, storage, controllers, rate limiting e EF Core; migration `20260720150243_Fase7_External_Forms_Triage` e recuperação consistente da migration-base `20260720141551_Add_Sprint_History_And_External_Portal`; tipos/API/telas React de Configurações, Portal Público e Solicitações; testes, `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** D27 (formulários persistidos, conversão atômica no mesmo `WorkItem`, proteção em camadas e eventos append-only de triagem).
+- **Próximo passo:** Configurar o SMTP institucional em `PortalEmail` antes de publicar externamente; depois continuar os módulos restantes da Fase 7 e preservar as pendências já registradas da Fase 6E.
+- **Bloqueios:** Nenhum bloqueio funcional. Migrations aplicadas em `DetranKanban` e `DetranKanban_Dev`; build .NET sem avisos, 41 testes .NET, build/lint React e 17 Vitest aprovados. Smoke HTTP real validou formulário condicional, cópia de anexo, regra de prioridade, presença no Meu Trabalho, sete eventos de triagem, recusa obrigatoriamente justificada, acompanhamento público e rate limiting 429. API, Vite e SQL Server ativos nas portas 5216, 5173 e 1433. A habilidade de navegador foi acionada para inspeção visual, mas nenhum navegador estava conectado; a validação final disponível foi feita por build, testes e HTTP.
+
+## [2026-07-20] — Codex — Funcionalidades 11–14 (Scrum, Sprints, Planejamento e Portal Externo)
+- **Fiz:** Completei o ciclo de Sprints com edição, cancelamento, uma sprint ativa por projeto, conclusão com retorno de pendências ao backlog ou envio para outra sprint e fotografia imutável do escopo para preservar métricas/burndown. Mantive Product/Sprint Backlog, planejamento por drag-and-drop, capacidade por membro, quadro, velocity e histórico. Transformei o Portal Externo demonstrativo em fluxo persistente sobre o mesmo `WorkItem`: configuração por projeto/quadro, link público, login, convite, código de e-mail, protocolo/chave segura, acompanhamento, respostas, anexos, avaliação, confirmação e fila interna. Publiquei o portal local `http://localhost:5173/portal/servicos-detran-se` e deixei uma solicitação demonstrativa com conversa pública/interna para inspeção.
+- **Arquivos tocados:** domínio/enums de Sprint e Portal Externo; features/interfaces/controllers/repositórios/configurações EF correspondentes; `AppDbContext`, serviço SMTP e migration `20260720141551_Add_Sprint_History_And_External_Portal`; telas/tipos/API de Scrum, Portal Público, Solicitações e Configurações do Projeto; testes, `DECISIONS.md`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** D25 (ciclo de sprint por projeto e snapshot de escopo) e D26 (Portal Externo integrado ao `WorkItem`, acesso seguro e SMTP com fallback apenas local).
+- **Próximo passo:** Configurar `PortalEmail` com o SMTP institucional antes de publicar fora de Development; depois retomar ações em massa/editor de automações restantes da Fase 6E.
+- **Bloqueios:** Nenhum bloqueio funcional. Migration aplicada aos bancos SQL Server locais; solução .NET compilada sem avisos, 38 testes .NET e 17 Vitest aprovados, lint e build frontend aprovados. Jornada HTTP real validou protocolo, acompanhamento, duas mensagens e presença na fila interna. API, Vite e SQL Server ativos nas portas 5216, 5173 e 1433. O navegador visual integrado não estava disponível; a validação foi feita por testes e HTTP.
+
+## [2026-07-20] — Codex — Ambiente local iniciado
+- **Fiz:** Iniciei a API ASP.NET Core em `http://localhost:5216` e o frontend Vite em `http://localhost:5173`, ambos em segundo plano e mantidos ativos para uso local. Validei a SPA em `/projects`, o Swagger, o health check e a proteção JWT dos endpoints.
+- **Arquivos tocados:** `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Abrir `http://localhost:5173` no navegador e autenticar normalmente.
+- **Bloqueios:** Nenhum. Validação: frontend HTTP 200, `/health` HTTP 200, Swagger HTTP 200 e `/api/projects` HTTP 401 sem JWT, como esperado. Processos ativos: Vite/Node na porta 5173 e `Detran.Kanban.Api` na porta 5216; SQL Server permanece ativo na 1433.
+
+## [2026-07-20] — Codex — Diagnóstico de ambiente local
+- **Fiz:** Verifiquei os listeners locais e confirmei por que a aplicação não abre: as portas 80, 5173 (Vite) e 5216 (API) estão fechadas; somente o SQL Server está ativo na porta 1433. O frontend está configurado para consumir `http://localhost:5216`, e o endereço correto da SPA é `http://localhost:5173` depois que os dois processos forem iniciados.
+- **Arquivos tocados:** `PROGRESS.md`.
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Iniciar a API na porta 5216 e o Vite na porta 5173, depois abrir `http://localhost:5173`.
+- **Bloqueios:** Os servidores da API e do frontend não estão em execução. O comando `docker` não está disponível neste shell, embora o processo do SQL Server já esteja escutando na porta 1433.
+
+## [2026-07-20] — Codex — Fase 6D (Funcionalidades 5 e 6 — fechamento)
+- **Fiz:** Auditei Projetos e Gestão de Tarefas contra o escopo informado e fechei lacunas de integração. A área de quadros agora cria um quadro já vinculado ao projeto e à equipe escolhida; a projeção de projeto passou a devolver `SettingsJson` e a edição preserva configurações existentes; o detalhe da tarefa passou a expor e apresentar o status de workflow separado da coluna; e edições otimistas do projeto e do painel lateral restauram o estado anterior quando a API rejeita a alteração. Foram adicionados testes para catálogo inicial de tipos/origens, preservação de configurações, criação contextual de quadro e rollback visual.
+- **Arquivos tocados:** `ProjectsFeature.cs`, `WorkItemManagementFeature.cs`, `WorkItemManagementRepository.cs`, `scrum.ts`, `ProjectSettings.tsx`, `ProjectWorkspace.tsx`, `TaskDetailDrawer.tsx`, novos `ProjectFeatureTests.cs`/`ProjectWorkspace.test.tsx`, `TaskDetailDrawer.test.tsx` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma; o fechamento segue D20 (ciclo/configurações do projeto), D21 (WorkItem único) e D22 (status separado da coluna visual).
+- **Próximo passo:** Retomar o restante da Fase 6E: seleção e ações em massa no Kanban, editor de automações e auditoria de loops/permissões.
+- **Bloqueios:** Nenhum bloqueio funcional. Validação: 33 testes .NET e 16 testes Vitest aprovados, lint limpo e build frontend aprovado. A conexão com o navegador integrado não estava disponível para QA visual; os testes de componentes cobriram os fluxos alterados. O build mantém somente os avisos não bloqueantes do pacote oficial SignalR.
+
+## [2026-07-16] — Codex — Fase 6B (Funcionalidade 11 — Scrum)
+- **Fiz:** Auditei e completei o Scrum operacional. A area de sprints agora organiza a experiencia em Planejamento, Quadro, Metricas e Historico; ganhou Sprint Backlog hierarquico com epicos, historias, bugs, tarefas, story points, criterios de aceite, bloqueios e abertura no painel lateral; manteve Product Backlog, planejamento, meta e capacidade; e passou a exibir historico navegavel com velocity e percentual entregue. No dominio, o ciclo foi fechado em Planejada -> Ativa -> Encerrada, continua proibindo duas sprints ativas por time e agora impede retirar ou mover itens de uma sprint encerrada.
+- **Arquivos tocados:** entidade/feature de `Sprint`, feature de `Backlog`, `SprintDashboard.tsx`, novos `SprintBacklogPanel.tsx`/`SprintHistoryPanel.tsx`, utilitarios e testes Scrum, alem de `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma; a entrega segue D11 (Scrum operacional) e D21 (um unico agregado `WorkItem`).
+- **Próximo passo:** Retomar o restante da Fase 6E: selecao e acoes em massa no Kanban, editor de automacoes e auditoria de loops/permissoes.
+- **Bloqueios:** Nenhum. Validacao: solucao .NET compilada sem avisos, 31 testes .NET e 14 testes Vitest aprovados, lint limpo e build frontend aprovado com chunks principais abaixo de 500 kB. A jornada autenticada no SQL Server local validou epico/historia/bug/tarefa, criterios de aceite, 11 pontos planejados, 8 entregues, 56 h liquidas, encerramento e historico; transicao invalida e alteracao de escopo encerrado retornaram HTTP 400. Projeto temporario arquivado e equipe desativada. SQL Server, API e Vite permanecem ativos nas portas 1433, 5216 e 5173; o navegador integrado nao estava conectado para QA visual automatizado.
+
+## [2026-07-16] — Codex — Fase 6E (Funcionalidade 10 — Backlog)
+- **Fiz:** Completei o backlog operacional sobre o mesmo `WorkItem`: criação rápida por título, priorização por drag-and-drop, filtros por pesquisa/tipo/prioridade/quadro/relações, agrupamentos por épico/tipo/prioridade/quadro, edição inline de título/prioridade/story points, vínculo com épicos, seleção individual ou total e ações múltiplas backlog↔sprint. A projeção passou a trazer dependências, itens bloqueados e itens bloqueados pela tarefa, apresentados diretamente nas linhas. Durante o smoke test corrigi a criação rápida que usava timestamp como ranking e excedia `decimal(18,6)` no SQL Server; a tela agora calcula a próxima posição e o backend rejeita valores fora da faixa com validação HTTP 400.
+- **Arquivos tocados:** feature/controller/repositório de Backlog, validador de criação de WorkItem, `api.ts`, tipos Scrum, `BacklogPlanner.tsx`, novos `BacklogFilters.ts`/testes, `BacklogFeatureTests.cs`, `ROADMAP.md` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma; a entrega segue D11 (Scrum operacional) e D21 (WorkItem como agregado único).
+- **Próximo passo:** Conectar seleção e ações em massa também ao Kanban e concluir o editor/auditoria de automações para encerrar a Fase 6E.
+- **Bloqueios:** Nenhum bloqueio funcional. Validação: backend compilado sem avisos, 28 testes .NET aprovados, frontend com lint limpo, build aprovado e 11 testes Vitest aprovados. Jornada autenticada real no SQL Server validou edição inline, épico, dependência/bloqueio, ação múltipla e reordenação, com dados temporários arquivados ao final. O navegador integrado não estava conectado para inspeção visual automatizada; o build mantém somente os avisos não bloqueantes do pacote oficial SignalR.
+
+---
+
+## [2026-07-16] — Codex — Fase 6E (auditoria de Meu Trabalho e Kanban)
+- **Fiz:** Auditei as funcionalidades 8 e 9 item a item e fechei as diferenças restantes na interface. O recorte de solicitações agora exibe somente demandas externas atribuídas ao usuário, em conformidade com o resumo calculado pela API. Os cartões e a lista do Kanban passaram a identificar nominalmente o responsável principal e participantes, eliminando duplicidades e resumindo equipes maiores; prioridades críticas também deixaram de ser rotuladas como altas. Revalidei a jornada autenticada contra o SQL Server local e a projeção `/api/me/work`.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/pages/MinhasTarefas.tsx`, `src/Detran.Kanban.Web/src/pages/Kanban.tsx` e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma; a revisão segue D22–D24.
+- **Próximo passo:** Conectar seleção visual e ações em massa ao Kanban, criar o editor de automações e concluir a auditoria de loops/permissões para encerrar a Fase 6E.
+- **Bloqueios:** Nenhum. Validação: lint limpo, build de produção aprovado, 7 testes Vitest e 23 testes .NET aprovados; SQL Server, API e Vite ativos nas portas 1433, 5216 e 5173; login e `/api/me/work` validados com dados reais. O build mantém apenas avisos não bloqueantes do pacote oficial SignalR.
+
+---
+
+## [2026-07-16] — Codex — Fase 6E parcial (fluxos, Meu Trabalho e Kanban avançado)
+- **Fiz:** Entreguei as funcionalidades 7, 8 e 9 de forma integrada. Criei `WorkflowStatus` e `WorkflowTransition` por projeto, editor visual de status/cores/ordem/inicial/final, matriz de transições e mapeamento de colunas com WIP. As regras são aplicadas no backend ao criar, editar, arrastar e mover em massa, sincronizando o status persistido da tarefa. Implementei a projeção `/api/me/work` e redesenhei “Meu trabalho” com atribuições, autoria, acompanhamento, hoje/semana, atrasos, bloqueios, solicitações externas, comentários/menções, aprovações, prazos e alertas. Ampliei o Kanban com filtros completos e salvos, agrupamento, ordenação, indicadores de WIP/bloqueio/origem, conteúdo configurável dos cartões e atualização autenticada por SignalR. Gerei e apliquei a migration `20260716105422_Fase6E_Workflow_MyWork_Kanban`; o seed agora faz backfill idempotente de quadros vinculados após as migrations.
+- **Arquivos tocados:** D22–D24 em `DECISIONS.md`, `ROADMAP.md`, `PROGRESS.md`; entidades/configurações/repositórios/features/controllers de Workflow e Meu Trabalho; regras de WorkItem/Productivity; SignalR em `Program.cs` e `Realtime/`; migration/snapshot/seed; `api.ts`, `ProjectWorkflowSettings.tsx`, `KanbanFilterBar.tsx`, `useBoardRealtime.ts`, `Kanban.tsx`, `MinhasTarefas.tsx`, pacote SignalR e testes .NET/Vitest.
+- **Decisões novas:** D22 (status separado da coluna e regras no backend), D23 (Meu Trabalho como projeção do mesmo WorkItem) e D24 (SignalR por quadro e preferências JSON do cartão).
+- **Próximo passo:** Conectar seleção visual e ações em massa ao Kanban, criar o editor de automações e concluir a auditoria de loops/permissões; depois iniciar a homologação 6F.
+- **Bloqueios:** Nenhum bloqueio funcional. O navegador interno não estava disponível para inspeção visual automatizada. Validação: SQL Server local migrado; API autenticada e smoke test real aprovados (4 status, 12 transições, 4 colunas mapeadas, CRUD de status e negociação SignalR); backend com 23 testes aprovados; frontend compilado e 7 testes aprovados. O bundler emite somente avisos não bloqueantes de anotação no pacote oficial do SignalR.
+
+---
+
+## [2026-07-15] — Codex — Fase 6D concluída (projetos e tarefas completos)
+- **Fiz:** Completei o ciclo de vida de projetos e tarefas. Projetos agora possuem metodologia, status, datas, responsável, arquivamento/reativação, membros, equipes, etiquetas, configurações, campos personalizados e histórico. O `WorkItem` recebeu número sequencial estável, origem, solicitante, responsável principal, participantes, datas, estimativas, horas restantes/realizadas, story points, critérios de aceite, seguidores, links tipados, valores personalizados e arquivamento lógico. Entreguei endpoints de consulta detalhada, edição, duplicação, relacionamentos e acompanhamento, além de uma tela de configurações do projeto e um painel lateral completo com feedback otimista. Instalei e configurei o SQL Server 2022 Developer local, apliquei a migration `20260715212227_Fase6D_Projects_WorkItems` e validei fluxos reais. Durante a homologação corrigi o rastreamento de novos campos/eventos de projeto no EF Core e adicionei teste de regressão.
+- **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `AGENTS.md`, `PROGRESS.md`; entidades/enums de Project e WorkItem; features, contratos e controllers de Projects/WorkItems; repositórios, configurações EF, DbContext e migration `20260715212227_Fase6D_Projects_WorkItems`; `api.ts`, tipos Scrum, `Projects.tsx`, `ProjectSettings.tsx`, `TaskDetailDrawer.tsx`, rotas e testes .NET/React.
+- **Decisões novas:** D20 (ciclo de vida e personalização do projeto) e D21 (`WorkItem` único, referência estável e arquivamento lógico).
+- **Próximo passo:** Iniciar a Fase 6E conectando filtros pessoais, seleção/ações em massa e editor de automações ao Kanban; depois executar a homologação ampla da Fase 6F.
+- **Bloqueios:** Nenhum bloqueio de produto. O navegador automatizado integrado não estava disponível nesta sessão, então a inspeção visual final ficou manual; build e componentes foram validados. Resultado: API compilada sem erros, 16 testes .NET aprovados, frontend compilado, 5 testes Vitest aprovados, lint sem erros, migration aplicada, SQL/API/Vite ativos e jornada real de API aprovada.
+
+---
+
+## [2026-07-15] — Codex — Fase 6C concluída (organizações, acesso e equipes)
+- **Fiz:** Implementei multitenancy completo por organização: contexto obrigatório no header, validação de associação ativa, filtros globais para raízes e entidades-filhas e proteção de gravação entre tenants. Entreguei cadastro/preferências/seletor de organização, membros ativos/inativos, convites seguros por link, dez perfis iniciais e concessões explícitas por organização, equipe, projeto, tarefa, relatório, formulário e solicitação, com negação prevalecendo. Ampliei equipes com edição, desativação lógica, líder, capacidade padrão/individual e associação a projetos. A SPA ganhou onboarding, troca de tenant, configurações administrativas, aceite de convite e navegação sensível ao perfil. Gerei migration com backfill seguro dos dados legados e sem default permanente de tenant.
+- **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `AGENTS.md`, `PROGRESS.md`; entidades/enums/autorização de Organization; interfaces e features de Organizations/Teams/Projects/WorkItems; middleware, controllers e OpenAPI; contexto, serviços, repositórios, configurações EF, seed e migration `20260715201229_Fase6C_Organizations_Permissions_Teams`; provider/seletor/configurações/equipes no React; testes .NET e frontend.
+- **Decisões novas:** D17 (tenant por organização), D18 (perfil-base + concessões por escopo) e D19 (ciclo de vida e capacidade das equipes).
+- **Próximo passo:** Iniciar a Fase 6D conectando filtros pessoais, ações em massa e automações ao Kanban; na 6E, completar a matriz de autorização nos endpoints legados e executar homologação com SQL Server.
+- **Bloqueios:** SQL Server local segue indisponível, portanto a migration foi validada por script e testes em memória, mas ainda não aplicada a uma instância real. Validação: backend build aprovado, 11 testes .NET aprovados, migration SQL gerada, frontend build aprovado, 5 testes Vitest aprovados e `/health` HTTP 200.
+
+---
+
+## [2026-07-15] — Codex — Fase 6B concluída (experiência Scrum e redesign)
+- **Fiz:** Concluí a experiência Scrum integrada: shell responsivo com menu recolhível, navegação principal, pesquisa global por `Ctrl + K`, criação rápida somente com título, detalhe de item em painel lateral acessível, backlog hierárquico com reordenação e planejamento por drag-and-drop, dashboard da sprint com meta/KPIs/burndown/velocity/capacidade e quadro da sprint. Adicionei a fila visual de solicitações com origem externa preservada, relatórios prontos no workspace e carregamento sob demanda por rota. Corrigi validações invertidas que bloqueavam projeto, sprint, backlog, filtros, automações e ações em massa; enriqueci os DTOs para indicadores e detalhe. Registrei D15 e D16.
+- **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `AGENTS.md`, `PROGRESS.md`; regras/DTOs de Projects, Backlog, Sprints e Productivity; `DomainException`; `package.json`/lockfile; `App.tsx`; `layout/`; `components/GlobalActions.tsx`; `components/TaskDetailDrawer.tsx`; `features/scrum/`; páginas de workspace e solicitações; tipos, utilitários e testes frontend/backend.
+- **Decisões novas:** D15 (toolkit frontend tipado/acessível) e D16 (solicitação externa vinculada ao mesmo item interno).
+- **Próximo passo:** Iniciar a Fase 6C conectando filtros pessoais, seleção/ações em massa e editor de automações ao Kanban; depois executar a Fase 6D de autorização e testes ponta a ponta. O backend persistente continua dependendo do SQL Server local.
+- **Bloqueios:** SQL Server local permanece indisponível, então a API opera sem persistência; o modo de preview continua disponível. Validação: frontend build aprovado com chunks abaixo de 500 kB, lint sem erros novos, 4 testes frontend aprovados, backend build com 0 erros/0 warnings, 6 testes .NET aprovados e `/health` HTTP 200.
+
+---
+
+## [2026-07-15] — Codex — Fase 6B (modo de preview sem banco)
+- **Fiz:** Criei um modo de visualização exclusivo do ambiente de desenvolvimento (`VITE_PREVIEW_MODE=true`) que pula a tela de login e usa projeto, backlog e sprints demonstrativos quando a API estiver sem banco. Produção continua exigindo JWT normalmente. Reiniciei o Vite em `http://127.0.0.1:5173/projects` e validei HTTP 200.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/App.tsx`, `src/Detran.Kanban.Web/src/preview.ts`, páginas `Projects.tsx`/`ProjectWorkspace.tsx`, `.env.development.local` (ignorado pelo Git) e `PROGRESS.md`.
+- **Decisões novas:** Nenhuma; bypass limitado por `import.meta.env.DEV` e não aplicável ao build de produção.
+- **Próximo passo:** PO revisar o novo shell, hub de projetos, backlog e sprints; depois desligar o preview quando o SQL Server voltar.
+- **Bloqueios:** Dados e ações persistentes continuam indisponíveis enquanto o SQL Server estiver fora do ar.
+
+---
+
+## [2026-07-15] — Codex — Fase 6B (execução local para visualização)
+- **Fiz:** Iniciei o frontend Vite em `http://127.0.0.1:5173` e a API .NET em `http://127.0.0.1:5216`; ambos responderam HTTP 200 e o health check da API foi validado. Logs ficaram em `.runlogs/`.
+- **Arquivos tocados:** `PROGRESS.md` (logs operacionais não versionados em `.runlogs/`).
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Iniciar/restaurar o SQL Server em `localhost:1433` para habilitar migrations, login e dados reais; depois validar visualmente o workspace de Projetos.
+- **Bloqueios:** SQL Server não está acessível na porta 1433 nesta máquina. A API sobe e o `/health` responde, mas opera sem persistência.
+
+---
+
+## [2026-07-15] — Codex — Fase 6A/6B (MVP integrado para equipes de TI)
+- **Fiz:** Registrei D10–D14 e ampliei oficialmente o roadmap. Implementei a hierarquia Projeto → Times → Quadros, membros e papéis por projeto, tipos de item Scrum, categorias semânticas de etapa, sprints, capacidade, backlog priorizado e concorrência por `rowversion`. Criei APIs CQRS para projetos, membros, times, backlog, planejamento e estado da sprint, filtros salvos, ações em massa e automações com limite contra ciclos. Gerei a migration EF `Fase6A_Projects_Scrum`, com snapshot e backfill dos quadros/tarefas/etapas existentes. Redesenhei o frontend com shell corporativo denso, sidebar, topbar com timer, hub de projetos e workspace com Backlog, Sprints e Quadros, preservando o Kanban existente em rota própria.
+- **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `AGENTS.md`, projetos Domain/Application/Infrastructure/Api, migration `20260715155230_Fase6A_Projects_Scrum`, `App.tsx`, `services/api.ts`, `layout/` e novas páginas de Projetos/Workspace, testes Scrum e `PROGRESS.md`.
+- **Decisões novas:** D10 (hierarquia), D11 (Scrum operacional), D12 (papéis), D13 (redesign e bibliotecas autorizadas) e D14 (Azure como referência, sem integração no MVP).
+- **Próximo passo:** Continuar a Fase 6B: tela de capacidade, planejamento visual por drag-and-drop, velocity/burndown e aplicação de autorização nos endpoints legados; depois conectar seleção em massa, filtros e editor de automações ao Kanban.
+- **Bloqueios:** Nenhum. SDK .NET 8 temporário foi usado porque `dotnet` não estava instalado no PATH. Validação: `dotnet build` com 0 erros (1 warning legado em `ApprovalsController`), 4 testes aprovados, migration script gerado, `npm run build` aprovado e `npm run lint` sem erros.
+
+---
+
+## [2026-06-30] — Antigravity — Fase 6 (Favicon Institucional do Detran)
+- **Fiz:**
+  - Alterado o favicon no arquivo de entrada principal `index.html` do frontend React para apontar para a imagem oficial `logo-detran.png`.
+  - Atualizado o título da página no HTML (`<title>`) para `DETRAN | SERGIPE - Painel Kanban`.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/index.html`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Recompilar o contêiner na VPS e testar as atualizações visuais, tempos de execução e o novo favicon.
+- **Bloqueios:** Nenhum.
+
+---
+
+## [2026-06-30] — Antigravity — Fase 6 (Acúmulo e Exibição de Horas por Usuário/Geral estilo Runrun.it)
+- **Fiz:**
+  - Adicionados campos `TotalTimeSeconds` e `UserTimeSeconds` no `WorkItemDto` para carregar dados consolidados e pessoais de horas por card de forma unificada.
+  - Atualizados os Query Handlers (`GetWorkItemsByBoardIdQueryHandler` e `GetSubItemsQueryHandler`) para calcular em memória (através de `Sum`) os tempos acumulados das fatias de `TimeEntries` de cada tarefa, respeitando o usuário logado para a contagem do tempo individual.
+  - Atualizados as queries (`GetWorkItemsByBoardIdQuery` e `GetSubItemsQuery`) e a chamada no `WorkItemsController` para receber e passar o `UserId` logado de forma limpa.
+  - Modificado o repositório `WorkItemRepository` para incluir a navegação de fatias de tempo (`TimeEntries`) nas consultas por Board e Subitens, evitando N+1 queries.
+  - Reestruturado o cronômetro do frontend no componente `Kanban.tsx` para somar a sessão ativa ao tempo anteriormente acumulado (`userTimeSeconds` e `totalTimeSeconds`). Isso faz com que, ao dar Play novamente, o timer retome do valor correto que havia parado.
+  - Atualizado o display de tempo nos cartões do Kanban e no modal de detalhes do card para exibir o esforço nos moldes do `runrun.it`: se houver tempo de terceiros, exibe `02:14:15 (Você: 01:05:00)`. Se apenas o próprio usuário trabalhou, mostra de forma direta `01:05:00`.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Application/Features/WorkItems/Dtos/WorkItemDto.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetWorkItemsByBoardIdQuery.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetWorkItemsByBoardIdQueryHandler.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetSubItemsQuery.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetSubItemsQueryHandler.cs`
+  - `src/Detran.Kanban.Api/Controllers/WorkItemsController.cs`
+  - `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** O usuário realizar o build de produção na VPS e validar a contagem de horas acumuladas e play/pause do timer.
+- **Bloqueios:** Nenhum.
+
+---
+
+## [2026-06-30] — Antigravity — Fase 6 (Melhorias Visuais no Frontend)
+- **Fiz:**
+  - Redesenhada a tela de login (`Auth.tsx`) para um layout de tela dividida (split-screen) premium em desktop. O painel esquerdo apresenta uma prévia institucional elegante e minimalista do quadro Kanban (construída inteiramente em CSS), e o painel direito exibe o formulário de login limpo, adaptando-se para visual único em dispositivos móveis.
+  - Implementada melhoria de limpeza visual na tela principal (`Kanban.tsx`), ocultando os botões de controle de timer e movimentação de cards por padrão em desktop, exibindo-os com uma transição suave apenas no hover do card correspondente.
+  - Substituído o botão padrão cru de "Novo Card" por um componente dedicado `AddCardButton` com bordas tracejadas e efeitos visuais refinados, inspirados no Trello.
+  - Criados styled components dedicados `CardSubtitle` e `CardEstimate` para os dados dos cartões no Kanban, substituindo estilos inline e removendo cores hardcoded legadas do Tailwind por tokens semânticos do tema oficial de Sergipe.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/components/Auth.tsx`
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** PO testar o build do container Docker na VPS e verificar as melhorias visuais do Kanban e Login.
+- **Bloqueios:** Nenhum.
+
+---
+
+## [2026-06-30] — Antigravity — Fase 6 (Deploy da App Runrun na VPS)
+- **Fiz:**
+  - Containerizada a API .NET criando um `Dockerfile` multi-stage que compila o frontend React SPA no Node e o injeta no `wwwroot` da API ASP.NET Core.
+  - Atualizado o `docker-compose.yml` para incluir o serviço `runrun-api` na rede externa `slc_default`, conectando-se ao SQL Server (`sqlserver`) por nome de serviço e sem expor portas extras ao host.
+  - Corrigido `Program.cs` no backend para habilitar a entrega de arquivos estáticos (`UseDefaultFiles`, `UseStaticFiles`) e mapeamento do fallback SPA (`MapFallbackToFile`), fazendo a API .NET hospedar também o frontend React na porta `8080`.
+  - Ajustado o `api.ts` do frontend para usar a variável `import.meta.env.VITE_API_URL` com fallback para `http://localhost:5216` e criado `.env.production` definindo a URL vazia, fazendo com que as chamadas da API usem caminhos relativos em produção.
+  - Alinhado com o PO as instruções de execução manual e o uso de migrations automáticas via EF Core (`context.Database.MigrateAsync()` do `DbInitializer`) em vez de rodar o arquivo `schema_kanban_mvp.sql` (que é de Postgres).
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/services/api.ts`
+  - `src/Detran.Kanban.Web/.env.production`
+  - `src/Detran.Kanban.Api/Program.cs`
+  - `Dockerfile`
+  - `docker-compose.yml`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** PO executar o build/up do docker-compose, adicionar o bloco no Caddyfile, recarregar o Caddy e validar a aplicação via browser/curl.
+- **Bloqueios:** Nenhum. O dev optou por executar os comandos de infraestrutura manualmente.
+
+---
+
+## [2026-06-30] - Codex - Fase 6
+- **Fiz:** Corrigido o drag-and-drop visual do Kanban no frontend. Substitui o HTML5 `draggable` nativo por handlers de `pointer events`, separando clique de arrasto com limiar de movimento para o card continuar clicavel. Adicionei deteccao da coluna pelo `data-stage-id`, destaque da coluna alvo e uma previa flutuante do card acompanhando o cursor durante o arrasto. Tambem troquei props visuais do styled-components para props transitorios (`$...`) nos componentes tocados.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/components/Kanban.tsx`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** PO testar no navegador em `http://127.0.0.1:5173` com hard refresh; arrastar pelo corpo do card e soltar dentro da coluna destino.
+- **Bloqueios:** Nenhum no codigo. Validado com `npm run build`, `dotnet test Detran.Kanban.sln --no-restore`, frontend HTTP 200 e API `/health` HTTP 200. A automacao de navegador interna falhou por problema de ambiente da ferramenta, entao a verificacao final do gesto precisa ser manual pelo PO.
+
+---
+
+## [2026-06-30] - Codex - Fase 6
+- **Fiz:** Corrigido bug que impedia mover cartao entre colunas. A falha era no backend: ao trocar de etapa, o novo `StageHistory` era criado com `Guid.NewGuid()` e o EF Core tentava fazer `UPDATE` em vez de `INSERT`, gerando `DbUpdateConcurrencyException` e HTTP 500 no `/api/WorkItems/move`. Ajustei o handler para deixar o EF gerar o Id do novo historico, criei uma consulta especifica `GetForMoveAsync` para carregar somente o necessario para mover, e mantive `UpdateAsync` sem forcar `Update()` em grafos ja rastreados.
+- **Arquivos tocados:** `src/Detran.Kanban.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs`, `src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs`, `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`, `tests/Detran.Kanban.Tests/MoveWorkItemCommandHandlerTests.cs`, `tests/Detran.Kanban.Tests/UnitTest1.cs`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** PO testar o drag-and-drop no navegador em `http://127.0.0.1:5173`; se aparecer alerta na tela, cruzar o horario com `.runlogs/api.out.log`.
+- **Bloqueios:** Nenhum. Validado com `dotnet build Detran.Kanban.sln --no-restore`, `dotnet test Detran.Kanban.sln --no-restore`, `npm run build`, `/health` HTTP 200 e move real via API retornando 204, com restauracao do card para a etapa original.
+
+---
+
+## [2026-06-30] - Codex - Fase 6
+- **Fiz:** Diagnosticado problema de login reportado pelo PO. A API estava correta: `/login` retorna JWT valido para `admin@detran.local` e `/api/Boards` responde 200 com o token. O problema operacional encontrado foi duplicidade/parada de processos Vite; limpei as instancias concorrentes e subi uma unica instancia do frontend em `http://127.0.0.1:5173`, mantendo a API em `http://localhost:5216`.
+- **Arquivos tocados:** `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** PO testar login no navegador com hard refresh; se ainda falhar, coletar a mensagem exata exibida na tela e o horario para cruzar com logs.
+- **Bloqueios:** Nenhum. Validado login API com `admin@detran.local` / `Detran@2026!`, JWT valido, `/api/Boards` retornando 2 boards, frontend HTTP 200 e API `/health` HTTP 200.
+
+---
+
+## [2026-06-30] — Antigravity — Fase 5 (Diretrizes Visuais Sergipe & DETRAN)
+- **Fiz:**
+  - Implementada a barra superior governamental de Sergipe (`GovBar`) com fundo azul escuro `#0f2c59` e texto oficial em Hanken Grotesk.
+  - Desenvolvido o componente de logotipo vetorial oficial em alta definição `DetranLogo` (SVG inline combinando a cor azul-royal, a estrela dourada de Sergipe e o anel verde de trânsito ecológico/seguro).
+  - Aplicada a nova identidade no `Header` do Kanban principal, alterando o título genérico por uma marca governamental refinada ("DETRAN | SERGIPE - Painel Kanban de Produtividade").
+  - Aplicada a mesma barra de governo e logotipo oficial na tela de login (`Auth.tsx`), melhorando radicalmente o aspecto estético da aplicação para nível profissional de sistema de estado.
+  - Reestilizados os cartões do Kanban (`Card`), adicionando uma borda lateral esquerda de 5px com a cor correspondente à prioridade da tarefa (vermelho para alta, dourado para média, verde para baixa), facilitando a identificação rápida no board.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `src/Detran.Kanban.Web/src/components/Auth.tsx`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Prosseguir para a Fase 6 de Produtividade (filtros salvos, ações em massa, automações).
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] — Antigravity — Fase 5 (Inteligência & UX Fixes)
+- **Fiz:**
+  - Corrigido o bug de piscada e instabilidade no Drag-and-Drop nativo do Kanban aplicando dinamicamente `pointer-events: none` em todos os elementos filhos da coluna durante o arrasto de cards, garantindo um comportamento de drop estável e de alta qualidade.
+  - Implementado o cálculo e agrupamento de Lead Time (tempo médio de permanência por coluna) no backend usando CQRS (`GetBoardLeadTimeQuery`) lendo a tabela `StageHistory`, e exposto em `/api/Boards/{boardId}/lead-time`.
+  - Adicionado suporte a `createdAt` na interface de `WorkItem` no frontend para alimentar as métricas do Gantt.
+  - Criado o modal de visualização de Gantt no frontend exibindo cronograma horizontal reativo dos cartões principais baseado nas datas de início e vencimento (com cálculo automático baseado em horas estimadas se não houver data de fim).
+  - Criado o modal de Dashboard com KPIs (Total de Cards, Horas Estimadas, Horas Trabalhadas chamando o endpoint de tempo total do board `/api/TimeEntries/board/{boardId}/total`) e gráfico da distribuição de cartões por etapa.
+  - Adicionados botões dedicados de "Painel Dashboard", "Tempo Médio / Lead Time" e "Visualização Gantt" no cabeçalho do board.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Application/Interfaces/IStageHistoryRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/Repositories/StageHistoryRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/InfrastructureServiceExtensions.cs`
+  - `src/Detran.Kanban.Application/Features/Boards/Dtos/StageLeadTimeDto.cs`
+  - `src/Detran.Kanban.Application/Features/Boards/Queries/GetBoardLeadTimeQuery.cs`
+  - `src/Detran.Kanban.Application/Features/Boards/Queries/GetBoardLeadTimeQueryHandler.cs`
+  - `src/Detran.Kanban.Api/Controllers/BoardsController.cs`
+  - `src/Detran.Kanban.Web/src/services/api.ts`
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `AGENTS.md`
+  - `ROADMAP.md`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma.
+- **Próximo passo:** Iniciar a Fase 6 (Produtividade) desenvolvendo filtros salvos, ações em massa e automações.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] — Antigravity — Fase 5 (Identidade Visual)
+- **Fiz:**
+  - Aplicada a identidade visual oficial do Governo de Sergipe ao frontend de acordo com o `DESIGN.md` e a substituição do tema anterior pelo novo `theme.ts` unificado (cores oficiais #164194/#008ECF/#76B82A/#FBBA00, rampa neutra cinza e fontes Hanken Grotesk + Inter).
+  - Atualizado `styled.d.ts` para tipar o shape exato do novo tema (DefaultTheme = AppTheme).
+  - Atualizado `global.ts` para importar as fontes do Google Fonts e definir o estilo base light-first sem gradiente e glow.
+  - Varridos `Kanban.tsx` e `Auth.tsx` para substituir todas as cores hex/gradientes/glow hardcoded pelos tokens oficiais (`props.theme.color.*`, `font.*`, `radius.*`, `space.*`, `shadow.*`, `fontSize.*`, `fontWeight.*`).
+  - Removido o chaveador de tema `ThemeToggle` e adaptada a assinatura do componente `Kanban` para a nova estrutura de tema único light-first.
+  - Estilizados os cartões, cabeçalhos, botões, modais, pílulas de prioridades (com dot na cor cheia + tint de background) de acordo com o Manual de Identidade Visual de Sergipe.
+  - Executados testes de build no frontend (`npm run build`) e backend (`dotnet build Detran.Kanban.sln`), com **0 erros e 0 warnings**.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Web/src/styles/theme.ts`
+  - `src/Detran.Kanban.Web/src/styles/styled.d.ts`
+  - `src/Detran.Kanban.Web/src/styles/global.ts`
+  - `src/Detran.Kanban.Web/src/components/Auth.tsx`
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `src/Detran.Kanban.Web/src/App.tsx`
+  - `DECISIONS.md`
+  - `PROGRESS.md`
+- **Decisões novas:** D9 (Identidade visual institucional do Governo de Sergipe adotada).
+- **Próximo passo:** Prosseguir com a Fase 5 conforme `ROADMAP.md` (Lead time por etapa usando `StageHistory`, dashboards e visão Gantt).
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 4
+- **Fiz:** Fechadas Fase 3 e Fase 4. Na Fase 3, implementei alocacao de usuarios por card, listagem de usuarios atribuiveis, subtarefas dentro do card pai, filtro para o board mostrar apenas cards sem `ParentId`, e upload/download de anexos com storage local conforme D8. Na Fase 4, implementei `TimeEntry` real com timer start/stop, timer em andamento, lancamento manual, agregacoes por card/usuario/board e conectei o timer do frontend aos endpoints da API.
+- **Arquivos tocados:** `src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs`, `src/Detran.Kanban.Application/Interfaces/IAttachmentRepository.cs`, `src/Detran.Kanban.Application/Interfaces/ITimeEntryRepository.cs`, `src/Detran.Kanban.Application/Features/WorkItems/Dtos/WorkItemDto.cs`, `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetSubItemsQuery.cs`, `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetSubItemsQueryHandler.cs`, `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetWorkItemsByBoardIdQueryHandler.cs`, `src/Detran.Kanban.Application/Features/Attachments/Dtos/AttachmentDto.cs`, `src/Detran.Kanban.Application/Features/TimeEntries/Dtos/TimeEntryDto.cs`, `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`, `src/Detran.Kanban.Infrastructure/Repositories/AttachmentRepository.cs`, `src/Detran.Kanban.Infrastructure/Repositories/TimeEntryRepository.cs`, `src/Detran.Kanban.Infrastructure/InfrastructureServiceExtensions.cs`, `src/Detran.Kanban.Api/Controllers/WorkItemsController.cs`, `src/Detran.Kanban.Api/Controllers/UsersController.cs`, `src/Detran.Kanban.Api/Controllers/WorkItemAssigneesController.cs`, `src/Detran.Kanban.Api/Controllers/WorkItemAttachmentsController.cs`, `src/Detran.Kanban.Api/Controllers/TimeEntriesController.cs`, `src/Detran.Kanban.Web/src/services/api.ts`, `src/Detran.Kanban.Web/src/components/Kanban.tsx`, `ROADMAP.md`, `AGENTS.md`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma. Mantida D8 para storage local de anexos.
+- **Proximo passo:** Executar a Fase 5 conforme `ROADMAP.md`: lead time/tempo medio por etapa usando `StageHistory`, dashboards configuraveis e visao Gantt.
+- **Bloqueios:** Nenhum. Validado com `npm run build`, `dotnet build Detran.Kanban.sln --no-restore`, `dotnet test Detran.Kanban.sln --no-restore`, `/health` HTTP 200, login JWT, `GET /api/Users/assignable`, `GET /api/TimeEntries/running` e total de tempo por card.
+
+## [2026-06-30] - Codex - Fase 3
+- **Fiz:** Implementado drag-and-drop dos cards entre colunas no Kanban usando o endpoint existente de mover card. Cards agora tambem sao clicaveis e abrem um modal de detalhes com titulo, prioridade, subtitulo, descricao, estimativa e prazo. Fechado o metodo `GetSubItemsAsync` no repositorio para manter a base da Fase 3 consistente.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/components/Kanban.tsx`, `src/Detran.Kanban.Application/Interfaces/IWorkItemRepository.cs`, `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Retomar a Fase 3 pelo `ROADMAP.md`: alocacao de usuarios, subtarefas visiveis dentro do card pai e anexos.
+- **Bloqueios:** Nenhum. Validado com `npm run build`, `dotnet build Detran.Kanban.sln --no-restore`, `dotnet test Detran.Kanban.sln --no-restore`, API em `http://localhost:5216` e frontend em `http://127.0.0.1:5173`.
+
+## [2026-06-30] - Codex - Fase 3
+- **Fiz:** Implementado seletor de modo claro/escuro no frontend com Styled Components, usando `ThemeToggle` com icones `Sun/Moon`, persistencia em `localStorage` e deteccao inicial por preferencia do sistema. O controle aparece na tela de login e no cabecalho do Kanban. Atualizado `ROADMAP.md` para encerrar Fase 2 por decisao do PO e iniciar Fase 3; atualizado `AGENTS.md` para Fase 3 - Tarefa rica.
+- **Arquivos tocados:** `src/Detran.Kanban.Web/src/styles/theme.ts`, `src/Detran.Kanban.Web/src/styles/global.ts`, `src/Detran.Kanban.Web/src/components/ThemeToggle.tsx`, `src/Detran.Kanban.Web/src/App.tsx`, `src/Detran.Kanban.Web/src/components/Auth.tsx`, `src/Detran.Kanban.Web/src/components/Kanban.tsx`, `ROADMAP.md`, `AGENTS.md`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Executar a Fase 3 conforme `ROADMAP.md`: alocacao de usuarios, subtarefas dentro do card pai e anexos com decisao de storage registrada em `DECISIONS.md`.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Criado `ROADMAP.md` como fonte oficial de fases e escopo, com Fase 0 e Fase 1 concluídas, Fase 2 em andamento e Fases 3 a 6 pendentes. Confirmado no código que `WorkItem.Subtitle`, `WorkItem.ParentId` e `TimeEntry` existem. Atualizados `AGENTS.md`, `CLAUDE.md` e `README.md` para apontar para `ROADMAP.md` e para os arquivos de contexto na raiz. Ajustada a descrição do produto para "inspirado no Runrun.it, mas melhor adaptado ao Detran-SE", não apenas clone.
+- **Arquivos tocados:** `ROADMAP.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Concluir a Fase 2 conforme `ROADMAP.md`: teste ponta a ponta cadastro/login/board/coluna/card e checklist Bucket C (isolamento por usuário e persistência do timer).
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Corrigido bug de login: os endpoints prontos do Identity estavam emitindo token opaco `Identity.Bearer`, mas os controllers validavam JWT, causando erro `JWT is not well formed` ao buscar `/api/Boards`. Criado `AuthController` com `/register` e `/login` proprios, usando Identity para usuarios e emitindo JWT real. Removido `MapIdentityApi`/`AddIdentityApiEndpoints` do `Program.cs`. Frontend passou a descartar token salvo que nao tenha formato JWT para limpar tokens antigos do navegador.
+- **Arquivos tocados:** `src/Detran.Kanban.Api/Program.cs`, `src/Detran.Kanban.Api/Controllers/AuthController.cs`, `src/Detran.Kanban.Web/src/services/api.ts`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma. Ajuste mantem D3: JWT + ASP.NET Core Identity.
+- **Proximo passo:** Recarregar o frontend e testar login com `admin@detran.local` / `Detran@2026!`, depois criar board, colunas e cards.
+- **Bloqueios:** O browser interno do Codex falhou com erro de ferramenta; validacao foi feita por API/logs/builds.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Respondida a duvida sobre onde encontrar o resumo do que ja foi implementado. Corrigido o `README.md` para apontar para `DECISIONS.md` e `PROGRESS.md` na raiz, pois os caminhos `docs/` nao existem neste checkout.
+- **Arquivos tocados:** `README.md`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Usar `PROGRESS.md` como fonte de handoff/status e continuar o teste ponta a ponta da Fase 2.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Criado usuario local de acesso via endpoint `/register` e validado login via `/login` com token JWT retornado.
+- **Arquivos tocados:** `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Usar o usuario criado para testar o fluxo no frontend: criar board, colunas e cards.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Verificado se a Fase 3 estava definida/pronta. `AGENTS.md` ainda marca Fase 2, `DECISIONS.md` nao define Fase 3 e as entradas recentes de `PROGRESS.md` indicam como proximo passo testar o fluxo ponta a ponta no navegador antes de avancar.
+- **Arquivos tocados:** `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Definir explicitamente o escopo da Fase 3 ou concluir primeiro o teste ponta a ponta da Fase 2: cadastro, login, board, colunas e cards.
+- **Bloqueios:** Fase 3 nao esta especificada nos documentos; nao executar escopo inventado.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Corrigido o mapeamento EF de `Stage -> WorkItems` para `DeleteBehavior.ClientSetNull`, evitando o erro de multiplos caminhos de cascade do SQL Server ao aplicar a migration inicial. Migration inicial regenerada e aplicada no banco `DetranKanban_Dev`. Backend iniciado em `http://localhost:5216` e frontend Vite iniciado em `http://127.0.0.1:5173`; `/health`, Swagger e HTML do frontend responderam HTTP 200.
+- **Arquivos tocados:** `src/Detran.Kanban.Infrastructure/Persistence/Configurations/WorkItemConfiguration.cs`, `src/Detran.Kanban.Infrastructure/Persistence/Configurations/StageConfiguration.cs`, `src/Detran.Kanban.Infrastructure/Persistence/Migrations/20260630151553_Initial_Identity_And_Domain.cs`, `src/Detran.Kanban.Infrastructure/Persistence/Migrations/20260630151553_Initial_Identity_And_Domain.Designer.cs`, `src/Detran.Kanban.Infrastructure/Persistence/Migrations/AppDbContextModelSnapshot.cs`, `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Testar fluxo pelo navegador: cadastrar usuario, fazer login, criar board, colunas e cards.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Diagnosticado erro do `docker compose up -d`: o contexto `desktop-linux` estava selecionado, mas o engine do Docker Desktop nao estava ativo e o pipe `dockerDesktopLinuxEngine` nao existia. O Docker Desktop foi iniciado, `docker compose up -d` executou com sucesso, a imagem `mcr.microsoft.com/mssql/server:2022-latest` foi baixada e o container `detran-kanban-db` ficou ativo na porta 1433. Validado login no SQL Server via `sqlcmd` com `SELECT @@VERSION`.
+- **Arquivos tocados:** `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** Aplicar migrations/rodar API contra o SQL Server local.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] - Codex - Fase 2
+- **Fiz:** Lidos `AGENTS.md`, `DECISIONS.md` e as 2 ultimas entradas de `PROGRESS.md`; confirmado que o projeto esta na Fase 2 com frontend React/Vite/Styled Components iniciado e backend .NET ja integrado em endpoints principais.
+- **Arquivos tocados:** `PROGRESS.md`
+- **Decisoes novas:** Nenhuma.
+- **Proximo passo:** PO informar a tarefa concreta da Fase 2 para continuidade.
+- **Bloqueios:** A mensagem trouxe o placeholder `<o que for>` em vez de uma tarefa especifica. Os arquivos esperados em `docs/` nao existem; foram usados `DECISIONS.md` e `PROGRESS.md` na raiz.
+
+## [2026-06-30] — Antigravity — Fase 2
+- **Fiz:**
+  - Inicializado o projeto Frontend SPA usando React.js, TypeScript e Vite na subpasta `src/Detran.Kanban.Web`.
+  - Instalado o `styled-components` para estilização CSS-in-JS e o `lucide-react` para ícones do Kanban.
+  - Criado o design system base: [theme.ts](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/styles/theme.ts) (temas de cores escuras premium, gradientes ciano/roxo, bordas e transições suaves), [global.ts](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/styles/global.ts) (estilo global com importação de fontes da Google Fonts) e [styled.d.ts](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/styles/styled.d.ts) (tipagem estrita do styled-components).
+  - Criado o arquivo [api.ts](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/services/api.ts) de comunicação HTTP com a API C# do .NET Core, suportando persistência de token JWT de autenticação em localStorage e controle reativo.
+  - Criado o componente de login e cadastro corporativo [Auth.tsx](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/components/Auth.tsx).
+  - Criado o painel principal [Kanban.tsx](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/components/Kanban.tsx), renderizando quadros, colunas (Stages) e cards (WorkItems) dinamicamente. Suporta criação de boards, colunas e cards, reordenação e mudança de colunas através de setas de ação rápida (atualizando o histórico no banco), e um temporizador (Timer) com contagem de horas ativa no card para controle de produtividade (estilo Runrun.it).
+  - Integrado o fluxo completo no [App.tsx](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Web/src/App.tsx) com o ThemeProvider injetado.
+  - Configurado suporte a CORS e mapeados os endpoints do ASP.NET Identity no [Program.cs](file:///C:/Users/PO/Desktop/runrun/src/Detran.Kanban.Api/Program.cs) do backend.
+  - Build do frontend testada e validada com **0 erros e 0 warnings**.
+  - Atualizada a Fase Atual no [AGENTS.md](file:///C:/Users/PO/Desktop/runrun/AGENTS.md) para a Fase 2.
+- **Arquivos tocados:**
+  - `src/Detran.Kanban.Api/Program.cs`
+  - `src/Detran.Kanban.Web/src/App.tsx`
+  - `src/Detran.Kanban.Web/src/main.tsx`
+  - `src/Detran.Kanban.Web/src/services/api.ts`
+  - `src/Detran.Kanban.Web/src/styles/theme.ts`
+  - `src/Detran.Kanban.Web/src/styles/global.ts`
+  - `src/Detran.Kanban.Web/src/styles/styled.d.ts`
+  - `src/Detran.Kanban.Web/src/components/Auth.tsx`
+  - `src/Detran.Kanban.Web/src/components/Kanban.tsx`
+  - `AGENTS.md`
+  - `PROGRESS.md`
+- **Decisões novas:** Nenhuma. Apenas execução da D7.
+- **Próximo passo:** Teste de ponta a ponta integrado, e possíveis refinamentos adicionais de layout corporativo e Gantt.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] — Antigravity — Fase 1
+- **Fiz:**
+  - Adicionado suporte a Docker (`docker-compose.yml`) com imagem oficial do SQL Server 2022.
+  - Atualizado arquivos `appsettings.json` e `appsettings.Development.json` com a connection string real (apontando para o container) e a chave JWT criptográfica de 256 bits gerada via PowerShell.
+  - Implementado os repositórios `WorkItemRepository` e `StageRepository` com suas respectivas interfaces.
+  - Criado casos de uso (MediatR CQRS) e validadores (FluentValidation) para colunas (`Stages`) e cartões (`WorkItems`), incluindo comando `MoveWorkItemCommand` que registra a troca de etapas e fecha/abre histórico no `StageHistory` para lead time (D5).
+  - Criado os controllers `StagesController` e `WorkItemsController` na API Web exposta no Swagger.
+  - Corrigido pequenos warnings de conversão de tipos nulos e dependência do EF Design nas compilações. Solução compilando com **0 erros e 0 warnings**.
+  - Atualizado `DECISIONS.md` para documentar a troca do frontend por React.js + Styled Components (D7).
+  - Atualizada a Fase Atual no `AGENTS.md` para Fase 1.
+- **Arquivos tocados:**
+  - `docker-compose.yml` (criado)
+  - `DECISIONS.md`
+  - `AGENTS.md`
+  - `src/Detran.Kanban.Api/appsettings.json`
+  - `src/Detran.Kanban.Api/appsettings.Development.json`
+  - `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/Repositories/StageRepository.cs`
+  - `src/Detran.Kanban.Infrastructure/InfrastructureServiceExtensions.cs`
+  - `src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs`
+  - `src/Detran.Kanban.Application/Interfaces/IStageRepository.cs`
+  - `src/Detran.Kanban.Application/Features/Stages/Dtos/StageDto.cs`
+  - `src/Detran.Kanban.Application/Features/Stages/Commands/CreateStageCommand.cs` (e Handler/Validator)
+  - `src/Detran.Kanban.Application/Features/Stages/Queries/GetStagesByBoardIdQuery.cs` (e Handler)
+  - `src/Detran.Kanban.Api/Controllers/StagesController.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Dtos/WorkItemDto.cs`
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommand.cs` (e Handler/Validator)
+  - `src/Detran.Kanban.Application/Features/WorkItems/Commands/MoveWorkItemCommand.cs` (e Handler)
+  - `src/Detran.Kanban.Application/Features/WorkItems/Queries/GetWorkItemsByBoardIdQuery.cs` (e Handler)
+  - `src/Detran.Kanban.Api/Controllers/WorkItemsController.cs`
+- **Decisões novas:** D7 (Uso de React.js SPA + Styled Components no frontend, sem Tailwind).
+- **Próximo passo:** Fase 2 — Início da estruturação do Frontend React.js com Styled Components integrado à API.
+- **Bloqueios:** Nenhum.
+
+## [2026-06-30] — Antigravity — Fase 0
+- **Fiz:** Criação completa do esqueleto da solution .NET 8 (Fase 0 — Fundação).
+  Todos os projetos criados, referências entre projetos configuradas, pacotes NuGet instalados,
+  `AppDbContext` (herda de `IdentityDbContext`), `Program.cs` com Serilog + JWT + Swagger +
+  endpoint `GET /health`, `appsettings.json` com placeholders, `README.md`, `.gitignore`.
+  Build: **0 erros, 0 avisos**.
+- **Arquivos tocados:**
+  - `Detran.Kanban.sln` (criado)
+  - `src/Detran.Kanban.Domain/` (classlib vazia, sem deps)
+  - `src/Detran.Kanban.Application/ApplicationServiceExtensions.cs`
+  - `src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs`
+  - `src/Detran.Kanban.Infrastructure/InfrastructureServiceExtensions.cs`
+  - `src/Detran.Kanban.Api/Program.cs`
+  - `src/Detran.Kanban.Api/appsettings.json` + `appsettings.Development.json`
+  - `tests/Detran.Kanban.Tests/` (xUnit, referencia Application)
+  - `README.md`, `.gitignore`
+- **Decisões novas:** nenhuma — tudo alinhado com D1–D5.
+- **Próximo passo:** Fase 1 — criar entidades de domínio (`Board`, `Stage`, `WorkItem`,
+  `TimeEntry`) + migration `Initial_Identity_And_Domain` + repositórios + primeiros casos de uso.
+- **Bloqueios:** Precisa configurar connection string real antes de rodar. Frontend (D6) em aberto.
+
+## [2026-06-30] — Claude (planejamento) — Fase 0
+- **Fiz:** Definição de stack, estrutura da solution e do sistema de contexto multi-IA.
+- **Arquivos tocados:** AGENTS.md, CLAUDE.md, docs/PROGRESS.md, docs/DECISIONS.md.
+- **Decisões novas:** D1–D5 (ver DECISIONS.md).
+- **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
+- **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
