@@ -17,10 +17,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs
-    - src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
-    - src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectManagementFeature.cs
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx
   gates:
     - backend-build
     - backend-test
@@ -38,8 +38,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: baixo
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
-    - src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -55,8 +55,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: baixo
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs
-    - tests/Detran.Kanban.Tests/ProjectFeatureTests.cs
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs
+    - tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs
   gates:
     - backend-build
     - backend-test
@@ -78,13 +78,13 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: baixo
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintBacklogPanel.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintDashboard.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintHistoryPanel.tsx
-    - src/Detran.Kanban.Web/src/features/task/TaskTaxonomyPanel.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintHistoryPanel.tsx
+    - src/Prisma.Workspace.Web/src/features/task/TaskTaxonomyPanel.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -100,8 +100,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Application/Features/Backlog/BacklogFeature.cs
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
   gates:
     - backend-build
     - backend-test
@@ -119,9 +119,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Api/Controllers/WorkItemsController.cs
-    - src/Detran.Kanban.Application/Features/WorkItems/Queries/SearchWorkItemsQueryHandler.cs
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Api/Controllers/WorkItemsController.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/Queries/SearchWorkItemsQueryHandler.cs
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
   gates:
     - backend-build
     - backend-test
@@ -139,8 +139,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Application/Features/WorkItems/WorkItemManagementFeature.cs
-    - src/Detran.Kanban.Domain/Services/DependencyGraphService.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Domain/Services/DependencyGraphService.cs
   gates:
     - backend-build
     - backend-test
@@ -156,12 +156,12 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/OrganizationMember.cs
-    - src/Detran.Kanban.Infrastructure/Identity/UserDirectory.cs
-    - src/Detran.Kanban.Infrastructure/Persistence/Migrations
-    - src/Detran.Kanban.Web/src/pages/OrganizationSettings.tsx
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Domain/Entities/OrganizationMember.cs
+    - src/Prisma.Workspace.Infrastructure/Identity/UserDirectory.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
   gates:
     - backend-build
     - backend-test
@@ -180,8 +180,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   dependencies: []
   affected_areas:
     - migracao/build-sql.cjs
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/features/board/kanbanOrdering.ts
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/kanbanOrdering.ts
   gates:
     - frontend-build
     - frontend-test
@@ -198,9 +198,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: baixo
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
-    - src/Detran.Kanban.Web/src/pages/Projects.test.tsx
-    - src/Detran.Kanban.Web/e2e/organization-switch.spec.ts
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/pages/Projects.test.tsx
+    - src/Prisma.Workspace.Web/e2e/organization-switch.spec.ts
   gates:
     - frontend-build
     - frontend-test
@@ -218,9 +218,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   dependencies:
     - TASK-029
   affected_areas:
-    - src/Detran.Kanban.Web/src/components/GlobalActions.tsx
-    - src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs
-    - src/Detran.Kanban.Api/Controllers/WorkItemsController.cs
+    - src/Prisma.Workspace.Web/src/components/GlobalActions.tsx
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs
+    - src/Prisma.Workspace.Api/Controllers/WorkItemsController.cs
   gates:
     - backend-build
     - backend-test
@@ -239,9 +239,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
-    - src/Detran.Kanban.Application/Features/WorkItems/WorkItemManagementFeature.cs
-    - src/Detran.Kanban.Api/Controllers/WorkItemsController.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Api/Controllers/WorkItemsController.cs
   gates:
     - backend-build
     - backend-test
@@ -260,9 +260,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintBacklogPanel.tsx
-    - src/Detran.Kanban.Application/Features/Backlog/BacklogFeature.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx
+    - src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs
   gates:
     - backend-build
     - backend-test
@@ -281,10 +281,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/features/scrum/SprintDashboard.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintBacklogPanel.tsx
-    - src/Detran.Kanban.Application/Features/Sprints/SprintsFeature.cs
-    - src/Detran.Kanban.Api/Controllers/SprintsController.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+    - src/Prisma.Workspace.Api/Controllers/SprintsController.cs
   gates:
     - backend-build
     - backend-test
@@ -303,8 +303,8 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: baixo
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
-    - src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs
   gates:
     - backend-test
     - frontend-build
@@ -323,10 +323,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   dependencies:
     - TASK-032
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/ProjectWorkspace.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/App.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectWorkspace.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/App.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -343,10 +343,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/pages/ProjectWorkspace.tsx
-    - src/Detran.Kanban.Application/Features/Boards
-    - src/Detran.Kanban.Api/Controllers/BoardsController.cs
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectWorkspace.tsx
+    - src/Prisma.Workspace.Application/Features/Boards
+    - src/Prisma.Workspace.Api/Controllers/BoardsController.cs
   gates:
     - backend-build
     - backend-test
@@ -365,9 +365,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Application/Features/Stages
-    - src/Detran.Kanban.Api/Controllers/StagesController.cs
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Application/Features/Stages
+    - src/Prisma.Workspace.Api/Controllers/StagesController.cs
   gates:
     - backend-build
     - backend-test
@@ -387,10 +387,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   dependencies:
     - TASK-029
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Application/Features/Boards
-    - src/Detran.Kanban.Infrastructure/Persistence
-    - src/Detran.Kanban.Api/Controllers/BoardsController.cs
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Application/Features/Boards
+    - src/Prisma.Workspace.Infrastructure/Persistence
+    - src/Prisma.Workspace.Api/Controllers/BoardsController.cs
   gates:
     - backend-build
     - backend-test
@@ -409,13 +409,13 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: alto
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/WorkItem.cs
-    - src/Detran.Kanban.Domain/Entities/Board.cs
-    - src/Detran.Kanban.Infrastructure/Persistence
-    - src/Detran.Kanban.Infrastructure/Migrations
-    - src/Detran.Kanban.Application/Features/WorkItems
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Domain/Entities/WorkItem.cs
+    - src/Prisma.Workspace.Domain/Entities/Board.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence
+    - src/Prisma.Workspace.Infrastructure/Migrations
+    - src/Prisma.Workspace.Application/Features/WorkItems
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
   gates:
     - backend-build
     - backend-test
@@ -434,10 +434,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx
-    - src/Detran.Kanban.Web/src/features/scrum/SprintBacklogPanel.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -456,10 +456,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
     - TASK-025
     - TASK-032
   affected_areas:
-    - src/Detran.Kanban.Web/src/features/board/KanbanFilterBar.tsx
-    - src/Detran.Kanban.Web/src/features/board/KanbanFilters.ts
-    - src/Detran.Kanban.Web/src/features/scrum/BacklogFilters.ts
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.tsx
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilters.ts
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogFilters.ts
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -476,12 +476,12 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: alto
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/layout/AppShell.tsx
-    - src/Detran.Kanban.Web/src/layout/Sidebar.tsx
-    - src/Detran.Kanban.Web/src/layout/Topbar.tsx
-    - src/Detran.Kanban.Web/src/pages/ProjectWorkspace.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/features/board/KanbanFilterBar.tsx
+    - src/Prisma.Workspace.Web/src/layout/AppShell.tsx
+    - src/Prisma.Workspace.Web/src/layout/Sidebar.tsx
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectWorkspace.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -499,9 +499,9 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   dependencies:
     - TASK-032
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
-    - src/Detran.Kanban.Web/src/pages/Projects.test.tsx
-    - src/Detran.Kanban.Web/e2e
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/pages/Projects.test.tsx
+    - src/Prisma.Workspace.Web/e2e
   gates: []
   human_gate: nao (spec superseded; proposta cancelada pela D66)
   status: cancelled
@@ -517,17 +517,17 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
     - TASK-019
     - TASK-032
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/Organization.cs
-    - src/Detran.Kanban.Application/Features/Organizations/OrganizationsFeature.cs
-    - src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs
-    - src/Detran.Kanban.Infrastructure/Repositories/OrganizationRepository.cs
-    - src/Detran.Kanban.Api/Middleware/OrganizationContextMiddleware.cs
-    - src/Detran.Kanban.Api/Controllers/OrganizationsController.cs
-    - src/Detran.Kanban.Web/src/features/organizations/OrganizationContext.tsx
-    - src/Detran.Kanban.Web/src/layout/Topbar.tsx
-    - src/Detran.Kanban.Web/src/pages/OrganizationSettings.tsx
-    - tests/Detran.Kanban.Tests/MultitenancyPersistenceTests.cs
-    - src/Detran.Kanban.Web/e2e/organization-switch.spec.ts
+    - src/Prisma.Workspace.Domain/Entities/Organization.cs
+    - src/Prisma.Workspace.Application/Features/Organizations/OrganizationsFeature.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs
+    - src/Prisma.Workspace.Infrastructure/Repositories/OrganizationRepository.cs
+    - src/Prisma.Workspace.Api/Middleware/OrganizationContextMiddleware.cs
+    - src/Prisma.Workspace.Api/Controllers/OrganizationsController.cs
+    - src/Prisma.Workspace.Web/src/features/organizations/OrganizationContext.tsx
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
+    - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
+    - tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs
+    - src/Prisma.Workspace.Web/e2e/organization-switch.spec.ts
   gates:
     - backend-build
     - backend-test
@@ -632,7 +632,7 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/features/scrum/SprintDashboard.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -648,15 +648,15 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   risk: alto
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/OrganizationWorkflowTemplate.cs
-    - src/Detran.Kanban.Domain/Entities/OrganizationWorkflowStatus.cs
-    - src/Detran.Kanban.Domain/Entities/OrganizationWorkflowTransition.cs
-    - src/Detran.Kanban.Domain/Entities/Project.cs
-    - src/Detran.Kanban.Domain/Entities/WorkflowStatus.cs
-    - src/Detran.Kanban.Infrastructure/Migrations
-    - src/Detran.Kanban.Api/Controllers/OrganizationWorkflowTemplatesController.cs
-    - src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs
-    - src/Detran.Kanban.Web/src/features/organizations/WorkflowTemplatesPage.tsx
+    - src/Prisma.Workspace.Domain/Entities/OrganizationWorkflowTemplate.cs
+    - src/Prisma.Workspace.Domain/Entities/OrganizationWorkflowStatus.cs
+    - src/Prisma.Workspace.Domain/Entities/OrganizationWorkflowTransition.cs
+    - src/Prisma.Workspace.Domain/Entities/Project.cs
+    - src/Prisma.Workspace.Domain/Entities/WorkflowStatus.cs
+    - src/Prisma.Workspace.Infrastructure/Migrations
+    - src/Prisma.Workspace.Api/Controllers/OrganizationWorkflowTemplatesController.cs
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs
+    - src/Prisma.Workspace.Web/src/features/organizations/WorkflowTemplatesPage.tsx
   gates:
     - backend-build
     - backend-test
@@ -674,11 +674,11 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   risk: alto
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/StageHistory.cs
-    - src/Detran.Kanban.Domain/Entities/TaskEvent.cs
-    - src/Detran.Kanban.Infrastructure/Migrations
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
-    - src/Detran.Kanban.Web/src/features/task/TaskFeed.tsx
+    - src/Prisma.Workspace.Domain/Entities/StageHistory.cs
+    - src/Prisma.Workspace.Domain/Entities/TaskEvent.cs
+    - src/Prisma.Workspace.Infrastructure/Migrations
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/features/task/TaskFeed.tsx
   gates:
     - backend-build
     - backend-test
@@ -697,8 +697,8 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   dependencies:
     - TASK-010
   affected_areas:
-    - src/Detran.Kanban.Web/src/components/StateGraph.tsx
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/components/StateGraph.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -721,7 +721,7 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   dependencies:
     - TASK-004
   affected_areas:
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.test.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx
   gates:
     - frontend-test
   human_gate: não
@@ -737,8 +737,8 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   dependencies:
     - TASK-005
   affected_areas:
-    - tests/Detran.Kanban.Tests/Features/Backlog/BacklogFeatureTests.cs
-    - src/Detran.Kanban.Web/src/pages/BacklogPlanner.test.tsx
+    - tests/Prisma.Workspace.Tests/Features/Backlog/BacklogFeatureTests.cs
+    - src/Prisma.Workspace.Web/src/pages/BacklogPlanner.test.tsx
   gates:
     - backend-test
     - frontend-test
@@ -755,9 +755,9 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   dependencies:
     - TASK-007
   affected_areas:
-    - tests/Detran.Kanban.Tests/Domain/WorkItemLinkDomainTests.cs
-    - tests/Detran.Kanban.Tests/Features/WorkItems/CreateWorkItemLinkCommandHandlerTests.cs
-    - tests/Detran.Kanban.Tests/Controllers/WorkItemsControllerTests.cs
+    - tests/Prisma.Workspace.Tests/Domain/WorkItemLinkDomainTests.cs
+    - tests/Prisma.Workspace.Tests/Features/WorkItems/CreateWorkItemLinkCommandHandlerTests.cs
+    - tests/Prisma.Workspace.Tests/Controllers/WorkItemsControllerTests.cs
   gates:
     - backend-test
   human_gate: não
@@ -773,8 +773,8 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
   dependencies:
     - TASK-009
   affected_areas:
-    - tests/Detran.Kanban.Tests/Domain/OrganizationWorkflowTemplateDomainTests.cs
-    - tests/Detran.Kanban.Tests/Features/Projects/CreateProjectCommandHandlerTests.cs
+    - tests/Prisma.Workspace.Tests/Domain/OrganizationWorkflowTemplateDomainTests.cs
+    - tests/Prisma.Workspace.Tests/Features/Projects/CreateProjectCommandHandlerTests.cs
   gates:
     - backend-test
   human_gate: não
@@ -791,9 +791,9 @@ Autoria deve seguir D63: nome completo, e-mail oculto quando houver nome e fallb
     - TASK-010
     - TASK-011
   affected_areas:
-    - tests/Detran.Kanban.Tests/Domain/TaskEventDomainTests.cs
-    - tests/Detran.Kanban.Tests/Features/WorkItems/MoveWorkItemCommandHandlerTests.cs
-    - src/Detran.Kanban.Web/src/components/TaskDetailDrawer.test.tsx
+    - tests/Prisma.Workspace.Tests/Domain/TaskEventDomainTests.cs
+    - tests/Prisma.Workspace.Tests/Features/WorkItems/MoveWorkItemCommandHandlerTests.cs
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx
   gates:
     - backend-test
     - frontend-test
@@ -874,10 +874,10 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Web/src/styles/theme.ts
-    - src/Detran.Kanban.Web/src/styles/global.ts
-    - src/Detran.Kanban.Web/src/pages/Auth.tsx
-    - src/Detran.Kanban.Web/src/components/ui
+    - src/Prisma.Workspace.Web/src/styles/theme.ts
+    - src/Prisma.Workspace.Web/src/styles/global.ts
+    - src/Prisma.Workspace.Web/src/pages/Auth.tsx
+    - src/Prisma.Workspace.Web/src/components/ui
   gates:
     - frontend-build
     - frontend-test
@@ -895,12 +895,12 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: médio
   dependencies: [TASK-035]
   affected_areas:
-    - src/Detran.Kanban.Web/src/layout/AppShell.tsx
-    - src/Detran.Kanban.Web/src/layout/Topbar.tsx
-    - src/Detran.Kanban.Web/src/layout/ContextBar.tsx
-    - src/Detran.Kanban.Web/src/pages/Kanban.tsx
-    - src/Detran.Kanban.Web/src/pages/MinhasTarefas.tsx
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/layout/AppShell.tsx
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
+    - src/Prisma.Workspace.Web/src/layout/ContextBar.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/pages/MinhasTarefas.tsx
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -918,10 +918,10 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: médio
   dependencies: [TASK-035, TASK-036]
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Reports.tsx
-    - src/Detran.Kanban.Web/src/features/reports
-    - src/Detran.Kanban.Web/src/pages/OrganizationSettings.tsx
-    - src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx
+    - src/Prisma.Workspace.Web/src/pages/Reports.tsx
+    - src/Prisma.Workspace.Web/src/features/reports
+    - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx
   gates:
     - frontend-build
     - frontend-test
@@ -943,10 +943,10 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: alto
   dependencies: [TASK-031]
   affected_areas:
-    - src/Detran.Kanban.Application/Features
-    - src/Detran.Kanban.Api/Controllers
-    - src/Detran.Kanban.Web/src/features
-    - src/Detran.Kanban.Web/src/pages
+    - src/Prisma.Workspace.Application/Features
+    - src/Prisma.Workspace.Api/Controllers
+    - src/Prisma.Workspace.Web/src/features
+    - src/Prisma.Workspace.Web/src/pages
   gates:
     - G-SCOPE
     - G-SPEC
@@ -972,9 +972,9 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: médio
   dependencies: [TASK-036]
   affected_areas:
-    - src/Detran.Kanban.Web/src/pages/Home.tsx
-    - src/Detran.Kanban.Web/src/App.tsx
-    - src/Detran.Kanban.Web/src/layout/Topbar.tsx
+    - src/Prisma.Workspace.Web/src/pages/Home.tsx
+    - src/Prisma.Workspace.Web/src/App.tsx
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
   gates:
     - G-SCOPE
     - G-SPEC
@@ -999,12 +999,12 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   risk: alto
   dependencies: []
   affected_areas:
-    - src/Detran.Kanban.Domain/Entities/Project.cs
-    - src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs
-    - src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs
-    - src/Detran.Kanban.Infrastructure/Persistence/Migrations
-    - src/Detran.Kanban.Api/Controllers/ProjectsController.cs
-    - src/Detran.Kanban.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Domain/Entities/Project.cs
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectManagementFeature.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Api/Controllers/ProjectsController.cs
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
   gates:
     - G-SCOPE
     - G-SPEC

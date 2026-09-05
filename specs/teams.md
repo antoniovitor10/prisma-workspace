@@ -239,12 +239,12 @@ Adicionar `Description` ou alterar o modelo de autorização/persistência exige
 - `specs/user-access-permissions.md`
 - `specs/project-management.md`
 - `specs/boards-stages-wip.md`
-- `src/Detran.Kanban.Domain/Entities/Team.cs`
-- `src/Detran.Kanban.Application/Features/Teams/TeamsFeature.cs`
-- `src/Detran.Kanban.Api/Controllers/TeamsController.cs`
-- `src/Detran.Kanban.Infrastructure/Persistence/Configurations/TeamConfiguration.cs`
-- `src/Detran.Kanban.Infrastructure/Repositories/TeamRepository.cs`
-- `src/Detran.Kanban.Web/src/pages/Teams.tsx`
+- `src/Prisma.Workspace.Domain/Entities/Team.cs`
+- `src/Prisma.Workspace.Application/Features/Teams/TeamsFeature.cs`
+- `src/Prisma.Workspace.Api/Controllers/TeamsController.cs`
+- `src/Prisma.Workspace.Infrastructure/Persistence/Configurations/TeamConfiguration.cs`
+- `src/Prisma.Workspace.Infrastructure/Repositories/TeamRepository.cs`
+- `src/Prisma.Workspace.Web/src/pages/Teams.tsx`
 
 ## Rollback
 

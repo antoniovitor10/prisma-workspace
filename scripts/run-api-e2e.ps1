@@ -53,4 +53,4 @@ $env:Serilog__MinimumLevel__Override__Microsoft = "Warning"
 
 Write-Host "API E2E iniciando para banco aprovado: $DatabaseName na URL $Urls" -ForegroundColor Cyan
 
-dotnet run --project src/Detran.Kanban.Api --no-launch-profile
+dotnet run --project src/Prisma.Workspace.Api --no-launch-profile

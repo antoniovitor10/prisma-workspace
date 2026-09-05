@@ -233,12 +233,12 @@ Esta atualização é exclusivamente documental. Não altera produto, dados, end
 
 ## Referências
 
-- `src/Detran.Kanban.Domain/Entities/TimeEntry.cs`
-- `src/Detran.Kanban.Domain/Entities/DayJustification.cs`
-- `src/Detran.Kanban.Application/Features/TimeEntries/`
-- `src/Detran.Kanban.Application/Features/MeTime/`
-- `src/Detran.Kanban.Infrastructure/Repositories/TimeEntryRepository.cs`
-- `src/Detran.Kanban.Api/Controllers/TimeEntriesController.cs`
+- `src/Prisma.Workspace.Domain/Entities/TimeEntry.cs`
+- `src/Prisma.Workspace.Domain/Entities/DayJustification.cs`
+- `src/Prisma.Workspace.Application/Features/TimeEntries/`
+- `src/Prisma.Workspace.Application/Features/MeTime/`
+- `src/Prisma.Workspace.Infrastructure/Repositories/TimeEntryRepository.cs`
+- `src/Prisma.Workspace.Api/Controllers/TimeEntriesController.cs`
 - D30, D34, D40 e decisões explícitas de PO em 2026-08-24.
 
 ## Rastreabilidade

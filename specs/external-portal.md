@@ -238,12 +238,12 @@ Esses pontos não reabrem as decisões funcionais aprovadas; precisam ser fechad
 - `ROADMAP.md`, Fase 7.
 - `specs/attachments.md`
 - `specs/user-access-permissions.md`
-- `src/Detran.Kanban.Api/Controllers/ExternalPortalController.cs`
-- `src/Detran.Kanban.Api/Program.cs`
-- `src/Detran.Kanban.Domain/Entities/ExternalPortal.cs`
-- `src/Detran.Kanban.Domain/Entities/ExternalForm.cs`
-- `src/Detran.Kanban.Application/Features/ExternalPortal/ExternalPortalFeature.cs`
-- `src/Detran.Kanban.Application/Features/ExternalPortal/ExternalFormsFeature.cs`
+- `src/Prisma.Workspace.Api/Controllers/ExternalPortalController.cs`
+- `src/Prisma.Workspace.Api/Program.cs`
+- `src/Prisma.Workspace.Domain/Entities/ExternalPortal.cs`
+- `src/Prisma.Workspace.Domain/Entities/ExternalForm.cs`
+- `src/Prisma.Workspace.Application/Features/ExternalPortal/ExternalPortalFeature.cs`
+- `src/Prisma.Workspace.Application/Features/ExternalPortal/ExternalFormsFeature.cs`
 
 ## Rollback
 

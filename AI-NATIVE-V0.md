@@ -5,9 +5,9 @@
 Esta proposta estabelece a arquitetura AI-Native V0 para o projeto `runrun-copia` (Painel Kanban Detran-SE), adaptando princípios modernos de engenharia orientada a agentes (SDD, Context Engineering, Gates, Loop, Graph, Agent Contracts, Human Gates, Telemetry e OmniRoute) à realidade da stack existente.
 
 ### Adaptada à Stack Real
-- **Backend:** .NET 8 (ASP.NET Core Web API, Clean Architecture: `src/Detran.Kanban.Domain`, `src/Detran.Kanban.Application`, `src/Detran.Kanban.Infrastructure`, `src/Detran.Kanban.Api`, `tests/Detran.Kanban.Tests`)
+- **Backend:** .NET 8 (ASP.NET Core Web API, Clean Architecture: `src/Prisma.Workspace.Domain`, `src/Prisma.Workspace.Application`, `src/Prisma.Workspace.Infrastructure`, `src/Prisma.Workspace.Api`, `tests/Prisma.Workspace.Tests`)
 - **ORM e Banco:** Entity Framework Core + SQL Server
-- **Frontend:** React 19 + TypeScript + Vite + Styled Components + dnd-kit (`src/Detran.Kanban.Web`)
+- **Frontend:** React 19 + TypeScript + Vite + Styled Components + dnd-kit (`src/Prisma.Workspace.Web`)
 - **Histórias Canônicas:** `stories/catalog.json` registra primeiro a necessidade e o comportamento esperado
 - **Especificações Canônicas:** `specs/*.md` contém o contrato técnico gerado/revisado pela IA e aprovado por G-SPEC
 - **Backlog:** `backlog.md` (raiz) como repositório central de demandas; `specs/backlog.md` é a spec canônica de subtarefas hierárquicas (SPEC-B-001)
@@ -28,7 +28,7 @@ context/
 ├── projects/
 │   ├── spec.md        -> specs/project-structure.md
 │   ├── code.md        -> referencias aos arquivos em Domain, Application, Infrastructure, Api e Web
-│   ├── tests.md       -> testes xUnit em tests/Detran.Kanban.Tests e Vitest em Web
+│   ├── tests.md       -> testes xUnit em tests/Prisma.Workspace.Tests e Vitest em Web
 │   └── gates.md       -> comandos dotnet build, dotnet test, npm run build, npm test
 ├── work-items/
 │   ├── spec.md        -> specs/work-items.md
@@ -128,17 +128,17 @@ validation:
 Apenas comandos reais e existentes no repositorio sao utilizados nos gates de integracao:
 
 ### Backend (.NET 8 Clean Architecture)
-- **Compilacao:** `dotnet build` (Executar na raiz da solução `Detran.Kanban.sln`)
+- **Compilacao:** `dotnet build` (Executar na raiz da solução `Prisma.Workspace.sln`)
 - **Testes Unitarios e de Integracao:** `dotnet test`
-- **Validacao de Migrations EF Core:** `dotnet ef migrations list` / `dotnet build` em `src/Detran.Kanban.Infrastructure`
+- **Validacao de Migrations EF Core:** `dotnet ef migrations list` / `dotnet build` em `src/Prisma.Workspace.Infrastructure`
 
 ### Frontend (React 19 + TypeScript)
-- **Compilacao / Typecheck:** `npm run build` (Executar em `src/Detran.Kanban.Web`)
-- **Testes de Componente / Unitarios:** `npm test` (Executar em `src/Detran.Kanban.Web`)
-- **Análise Estática / Linter:** `npm run lint` (Executar em `src/Detran.Kanban.Web`)
+- **Compilacao / Typecheck:** `npm run build` (Executar em `src/Prisma.Workspace.Web`)
+- **Testes de Componente / Unitarios:** `npm test` (Executar em `src/Prisma.Workspace.Web`)
+- **Análise Estática / Linter:** `npm run lint` (Executar em `src/Prisma.Workspace.Web`)
 
 ### Gates disponíveis e lacunas restantes
-- **E2E (End-to-End):** Playwright configurado em `src/Detran.Kanban.Web`; execução obrigatória por D40 para mudanças de frontend, endpoint ou schema. O profile ainda precisa de G-WORKFLOW para representar sua aplicação condicional sem executar E2E indevidamente em tarefas isentas.
+- **E2E (End-to-End):** Playwright configurado em `src/Prisma.Workspace.Web`; execução obrigatória por D40 para mudanças de frontend, endpoint ou schema. O profile ainda precisa de G-WORKFLOW para representar sua aplicação condicional sem executar E2E indevidamente em tarefas isentas.
 - **Backend Linter / Formatting Strict Gate:** Inexistente como script separado (`dotnet format` não configurado em CI).
 - **SAST / Análise de Segurança:** Inexistente na pipeline local.
 

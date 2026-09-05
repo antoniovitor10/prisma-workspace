@@ -317,15 +317,15 @@ Qualquer coluna, tabela, índice, relação ou backfill novo exige `G-MIGRATION`
 - `specs/project-key-auto-generation.md`.
 - `specs/project-methodology-hidden.md`.
 - `specs/projects-visual-refresh.md`.
-- `src/Detran.Kanban.Domain/Entities/Project.cs`.
-- `src/Detran.Kanban.Domain/Entities/Board.cs`.
-- `src/Detran.Kanban.Domain/Entities/WorkItem.cs`.
-- `src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs`.
-- `src/Detran.Kanban.Infrastructure/Repositories/ProjectRepository.cs`.
-- `src/Detran.Kanban.Api/Controllers/ProjectsController.cs`.
-- `src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx`.
-- `tests/Detran.Kanban.Tests/ProjectFeatureTests.cs`.
+- `src/Prisma.Workspace.Domain/Entities/Project.cs`.
+- `src/Prisma.Workspace.Domain/Entities/Board.cs`.
+- `src/Prisma.Workspace.Domain/Entities/WorkItem.cs`.
+- `src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Projects/ProjectManagementFeature.cs`.
+- `src/Prisma.Workspace.Infrastructure/Repositories/ProjectRepository.cs`.
+- `src/Prisma.Workspace.Api/Controllers/ProjectsController.cs`.
+- `src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx`.
+- `tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs`.
 
 ## Rollback
 

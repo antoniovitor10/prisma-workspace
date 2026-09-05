@@ -314,14 +314,14 @@ Quadro -> Projetos devem ser coordenadas com a implementação da D52.
 - `specs/top-navigation-shell.md`.
 - `specs/dashboards-reports.md`.
 - `specs/external-portal.md`.
-- `src/Detran.Kanban.Domain/Enums/OrganizationRole.cs`.
-- `src/Detran.Kanban.Domain/Enums/ProjectRole.cs`.
-- `src/Detran.Kanban.Domain/Enums/PlatformPermission.cs`.
-- `src/Detran.Kanban.Domain/Enums/PermissionScope.cs`.
-- `src/Detran.Kanban.Domain/Authorization/RolePermissionCatalog.cs`.
-- `src/Detran.Kanban.Infrastructure/Identity/PermissionService.cs`.
-- `src/Detran.Kanban.Infrastructure/Identity/ProjectAccessService.cs`.
-- `src/Detran.Kanban.Infrastructure/Identity/BoardAccessService.cs`.
+- `src/Prisma.Workspace.Domain/Enums/OrganizationRole.cs`.
+- `src/Prisma.Workspace.Domain/Enums/ProjectRole.cs`.
+- `src/Prisma.Workspace.Domain/Enums/PlatformPermission.cs`.
+- `src/Prisma.Workspace.Domain/Enums/PermissionScope.cs`.
+- `src/Prisma.Workspace.Domain/Authorization/RolePermissionCatalog.cs`.
+- `src/Prisma.Workspace.Infrastructure/Identity/PermissionService.cs`.
+- `src/Prisma.Workspace.Infrastructure/Identity/ProjectAccessService.cs`.
+- `src/Prisma.Workspace.Infrastructure/Identity/BoardAccessService.cs`.
 
 ## Rollback
 

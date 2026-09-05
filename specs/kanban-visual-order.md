@@ -71,11 +71,11 @@ O sistema já possui elementos úteis para este contrato:
 
 Evidências principais:
 
-- `src/Detran.Kanban.Web/src/pages/Kanban.tsx`
-- `src/Detran.Kanban.Web/src/features/board/KanbanFilterBar.tsx`
-- `src/Detran.Kanban.Web/src/features/board/kanbanOrdering.ts`
-- `src/Detran.Kanban.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs`
-- `src/Detran.Kanban.Infrastructure/Repositories/WorkItemRepository.cs`
+- `src/Prisma.Workspace.Web/src/pages/Kanban.tsx`
+- `src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.tsx`
+- `src/Prisma.Workspace.Web/src/features/board/kanbanOrdering.ts`
+- `src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs`
+- `src/Prisma.Workspace.Infrastructure/Repositories/WorkItemRepository.cs`
 - `migracao/build-sql.cjs`
 
 ## Gaps entre o código atual e o contrato aprovado

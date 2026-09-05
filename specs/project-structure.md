@@ -60,7 +60,7 @@ O enum `ProjectMethodology` possui os valores Kanban (1), Scrum (2), Scrumban (3
 - Nenhuma nesta spec. XP permanece adiado e fora do escopo por decisão explícita de PO em 2026-08-20.
 
 ## Test Gate Mapping
-- `tests/Detran.Kanban.Tests/ProjectFeatureTests.cs`:
+- `tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs`:
   - Garantir que a criação com `ProjectMethodology.Kanban` não inclui sprints automáticas no repositório/banco.
   - Validar que valores numéricos não definidos em `ProjectMethodology` são rejeitados na criação e na atualização.
 

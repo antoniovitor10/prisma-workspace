@@ -48,7 +48,7 @@ if (Get-Command sqlcmd -ErrorAction SilentlyContinue) {
 Write-Host "`n[2/4] Executando migrations do EF Core..." -ForegroundColor Yellow
 $env:ConnectionStrings__DefaultConnection = $e2eConn
 try {
-    dotnet ef database update --project src/Detran.Kanban.Infrastructure --startup-project src/Detran.Kanban.Api
+    dotnet ef database update --project src/Prisma.Workspace.Infrastructure --startup-project src/Prisma.Workspace.Api
     Write-Host "Migrations aplicadas com sucesso." -ForegroundColor Green
 } catch {
     Write-Host "Erro ao aplicar migrations: $_" -ForegroundColor Red
@@ -83,8 +83,8 @@ try {
         "E2E_API_URL=http://127.0.0.1:5400"
         "E2E_TEST_USER_EMAIL=$TestUserEmail"
         "E2E_TEST_USER_PASSWORD=$SeedPassword"
-    ) | Out-File -FilePath "src/Detran.Kanban.Web/.env.e2e.local" -Encoding UTF8 -Force
-    Write-Host "Credenciais locais do Playwright salvas em src/Detran.Kanban.Web/.env.e2e.local (gitignored)." -ForegroundColor Green
+    ) | Out-File -FilePath "src/Prisma.Workspace.Web/.env.e2e.local" -Encoding UTF8 -Force
+    Write-Host "Credenciais locais do Playwright salvas em src/Prisma.Workspace.Web/.env.e2e.local (gitignored)." -ForegroundColor Green
 } catch {
     Write-Host "Aviso: não foi possível salvar .env.e2e.seedpassword: $_" -ForegroundColor Yellow
 }
@@ -92,5 +92,5 @@ try {
 Write-Host "`n=== Setup concluído ===" -ForegroundColor Cyan
 Write-Host "Próximos passos:" -ForegroundColor White
 Write-Host "1. Inicie a API com banco E2E: .\scripts\run-api-e2e.ps1" -ForegroundColor Gray
-Write-Host "2. Inicie o frontend na porta E2E: npm run dev -- --host 127.0.0.1 --port 5450 (em src/Detran.Kanban.Web)" -ForegroundColor Gray
-Write-Host "3. Execute os testes: npm run e2e (em src/Detran.Kanban.Web)" -ForegroundColor Gray
+Write-Host "2. Inicie o frontend na porta E2E: npm run dev -- --host 127.0.0.1 --port 5450 (em src/Prisma.Workspace.Web)" -ForegroundColor Gray
+Write-Host "3. Execute os testes: npm run e2e (em src/Prisma.Workspace.Web)" -ForegroundColor Gray

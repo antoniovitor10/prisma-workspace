@@ -327,12 +327,12 @@ D17/D35/D58/D63 e ROADMAP Fase 7 → SPEC-AUTH-001 (`approved`, revisão humana)
 
 - `DECISIONS.md` — D17, D34 e D35.
 - `ROADMAP.md` — Fases 6C e 7.
-- `src/Detran.Kanban.Api/Controllers/AuthController.cs` — cadastro, confirmação, login, refresh, logout, recuperação, reset e contratos.
-- `src/Detran.Kanban.Api/Program.cs` — Identity, senha, lockout, JWT, rate limiting e validações de startup.
-- `src/Detran.Kanban.Api/Services/JwtTokenService.cs` — claims, assinatura e expiração.
-- `src/Detran.Kanban.Api/Middleware/OrganizationContextMiddleware.cs` — seleção e validação do tenant.
-- `src/Detran.Kanban.Infrastructure/Services/RefreshTokenService.cs` — emissão, hash, rotação, tolerância e revogação.
-- `src/Detran.Kanban.Infrastructure/Persistence/AppDbContext.cs` — tokens, filtros, escrita, auditoria e redaction.
-- `src/Detran.Kanban.Web/src/services/api.ts` — persistência local do access token e renovação.
-- `tests/Detran.Kanban.Tests/PlatformCrossCuttingTests.cs` — evidências atuais de refresh e auditoria.
-- `tests/Detran.Kanban.Tests/MultitenancyPersistenceTests.cs` — evidências atuais de isolamento.
+- `src/Prisma.Workspace.Api/Controllers/AuthController.cs` — cadastro, confirmação, login, refresh, logout, recuperação, reset e contratos.
+- `src/Prisma.Workspace.Api/Program.cs` — Identity, senha, lockout, JWT, rate limiting e validações de startup.
+- `src/Prisma.Workspace.Api/Services/JwtTokenService.cs` — claims, assinatura e expiração.
+- `src/Prisma.Workspace.Api/Middleware/OrganizationContextMiddleware.cs` — seleção e validação do tenant.
+- `src/Prisma.Workspace.Infrastructure/Services/RefreshTokenService.cs` — emissão, hash, rotação, tolerância e revogação.
+- `src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs` — tokens, filtros, escrita, auditoria e redaction.
+- `src/Prisma.Workspace.Web/src/services/api.ts` — persistência local do access token e renovação.
+- `tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs` — evidências atuais de refresh e auditoria.
+- `tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs` — evidências atuais de isolamento.

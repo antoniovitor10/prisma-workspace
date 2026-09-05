@@ -33,14 +33,14 @@ O snapshot é formado por allowlist. Ausência de um caminho na lista não autor
 ## Achados de segurança
 
 - A primeira varredura detectou um estado autenticado do Playwright em
-  `src/Detran.Kanban.Web/e2e/.auth/user.json`.
+  `src/Prisma.Workspace.Web/e2e/.auth/user.json`.
 - A cópia foi removida do snapshot antes de qualquer commit ou push.
 - O arquivo continua apenas na origem privada e deve ser considerado credencial temporária revogável.
 
 ## Itens em revisão obrigatória
 
 - Referências `Detran`, `Runrun`, domínios e endereços de infraestrutura.
-- Dockerfile, scripts e nomes `Detran.Kanban.*`.
+- Dockerfile, scripts e nomes `Prisma.Workspace.*`.
 - Fixtures, seeds e exemplos que possam conter identidades reais.
 - Assets cuja autoria ou licença não esteja comprovada.
 - Licenças das dependências e compatibilidade da licença do projeto.

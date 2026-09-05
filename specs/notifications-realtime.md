@@ -283,12 +283,12 @@ ao usuário.
 
 - `CAND-NOTIF-001 -> SPEC-NOTIF-001 -> implementação futura -> testes -> homologação -> commit`.
 - Evidências atuais:
-  - `src/Detran.Kanban.Domain/Entities/Notification.cs`.
-  - `src/Detran.Kanban.Domain/Enums/NotificationType.cs`.
-  - `src/Detran.Kanban.Application/Features/Notifications/NotificationsFeature.cs`.
-  - `src/Detran.Kanban.Infrastructure/Repositories/PlatformRepository.cs`.
-  - `src/Detran.Kanban.Infrastructure/Services/NotificationWorkers.cs`.
-  - `src/Detran.Kanban.Api/Controllers/NotificationsController.cs`.
-  - `src/Detran.Kanban.Api/Realtime/BoardHub.cs`.
-  - `src/Detran.Kanban.Web/src/features/notifications/NotificationCenter.tsx`.
-  - `tests/Detran.Kanban.Tests/PlatformCrossCuttingTests.cs`.
+  - `src/Prisma.Workspace.Domain/Entities/Notification.cs`.
+  - `src/Prisma.Workspace.Domain/Enums/NotificationType.cs`.
+  - `src/Prisma.Workspace.Application/Features/Notifications/NotificationsFeature.cs`.
+  - `src/Prisma.Workspace.Infrastructure/Repositories/PlatformRepository.cs`.
+  - `src/Prisma.Workspace.Infrastructure/Services/NotificationWorkers.cs`.
+  - `src/Prisma.Workspace.Api/Controllers/NotificationsController.cs`.
+  - `src/Prisma.Workspace.Api/Realtime/BoardHub.cs`.
+  - `src/Prisma.Workspace.Web/src/features/notifications/NotificationCenter.tsx`.
+  - `tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs`.

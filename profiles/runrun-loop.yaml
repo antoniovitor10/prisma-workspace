@@ -5,19 +5,19 @@ description: "Perfil de execução do loop AI-Native com comandos reais e regist
 working_directories:
   root: "."
   backend: "."
-  frontend: "src/Detran.Kanban.Web"
+  frontend: "src/Prisma.Workspace.Web"
 
 gates:
   backend_build:
     name: "Backend Compilation Gate"
-    command: "dotnet build Detran.Kanban.sln"
+    command: "dotnet build Prisma.Workspace.sln"
     cwd: "."
     required: true
     status: "active"
 
   backend_test:
     name: "Backend Unit & Integration Tests Gate"
-    command: "dotnet test tests/Detran.Kanban.Tests/"
+    command: "dotnet test tests/Prisma.Workspace.Tests/"
     cwd: "."
     required: true
     status: "active"
@@ -25,21 +25,21 @@ gates:
   frontend_build:
     name: "Frontend Typecheck & Build Gate"
     command: "npm run build"
-    cwd: "src/Detran.Kanban.Web"
+    cwd: "src/Prisma.Workspace.Web"
     required: true
     status: "active"
 
   frontend_test:
     name: "Frontend Unit & Component Tests Gate"
     command: "npm run test"
-    cwd: "src/Detran.Kanban.Web"
+    cwd: "src/Prisma.Workspace.Web"
     required: true
     status: "active"
 
   frontend_lint:
     name: "Frontend Static Analysis Gate"
     command: "npm run lint"
-    cwd: "src/Detran.Kanban.Web"
+    cwd: "src/Prisma.Workspace.Web"
     required: true
     status: "active"
 

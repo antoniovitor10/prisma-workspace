@@ -133,13 +133,13 @@ Metodologia somente poderá voltar a ser funcional após definição explícita 
 - `DECISIONS.md` — D20, D42 e D48
 - `specs/project-management.md`
 - `specs/project-structure.md` — superseded
-- `src/Detran.Kanban.Domain/Enums/ProjectMethodology.cs`
-- `src/Detran.Kanban.Domain/Entities/Project.cs`
-- `src/Detran.Kanban.Application/Features/Projects/ProjectsFeature.cs`
-- `src/Detran.Kanban.Application/Features/Projects/ProjectManagementFeature.cs`
-- `src/Detran.Kanban.Api/Controllers/ProjectsController.cs`
-- `src/Detran.Kanban.Web/src/pages/Projects.tsx`
-- `src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx`
+- `src/Prisma.Workspace.Domain/Enums/ProjectMethodology.cs`
+- `src/Prisma.Workspace.Domain/Entities/Project.cs`
+- `src/Prisma.Workspace.Application/Features/Projects/ProjectsFeature.cs`
+- `src/Prisma.Workspace.Application/Features/Projects/ProjectManagementFeature.cs`
+- `src/Prisma.Workspace.Api/Controllers/ProjectsController.cs`
+- `src/Prisma.Workspace.Web/src/pages/Projects.tsx`
+- `src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx`
 
 ## Rollback
 

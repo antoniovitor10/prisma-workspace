@@ -151,7 +151,7 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   data-testid estavel. Nunca executar contra producao. (2026-08-19)
 - **D40** — Toda tarefa que modifique frontend (React), endpoints da API (.NET) ou schema de banco de dados
   deve ter os testes E2E executados e passando como parte da Definition of Done. Antes de considerar a
-  tarefa concluída, execute `npm run e2e` em `src/Detran.Kanban.Web` com o ambiente E2E ativo (API +
+  tarefa concluída, execute `npm run e2e` em `src/Prisma.Workspace.Web` com o ambiente E2E ativo (API +
   frontend + SQL Server). Se os testes falharem, a tarefa não está completa até que as falhas sejam
   corrigidas ou novos testes sejam adicionados para cobrir a funcionalidade implementada. Esta regra
   não se aplica a tarefas que modificam apenas documentação, configurações de infraestrutura sem impacto
@@ -378,7 +378,7 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   implementação. Após a correção, a tarefa é concluída e arquivada, a observação sai da área ativa preservando histórico
   e a história volta para nova homologação. (2026-08-26)
 
-- **D68** — O produto deixa de ser ferramenta interna do Detran-SE e passa a ser **Prisma WorkSpace**, plataforma open source voltada a Community / Cloud / Enterprise, com monetização por consultoria, treinamentos, suporte e customizações (Nordevs / time do produto). A identidade visual oficial passa a seguir a LP Prisma e o mockup de login: espectro violeta→azul→cyan→magenta→laranja, gradiente de marca, tipografia Inter, marca prismática, light-first com modo escuro opcional, e textos sem menção institucional ao Detran. Namespaces e pastas C# `Detran.Kanban.*` permanecem temporariamente por compatibilidade técnica até migração dedicada de solution; a superfície do produto (UI, seed, docs de produto, títulos e storage keys) usa Prisma. A D68 sucede D9 e a cláusula de identidade da D13. (2026-09-02)
+- **D68** — O produto deixa de ser ferramenta interna do Detran-SE e passa a ser **Prisma WorkSpace**, plataforma open source voltada a Community / Cloud / Enterprise, com monetização por consultoria, treinamentos, suporte e customizações (Nordevs / time do produto). A identidade visual oficial passa a seguir a LP Prisma e o mockup de login: espectro violeta→azul→cyan→magenta→laranja, gradiente de marca, tipografia Inter, marca prismática, light-first com modo escuro opcional, e textos sem menção institucional ao Detran. A compatibilidade temporária dos namespaces e pastas C# legados foi encerrada pela migração técnica D76; a superfície e a identidade técnica do produto usam Prisma. A D68 sucede D9 e a cláusula de identidade da D13. (2026-09-02; atualizada em 2026-09-05)
 
 - **D69** — Feedback funcional do documento de análise (login/marca, remoção de anexos, responsável no topo da tarefa, listas mais compactas/pesquisáveis) entra no backlog de produto Prisma sem reabrir a renovação estética rejeitada em D66. A exclusão de anexos de tarefa fica disponível na UI com confirmação; a retenção completa em lixeira por 7 dias (SPEC-ATTACHMENTS) permanece gap até `G-MIGRATION`. Cards de projetos podem ficar mais compactos e com busca, sem exibir chave de projeto (D56). Demais itens do documento (Backlog/Sprint lado a lado, Sprints, Relatórios em abas, Configurações com menu lateral, etc.) seguem como tarefas posteriores cobertas por specs. (2026-09-02)
 
@@ -426,3 +426,9 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   auditoria de segredos/dados institucionais, escolha humana da licença e `G-DEPLOY`. Cursor CLI pode executar lotes
   mecânicos delimitados, mas não aprova gates, decide arquitetura/licença, acessa segredos ou publica sem revisão.
   Migrations aplicadas são preservadas até estratégia específica aprovada em `G-MIGRATION`. (2026-09-05)
+
+- **D76** — No novo repositório, solution, projetos, pastas, assemblies e namespaces técnicos adotam o prefixo
+  `Prisma.Workspace`. A mudança é exclusivamente de identidade técnica: IDs e classes históricas de migrations,
+  schema, tabelas, nomes de banco existentes e comportamento não são alterados. Configurações e nomes de banco
+  ainda legados serão tratados separadamente na instalação independente, com `G-MIGRATION` quando houver impacto
+  persistente. (2026-09-05)

@@ -278,10 +278,10 @@ Definir ações em massa seguras e compreensíveis sobre tarefas selecionadas, i
 ### Referências
 - `AGENTS.md`.
 - `DECISIONS.md` — D18, D21, D22, D34, D37, D52 e D53.
-- `src/Detran.Kanban.Web/src/features/board/KanbanBulkToolbar.tsx`.
-- `src/Detran.Kanban.Web/src/features/board/AutomationManager.tsx`.
-- `src/Detran.Kanban.Web/src/pages/Kanban.tsx`.
-- `src/Detran.Kanban.Application/Features/Productivity/ProductivityFeature.cs`.
-- `src/Detran.Kanban.Api/Controllers/ProductivityController.cs`.
-- `tests/Detran.Kanban.Tests/ProductivityFeatureTests.cs`.
+- `src/Prisma.Workspace.Web/src/features/board/KanbanBulkToolbar.tsx`.
+- `src/Prisma.Workspace.Web/src/features/board/AutomationManager.tsx`.
+- `src/Prisma.Workspace.Web/src/pages/Kanban.tsx`.
+- `src/Prisma.Workspace.Application/Features/Productivity/ProductivityFeature.cs`.
+- `src/Prisma.Workspace.Api/Controllers/ProductivityController.cs`.
+- `tests/Prisma.Workspace.Tests/ProductivityFeatureTests.cs`.
 - CAND-BULK-ACTIONS-AUTOMATIONS -> SPEC-BULK-ACTIONS-AUTOMATIONS -> task -> tests -> commit.

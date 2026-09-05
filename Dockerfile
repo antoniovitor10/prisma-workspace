@@ -1,9 +1,9 @@
 # Stage 1: Build the frontend React SPA
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/web
-COPY src/Detran.Kanban.Web/package*.json ./
+COPY src/Prisma.Workspace.Web/package*.json ./
 RUN npm ci
-COPY src/Detran.Kanban.Web/ ./
+COPY src/Prisma.Workspace.Web/ ./
 RUN npm run build
 
 # Stage 2: Build the backend .NET API
@@ -11,24 +11,24 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
 WORKDIR /src
 
 # Copy solution and project files for restore
-COPY src/Detran.Kanban.Domain/Detran.Kanban.Domain.csproj src/Detran.Kanban.Domain/
-COPY src/Detran.Kanban.Application/Detran.Kanban.Application.csproj src/Detran.Kanban.Application/
-COPY src/Detran.Kanban.Infrastructure/Detran.Kanban.Infrastructure.csproj src/Detran.Kanban.Infrastructure/
-COPY src/Detran.Kanban.Api/Detran.Kanban.Api.csproj src/Detran.Kanban.Api/
+COPY src/Prisma.Workspace.Domain/Prisma.Workspace.Domain.csproj src/Prisma.Workspace.Domain/
+COPY src/Prisma.Workspace.Application/Prisma.Workspace.Application.csproj src/Prisma.Workspace.Application/
+COPY src/Prisma.Workspace.Infrastructure/Prisma.Workspace.Infrastructure.csproj src/Prisma.Workspace.Infrastructure/
+COPY src/Prisma.Workspace.Api/Prisma.Workspace.Api.csproj src/Prisma.Workspace.Api/
 
-RUN dotnet restore src/Detran.Kanban.Api/Detran.Kanban.Api.csproj
+RUN dotnet restore src/Prisma.Workspace.Api/Prisma.Workspace.Api.csproj
 
 # Copy all source files
-COPY src/Detran.Kanban.Domain/ src/Detran.Kanban.Domain/
-COPY src/Detran.Kanban.Application/ src/Detran.Kanban.Application/
-COPY src/Detran.Kanban.Infrastructure/ src/Detran.Kanban.Infrastructure/
-COPY src/Detran.Kanban.Api/ src/Detran.Kanban.Api/
+COPY src/Prisma.Workspace.Domain/ src/Prisma.Workspace.Domain/
+COPY src/Prisma.Workspace.Application/ src/Prisma.Workspace.Application/
+COPY src/Prisma.Workspace.Infrastructure/ src/Prisma.Workspace.Infrastructure/
+COPY src/Prisma.Workspace.Api/ src/Prisma.Workspace.Api/
 
 # Copy compiled frontend assets into wwwroot of the Web API
-COPY --from=frontend-build /app/web/dist src/Detran.Kanban.Api/wwwroot/
+COPY --from=frontend-build /app/web/dist src/Prisma.Workspace.Api/wwwroot/
 
 # Publish the API
-RUN dotnet publish src/Detran.Kanban.Api/Detran.Kanban.Api.csproj -c Release -o /app/publish
+RUN dotnet publish src/Prisma.Workspace.Api/Prisma.Workspace.Api.csproj -c Release -o /app/publish
 
 # Stage 3: Build the runtime container
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
@@ -40,4 +40,4 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Detran.Kanban.Api.dll"]
+ENTRYPOINT ["dotnet", "Prisma.Workspace.Api.dll"]

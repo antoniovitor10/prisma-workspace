@@ -33,11 +33,11 @@
 
 ```powershell
 .\scripts\audit-public-snapshot.ps1
-dotnet restore Detran.Kanban.sln
-dotnet build Detran.Kanban.sln --no-restore
-dotnet test tests/Detran.Kanban.Tests/ --no-build
+dotnet restore Prisma.Workspace.sln
+dotnet build Prisma.Workspace.sln --no-restore
+dotnet test tests/Prisma.Workspace.Tests/ --no-build
 
-Set-Location src/Detran.Kanban.Web
+Set-Location src/Prisma.Workspace.Web
 npm ci
 npm run build
 npx vitest run --pool=threads --maxWorkers=1 --fileParallelism=false

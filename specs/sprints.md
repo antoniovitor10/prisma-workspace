@@ -128,13 +128,13 @@ O código atual já possui:
 
 Evidências principais:
 
-- `src/Detran.Kanban.Domain/Entities/Sprint.cs`
-- `src/Detran.Kanban.Domain/Enums/SprintStatus.cs`
-- `src/Detran.Kanban.Application/Features/Sprints/SprintsFeature.cs`
-- `src/Detran.Kanban.Infrastructure/Repositories/SprintRepository.cs`
-- `src/Detran.Kanban.Api/Controllers/SprintsController.cs`
-- `src/Detran.Kanban.Web/src/features/scrum/SprintDashboard.tsx`
-- `src/Detran.Kanban.Web/src/features/scrum/SprintKanbanBoard.tsx`
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs`
+- `src/Prisma.Workspace.Domain/Enums/SprintStatus.cs`
+- `src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs`
+- `src/Prisma.Workspace.Infrastructure/Repositories/SprintRepository.cs`
+- `src/Prisma.Workspace.Api/Controllers/SprintsController.cs`
+- `src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx`
+- `src/Prisma.Workspace.Web/src/features/scrum/SprintKanbanBoard.tsx`
 
 ## Gaps entre o código atual e o contrato aprovado
 

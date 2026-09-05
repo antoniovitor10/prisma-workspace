@@ -217,13 +217,13 @@ O servidor valida acesso à tarefa e tenant. A UI não reconstrói a movimentaç
 - `DECISIONS.md` — D44, D46, D47, D49, D61 e D63.
 - `specs/audit-leadtime-history.md`.
 - `specs/work-item-management.md`.
-- `src/Detran.Kanban.Domain/Entities/StageHistory.cs`.
-- `src/Detran.Kanban.Domain/Entities/TaskEvent.cs`.
-- `src/Detran.Kanban.Application/Features/TaskFeed/Queries/GetTaskFeedQueries.cs`.
-- `src/Detran.Kanban.Application/Features/TaskFeed/Dtos/TaskFeedDtos.cs`.
-- `src/Detran.Kanban.Api/Controllers/TaskFeedController.cs`.
-- `src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx`.
-- `src/Detran.Kanban.Web/src/features/task/TaskStateGraph.tsx`.
+- `src/Prisma.Workspace.Domain/Entities/StageHistory.cs`.
+- `src/Prisma.Workspace.Domain/Entities/TaskEvent.cs`.
+- `src/Prisma.Workspace.Application/Features/TaskFeed/Queries/GetTaskFeedQueries.cs`.
+- `src/Prisma.Workspace.Application/Features/TaskFeed/Dtos/TaskFeedDtos.cs`.
+- `src/Prisma.Workspace.Api/Controllers/TaskFeedController.cs`.
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx`.
+- `src/Prisma.Workspace.Web/src/features/task/TaskStateGraph.tsx`.
 
 ## Rastreabilidade
 

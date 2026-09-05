@@ -212,11 +212,11 @@ Esta revisão altera somente documentação. Implementações futuras devem defi
 - `AGENTS.md`
 - `DECISIONS.md`, especialmente D8, D17, D18, D28, D34 e D47.
 - `ROADMAP.md`, Fase 3 e Fase 8.
-- `src/Detran.Kanban.Domain/Entities/Attachment.cs`
-- `src/Detran.Kanban.Api/Controllers/WorkItemAttachmentsController.cs`
-- `src/Detran.Kanban.Application/Features/Attachments/AttachmentsFeature.cs`
-- `src/Detran.Kanban.Infrastructure/Storage/LocalFileStorage.cs`
-- `src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx`
+- `src/Prisma.Workspace.Domain/Entities/Attachment.cs`
+- `src/Prisma.Workspace.Api/Controllers/WorkItemAttachmentsController.cs`
+- `src/Prisma.Workspace.Application/Features/Attachments/AttachmentsFeature.cs`
+- `src/Prisma.Workspace.Infrastructure/Storage/LocalFileStorage.cs`
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx`
 
 ## Rastreabilidade
 

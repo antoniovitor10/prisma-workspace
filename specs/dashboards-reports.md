@@ -382,13 +382,13 @@ Estas decisões não reabrem o contrato funcional aprovado, mas precisam ser det
 - `AGENTS.md`.
 - `DECISIONS.md` — D30 e D31.
 - `ROADMAP.md` — Fases 7 e 8.
-- `src/Detran.Kanban.Api/Controllers/DashboardsController.cs`.
-- `src/Detran.Kanban.Api/Controllers/ReportsController.cs`.
-- `src/Detran.Kanban.Api/Controllers/ReportBuilderController.cs`.
-- `src/Detran.Kanban.Application/Features/Reports/PreparedReportsAndDashboardsFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Reports/OrganizationHoursReportFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Reports/ReportBuilderFeature.cs`.
-- `src/Detran.Kanban.Web/src/features/reports/ReportsHub.tsx`.
+- `src/Prisma.Workspace.Api/Controllers/DashboardsController.cs`.
+- `src/Prisma.Workspace.Api/Controllers/ReportsController.cs`.
+- `src/Prisma.Workspace.Api/Controllers/ReportBuilderController.cs`.
+- `src/Prisma.Workspace.Application/Features/Reports/PreparedReportsAndDashboardsFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Reports/OrganizationHoursReportFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Reports/ReportBuilderFeature.cs`.
+- `src/Prisma.Workspace.Web/src/features/reports/ReportsHub.tsx`.
 - [Runrun.it — Como funciona](https://www.runrun.it/pt-BR/como-o-runrun-it-funciona).
 - Materiais oficiais do blog do Runrun.it consultados durante a revisão funcional.
 - CAND-DASHBOARDS-REPORTS -> SPEC-DASHBOARDS-REPORTS -> implementação futura -> testes -> homologação.

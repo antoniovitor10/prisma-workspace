@@ -202,12 +202,12 @@ Qualquer alteração de schema exige `G-MIGRATION`. Alterações na semântica i
 - `specs/auth-security.md`
 - `specs/work-item-management.md`
 - `specs/task-history.md`
-- `src/Detran.Kanban.Domain/Entities/WikiPage.cs`
-- `src/Detran.Kanban.Domain/Entities/WikiPageRevision.cs`
-- `src/Detran.Kanban.Api/Controllers/WikiController.cs`
-- `src/Detran.Kanban.Application/Features/Wiki/WikiFeature.cs`
-- `src/Detran.Kanban.Application/Features/Wiki/WikiPhase2Feature.cs`
-- `src/Detran.Kanban.Web/src/pages/ProjectWiki.tsx`
+- `src/Prisma.Workspace.Domain/Entities/WikiPage.cs`
+- `src/Prisma.Workspace.Domain/Entities/WikiPageRevision.cs`
+- `src/Prisma.Workspace.Api/Controllers/WikiController.cs`
+- `src/Prisma.Workspace.Application/Features/Wiki/WikiFeature.cs`
+- `src/Prisma.Workspace.Application/Features/Wiki/WikiPhase2Feature.cs`
+- `src/Prisma.Workspace.Web/src/pages/ProjectWiki.tsx`
 
 ## Rollback
 

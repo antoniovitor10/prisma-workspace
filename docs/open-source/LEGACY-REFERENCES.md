@@ -5,7 +5,7 @@
 
 | Referência | Arquivos |
 |---|---:|
-| `Detran.Kanban` | 448 |
+| `Prisma.Workspace` | 448 |
 | `Detran` em qualquer capitalização | 460 |
 | `Runrun` em qualquer capitalização | 28 |
 | `nordevs.com.br` | 2 |
@@ -23,7 +23,7 @@
 ## Regra de tratamento
 
 1. Domínios, IPs, e-mails, credenciais demonstrativas e nomes institucionais na superfície/configuração devem chegar a zero.
-2. `Detran.Kanban` será migrado mecanicamente para `Prisma.Workspace` em lote dedicado, incluindo solution, pastas,
+2. `Prisma.Workspace` será migrado mecanicamente para `Prisma.Workspace` em lote dedicado, incluindo solution, pastas,
    projetos, namespaces, referências e Dockerfile.
 3. Referências históricas em ADRs/specs não serão apagadas cegamente; devem ser anonimizadas ou mantidas somente
    quando necessárias para explicar uma decisão técnica, sem identificar pessoas ou dados operacionais.

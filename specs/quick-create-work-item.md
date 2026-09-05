@@ -204,11 +204,11 @@ O responsável começa sempre vazio. O sistema não escolhe automaticamente o us
 - `specs/boards-stages-wip.md`
 - `specs/task-history.md`
 - `specs/top-navigation-shell.md`
-- `src/Detran.Kanban.Web/src/components/GlobalActions.tsx`
-- `src/Detran.Kanban.Web/src/pages/Kanban.tsx`
-- `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommand.cs`
-- `src/Detran.Kanban.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs`
-- `src/Detran.Kanban.Api/Controllers/WorkItemsController.cs`
+- `src/Prisma.Workspace.Web/src/components/GlobalActions.tsx`
+- `src/Prisma.Workspace.Web/src/pages/Kanban.tsx`
+- `src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommand.cs`
+- `src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs`
+- `src/Prisma.Workspace.Api/Controllers/WorkItemsController.cs`
 
 ## Rollback
 

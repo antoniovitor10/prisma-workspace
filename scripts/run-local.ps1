@@ -4,9 +4,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$apiProjectPath = Join-Path $workspace 'src\Detran.Kanban.Api'
-$apiDllPath = Join-Path $apiProjectPath 'bin\Release\net8.0\Detran.Kanban.Api.dll'
-$webPath = Join-Path $workspace 'src\Detran.Kanban.Web'
+$apiProjectPath = Join-Path $workspace 'src\Prisma.Workspace.Api'
+$apiDllPath = Join-Path $apiProjectPath 'bin\Release\net8.0\Prisma.Workspace.Api.dll'
+$webPath = Join-Path $workspace 'src\Prisma.Workspace.Web'
 $logPath = Join-Path $workspace '.runlogs'
 New-Item -ItemType Directory -Force -Path $logPath | Out-Null
 
@@ -21,7 +21,7 @@ if (-not (Test-NetConnection localhost -Port 1433 -InformationLevel Quiet)) {
 }
 
 if (-not $SkipBuild) {
-    dotnet build (Join-Path $workspace 'Detran.Kanban.sln') --configuration Release
+    dotnet build (Join-Path $workspace 'Prisma.Workspace.sln') --configuration Release
     if ($LASTEXITCODE -ne 0) { throw 'Falha no build .NET.' }
     Push-Location $webPath
     try {

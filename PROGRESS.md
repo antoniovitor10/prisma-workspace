@@ -5,6 +5,14 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-05] — Codex — Rename técnico Prisma no repositório novo
+- **Fiz:** Em branch isolada, migrei solution, projetos, pastas, assemblies, namespaces, ProjectReferences, Dockerfile, scripts e caminhos canônicos de `Detran.Kanban` para `Prisma.Workspace`. Preservei IDs/classes históricas de migrations, schema, tabelas, nomes de banco existentes e comportamento. Registrei D76 e atualizei D68. Removi quatro assets órfãos do frontend e adicionei `.dockerignore`, reduzindo o contexto do build Docker de mais de 253 MB para 4,72 MB. O Cursor CLI foi testado com modelo explícito, mas não iniciou ferramentas de escrita sem modo irrestrito; o lote foi executado mecanicamente sem `--force`/`--yolo`.
+- **Arquivos tocados:** `Prisma.Workspace.sln`, `src/Prisma.Workspace.*`, `tests/Prisma.Workspace.Tests`, Dockerfile, scripts, specs, contexto, ferramentas e documentação com caminhos técnicos.
+- **Decisões novas:** D76 encerra a compatibilidade temporária de nomes técnicos no novo repositório sem alterar persistência.
+- **Testes:** `dotnet restore` aprovado; build .NET com 0 erros e os mesmos 2 avisos nullable legados; **105/105** testes .NET; build frontend aprovado; Vitest **46/46** em 21 arquivos; lint com 0 erros e os mesmos 8 avisos legados; Context Explorer **42/42**; auditoria do snapshot com 730 arquivos e zero segredos; imagem `prisma-workspace:rename-test` construída com sucesso. E2E não se aplica a este lote por ser renomeação interna sem mudança de interface pública ou comportamento.
+- **Próximo passo:** integrar a branch e iniciar o lote de instalação autônoma/documentação pública.
+- **Bloqueios:** nenhum bloqueio de escopo; Cursor CLI não está aprovado para escrita irrestrita neste Windows.
+
 ## [2026-09-05] — Codex — Início da distribuição open source em repositório limpo
 - **Fiz:** Formalizei a Fase 13, D75, `US-OPEN-SOURCE-001`, `SPEC-OPEN-SOURCE-DISTRIBUTION` e TASK-041. Criei via Git Bash/GitHub CLI o repositório privado `antoniovitor10/prisma-workspace`, sem importar o histórico do `runrun`, e montei um snapshot por allowlist. Excluí documentos de entrada, migração de cliente, estados de agentes, deploy privado, `.env*`, artefatos e outputs. O Gitleaks detectou um token no storage state do Playwright; removi somente sua cópia do snapshot, mantive a origem privada e adicionei bloqueios permanentes em `.gitignore` e scripts de auditoria Windows/Linux. Corrigi o materializador para preservar histórias humanas e atualizei os contadores canônicos para o novo domínio/spec/tarefa.
 - **Arquivos tocados:** `DECISIONS.md`, `ROADMAP.md`, `backlog.md`, `context/index.yaml`, `stories/US-OPEN-SOURCE-001.md`, `stories/US-WORK-NATURE-001.md`, `stories/catalog.json`, `specs/open-source-distribution.md`, `docs/OPEN-SOURCE-PLAN.md`, Context Explorer e `PROGRESS.md`; novo repositório privado em `C:\Users\Vitor\Desktop\prisma-workspace`.

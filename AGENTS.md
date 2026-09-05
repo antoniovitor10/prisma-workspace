@@ -27,12 +27,12 @@ dashboards, Gantt, filtros salvos, ações em massa e automações.
 
 ## Estrutura da solution
 ```
-src/Detran.Kanban.Domain          -> entidades, enums, regras de domínio (sem dependências)
-src/Detran.Kanban.Application      -> casos de uso (MediatR), DTOs, validators, interfaces
-src/Detran.Kanban.Infrastructure   -> EF Core, DbContext, migrations, repositórios
-src/Detran.Kanban.Api              -> controllers/endpoints, DI, middlewares, auth
-tests/Detran.Kanban.Tests          -> xUnit
-src/Detran.Kanban.Web              -> React 19 + TypeScript + Vite + Styled Components
+src/Prisma.Workspace.Domain          -> entidades, enums, regras de domínio (sem dependências)
+src/Prisma.Workspace.Application      -> casos de uso (MediatR), DTOs, validators, interfaces
+src/Prisma.Workspace.Infrastructure   -> EF Core, DbContext, migrations, repositórios
+src/Prisma.Workspace.Api              -> controllers/endpoints, DI, middlewares, auth
+tests/Prisma.Workspace.Tests          -> xUnit
+src/Prisma.Workspace.Web              -> React 19 + TypeScript + Vite + Styled Components
 ```
 
 ## Convenções (valem pra QUALQUER IA — mantêm o código uniforme)
@@ -56,12 +56,12 @@ Antes de concluir qualquer tarefa que modifique:
 
 1. **Garantir ambiente E2E ativo:**
    - API rodando com banco E2E: `.\scripts\run-api-e2e.ps1`
-   - Frontend rodando: `npm run dev` (em `src/Detran.Kanban.Web`)
+   - Frontend rodando: `npm run dev` (em `src/Prisma.Workspace.Web`)
    - SQL Server acessível
 
 2. **Executar testes E2E:**
    ```bash
-   cd src/Detran.Kanban.Web
+   cd src/Prisma.Workspace.Web
    npm run e2e
    ```
 
@@ -82,7 +82,7 @@ Antes de concluir qualquer tarefa que modifique:
 3. Então execute os testes normalmente
 
 **Documentação:**
-- Estrutura e convenções: `src/Detran.Kanban.Web/e2e/README.md`
+- Estrutura e convenções: `src/Prisma.Workspace.Web/e2e/README.md`
 - Decisão formal: D40 em `DECISIONS.md`
 
 ## Golden rules (multi-IA)

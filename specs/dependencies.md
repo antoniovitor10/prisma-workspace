@@ -145,17 +145,17 @@ contrato operacional e devem ficar inacessíveis aos fluxos normais quando a ocu
 - `AGENTS.md`.
 - `DECISIONS.md` — D35, D53, D54 e D59.
 - `ROADMAP.md` — Fase 8.
-- `src/Detran.Kanban.Domain/Entities/WorkItemCollaboration.cs` (`WorkItemLink`).
-- `src/Detran.Kanban.Domain/Enums/WorkItemLinkType.cs`.
-- `src/Detran.Kanban.Domain/Services/DependencyGraphService.cs`.
-- `src/Detran.Kanban.Application/Features/WorkItems/WorkItemManagementFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Backlog/BacklogFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Me/MyWorkDashboardFeature.cs`.
-- `src/Detran.Kanban.Application/Features/Reports/ReportBuilderFeature.cs`.
-- `src/Detran.Kanban.Web/src/components/TaskDetailDrawer.tsx`.
-- `src/Detran.Kanban.Web/src/features/task/DependencyAutocomplete.tsx`.
-- `src/Detran.Kanban.Web/src/features/scrum/BacklogPlanner.tsx`.
-- `tests/Detran.Kanban.Tests/DependencyGraphTests.cs`.
+- `src/Prisma.Workspace.Domain/Entities/WorkItemCollaboration.cs` (`WorkItemLink`).
+- `src/Prisma.Workspace.Domain/Enums/WorkItemLinkType.cs`.
+- `src/Prisma.Workspace.Domain/Services/DependencyGraphService.cs`.
+- `src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Me/MyWorkDashboardFeature.cs`.
+- `src/Prisma.Workspace.Application/Features/Reports/ReportBuilderFeature.cs`.
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx`.
+- `src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.tsx`.
+- `src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx`.
+- `tests/Prisma.Workspace.Tests/DependencyGraphTests.cs`.
 
 ## Rollback documental
 

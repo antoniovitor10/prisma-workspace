@@ -195,12 +195,12 @@ Transições:
 - `AGENTS.md`
 - `DECISIONS.md`
 - `ROADMAP.md`
-- `src/Detran.Kanban.Domain/Entities/Approval.cs`
-- `src/Detran.Kanban.Application/Features/Approvals/Commands/RequestApprovalCommandHandler.cs`
-- `src/Detran.Kanban.Application/Features/Approvals/Commands/DecideApprovalCommandHandler.cs`
-- `src/Detran.Kanban.Api/Controllers/ApprovalsController.cs`
-- `src/Detran.Kanban.Web/src/features/task/TaskApprovalPanel.tsx`
-- `src/Detran.Kanban.Web/src/features/portal/ProjectSlaSettings.tsx`
+- `src/Prisma.Workspace.Domain/Entities/Approval.cs`
+- `src/Prisma.Workspace.Application/Features/Approvals/Commands/RequestApprovalCommandHandler.cs`
+- `src/Prisma.Workspace.Application/Features/Approvals/Commands/DecideApprovalCommandHandler.cs`
+- `src/Prisma.Workspace.Api/Controllers/ApprovalsController.cs`
+- `src/Prisma.Workspace.Web/src/features/task/TaskApprovalPanel.tsx`
+- `src/Prisma.Workspace.Web/src/features/portal/ProjectSlaSettings.tsx`
 
 ## Rollback documental
 
