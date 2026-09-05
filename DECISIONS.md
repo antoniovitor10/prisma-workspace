@@ -438,3 +438,9 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   para banco, anexos e Data Protection. O perfil local padrão usa SQL Server 2022 Developer somente para
   desenvolvimento/testes e exige aceite explícito da EULA; produção requer edição/instância devidamente licenciada e
   gestão externa de segredos. O banco não publica a porta 1433 no host por padrão. (2026-09-05)
+
+- **D78** — O CI comunitário separa gates de backend, frontend, governança e imagem Docker; usa permissões mínimas,
+  cancelamento de execuções obsoletas e Actions fixadas por SHA, mantidas pelo Dependabot. Dependency Review será
+  ativado na promoção pública, pois no repositório privado pessoal sua disponibilidade não é garantida. Advisories
+  críticos bloqueiam o frontend; o passivo alto/moderado conhecido é corrigido em lotes testados, sem `audit fix`
+  major automático. (2026-09-05)

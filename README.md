@@ -32,6 +32,17 @@ edição ou preparar produção.
 
 O plano completo está em [`docs/OPEN-SOURCE-PLAN.md`](docs/OPEN-SOURCE-PLAN.md).
 
+## Projeto e comunidade
+
+- [Como contribuir](CONTRIBUTING.md)
+- [Política de segurança](SECURITY.md)
+- [Suporte](SUPPORT.md)
+- [Governança](GOVERNANCE.md)
+- [Integração contínua](docs/maintenance/continuous-integration.md)
+
+A licença ainda é uma decisão humana pendente. Até que um arquivo `LICENSE` seja aprovado e o repositório seja tornado
+público, este código não deve ser tratado como uma distribuição open source publicada.
+
 ## Segurança
 
 Não publique credenciais em issues, commits ou pull requests. A política pública e o canal de reporte serão definidos
