@@ -33,6 +33,9 @@ RUN dotnet publish src/Prisma.Workspace.Api/Prisma.Workspace.Api.csproj -c Relea
 # Stage 3: Build the runtime container
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /app/publish .
 
 # Environment variables
@@ -40,4 +43,6 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
+    CMD curl --fail --silent http://localhost:8080/health || exit 1
 ENTRYPOINT ["dotnet", "Prisma.Workspace.Api.dll"]

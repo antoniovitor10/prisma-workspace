@@ -64,7 +64,7 @@ if (-not $gitleaks) {
     Write-Error 'gitleaks não está instalado; a auditoria não pode ser considerada concluída.'
 }
 
-& $gitleaks.Source dir $repositoryRoot --no-banner --redact=100 --exit-code 1
+& $gitleaks.Source dir $repositoryRoot --config (Join-Path $repositoryRoot '.gitleaks.toml') --no-banner --redact=100 --exit-code 1
 if ($LASTEXITCODE -ne 0) {
     throw "gitleaks encontrou conteúdo suspeito (código $LASTEXITCODE)."
 }

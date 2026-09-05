@@ -5,6 +5,14 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-05] — Codex — Quickstart Docker autônomo e persistente
+- **Fiz:** Entreguei `compose.yaml` independente da Nordevs, geradores de segredos para PowerShell e shell POSIX, `.env.example`, healthchecks, volumes persistentes de banco/anexos/Data Protection e guia de instalação. Registrei D77 e deixei explícito o aceite da EULA e o limite não produtivo do SQL Server Developer. O contexto Docker permanece em 4,72 MB. A auditoria ganhou configuração explícita para ignorar somente arquivos locais/dependências reconstruíveis, mantendo a rejeição de qualquer `.env` candidato ao Git.
+- **Arquivos tocados:** `compose.yaml`, `.env.example`, `.gitleaks.toml`, `Dockerfile`, scripts de setup/auditoria, `docs/installation/docker.md`, `README.md`, `DECISIONS.md` e `PROGRESS.md`.
+- **Decisões novas:** D77 define o quickstart local isolado, segredos gerados, persistência e política de licença do banco.
+- **Testes:** geração de `.env` no Windows PowerShell aprovada sem exposição dos segredos; sintaxe do script POSIX aprovada; `docker compose config --quiet` aprovado; build e instalação limpa aprovados; banco e aplicação healthy; `/health` e `/` responderam 200; título `Prisma WorkSpace`; 20 migrations aplicadas; `docker compose down` seguido de nova subida preservou as 20 migrations e a saúde dos serviços; auditoria final com 737 candidatos e zero segredos, inclusive com `.env` local ignorado.
+- **Próximo passo:** especificar e implementar onboarding seguro do primeiro administrador; depois ensaiar backup/restauração e preparar CI comunitária.
+- **Bloqueios:** instalação técnica funciona, mas uma instância nova ainda não possui fluxo público seguro para criar o primeiro administrador. Repositório continua privado até licença e gates finais.
+
 ## [2026-09-05] — Codex — Rename técnico Prisma no repositório novo
 - **Fiz:** Em branch isolada, migrei solution, projetos, pastas, assemblies, namespaces, ProjectReferences, Dockerfile, scripts e caminhos canônicos de `Detran.Kanban` para `Prisma.Workspace`. Preservei IDs/classes históricas de migrations, schema, tabelas, nomes de banco existentes e comportamento. Registrei D76 e atualizei D68. Removi quatro assets órfãos do frontend e adicionei `.dockerignore`, reduzindo o contexto do build Docker de mais de 253 MB para 4,72 MB. O Cursor CLI foi testado com modelo explícito, mas não iniciou ferramentas de escrita sem modo irrestrito; o lote foi executado mecanicamente sem `--force`/`--yolo`.
 - **Arquivos tocados:** `Prisma.Workspace.sln`, `src/Prisma.Workspace.*`, `tests/Prisma.Workspace.Tests`, Dockerfile, scripts, specs, contexto, ferramentas e documentação com caminhos técnicos.

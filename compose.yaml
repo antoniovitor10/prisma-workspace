@@ -1,0 +1,56 @@
+name: prisma-workspace
+
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "${MSSQL_PID:-Developer}"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Execute o script de setup para gerar o arquivo .env}"
+    volumes:
+      - prisma_sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
+          -P "$${MSSQL_SA_PASSWORD}" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Server=database,1433;Database=${PRISMA_DB_NAME:-PrismaWorkspace};User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True
+      Jwt__Key: "${PRISMA_JWT_KEY:?Execute o script de setup para gerar o arquivo .env}"
+      Jwt__Issuer: "PrismaWorkspaceApi"
+      Jwt__Audience: "PrismaWorkspaceClients"
+      FrontendBaseUrl: "http://localhost:${PRISMA_HTTP_PORT:-8080}"
+      Cors__AllowedOrigins__0: "http://localhost:${PRISMA_HTTP_PORT:-8080}"
+    ports:
+      - "${PRISMA_HTTP_PORT:-8080}:8080"
+    volumes:
+      - prisma_attachments:/app/App_Data
+      - prisma_dataprotection_keys:/root/.aspnet/DataProtection-Keys
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  prisma_sqlserver_data:
+  prisma_attachments:
+  prisma_dataprotection_keys:

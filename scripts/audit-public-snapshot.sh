@@ -45,5 +45,5 @@ if ((${#violations[@]} > 0)); then
   exit 1
 fi
 
-gitleaks dir "$repository_root" --no-banner --redact=100 --exit-code 1
+gitleaks dir "$repository_root" --config "$repository_root/.gitleaks.toml" --no-banner --redact=100 --exit-code 1
 printf 'Snapshot aprovado: %d arquivos candidatos e zero achados do gitleaks.\n' "${#files[@]}"

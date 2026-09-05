@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Arquivos locais ignorados pelo Git e dependências reconstruíveis"
+paths = [
+  '''(^|[\\/])\.env$''',
+  '''(^|[\\/])node_modules([\\/]|$)''',
+  '''(^|[\\/])(bin|obj|dist|coverage|test-results|playwright-report|blob-report)([\\/]|$)''',
+  '''(^|[\\/])e2e[\\/]\.auth([\\/]|$)''',
+  '''(^|[\\/])\.git([\\/]|$)'''
+]
