@@ -210,7 +210,8 @@ domains:
     stories:
       - "stories/US-OPEN-SOURCE-001.md"
     code:
-      - "docker-compose.yml"
+      - "compose.yaml"
+      - "Dockerfile"
       - ".github"
       - "scripts"
       - "src"
@@ -219,6 +220,11 @@ domains:
       - "src/Prisma.Workspace.Web/e2e"
     docs:
       - "docs/OPEN-SOURCE-PLAN.md"
+      - "docs/installation/docker.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "SUPPORT.md"
+      - "GOVERNANCE.md"
     gates:
       g_scope: "approved-2026-09-05"
       g_spec: "approved-2026-09-05"

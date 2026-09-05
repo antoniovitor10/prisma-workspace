@@ -5,6 +5,14 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-05] — Codex — Fundação comunitária e CI
+- **Fiz:** Criei CI independente para backend, frontend, Context Explorer e imagem Docker; fixei Actions por SHA; configurei Dependabot para Actions, npm e NuGet; escrevi guias iniciais de contribuição, segurança, suporte, governança e manutenção do CI; atualizei o índice de contexto e registrei D78. A licença e canais comerciais continuam deliberadamente sem valor inventado.
+- **Arquivos tocados:** `.github/workflows/ci.yml`, `.github/dependabot.yml`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, `GOVERNANCE.md`, `docs/maintenance/continuous-integration.md`, `README.md`, `context/index.yaml`, `DECISIONS.md` e `PROGRESS.md`.
+- **Decisões novas:** D78 define gates de CI, permissões mínimas, pin por SHA, atualização automatizada controlada e momento de habilitar Dependency Review.
+- **Testes:** YAML lint aprovado; build .NET 0 erros/2 avisos legados; **105/105** testes .NET; frontend lint 0 erros/8 avisos legados; Vitest **46/46**; build frontend aprovado; npm audit bloqueia corretamente apenas nível crítico (0 crítico; passivo de 5 altas/28 moderadas permanece registrado); Context Explorer **42/42**; auditoria Gitleaks sem achados. Dockerfile já foi construído integralmente no lote imediatamente anterior e não mudou neste lote. E2E não se aplica por serem somente CI e documentação, sem alteração de comportamento.
+- **Próximo passo:** validar a execução do workflow no GitHub, integrar o lote e produzir a spec derivada do onboarding do primeiro administrador para aprovação humana.
+- **Bloqueios:** licença, política formal de marca e `G-DEPLOY` seguem pendentes; não bloqueiam este lote privado.
+
 ## [2026-09-05] — Codex — Quickstart Docker autônomo e persistente
 - **Fiz:** Entreguei `compose.yaml` independente da Nordevs, geradores de segredos para PowerShell e shell POSIX, `.env.example`, healthchecks, volumes persistentes de banco/anexos/Data Protection e guia de instalação. Registrei D77 e deixei explícito o aceite da EULA e o limite não produtivo do SQL Server Developer. O contexto Docker permanece em 4,72 MB. A auditoria ganhou configuração explícita para ignorar somente arquivos locais/dependências reconstruíveis, mantendo a rejeição de qualquer `.env` candidato ao Git.
 - **Arquivos tocados:** `compose.yaml`, `.env.example`, `.gitleaks.toml`, `Dockerfile`, scripts de setup/auditoria, `docs/installation/docker.md`, `README.md`, `DECISIONS.md` e `PROGRESS.md`.
