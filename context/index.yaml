@@ -1,5 +1,5 @@
 version: "1.0"
-description: "Indice deterministico de contexto por dominio para runrun-copia"
+description: "Indice deterministico de contexto por dominio para Prisma WorkSpace"
 
 authority_hierarchy:
   - "1. Usuário Humano (PO)"
@@ -231,6 +231,36 @@ domains:
       g_license: "pending"
       g_migration: "conditional"
       g_deploy: "pending"
+      backend_build: "dotnet build Prisma.Workspace.sln"
+      backend_test: "dotnet test tests/Prisma.Workspace.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_lint: "npm run lint"
+      frontend_e2e: "npm run e2e"
+
+  installation_setup:
+    spec: "specs/installation-setup.md"
+    stories:
+      - "stories/US-INSTALLATION-SETUP-001.md"
+      - "stories/US-OPEN-SOURCE-001.md"
+    code:
+      - "src/Prisma.Workspace.Api/Program.cs"
+      - "src/Prisma.Workspace.Api/Controllers/AuthController.cs"
+      - "src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs"
+      - "src/Prisma.Workspace.Infrastructure/Persistence/DbInitializer.cs"
+      - "src/Prisma.Workspace.Domain/Entities/Organization.cs"
+      - "src/Prisma.Workspace.Domain/Enums/OrganizationRole.cs"
+      - "src/Prisma.Workspace.Web/src/pages/Auth.tsx"
+    tests:
+      - "tests/Prisma.Workspace.Tests/OrganizationDomainTests.cs"
+      - "tests/Prisma.Workspace.Tests/UserDirectoryTests.cs"
+      - "src/Prisma.Workspace.Web/e2e/smoke.spec.ts"
+    docs:
+      - "docs/installation/docker.md"
+      - "specs/open-source-distribution.md"
+    gates:
+      g_spec: "pending"
+      g_migration: "pending"
       backend_build: "dotnet build Prisma.Workspace.sln"
       backend_test: "dotnet test tests/Prisma.Workspace.Tests/"
       frontend_build: "npm run build"

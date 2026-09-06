@@ -156,7 +156,6 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   risk: médio
   dependencies: []
   affected_areas:
-    - src/Prisma.Workspace.Domain/Entities/OrganizationMember.cs
     - src/Prisma.Workspace.Infrastructure/Identity/UserDirectory.cs
     - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
     - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
@@ -1055,6 +1054,36 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
   human_gate: sim (G-SCOPE e G-SPEC aprovados em 2026-09-05; licença, G-MIGRATION condicional e G-DEPLOY pendentes)
   status: in_progress
   priority: P0
+
+- id: TASK-042
+  spec: SPEC-INSTALLATION-SETUP (specs/installation-setup.md)
+  requirement: Implementar, após aprovação humana, o setup único e atômico da primeira administração Community, status mínimo, token externo redigido, seed demo Development opt-in e UI/E2E de primeiro acesso.
+  domain: installation_setup
+  type: feature
+  risk: alto
+  dependencies:
+    - TASK-041
+  affected_areas:
+    - src/Prisma.Workspace.Api/Program.cs
+    - src/Prisma.Workspace.Api/Controllers
+    - src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/DbInitializer.cs
+    - src/Prisma.Workspace.Domain/Entities/Organization.cs
+    - src/Prisma.Workspace.Web/src/pages/Auth.tsx
+    - src/Prisma.Workspace.Web/e2e
+    - tests/Prisma.Workspace.Tests
+  gates:
+    - G-SPEC
+    - backend-build
+    - backend-test
+    - frontend-build
+    - frontend-test
+    - frontend-lint
+    - frontend-e2e
+    - G-MIGRATION
+  human_gate: sim (G-SPEC e G-MIGRATION pendentes; nenhum agente pode autoaprová-los)
+  status: paused
+  priority: P0
 ```
 
 ---
@@ -1102,6 +1131,9 @@ As tarefas listadas abaixo requerem validação ou aprovação humana (Human Gat
      seguro e `G-WORKFLOW` somente se houver automação de etapas.
    - **Situação:** concluída e publicada em 2026-09-04; legados permanecem `Não classificado` e novos projetos exigem
      Natureza e Tipo de Trabalho. `G-WORKFLOW` não se aplicou porque nenhuma automação foi criada.
+15. **TASK-042 (Setup inicial da instalação):**
+   - **Motivo:** cria a primeira identidade, organização e membership Administrator e expõe endpoints anônimos de
+     bootstrap; exige `G-SPEC` e `G-MIGRATION` pendentes para o singleton de instalação.
 
 ---
 

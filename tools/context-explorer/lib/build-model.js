@@ -29,7 +29,8 @@ const DOMAIN_ORDER = [
   'access',
   'visual_experience',
   'project_queries',
-  'open_source_distribution'
+  'open_source_distribution',
+  'installation_setup'
 ];
 
 function domainLabel(domainKey) {
