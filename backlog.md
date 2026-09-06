@@ -1,4 +1,4 @@
-# Backlog Implementável - Projeto runrun-copia
+# Backlog Implementável - Prisma WorkSpace
 
 Este arquivo contém o backlog estruturado de tarefas derivadas das especificações técnicas do projeto.
 

@@ -5,6 +5,14 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-05] — Codex + Cursor + Terra/Luna — Neutralização da superfície pública
+- **Fiz:** Usei Cursor CLI em lote mecânico restrito para neutralizar o Swagger; como a sessão ficou sem resposta após a primeira alteração, interrompi com segurança e deleguei as substituições restantes ao subagente Terra. O subagente Luna auditou, em modo somente leitura, as configurações e o seed e confirmou os resíduos institucionais. Removi referências públicas a Detran/runrun dos metadados da API, defaults JWT, nome do arquivo de log, descrição do Context Explorer e título do backlog. O seed institucional foi deliberadamente mantido fora deste lote porque sua neutralização e ativação opt-in alteram comportamento e exigem história/spec aprovada.
+- **Arquivos tocados:** `src/Prisma.Workspace.Api/Program.cs`, `src/Prisma.Workspace.Api/appsettings.json`, `tools/context-explorer/package.json`, `backlog.md` e `PROGRESS.md`.
+- **Decisões novas:** nenhuma; o lote aplica D68 e D75 sem mudar arquitetura, schema ou comportamento funcional.
+- **Testes:** `git diff --check` aprovado; build .NET com 0 erros/0 avisos; **105/105** testes .NET; Context Explorer **42/42**; busca dirigida sem nenhuma referência-alvo remanescente fora do seed/histórico; auditoria do snapshot com 744 arquivos candidatos e zero achados do Gitleaks. E2E não se aplica porque o lote altera apenas metadados, defaults de identidade e documentação, sem mudar endpoint, schema ou fluxo de UI.
+- **Próximo passo:** criar história e spec para tornar o dataset demonstrativo neutro e opt-in, incluindo um bootstrap seguro do primeiro administrador, e submetê-las ao `G-SPEC` humano antes de alterar comportamento.
+- **Bloqueios:** seed e onboarding não podem ser implementados sem spec aprovada; licença, política de marca e `G-DEPLOY` continuam pendentes antes de tornar o repositório público.
+
 ## [2026-09-05] — Codex — Fundação comunitária e CI
 - **Fiz:** Criei CI independente para backend, frontend, Context Explorer e imagem Docker; fixei Actions por SHA; configurei Dependabot para Actions, npm e NuGet; escrevi guias iniciais de contribuição, segurança, suporte, governança e manutenção do CI; atualizei o índice de contexto e registrei D78. A licença e canais comerciais continuam deliberadamente sem valor inventado.
 - **Arquivos tocados:** `.github/workflows/ci.yml`, `.github/dependabot.yml`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, `GOVERNANCE.md`, `docs/maintenance/continuous-integration.md`, `README.md`, `context/index.yaml`, `DECISIONS.md` e `PROGRESS.md`.
