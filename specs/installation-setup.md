@@ -1,6 +1,6 @@
 # SPEC-INSTALLATION-SETUP: Configuração inicial segura da instalação Community
 
-**Status:** draft
+**Status:** approved
 
 ## Objective
 
@@ -188,8 +188,8 @@ exige nova história, spec e decisão humana.
 
 ## Human Gates
 
-- `G-SPEC`: **pending** — bloqueia integralmente implementação de endpoint, seed, UI e testes de comportamento.
-- `G-MIGRATION`: **pending** — obrigatório para o singleton e proibido antes de aprovação humana.
+- `G-SPEC`: **approved** pelo PO em 2026-09-05.
+- `G-MIGRATION`: **approved** pelo PO em 2026-09-05 para o singleton descrito nesta spec.
 - `G-COMPLETION`: conforme a classificação futura do lote de implementação.
 
 ## Traceability

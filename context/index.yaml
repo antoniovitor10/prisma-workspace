@@ -196,8 +196,8 @@ domains:
       - "tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs"
       - "src/Prisma.Workspace.Web/e2e/project-management.spec.ts"
     gates:
-      g_spec: "pending"
-      g_migration: "pending"
+      g_spec: "approved-2026-09-05"
+      g_migration: "approved-2026-09-05"
       g_workflow: "conditional"
       backend_build: "dotnet build Prisma.Workspace.sln"
       backend_test: "dotnet test tests/Prisma.Workspace.Tests/"

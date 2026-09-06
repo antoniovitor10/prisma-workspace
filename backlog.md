@@ -1081,8 +1081,8 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
     - frontend-lint
     - frontend-e2e
     - G-MIGRATION
-  human_gate: sim (G-SPEC e G-MIGRATION pendentes; nenhum agente pode autoaprová-los)
-  status: paused
+  human_gate: sim (G-SPEC e G-MIGRATION aprovados diretamente pelo PO em 2026-09-05)
+  status: in_progress
   priority: P0
 ```
 
@@ -1133,7 +1133,7 @@ As tarefas listadas abaixo requerem validação ou aprovação humana (Human Gat
      Natureza e Tipo de Trabalho. `G-WORKFLOW` não se aplicou porque nenhuma automação foi criada.
 15. **TASK-042 (Setup inicial da instalação):**
    - **Motivo:** cria a primeira identidade, organização e membership Administrator e expõe endpoints anônimos de
-     bootstrap; exige `G-SPEC` e `G-MIGRATION` pendentes para o singleton de instalação.
+     bootstrap; `G-SPEC` e `G-MIGRATION` foram aprovados diretamente pelo PO em 2026-09-05.
 
 ---
 

@@ -444,3 +444,9 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   ativado na promoção pública, pois no repositório privado pessoal sua disponibilidade não é garantida. Advisories
   críticos bloqueiam o frontend; o passivo alto/moderado conhecido é corrigido em lotes testados, sem `audit fix`
   major automático. (2026-09-05)
+
+- **D79** — O primeiro acesso de uma instalação Community usa setup anônimo de uso único protegido por token externo
+  forte, estado singleton persistido e transação serializável no SQL Server compartilhada entre Identity e domínio.
+  O primeiro e-mail nasce confirmado para permitir operação sem SMTP; o token trafega somente no header redigido
+  `X-Prisma-Setup-Token`. O seed demonstrativo deixa de ser implícito, passa a ser Development-only, opt-in e neutro,
+  e também encerra o setup. O PO aprovou diretamente `G-SPEC` e `G-MIGRATION` em 2026-09-05. (2026-09-05)
