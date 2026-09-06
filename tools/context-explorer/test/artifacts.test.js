@@ -8,8 +8,8 @@ const canonical = require('../lib/canonical');
 
 const artifacts = readArtifacts();
 
-test('contextIndex has 13 domains', () => {
-  assert.equal(Object.keys(artifacts.contextIndex.domains).length, 13);
+test('contextIndex has 14 domains', () => {
+  assert.equal(Object.keys(artifacts.contextIndex.domains).length, 14);
 });
 
 test('specs: canonical collection and template are separate', () => {

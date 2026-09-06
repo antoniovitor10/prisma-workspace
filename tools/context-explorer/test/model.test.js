@@ -26,7 +26,7 @@ test('buildModel gera um objeto com as chaves esperadas', () => {
 });
 
 test('artifactsSummary reflete contagens canônicas', () => {
-  assert.equal(model.artifactsSummary.domains, 13);
+  assert.equal(model.artifactsSummary.domains, 14);
   assert.equal(model.artifactsSummary.specs.canonical, canonical.canonicalSpecs);
   assert.equal(model.artifactsSummary.tasks, canonical.canonicalTasks);
   assert.equal(model.artifactsSummary.agents, 4);
@@ -37,10 +37,10 @@ test('artifactsSummary reflete contagens canônicas', () => {
   assert.equal(model.artifactsSummary.humanGates, 7);
 });
 
-test('selections tem specs e tasks canônicas e 13 domínios com id/label', () => {
+test('selections tem specs e tasks canônicas e 14 domínios com id/label', () => {
   assert.equal(model.selections.specs.length, canonical.canonicalSpecs);
   assert.equal(model.selections.tasks.length, canonical.canonicalTasks);
-  assert.equal(model.selections.domains.length, 13);
+  assert.equal(model.selections.domains.length, 14);
 
   for (const item of [...model.selections.specs, ...model.selections.tasks, ...model.selections.domains]) {
     assert.equal(typeof item.id, 'string');
@@ -49,7 +49,7 @@ test('selections tem specs e tasks canônicas e 13 domínios com id/label', () =
 });
 
 test('context tem domínios, specs e tasks com minimum/expanded/categoryStates', () => {
-  assert.equal(model.context.domainContexts.length, 13);
+  assert.equal(model.context.domainContexts.length, 14);
   assert.equal(model.context.specContexts.length, canonical.canonicalSpecs);
   assert.equal(model.context.taskContexts.length, canonical.canonicalTasks);
 

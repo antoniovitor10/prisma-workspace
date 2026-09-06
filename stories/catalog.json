@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-05T17:35:28.158Z",
+  "generatedAt": "2026-09-06T00:41:21.603Z",
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
@@ -17,6 +17,24 @@
         "when": "",
         "then": "Ao concluir o login, a pessoa acessa /home e entende imediatamente o que exige atenção.",
         "raw": "Ao concluir o login, a pessoa acessa /home e entende imediatamente o que exige atenção."
+      },
+      "status": "active",
+      "origin": "human_authored"
+    },
+    {
+      "id": "US-INSTALLATION-SETUP-001",
+      "specId": "SPEC-INSTALLATION-SETUP",
+      "specTitle": "Configuração inicial segura da instalação Community",
+      "specPath": "specs/installation-setup.md",
+      "sourceHeading": "História",
+      "title": "Configurar a primeira administração de uma instalação Community",
+      "narrative": "Como pessoa responsável por uma instalação nova do Prisma WorkSpace Community Quero concluir uma configuração inicial segura e única com minha organização e conta administradora Para começar a usar a instância sem credenciais distribuídas, usuários fictícios ou dados demonstrativos",
+      "actor": "pessoa responsável por uma instalação nova do Prisma WorkSpace Community",
+      "scenario": {
+        "given": "uma instalação nova, sem administrador ativo, com setup explicitamente habilitado e token externo válido",
+        "when": "informo nome, e-mail, senha, organização e slug válidos",
+        "then": "a instalação cria uma única conta administradora, sua organização e membership Administrator como uma operação atômica, sem criar conteúdo demonstrativo",
+        "raw": "Dado uma instalação nova, sem administrador ativo, com setup explicitamente habilitado e token externo válido Quando informo nome, e-mail, senha, organização e slug válidos Então a instalação cria uma única conta administradora, sua organização e membership Administrator como uma operação atômica, sem criar conteúdo demonstrativo"
       },
       "status": "active",
       "origin": "human_authored"
