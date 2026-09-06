@@ -167,9 +167,9 @@ try
     {
         c.SwaggerDoc("v1", new OpenApiInfo
         {
-            Title   = "Detran Kanban API",
+            Title   = "Prisma WorkSpace API",
             Version = "v1",
-            Description = "API interna do painel Kanban do Detran-SE."
+            Description = "API da Community Edition do Prisma WorkSpace para gestão ágil colaborativa."
         });
         c.OperationFilter<Prisma.Workspace.Api.OpenApi.OrganizationHeaderOperationFilter>();
         c.OperationFilter<Prisma.Workspace.Api.OpenApi.StandardResponsesOperationFilter>();
@@ -272,7 +272,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Detran Kanban API v1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Prisma WorkSpace API v1");
             c.RoutePrefix = "swagger";
         });
     }
