@@ -1917,6 +1917,7 @@ export const Kanban: React.FC = () => {
         } satisfies BacklogItem) : null}
         projectKey={projectKey}
         onOpenChange={open=>{if(!open){setSelectedItem(null);if(selectedBoardId)void loadBoardData(selectedBoardId);}}}
+        onItemUpdated={()=>{if(selectedBoardId)void loadBoardData(selectedBoardId);}}
       />
 
       {selectedItem && legacyTaskModalEnabled && (() => {

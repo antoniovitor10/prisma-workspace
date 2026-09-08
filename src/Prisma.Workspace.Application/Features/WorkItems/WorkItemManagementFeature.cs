@@ -340,6 +340,26 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         var now = DateTimeOffset.UtcNow;
         if (stageChanged)
         {
+            // O quadro lê a etapa e a posição do card em WorkItemBoardPlacement, não em
+            // WorkItem.StageId (ver GetWorkItemsByBoardIdQueryHandler). Sem sincronizar o
+            // placement aqui, mudar a etapa pela tela de detalhe deixa o card preso na coluna
+            // antiga no Kanban de forma permanente, mesmo após recarregar.
+            // Resolvemos os quadros secundários ANTES de mutar o agregado para que uma
+            // incompatibilidade de status deixe a tarefa exatamente como estava.
+            var compatibleStages = new Dictionary<Guid, Stage>();
+            if (destinationStage?.WorkflowStatusId is not null)
+            {
+                foreach (var placement in item.BoardPlacements.Where(p => p.BoardId != item.BoardId))
+                {
+                    var boardStages = await _stages.GetByBoardIdAsync(placement.BoardId, ct);
+                    compatibleStages[placement.BoardId] = boardStages
+                        .FirstOrDefault(s => s.WorkflowStatusId == destinationStage.WorkflowStatusId)
+                        ?? throw new DomainException(
+                            $"O quadro {placement.BoardId} nao possui uma etapa com o status "
+                            + $"'{destinationStage.WorkflowStatusId}'. Ajuste o mapeamento antes de mudar a etapa.");
+                }
+            }
+
             var currentHistory = item.StageHistories.FirstOrDefault(x => x.LeftAt is null);
             if (currentHistory is not null) currentHistory.LeftAt = now;
             if (request.StageId.HasValue)
@@ -353,6 +373,21 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
                 });
             item.StageId = request.StageId;
             item.WorkflowStatusId = destinationStage?.WorkflowStatusId;
+
+            // A etapa recebida sempre pertence ao quadro home (validado acima).
+            var homePlacement = item.BoardPlacements.FirstOrDefault(p => p.BoardId == item.BoardId);
+            if (homePlacement is not null)
+            {
+                homePlacement.StageId = request.StageId;
+                homePlacement.UpdatedAt = now;
+            }
+
+            foreach (var placement in item.BoardPlacements.Where(p => p.BoardId != item.BoardId))
+            {
+                if (!compatibleStages.TryGetValue(placement.BoardId, out var compatible)) continue;
+                placement.StageId = compatible.Id;
+                placement.UpdatedAt = now;
+            }
         }
 
         item.Title = request.Title.Trim();

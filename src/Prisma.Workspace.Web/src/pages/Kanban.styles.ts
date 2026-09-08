@@ -15,7 +15,9 @@ export const AppLayout = styled.div`
   background-color: ${props => props.theme.color.bg};
 `;
 
-export const MainContent = styled.main`
+// Fica aninhado dentro do <main> do AppShell. Precisa ser um contêiner neutro:
+// dois landmarks main na mesma página quebram a navegação por leitor de tela.
+export const MainContent = styled.div`
   flex: 1;
   padding: 20px clamp(14px, 2.2vw, 32px) 32px;
   display: flex;
