@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { api } from '../../services/api';
 import { previewMode } from '../../preview';
 import { useOrganization } from '../organizations/OrganizationState';
+import { stageCategoryOptions } from './stageCategories';
 
 interface WorkflowStatus {
   id: string; name: string; color: string; position: number; category: number;
@@ -54,7 +55,7 @@ const ModePanel = styled.div`
 `;
 const Locked = styled.fieldset`display:contents;&:disabled{opacity:.72;}`;
 
-const categories = [[1,'Backlog'],[2,'Pronta'],[3,'Em andamento'],[4,'Revisão'],[5,'Concluída']] as const;
+const categories = stageCategoryOptions;
 const emptyWorkflow: ProjectWorkflow = { inheritanceMode:1, isSynchronized:true, statuses: [], transitions: [], stages: [], boards: [] };
 
 export function ProjectWorkflowSettings({ projectId }: { projectId: string }) {

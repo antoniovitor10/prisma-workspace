@@ -120,6 +120,7 @@ import {
   TaskTabs,
   TaskTab
 } from './Kanban.styles';
+import { StageCategory, stageCategoryOptions, type StageCategoryValue } from '../features/workflow/stageCategories';
 
 
 
@@ -458,6 +459,9 @@ export const Kanban: React.FC = () => {
   // Form values
   const [newBoardName, setNewBoardName] = useState('');
   const [newStageName, setNewStageName] = useState('');
+  // Sem escolha explícita, toda coluna nascia como "em andamento" — inclusive uma
+  // chamada "Concluído" — e as tarefas nela nunca eram contadas como concluídas.
+  const [newStageCategory, setNewStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemSubtitle, setNewItemSubtitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
@@ -781,8 +785,9 @@ export const Kanban: React.FC = () => {
     if (!newStageName.trim() || !selectedBoardId) return;
     try {
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(selectedBoardId, newStageName, nextPos);
+      await api.createStage(selectedBoardId, newStageName, nextPos, undefined, { category: newStageCategory });
       setNewStageName('');
+      setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
@@ -1822,6 +1827,15 @@ export const Kanban: React.FC = () => {
                 required
                 autoFocus
               />
+              <Select
+                aria-label="Classificação da coluna"
+                value={newStageCategory}
+                onChange={e => setNewStageCategory(Number(e.target.value) as StageCategoryValue)}
+              >
+                {stageCategoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </Select>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowStageModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Adicionar</SubmitButton>

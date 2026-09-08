@@ -1,3 +1,5 @@
+using Prisma.Workspace.Domain.Enums;
+
 namespace Prisma.Workspace.Application.Features.Stages.Dtos;
 
 /// <summary>
@@ -11,6 +13,11 @@ public class StageDto
     public double Position { get; set; }
     public int? WipLimit { get; set; }
     public Guid? WorkflowStatusId { get; set; }
+    /// <summary>
+    /// Classificação funcional da coluna. Sem ela a interface não consegue mostrar nem
+    /// escolher se a coluna representa trabalho aberto, em andamento ou concluído.
+    /// </summary>
+    public StageCategory Category { get; set; }
     public string? StatusName { get; set; }
     public string? StatusColor { get; set; }
     public bool IsInitial { get; set; }
