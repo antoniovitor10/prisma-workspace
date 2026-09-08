@@ -28,7 +28,7 @@ export async function authenticatedApiGet<T>(page: Page, path: string): Promise<
         'X-Organization-Id': organizationId,
       },
     });
-    if (!response.ok) throw new Error(`GET ${requestPath} falhou com status ${response.status()}.`);
+    if (!response.ok) throw new Error(`GET ${requestPath} falhou com status ${response.status}.`);
     return response.json();
   }, { baseUrl: apiUrl, requestPath: path });
 }

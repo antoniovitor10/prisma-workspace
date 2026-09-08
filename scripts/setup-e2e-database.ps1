@@ -7,7 +7,7 @@ param(
     [string]$SqlPassword = "",
     [string]$DatabaseName = "DetranKanban_E2E",
     [string]$SeedPassword = "",
-    [string]$TestUserEmail = "po@detran.local"
+    [string]$TestUserEmail = "admin@prisma.example.invalid"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,6 +31,9 @@ if ([string]::IsNullOrWhiteSpace($SqlPassword)) {
 
 # Connection string para o banco E2E
 $e2eConn = "Server=$SqlServer;Database=$DatabaseName;User Id=$SqlUser;Password=$SqlPassword;TrustServerCertificate=True;"
+$env:ConnectionStrings__DefaultConnection = $e2eConn
+$env:Jwt__Key = "Prisma-E2E-only-signing-key-2026-at-least-32-bytes"
+$env:Setup__Enabled = "false"
 
 Write-Host "`n[1/4] Preparando banco de dados $DatabaseName..." -ForegroundColor Yellow
 if (Get-Command sqlcmd -ErrorAction SilentlyContinue) {
@@ -42,13 +45,19 @@ if (Get-Command sqlcmd -ErrorAction SilentlyContinue) {
         exit 1
     }
 } else {
-    Write-Host "sqlcmd não encontrado; o EF Core criará o banco ao aplicar as migrations." -ForegroundColor Yellow
+    Write-Host "sqlcmd não encontrado; removendo o banco E2E pelo EF Core antes de recriá-lo." -ForegroundColor Yellow
+    dotnet ef database drop --force --project src/Prisma.Workspace.Infrastructure --startup-project src/Prisma.Workspace.Api
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet ef database drop terminou com código $LASTEXITCODE."
+    }
 }
 
 Write-Host "`n[2/4] Executando migrations do EF Core..." -ForegroundColor Yellow
-$env:ConnectionStrings__DefaultConnection = $e2eConn
 try {
     dotnet ef database update --project src/Prisma.Workspace.Infrastructure --startup-project src/Prisma.Workspace.Api
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet ef database update terminou com código $LASTEXITCODE."
+    }
     Write-Host "Migrations aplicadas com sucesso." -ForegroundColor Green
 } catch {
     Write-Host "Erro ao aplicar migrations: $_" -ForegroundColor Red
@@ -78,11 +87,16 @@ try {
     $SeedPassword | Out-File -FilePath ".env.e2e.seedpassword" -Encoding UTF8 -Force
     Write-Host "Senha seed salva em .env.e2e.seedpassword (gitignored)." -ForegroundColor Green
 
+    # O formato dotenv interpreta # como comentário fora de aspas. Escape o valor
+    # para preservar senhas fortes exatamente como foram informadas.
+    $escapedSeedPassword = $SeedPassword.Replace("\", "\\").Replace('"', '\"')
+
     @(
         "E2E_BASE_URL=http://127.0.0.1:5450"
         "E2E_API_URL=http://127.0.0.1:5400"
+        "VITE_API_URL=http://127.0.0.1:5400"
         "E2E_TEST_USER_EMAIL=$TestUserEmail"
-        "E2E_TEST_USER_PASSWORD=$SeedPassword"
+        "E2E_TEST_USER_PASSWORD=`"$escapedSeedPassword`""
     ) | Out-File -FilePath "src/Prisma.Workspace.Web/.env.e2e.local" -Encoding UTF8 -Force
     Write-Host "Credenciais locais do Playwright salvas em src/Prisma.Workspace.Web/.env.e2e.local (gitignored)." -ForegroundColor Green
 } catch {
@@ -92,5 +106,5 @@ try {
 Write-Host "`n=== Setup concluído ===" -ForegroundColor Cyan
 Write-Host "Próximos passos:" -ForegroundColor White
 Write-Host "1. Inicie a API com banco E2E: .\scripts\run-api-e2e.ps1" -ForegroundColor Gray
-Write-Host "2. Inicie o frontend na porta E2E: npm run dev -- --host 127.0.0.1 --port 5450 (em src/Prisma.Workspace.Web)" -ForegroundColor Gray
+Write-Host "2. Inicie o frontend na porta E2E: npm run dev -- --mode e2e --host 127.0.0.1 --port 5450 (em src/Prisma.Workspace.Web)" -ForegroundColor Gray
 Write-Host "3. Execute os testes: npm run e2e (em src/Prisma.Workspace.Web)" -ForegroundColor Gray

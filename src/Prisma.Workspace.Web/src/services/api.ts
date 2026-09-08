@@ -7,6 +7,56 @@ const LEGACY_TOKEN_KEY = 'detran_kanban_token';
 const LEGACY_ORGANIZATION_KEY = 'detran_kanban_organization';
 let refreshRequest: Promise<string | null> | null = null;
 
+export type SetupStatus = {
+  initialized: boolean;
+  setupAvailable: boolean;
+};
+
+export type SetupInput = {
+  administratorName: string;
+  administratorEmail: string;
+  administratorPassword: string;
+  organizationName: string;
+  organizationSlug: string;
+};
+
+export class SetupApiError extends Error {
+  public readonly status: number;
+  public readonly code: string | null;
+
+  constructor(
+    status: number,
+    code: string | null,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'SetupApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function readSetupResponse<T>(response: Response): Promise<T> {
+  if (response.ok) return response.json() as Promise<T>;
+
+  const error = await response.json().catch(() => null) as {
+    type?: string;
+    code?: string;
+    title?: string;
+    detail?: string;
+    errors?: Record<string, string[]>;
+  } | null;
+  const validationMessage = error?.errors
+    ? Object.values(error.errors).flat().find((value) => typeof value === 'string')
+    : undefined;
+
+  throw new SetupApiError(
+    response.status,
+    error?.type ?? error?.code ?? null,
+    error?.detail ?? validationMessage ?? error?.title ?? 'Não foi possível concluir a configuração.',
+  );
+}
+
 const isJwt = (token: string) => token.split('.').length === 3;
 
 function migrateLegacyKey(currentKey: string, legacyKey: string) {
@@ -122,6 +172,28 @@ export const api = {
 
     if (response.status === 204) return null;
     return response.json();
+  },
+
+  async getSetupStatus(): Promise<SetupStatus> {
+    const response = await fetch(`${API_BASE_URL}/api/setup/status`, {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+    return readSetupResponse<SetupStatus>(response);
+  },
+
+  async completeSetup(token: string, input: SetupInput): Promise<{ initialized: true }> {
+    const response = await fetch(`${API_BASE_URL}/api/setup`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Prisma-Setup-Token': token,
+      },
+      body: JSON.stringify(input),
+    });
+    return readSetupResponse<{ initialized: true }>(response);
   },
 
   // Auth endpoints (Identity API)

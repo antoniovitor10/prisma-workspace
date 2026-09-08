@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   Info,
+  KeyRound,
   Lock,
   LogIn,
   Mail,
@@ -449,6 +450,27 @@ const FooterNote = styled.p`
   }
 `;
 
+const SetupLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 14px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13px;
+  font-weight: 700;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.accentViolet};
+    color: ${({ theme }) => theme.color.accentViolet};
+  }
+`;
+
 const PageFooter = styled.footer`
   display: flex;
   flex-wrap: wrap;
@@ -523,6 +545,15 @@ export const Auth: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ssoNotice, setSsoNotice] = useState<string | null>(null);
+  const [setupAvailable, setSetupAvailable] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    api.getSetupStatus()
+      .then((status) => { if (active) setSetupAvailable(status.setupAvailable && !status.initialized); })
+      .catch(() => { /* O login continua funcional quando o status não está acessível. */ });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (flow !== 'confirm' || !recovery.userId || !recovery.token) return;
@@ -767,6 +798,10 @@ export const Auth: React.FC = () => {
                 <>Ainda não tem conta? <button type="button" onClick={() => setIsRegister(true)}>Fale com o administrador</button> ou <button type="button" onClick={() => setIsRegister(true)}>registre-se</button>.</>
               )}
             </FooterNote>
+
+            {flow === 'login' && !isRegister && setupAvailable && (
+              <SetupLink href="/setup"><KeyRound size={15} /> Configurar esta instalação</SetupLink>
+            )}
           </FormCard>
         </FormPanel>
       </Shell>

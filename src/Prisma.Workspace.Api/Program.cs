@@ -114,7 +114,7 @@ try
                     ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                 _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 300,
+                    PermitLimit = builder.Configuration.GetValue("RateLimiting:GlobalPermitLimit", 300),
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                     AutoReplenishment = true
@@ -146,6 +146,16 @@ try
                 {
                     PermitLimit = 5,
                     Window = TimeSpan.FromMinutes(10),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                }));
+        options.AddPolicy("setup", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0,
                     AutoReplenishment = true
                 }));
@@ -323,21 +333,20 @@ try
         {
             var dbContext = services.GetRequiredService<Prisma.Workspace.Infrastructure.Persistence.AppDbContext>();
             var userManager = services.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser>>();
-            if (app.Environment.IsDevelopment())
+            await dbContext.Database.MigrateAsync();
+            var demoEnabled = app.Configuration.GetValue<bool>("Seed:DemoEnabled");
+            if (app.Environment.IsDevelopment() && demoEnabled)
             {
                 var demoPassword = app.Configuration["Seed:DemoPassword"]
                     ?? throw new InvalidOperationException("Seed:DemoPassword não configurada nos User Secrets.");
                 await Prisma.Workspace.Infrastructure.Persistence.DbInitializer.SeedDataAsync(
                     dbContext, userManager, demoPassword);
             }
-            else
-            {
-                await dbContext.Database.MigrateAsync();
-            }
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Ocorreu um erro ao aplicar as migrations ou seed data.");
+            throw;
         }
     }
 

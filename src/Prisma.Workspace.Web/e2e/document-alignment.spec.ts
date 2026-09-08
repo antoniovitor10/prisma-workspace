@@ -148,30 +148,38 @@ test('dependência é encontrada por título, persistida e removida pela gaveta'
   const workItemId = await source.getAttribute('data-work-item-id');
   expect(workItemId).toBeTruthy();
 
+  const targetButton = page.getByTestId('backlog-item').nth(1)
+    .getByRole('button', { name: /^Abrir detalhes de / });
+  await expect(targetButton).toBeVisible();
+  const targetLabel = await targetButton.getAttribute('aria-label');
+  const targetTitle = targetLabel?.replace(/^Abrir detalhes de /, '').trim();
+  expect(targetTitle).toBeTruthy();
+
   const existing = await appApi<{ links: Array<{ id: string; relatedTitle: string }> }>(page, `/api/WorkItems/${workItemId}`);
-  for (const relation of existing.links.filter(link => link.relatedTitle.includes('Homologar Lote de Placas Mercosul'))) {
+  for (const relation of existing.links.filter(link => link.relatedTitle === targetTitle)) {
     await appApi(page, `/api/WorkItems/${workItemId}/links/${relation.id}`, { method: 'DELETE' });
   }
 
   await source.getByRole('button', { name: /^Abrir detalhes de / }).click();
   let dialog = page.getByRole('dialog');
   const search = dialog.getByRole('combobox', { name: 'Buscar tarefa relacionada' });
-  await search.fill('Homologar Lote');
+  await search.fill(targetTitle!.slice(0, Math.min(targetTitle!.length, 24)));
   const result = dialog.getByRole('listbox', { name: 'Tarefas encontradas' })
-    .getByRole('button', { name: /Homologar Lote de Placas Mercosul/ });
+    .getByRole('button', { name: targetTitle!, exact: false });
   await expect(result).toBeVisible();
   await result.click();
   await dialog.getByRole('button', { name: 'Vincular' }).click();
-  await expect(dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/)).toBeVisible();
+  const linkedText = new RegExp(`Depende de.*${targetTitle}`);
+  await expect(dialog.getByText(linkedText)).toBeVisible();
 
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
   dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  const relation = dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/).locator('..').locator('..');
+  const relation = dialog.getByText(linkedText).locator('..').locator('..');
   await expect(relation).toBeVisible();
   await relation.getByRole('button', { name: 'Remover relacionamento' }).click();
-  await expect(dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/)).toHaveCount(0);
+  await expect(dialog.getByText(linkedText)).toHaveCount(0);
 });
 
 test('comentário interno não se mistura ao histórico automático', async ({ page, authenticatedGoto }) => {

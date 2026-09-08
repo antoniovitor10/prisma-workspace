@@ -89,6 +89,7 @@ public class AppDbContext : IdentityDbContext
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<InstallationState> InstallationStates => Set<InstallationState>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -124,6 +125,15 @@ public class AppDbContext : IdentityDbContext
 
     private void EnforceOrganizationOwnership()
     {
+        foreach (var entry in ChangeTracker.Entries<InstallationState>()
+                     .Where(x => x.State == EntityState.Modified))
+        {
+            var wasInitialized = (bool)entry.OriginalValues[nameof(InstallationState.IsInitialized)]!;
+            var isInitialized = (bool)entry.CurrentValues[nameof(InstallationState.IsInitialized)]!;
+            DomainException.Garantir(!wasInitialized || isInitialized,
+                "O estado de instalação não pode ser reaberto.");
+        }
+
         var organizationId = CurrentOrganizationId;
         foreach (var entry in ChangeTracker.Entries()
                      .Where(x => x.Entity is IOrganizationOwned

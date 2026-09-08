@@ -38,6 +38,29 @@ docker compose ps
 docker compose logs -f app
 ```
 
+## Configurar a primeira conta
+
+Uma instalação nova não cria usuário, organização ou dados de demonstração. O script grava em
+`PRISMA_SETUP_TOKEN`, dentro do `.env` local, um token aleatório de uso administrativo. Não envie esse valor para
+issues, chats, logs ou commits.
+
+1. Abra <http://localhost:8080/setup>.
+2. Consulte `PRISMA_SETUP_TOKEN` diretamente no `.env` local e informe-o somente no campo protegido da tela.
+3. Informe nome e e-mail do primeiro administrador e nome/identificador da organização.
+4. Conclua a configuração e entre com a conta criada.
+5. Altere `PRISMA_SETUP_ENABLED=false` no `.env` e reaplique o serviço:
+
+```bash
+docker compose up -d app
+```
+
+O servidor também mantém um marcador persistente e irreversível: repetir a chamada, restaurar a flag ou perder a
+resposta original não cria outro administrador inicial. Recuperação de acesso deve usar um procedimento
+administrativo próprio; não remova dados do banco para tentar reabrir o setup.
+
+O dataset demonstrativo é separado desse fluxo, permanece desabilitado por padrão e só pode ser habilitado
+explicitamente em `Development` sobre um banco vazio.
+
 ## Parar e reiniciar
 
 ```bash
@@ -50,7 +73,6 @@ manter o banco e os anexos.
 
 ## Limitações desta etapa
 
-- O fluxo seguro de criação do primeiro administrador ainda será entregue em um lote próprio, com contrato e testes.
 - O endpoint `/health` valida o processo HTTP; o Compose também exige que o SQL Server esteja saudável antes de
   iniciar a aplicação.
 - Backup, restauração, atualização e rollback serão documentados após ensaio automatizado.

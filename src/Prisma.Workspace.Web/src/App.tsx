@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppThemeProvider } from './styles/ThemeMode';
 import { GlobalStyle } from './styles/global';
 import { Auth } from './pages/Auth';
+import { Setup } from './pages/Setup';
 import { AppShell } from './layout/AppShell';
 import { api } from './services/api';
 import { previewMode } from './preview';
@@ -51,7 +52,19 @@ const routerBasename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || u
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(previewMode || !!api.getToken());
+  const [isSetupRoute, setIsSetupRoute] = useState(
+    window.location.pathname === '/setup' || window.location.pathname === '/setup/',
+  );
   const isPublicPortal = window.location.pathname.startsWith('/portal/');
+
+  const leaveSetup = (completed: boolean) => {
+    window.history.replaceState(
+      completed ? { setupCompleted: true } : {},
+      '',
+      '/login',
+    );
+    setIsSetupRoute(false);
+  };
 
   // Guarda o convite mesmo antes do login: quem é novo cai na tela de acesso,
   // e o token precisa sobreviver ao cadastro/login para ser aceito depois.
@@ -75,7 +88,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AppThemeProvider>
         <GlobalStyle />
-        {isPublicPortal ? (
+        {isSetupRoute ? (
+          <BrowserRouter basename={routerBasename}><Routes><Route path="/setup" element={<Setup onExit={leaveSetup} />} /><Route path="*" element={<Navigate to="/setup" replace />} /></Routes></BrowserRouter>
+        ) : isPublicPortal ? (
           <BrowserRouter basename={routerBasename}><Suspense fallback={<RouteLoading>Carregando portal...</RouteLoading>}><Routes><Route path="/portal/:slug/*" element={<PublicPortal />} /></Routes></Suspense></BrowserRouter>
         ) : isAuthenticated ? (
           <OrganizationProvider><BrowserRouter basename={routerBasename}>

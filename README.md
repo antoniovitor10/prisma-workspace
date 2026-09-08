@@ -19,15 +19,17 @@ No Linux/macOS:
 ./scripts/setup-docker.sh --accept-sql-server-eula
 ```
 
-O ambiente ficará disponível em <http://localhost:8080>. O banco padrão é SQL Server Developer, licenciado somente
-para desenvolvimento e testes. Leia o [guia de instalação Docker](docs/installation/docker.md) antes de usar outra
-edição ou preparar produção.
+O ambiente ficará disponível em <http://localhost:8080>. Em uma instalação nova, acesse
+<http://localhost:8080/setup> e use o token gerado no `.env` local para criar, uma única vez, a primeira organização
+e sua conta administradora. O banco padrão é SQL Server Developer, licenciado somente para desenvolvimento e testes.
+Leia o [guia de instalação Docker](docs/installation/docker.md) antes de usar outra edição ou preparar produção.
 
 ## Estado atual
 
 - Código-base em .NET, SQL Server e React.
 - Snapshot iniciado a partir de uma allowlist, sem importar o histórico institucional anterior.
-- Auditoria e rename técnico foram concluídos; instalação independente e documentação estão em execução.
+- Auditoria, rename técnico, instalação Docker independente e setup seguro inicial foram concluídos.
+- Backup/restauração, atualização e empacotamento da primeira release ainda estão em preparação.
 - A escolha da licença é um gate humano pendente antes da abertura pública.
 
 O plano completo está em [`docs/OPEN-SOURCE-PLAN.md`](docs/OPEN-SOURCE-PLAN.md).

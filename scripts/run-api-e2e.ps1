@@ -37,9 +37,15 @@ $seedPassword = (Get-Content ".env.e2e.seedpassword" -Raw).Trim()
 
 # Configura variáveis de ambiente
 $env:ConnectionStrings__DefaultConnection = $e2eConn
+$env:Jwt__Key = "Prisma-E2E-only-signing-key-2026-at-least-32-bytes"
+$env:Seed__DemoEnabled = "true"
 $env:Seed__DemoPassword = $seedPassword
+$env:Setup__Enabled = "false"
+$env:Setup__Token = ""
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = $Urls
+$env:Cors__AllowedOrigins__0 = "http://127.0.0.1:5450"
+$env:RateLimiting__GlobalPermitLimit = "10000"
 
 # A configuração Development registra cada comando SQL. Durante o E2E isso gera
 # centenas de milhares de linhas e pode atrasar/cancelar requisições concorrentes.

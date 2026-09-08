@@ -17,7 +17,7 @@ const authFile = path.join(currentDir, '..', '.auth', 'user.json');
  *   E2E_TEST_USER_PASSWORD
  *   E2E_API_URL (padrao: http://localhost:5400)
  */
-setup('autenticar via API', async ({ request }) => {
+setup('autenticar via API', async ({ request }, testInfo) => {
   const email = process.env.E2E_TEST_USER_EMAIL;
   const password = process.env.E2E_TEST_USER_PASSWORD;
   const apiUrl = process.env.E2E_API_URL ?? 'http://localhost:5400';
@@ -41,7 +41,7 @@ setup('autenticar via API', async ({ request }) => {
   expect(accessToken, 'accessToken nao retornado pelo login').toBeTruthy();
 
   // Monta storageState com o token no localStorage e cookie de refresh
-  const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5450';
+  const baseURL = String(testInfo.project.use.baseURL ?? 'http://127.0.0.1:5450');
 
   const storageState = {
     cookies: [],

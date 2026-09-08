@@ -84,6 +84,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBoardAccessService, Identity.BoardAccessService>();
         services.AddScoped<IWorkItemAccessService, Identity.WorkItemAccessService>();
         services.AddScoped<IAutomationExecutor, Services.AutomationExecutor>();
+        services.AddScoped<IInstallationSetupService, Services.InstallationSetupService>();
 
         return services;
     }

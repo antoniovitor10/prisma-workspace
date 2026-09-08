@@ -1082,7 +1082,7 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
     - frontend-e2e
     - G-MIGRATION
   human_gate: sim (G-SPEC e G-MIGRATION aprovados diretamente pelo PO em 2026-09-05)
-  status: in_progress
+  status: completed
   priority: P0
 ```
 

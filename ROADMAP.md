@@ -352,11 +352,11 @@ prosseguir; tornar o repositório público permanece bloqueado até escolha de l
 - Criar documentação comunitária, CI de segurança, SBOM, proveniência e releases SemVer.
 - Ensaiar instalação e upgrade em ambiente limpo antes de `v0.1.0` público.
 
-### 13.1 Setup inicial seguro da Community (em implementação — gates aprovados)
+### 13.1 Setup inicial seguro da Community (concluído em 2026-09-08)
 
-Derivado da `SPEC-OPEN-SOURCE-DISTRIBUTION` em `SPEC-INSTALLATION-SETUP` (draft). Uma instalação normal deve
+Derivado da `SPEC-OPEN-SOURCE-DISTRIBUTION` em `SPEC-INSTALLATION-SETUP` (`approved`). Uma instalação normal
 começar sem usuários ou dados demo e permitir criar, uma única vez, a primeira organização e seu Administrator com
 token externo e transação atômica. `Setup:Enabled` precisa ser explícito; um singleton persistido impede reabertura após
 a primeira conclusão. O seed demo será Development-only, opt-in e neutro, separado do setup real e sem mutar instalações
-existentes. UI guiada de primeiro acesso e E2E pertencem ao mesmo lote. `G-SPEC` e `G-MIGRATION` foram aprovados
-diretamente pelo PO em 2026-09-05.
+existentes. UI guiada de primeiro acesso, testes unitários e E2E desktop/mobile foram entregues. A concorrência do
+setup foi validada contra SQL Server real. `G-SPEC` e `G-MIGRATION` foram aprovados diretamente pelo PO em 2026-09-05.
