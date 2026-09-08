@@ -478,3 +478,19 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   aprovar o `G-SPEC` da `SPEC-S-003 v2`.** Até lá, D25 permanece vigente e nenhuma implementação é autorizada.
   Gates exigidos: `G-SPEC` (pendente), `G-MIGRATION` (obrigatório), `G-WORKFLOW` (obrigatório) e `G-HISTORY`
   (somente se `SprintItemSnapshot` mudar de estrutura). (proposta em 2026-09-08)
+
+- **D81 — APROVADA em 2026-09-08.** O PO leu o contrato e respondeu *"Aprovo, pode implementar"* ao `G-SPEC` da
+  `SPEC-S-003 v2`. A `SPEC-S-003` passa a `approved` e D81 sucede D25, que fica revogada quanto à regra de uma
+  única sprint ativa e à transição manual de status. `G-MIGRATION` e `G-WORKFLOW` ficam cobertos pela mesma
+  instrução, combinada com a determinação anterior do PO de que a Sprint N:N deve rodar em produção
+  (*"no prisma em si, quero ver no prisma.nordevs.com.br"*), que não é realizável sem a alteração de schema e de
+  regra de workflow. `G-HISTORY` permanece exigido se e quando `SprintItemSnapshot` mudar de estrutura.
+  (2026-09-08)
+
+- **D82** — Classificação de coluna escolhida pela pessoa, nunca inferida. O PO decidiu em 2026-09-08, entre três
+  alternativas apresentadas, que a categoria da coluna (`StageCategory`) é escolhida explicitamente na interface.
+  Ficam recusadas a inferência por nome e a convenção de "última coluna é a de conclusão", porque ambas concluem
+  tarefa sem intenção humana. Consequências: `StageDto` passa a expor `Category`; a criação de coluna no Kanban
+  oferece o campo de classificação; a reclassificação continua pela configuração de workflow do projeto, que já
+  propaga `status.Category` para a etapa. O PO também declarou que *"todos os dados atuais são fakes"*, portanto
+  **não há backfill** de colunas existentes e nenhuma tarefa histórica é reclassificada em massa. (2026-09-08)

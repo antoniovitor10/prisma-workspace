@@ -1,18 +1,17 @@
 # SPEC-S-003: Sprints, planejamento e quadro operacional (v2 — Sprint ↔ Project N:N)
 
-**Status:** draft
+**Status:** approved
 
 **Versão:** 2 (sucede a v1 `approved` de 2026-08-24)
 
-**Motivo do rebaixamento para `draft`:** o PO determinou em 2026-09-08, textualmente,
+**Histórico do status:** o PO determinou em 2026-09-08, textualmente,
 *"pode garantir todas as specs como aprovadas exceto isso que passei ai agora"*, referindo-se ao novo
-contrato N:N de Sprint. As demais specs ativas permanecem aprovadas; esta volta para `draft` e precisa de
-`G-SPEC` humano antes de qualquer implementação.
+contrato N:N de Sprint. Esta spec voltou a `draft`, foi reescrita com o contrato N:N e, no mesmo dia, o PO
+respondeu *"Aprovo, pode implementar"* ao `G-SPEC`. Registrado em D81.
 
 **Autoridade da mudança:** decisão humana explícita do PO em 2026-09-08. Não é autoaprovação de agente.
 
-**Natureza:** contrato desejado em revisão. O estado atual comprovado no código e os gaps continuam separados
-abaixo.
+**Natureza:** contrato aprovado. O estado atual comprovado no código e os gaps continuam separados abaixo.
 
 ---
 
@@ -344,10 +343,11 @@ Os nove gaps da v1 permanecem válidos e são renumerados abaixo, seguidos dos g
 
 ## Human Gates para implementação
 
-- **`G-SPEC`** — **pendente**. Esta v2 está em `draft` e não pode ser implementada antes da aprovação humana.
-- **`G-MIGRATION`** — **obrigatório**. `SprintProject`, `Sprint.OrganizationId` e o backfill alteram schema.
-- **`G-WORKFLOW`** — **obrigatório**. Estado calculado, fim da exclusividade de sprint ativa e a nova regra de
-  elegibilidade de tarefa alteram regras de workflow.
+- **`G-SPEC`** — **aprovado pelo PO em 2026-09-08** (*"Aprovo, pode implementar"*). Registrado em D81.
+- **`G-MIGRATION`** — **aprovado pela mesma instrução**. `SprintProject`, `Sprint.OrganizationId` e o backfill
+  alteram schema, e o PO determinou que a Sprint N:N rode em produção, o que não é realizável sem essa alteração.
+- **`G-WORKFLOW`** — **aprovado pela mesma instrução**. Estado calculado, fim da exclusividade de sprint ativa e a
+  nova regra de elegibilidade de tarefa alteram regras de workflow.
 - **`G-HISTORY`** — **obrigatório apenas** se `SprintItemSnapshot` passar a persistir `ProjectId` ou qualquer
   outro campo novo. Somente ler snapshots existentes não aciona o gate.
 - **`G-SCOPE`** — necessário para qualquer requisito não coberto aqui nem em `DECISIONS.md`.
