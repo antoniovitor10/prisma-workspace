@@ -106,16 +106,30 @@ domains:
 
   workflow:
     spec: "specs/workflow-status.md"
+    audit_2026_09_08: "not_implemented — coluna ainda nao e a unica fonte de status; ver TASK-BUG-001"
     code:
       - "src/Prisma.Workspace.Domain/Entities/WorkflowStatus.cs"
       - "src/Prisma.Workspace.Domain/Entities/Stage.cs"
+      - "src/Prisma.Workspace.Domain/Enums/StageCategory.cs"
       - "src/Prisma.Workspace.Application/Interfaces/IWorkflowRepository.cs"
+      - "src/Prisma.Workspace.Application/Features/Stages/Dtos/StageDto.cs"
+      - "src/Prisma.Workspace.Application/Features/Stages/Commands/CreateStageCommandHandler.cs"
+      - "src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs"
+      - "src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs"
       - "src/Prisma.Workspace.Infrastructure/Repositories/WorkflowRepository.cs"
       - "src/Prisma.Workspace.Api/Controllers/WorkflowController.cs"
+      - "src/Prisma.Workspace.Api/Controllers/StagesController.cs"
       - "src/Prisma.Workspace.Web/src/features/workflow/ProjectWorkflowSettings.tsx"
+      - "src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx"
+      - "src/Prisma.Workspace.Web/src/pages/Kanban.tsx"
     tests:
       - "tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs"
+      - "tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs"
+      - "src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx"
+      - "src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts"
     gates:
+      g_workflow: "required (TASK-BUG-001, TASK-101 a TASK-106)"
+      g_migration: "conditional (backfill de Stage.Category)"
       backend_build: "dotnet build Prisma.Workspace.sln"
       backend_test: "dotnet test tests/Prisma.Workspace.Tests/"
       frontend_build: "npm run build"
@@ -146,15 +160,26 @@ domains:
 
   sprints:
     spec: "specs/sprints.md"
+    spec_status: "draft (v2 Sprint x Project N:N, 2026-09-08)"
     code:
       - "src/Prisma.Workspace.Domain/Entities/Sprint.cs"
+      - "src/Prisma.Workspace.Domain/Enums/SprintStatus.cs"
+      - "src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs"
       - "src/Prisma.Workspace.Application/Interfaces/ISprintRepository.cs"
       - "src/Prisma.Workspace.Infrastructure/Repositories/SprintRepository.cs"
       - "src/Prisma.Workspace.Api/Controllers/SprintsController.cs"
+      - "src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx"
+      - "src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx"
+      - "src/Prisma.Workspace.Web/src/utils/scrumAnalytics.ts"
     tests:
       - "tests/Prisma.Workspace.Tests/ScrumDomainTests.cs"
       - "tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs"
+      - "src/Prisma.Workspace.Web/src/utils/scrumAnalytics.test.ts"
     gates:
+      g_spec: "pending-2026-09-08 (spec rebaixada para draft por decisao do PO)"
+      g_migration: "required (SprintProject, Sprint.OrganizationId, backfill)"
+      g_workflow: "required (estado calculado e fim da exclusividade de sprint ativa)"
+      g_history: "conditional (somente se SprintItemSnapshot mudar de estrutura)"
       backend_build: "dotnet build Prisma.Workspace.sln"
       backend_test: "dotnet test tests/Prisma.Workspace.Tests/"
       frontend_build: "npm run build"
@@ -340,3 +365,70 @@ domains:
       frontend_test: "npm run test"
       frontend_lint: "npm run lint"
       frontend_e2e: "npm run e2e"
+
+program_v2:
+  description: "Programa Prisma WorkSpace v2 — decisao do PO em 2026-09-08 (D80)"
+  authority: "D80 em DECISIONS.md; auditoria e plano em backlog.md"
+  batches:
+    core-domain-v2:
+      specs:
+        - "specs/organizations.md"
+        - "specs/user-access-permissions.md"
+        - "specs/boards-stages-wip.md"
+        - "specs/workflow-status.md"
+        - "specs/project-management.md"
+        - "specs/work-item-management.md"
+        - "specs/quick-create-work-item.md"
+        - "specs/project-key-auto-generation.md"
+        - "specs/project-methodology-hidden.md"
+      tasks: "TASK-BUG-001, TASK-100..TASK-124"
+    sprint-planning-v2:
+      specs:
+        - "specs/sprints.md"
+        - "specs/backlog.md"
+        - "specs/kanban-visual-order.md"
+        - "specs/search-saved-filters.md"
+      tasks: "TASK-200..TASK-213"
+      blocked_by: "G-SPEC da SPEC-S-003 v2"
+    identity-time-history-v2:
+      specs:
+        - "specs/auth-security.md"
+        - "specs/responsible-display-name.md"
+        - "specs/time-tracking.md"
+        - "specs/task-history.md"
+        - "specs/audit-leadtime-history.md"
+        - "specs/dependencies.md"
+        - "specs/notifications-realtime.md"
+        - "specs/attachments.md"
+      tasks: "TASK-300..TASK-310"
+    community-modules-v2:
+      specs:
+        - "specs/teams.md"
+        - "specs/wiki-knowledge.md"
+        - "specs/external-portal.md"
+        - "specs/dashboards-reports.md"
+        - "specs/sla-approvals.md"
+        - "specs/bulk-actions-automations.md"
+        - "specs/gantt-planning.md"
+        - "specs/prisma-visual-system.md"
+        - "specs/authenticated-home.md"
+        - "specs/project-work-item-queries.md"
+        - "specs/top-navigation-shell.md"
+      tasks: "TASK-400..TASK-408"
+    productization:
+      specs:
+        - "specs/open-source-distribution.md"
+        - "specs/installation-setup.md"
+      tasks: "TASK-500..TASK-508"
+    migrations-consolidation:
+      specs:
+        - "specs/open-source-distribution.md"
+      tasks: "TASK-600..TASK-603"
+      order: "ultimo — a cadeia de migrations permanece incremental durante todo o programa"
+  contested_files: "ver a tabela 'Arquivos centrais disputados entre lotes' em backlog.md"
+  superseded_specs:
+    - "specs/multi-board-views.md"
+    - "specs/organization-switch-refresh.md"
+    - "specs/project-structure.md"
+    - "specs/projects-visual-refresh.md"
+    - "specs/work-items.md"

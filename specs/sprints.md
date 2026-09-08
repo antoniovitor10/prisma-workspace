@@ -1,260 +1,373 @@
-# SPEC-S-003: Sprints, planejamento e quadro operacional
+# SPEC-S-003: Sprints, planejamento e quadro operacional (v2 — Sprint ↔ Project N:N)
 
-**Status:** approved
-**Revisão humana:** decisões confirmadas por PO em 2026-08-24
-**Natureza:** contrato desejado aprovado; o estado atual e os gaps estão separados abaixo
+**Status:** draft
+
+**Versão:** 2 (sucede a v1 `approved` de 2026-08-24)
+
+**Motivo do rebaixamento para `draft`:** o PO determinou em 2026-09-08, textualmente,
+*"pode garantir todas as specs como aprovadas exceto isso que passei ai agora"*, referindo-se ao novo
+contrato N:N de Sprint. As demais specs ativas permanecem aprovadas; esta volta para `draft` e precisa de
+`G-SPEC` humano antes de qualquer implementação.
+
+**Autoridade da mudança:** decisão humana explícita do PO em 2026-09-08. Não é autoaprovação de agente.
+
+**Natureza:** contrato desejado em revisão. O estado atual comprovado no código e os gaps continuam separados
+abaixo.
+
+---
 
 ## Objetivo
 
-Permitir que tarefas de um projeto sejam planejadas em sprints sem perder sua posição no Kanban, com ciclo de
-vida calculado pelas datas, planejamento hierárquico, tratamento explícito dos itens abertos no encerramento e
-histórico consultável.
+Permitir que **uma sprint reúna trabalho de vários projetos** e que **um projeto participe de várias sprints**,
+sem que a sprint deixe de ser um recorte do mesmo `WorkItem` já posicionado no Kanban. O ciclo de vida é
+calculado pelas datas, o planejamento é hierárquico e atômico, o encerramento exige destino explícito para as
+tarefas abertas e o histórico permanece consultável.
 
-## Contrato aprovado pelo PO
+## Contexto e motivação da v2
 
-### Ciclo de vida
+A v1 modelava `Sprint.ProjectId` como vínculo único e obrigatório. Isso impede o cenário real do PO: um ciclo
+de duas semanas que atravessa vários projetos da mesma organização, com métricas consolidadas e segmentáveis.
+A v2 introduz a associação N:N `SprintProject` sem transformar a sprint em dona da tarefa e sem tocar em
+`Board`, `Stage` ou `Position`.
 
-1. A sprint possui os estados funcionais `Planejada`, `Ativa` e `Encerrada`.
-2. O estado é calculado automaticamente a partir da data atual, da data inicial e da data final.
-3. Não existe ação manual `Iniciar sprint`.
-4. Podem existir várias sprints ativas simultaneamente no mesmo projeto quando seus períodos se sobrepõem.
-5. Uma sprint encerrada continua visível no histórico e nos filtros.
-6. Ao chegar ao encerramento com tarefas abertas, o usuário autorizado deve escolher, para essas tarefas:
-   - mover para outra sprint do mesmo projeto; ou
-   - remover o vínculo com a sprint, fazendo-as voltar ao Product Backlog padrão.
-7. Tarefas concluídas permanecem como evidência histórica da sprint encerrada.
-8. Enquanto a escolha sobre tarefas abertas não for confirmada, nenhum vínculo deve ser alterado parcialmente.
+---
+
+## Contrato aprovado pelo PO — parte determinada em 2026-09-08
+
+### N:N Sprint ↔ Project
+
+1. `Sprint` pertence à **Organization**. `OrganizationId` passa a ser o vínculo de tenant obrigatório.
+2. `Team` continua **opcional** na sprint e não define escopo de projeto.
+3. Existe a associação `SprintProject`, com chave composta `SprintId` + `ProjectId`.
+4. Uma sprint reúne **vários** projetos; um projeto participa de **várias** sprints, inclusive simultâneas.
+5. Um `WorkItem` continua pertencendo a **um único** `Project` e a **no máximo uma** sprint por vez.
+6. Vincular uma tarefa a uma sprint só é válido se o `Project` da tarefa estiver associado àquela sprint. A API
+   é a autoridade dessa validação e rejeita o vínculo caso contrário.
+7. Adicionar ou remover uma sprint **nunca** altera `Board`, `Stage` ou `Position` da tarefa.
+8. Remover um `Project` de uma sprint exige tratamento atômico das tarefas daquele projeto vinculadas à sprint:
+   o usuário autorizado escolhe explicitamente entre remover o `SprintId` dessas tarefas ou mover essas tarefas
+   para outra sprint que já contenha aquele projeto. Sem escolha confirmada, a remoção do projeto é cancelada
+   integralmente.
+9. Métricas da sprint são **consolidadas** (toda a sprint) e **segmentáveis por projeto**, usando o mesmo
+   conjunto de tarefas — sem tabelas de resumo paralelas.
+10. Toda operação de sprint valida permissões em **todos** os projetos envolvidos. Falta de permissão em
+    qualquer projeto participante impede a operação inteira; não existe execução parcial.
+11. O backfill de `Sprint.ProjectId` para `SprintProject` é **obrigatório** na migração: cada sprint existente
+    gera exatamente uma linha `SprintProject` com o projeto atual, sem perda de vínculo.
+12. O estado da sprint é **calculado pelas datas**. Não existe ação `Iniciar sprint`. Períodos sobrepostos são
+    permitidos, inclusive várias sprints ativas na mesma organização e no mesmo projeto.
+13. Excluir uma sprint remove **somente** o `SprintId` das tarefas. Tarefas e histórico nunca são excluídos.
+14. Planejamento hierárquico é **atômico**; tarefas abertas no encerramento exigem **destino explícito**.
+
+### Ciclo de vida (v1 preservada e reafirmada)
+
+15. Estados funcionais: `Planejada`, `Ativa` e `Encerrada`, derivados de `StartDate`, `EndDate` e da data atual.
+16. Uma sprint encerrada continua visível em histórico e filtros.
+17. Ao encerrar com tarefas abertas, o usuário autorizado escolhe, para essas tarefas: mover para outra sprint
+    compatível (que contenha o projeto da tarefa) ou remover o vínculo, devolvendo-as ao Product Backlog padrão.
+18. Tarefas concluídas permanecem como evidência histórica da sprint encerrada.
+19. Enquanto a escolha sobre tarefas abertas não for confirmada, nenhum vínculo é alterado parcialmente.
 
 ### Criação, edição, exclusão e autorização
 
-9. Criar uma sprint exige `nome`, `data inicial` e `data final`.
-10. A data final deve ser igual ou posterior à data inicial.
-11. Objetivo e equipe são opcionais.
-12. Criar, editar ou excluir sprint exige uma permissão configurável por usuário/perfil; não depende de um papel
-    fixo como `ScrumMaster`.
-13. A API é a autoridade final da autorização, mesmo quando a interface oculta ou desabilita ações.
-14. Excluir uma sprint remove somente o vínculo `SprintId` das tarefas vinculadas.
-15. A exclusão nunca exclui, arquiva ou movimenta a tarefa no Kanban.
-16. Quadro, coluna, posição, conteúdo, hierarquia e histórico da tarefa são preservados.
-17. A desvinculação das tarefas e a exclusão da sprint devem ocorrer na mesma transação.
+20. Criar uma sprint exige `nome`, `data inicial`, `data final` e **pelo menos um projeto** participante.
+21. A data final deve ser igual ou posterior à data inicial.
+22. Objetivo e equipe permanecem opcionais.
+23. Criar, editar, excluir e administrar projetos participantes exige **permissão configurável** por
+    usuário/perfil, avaliada em todos os projetos envolvidos. Não depende de papel fixo como `ScrumMaster`.
+24. A API é a autoridade final da autorização, mesmo quando a interface oculta ou desabilita a ação.
+25. A desvinculação das tarefas e a exclusão da sprint ocorrem na mesma transação; falha causa rollback integral.
 
 ### Relação com Product Backlog, Kanban e tarefas
 
-18. Product Backlog, Kanban e sprint são recortes do mesmo `WorkItem`; não existem cópias da tarefa.
-19. O Product Backlog mostra por padrão tarefas sem sprint (`SprintId = null`).
-20. O Product Backlog oferece filtro para incluir tarefas que já estejam em uma sprint. O detalhamento visual
-    desse filtro pertence à spec de backlog.
-21. Uma tarefa pode permanecer no Kanban sem pertencer a uma sprint.
-22. Incluir, transferir ou retirar uma tarefa de sprint não altera quadro, coluna ou posição no Kanban.
-23. Uma tarefa pertence, no máximo, a uma sprint por vez.
-24. Ao excluir uma sprint, suas tarefas ficam sem sprint e voltam a aparecer no Product Backlog padrão.
+26. Product Backlog, Kanban e sprint são recortes do mesmo `WorkItem`; não existem cópias.
+27. O Product Backlog mostra por padrão tarefas sem sprint (`SprintId = null`) e oferece filtro para incluir
+    tarefas já planejadas.
+28. Uma tarefa pode permanecer no Kanban sem pertencer a nenhuma sprint.
+29. Incluir, transferir ou retirar uma tarefa de sprint não altera quadro, coluna ou posição.
 
 ### Capacidade
 
-25. Não existe cálculo automático de capacidade nesta versão.
-26. O sistema não deve inferir capacidade a partir de calendário, equipe, jornada ou quantidade de tarefas.
-27. Se valores manuais de disponibilidade e ausência forem mantidos por compatibilidade, devem ser tratados
-    apenas como entradas informativas; não podem impedir criação, ativação automática ou encerramento da sprint.
+30. Não existe cálculo automático de capacidade nesta versão; o sistema não infere capacidade a partir de
+    calendário, equipe, jornada ou quantidade de tarefas.
+31. Valores manuais preservados por compatibilidade são apenas informativos e não bloqueiam ciclo nem
+    encerramento.
 
 ### Planejamento hierárquico
 
-28. Ao planejar uma tarefa pai, todas as descendentes ativas são incluídas na mesma sprint.
-29. Quando todas as filhas diretas ativas de um pai forem selecionadas para a mesma sprint, o pai também é
-    incluído automaticamente; a regra é aplicada recursivamente aos ancestrais.
-30. A interface informa quantos itens foram selecionados diretamente e quantos foram incluídos automaticamente.
-31. O backend recalcula a família e persiste a alteração de forma atômica.
-32. Em falha, nenhum item da família muda de `SprintId`.
-33. Se não houver sprint disponível durante o planejamento, a interface oferece `Criar sprint`, preserva a
-    seleção atual e, após a criação, permite concluir o planejamento sem selecionar os itens novamente.
+32. Ao planejar uma tarefa pai, todas as descendentes ativas entram na mesma sprint. Como toda a família
+    pertence ao mesmo `Project` (regra 5), a validação da regra 6 é feita uma vez para a família.
+33. Quando todas as filhas diretas ativas de um pai forem selecionadas para a mesma sprint, o pai é incluído
+    automaticamente; a regra é recursiva sobre os ancestrais.
+34. A interface informa quantos itens foram selecionados diretamente e quantos foram incluídos automaticamente.
+35. O backend recalcula a família e persiste de forma atômica; em falha, nenhum item muda de `SprintId`.
+36. Sem sprint disponível, a interface oferece `Criar sprint`, preserva a seleção e conclui o planejamento sem
+    reselecionar itens.
 
 ### Quadro da sprint
 
-34. A aba `Quadro` representa as mesmas tarefas da sprint nas posições que elas ocupam no Kanban.
-35. Como uma sprint pode conter tarefas posicionadas em quadros diferentes, a tela agrupa por `BoardId`, sem
-    misturar colunas de mesmo nome pertencentes a quadros distintos.
-36. Cada seção exibe as colunas ativas do quadro na ordem de `Stage.Position`, inclusive quando vazias.
-37. Uma tarefa pode ser arrastada apenas entre colunas do mesmo quadro nessa tela.
-38. O movimento usa `POST /api/WorkItems/move`, preserva `SprintId` e segue as regras operacionais vigentes do
-    Kanban.
-39. A interface aplica atualização otimista e restaura a posição anterior se a API rejeitar a operação.
-40. Sprints encerradas mostram seu quadro em modo somente leitura.
+37. A aba `Quadro` representa as mesmas tarefas nas posições que ocupam no Kanban.
+38. Como a sprint agora atravessa projetos, a tela agrupa por `BoardId` e oferece **segmentação por projeto**,
+    sem misturar colunas homônimas de quadros distintos.
+39. Cada seção exibe as colunas ativas do quadro na ordem de `Stage.Position`, inclusive vazias.
+40. Uma tarefa só pode ser arrastada entre colunas do mesmo quadro nessa tela.
+41. O movimento usa `POST /api/WorkItems/move`, preserva `SprintId` e segue as regras operacionais do Kanban.
+42. A interface aplica atualização otimista e restaura a posição anterior se a API rejeitar.
+43. Sprints encerradas exibem o quadro em modo somente leitura.
+
+---
+
+## Modelo de dados proposto
+
+```
+Sprint
+  Id                (PK)
+  OrganizationId    (obrigatório, novo — tenant raiz conforme D58)
+  TeamId            (opcional, preservado)
+  Name, Goal, StartDate, EndDate
+  CreatedAt
+  ProjectId         (legado — preservado somente até o backfill ser validado; depois removido em migration própria)
+  Status/CompletedAt/CancelledAt (legado — deixam de governar; ver seção "Estado calculado")
+
+SprintProject
+  SprintId          (PK composta, FK Sprint)
+  ProjectId         (PK composta, FK Project)
+  AddedAt
+  AddedByUserId
+
+WorkItem
+  SprintId          (opcional, inalterado)
+  ProjectId efetivo (derivado de Board.ProjectId / vínculo atual — inalterado por esta spec)
+```
+
+### Estado calculado
+
+- O estado funcional é derivado: `hoje < StartDate` → `Planejada`; `StartDate <= hoje <= EndDate` → `Ativa`;
+  `hoje > EndDate` → `Encerrada`.
+- O fuso é o da organização (`Organization.TimeZone`). A **API é a única fonte do estado funcional**; a UI
+  nunca recalcula.
+- `Sprint.Status`, `CompletedAt` e `CancelledAt` permanecem como colunas legadas durante a transição, sem
+  governar exibição, filtro ou transição. Sua remoção física exige `G-MIGRATION` própria.
+
+### Backfill obrigatório
+
+1. Para cada `Sprint` existente com `ProjectId` não nulo, inserir uma linha em `SprintProject`.
+2. Preencher `Sprint.OrganizationId` a partir de `Project.OrganizationId` da sprint de origem.
+3. Verificação pós-backfill: `COUNT(Sprint)` com `ProjectId` não nulo == `COUNT(SprintProject)` agrupado por
+   sprint com exatamente uma linha; nenhuma sprint sem `OrganizationId`.
+4. Nenhuma tarefa muda de `SprintId`, `BoardId`, `StageId` ou `Position` durante o backfill.
+5. O backfill é idempotente e reexecutável.
+
+---
 
 ## Critérios de aceite
 
-- **Dado** que hoje é anterior à data inicial, **quando** a sprint é consultada, **então** seu estado é
-  `Planejada`.
-- **Dado** que hoje está entre as datas inicial e final, inclusive, **quando** a sprint é consultada, **então**
-  seu estado é `Ativa`, sem ação manual de início.
-- **Dado** que existem períodos sobrepostos, **quando** duas ou mais sprints chegam à data inicial,
-  **então** todas podem aparecer como ativas no mesmo projeto.
-- **Dado** que a sprint chegou ao encerramento com tarefas abertas, **quando** o responsável trata o
-  encerramento, **então** escolhe outra sprint ou Product Backlog antes de confirmar.
-- **Dado** que o usuário escolheu outra sprint, **quando** confirma, **então** somente as tarefas abertas são
-  transferidas para a sprint de destino do mesmo projeto.
-- **Dado** que o usuário escolheu Product Backlog, **quando** confirma, **então** as tarefas abertas recebem
-  `SprintId = null` sem mudar de quadro ou coluna.
-- **Dado** que uma sprint está encerrada, **quando** o usuário consulta histórico ou filtros, **então** ela
-  continua disponível para consulta.
-- **Dado** que o usuário não possui a permissão configurável de gestão de sprints, **quando** tenta criar,
-  editar ou excluir, **então** a API rejeita a operação e a UI não oferece a ação.
-- **Dado** um formulário sem nome, data inicial ou data final, **quando** o usuário tenta criar a sprint,
-  **então** a operação é bloqueada com validação por campo.
+- **Dado** uma sprint com os projetos A e B, **quando** um usuário planeja uma tarefa do projeto A, **então** o
+  vínculo é aceito.
+- **Dado** uma sprint com os projetos A e B, **quando** um usuário tenta planejar uma tarefa do projeto C,
+  **então** a API rejeita com erro de validação explícito e nada é persistido.
+- **Dado** um projeto participante de três sprints, **quando** suas sprints são consultadas, **então** todas
+  aparecem, inclusive com períodos sobrepostos.
+- **Dado** que hoje é anterior à data inicial, **então** o estado é `Planejada`, sem ação manual de início.
+- **Dado** que hoje está entre as datas, inclusive, **então** o estado é `Ativa`.
+- **Dado** que a sprint contém tarefas do projeto A, **quando** o usuário remove o projeto A da sprint,
+  **então** a UI exige escolha explícita entre desvincular essas tarefas ou movê-las para outra sprint
+  compatível, e a operação inteira é atômica.
+- **Dado** que a escolha do parágrafo anterior não foi confirmada, **então** nem o projeto nem as tarefas são
+  alterados.
+- **Dado** que o usuário não possui permissão em um dos projetos participantes, **quando** tenta qualquer
+  operação da sprint, **então** a API rejeita a operação inteira.
 - **Dado** que uma sprint possui tarefas, **quando** o usuário autorizado confirma a exclusão, **então** a
-  sprint é excluída e todas as tarefas ficam sem sprint, preservando Kanban e histórico.
-- **Dado** que o Product Backlog foi aberto sem filtros adicionais, **então** mostra somente tarefas sem sprint.
-- **Dado** que o filtro para incluir tarefas planejadas foi ativado, **então** tarefas em sprint também aparecem.
-- **Dado** uma tarefa pai com descendentes ativos, **quando** ela é planejada, **então** toda a família é
-  vinculada atomicamente à sprint.
-- **Dado** um card na aba `Quadro` da sprint, **quando** é movido para outra coluna do mesmo quadro,
-  **então** a nova posição persiste e o `SprintId` não muda.
-- **Dado** um movimento rejeitado por regra operacional ou autorização, **então** a UI restaura o card e
-  apresenta mensagem acessível.
+  sprint é excluída, todas as tarefas ficam com `SprintId = null` e quadro, coluna, posição, conteúdo,
+  hierarquia e histórico são preservados.
+- **Dado** o encerramento com tarefas abertas, **então** o usuário escolhe outra sprint compatível ou o Product
+  Backlog antes de confirmar.
+- **Dado** uma tarefa pai com descendentes ativos, **quando** é planejada, **então** toda a família é vinculada
+  atomicamente; em falha, nenhum item muda.
+- **Dado** o dashboard da sprint, **quando** o usuário segmenta por projeto, **então** as métricas mudam de
+  recorte sem alterar dados nem criar agregados paralelos.
+- **Dado** um card na aba `Quadro`, **quando** é movido para outra coluna do mesmo quadro, **então** a posição
+  persiste e o `SprintId` não muda.
+- **Dado** o backfill aplicado, **quando** as sprints legadas são consultadas, **então** cada uma exibe
+  exatamente o projeto que possuía antes, sem perda de vínculo.
+
+---
 
 ## Estado atual comprovado no código
 
-O código atual já possui:
+Evidências verificadas nesta auditoria (arquivo e linha):
 
-- entidade `Sprint` com nome, objetivo opcional, datas, equipe opcional, estado persistido, capacidades e
-  snapshots históricos;
-- validação de nome obrigatório e intervalo de datas válido na entidade e nos validators;
-- listagem de todas as sprints do projeto ordenadas por data inicial, incluindo estados terminais;
-- criação e edição via API;
-- encerramento/cancelamento com escolha entre Product Backlog e outra sprint para itens abertos;
-- snapshot dos itens ao concluir ou cancelar;
-- planejamento de tarefas pelo mesmo `SprintId`, sem duplicar o `WorkItem`;
-- dashboard com planejamento, quadro, métricas e histórico;
-- quadro da sprint com movimentação persistente e preservação do vínculo da sprint;
-- capacidade informada manualmente por pessoa.
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs:10` — `public Guid ProjectId { get; set; }`: vínculo 1:N
+  obrigatório com projeto; **não existe** `OrganizationId` nem `SprintProject`.
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs:16` — `Status` persistido com default `Planned`.
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs:74-91` — `ChangeStatus` exige o ciclo manual
+  `Planejada → Ativa → Concluída` e bloqueia ativação quando já existe outra sprint ativa
+  (`projectHasAnotherActiveSprint`).
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs:54-72` — `CaptureHistory` grava `SprintItemSnapshot`.
+- `src/Prisma.Workspace.Domain/Entities/Sprint.cs:104-141` — `SprintItemSnapshot` imutável já implementado.
+- `src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs` — criação, edição e mudança de status.
+- `src/Prisma.Workspace.Api/Controllers/SprintsController.cs` — endpoints existentes.
+- `src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx:488` — métricas derivadas de
+  `item.completedAt`, herdando o defeito de conclusão descrito em `SPEC-WORKFLOW-STATUS`.
+- `tests/Prisma.Workspace.Tests/ScrumDomainTests.cs` e `ScrumApplicationTests.cs` — cobertura do modelo atual.
 
-Evidências principais:
+---
 
-- `src/Prisma.Workspace.Domain/Entities/Sprint.cs`
-- `src/Prisma.Workspace.Domain/Enums/SprintStatus.cs`
-- `src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs`
-- `src/Prisma.Workspace.Infrastructure/Repositories/SprintRepository.cs`
-- `src/Prisma.Workspace.Api/Controllers/SprintsController.cs`
-- `src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx`
-- `src/Prisma.Workspace.Web/src/features/scrum/SprintKanbanBoard.tsx`
+## Gaps entre o código atual e o contrato v2
 
-## Gaps entre o código atual e o contrato aprovado
+Os nove gaps da v1 permanecem válidos e são renumerados abaixo, seguidos dos gaps novos introduzidos pelo N:N.
 
-1. **Estado manual:** `Sprint.Status` é persistido e alterado pelo endpoint
-   `PUT /api/sprints/{id}/status`; não é calculado pelas datas.
-2. **Botão manual:** a UI ainda exibe `Iniciar sprint`.
-3. **Uma ativa por projeto:** domínio, handler e repositório bloqueiam a ativação quando já existe outra sprint
-   ativa, contrariando a decisão de permitir períodos simultâneos.
-4. **Autorização fixa:** criar, editar, mudar status e capacidade exigem hoje no mínimo `ScrumMaster`, em vez
-   de uma permissão configurável por usuário/perfil.
-5. **Exclusão ausente:** não existe endpoint `DELETE /api/sprints/{id}` nem fluxo transacional de desvinculação.
-6. **Capacidade exposta:** o dashboard mantém editor e KPI de capacidade. Embora os valores sejam manuais,
-   essa superfície deve ser homologada para confirmar se continuará apenas informativa ou ficará oculta.
-7. **Encerramento automático:** não existe processamento automático por data nem mecanismo definido para
-   solicitar a destinação dos itens abertos quando a data final passa.
-8. **Contrato histórico:** sprints terminais são retornadas pela API e exibidas na trilha atual, mas falta
-   homologação manual dos filtros e do histórico completo.
-9. **D25 desatualizada:** a regra antiga de somente uma sprint ativa e transição manual conflita com a decisão
-   humana atual. `DECISIONS.md` precisa registrar uma decisão sucessora antes da implementação.
+### Gaps herdados da v1
+
+1. **Estado manual persistido:** `Sprint.Status` é alterado por `PUT /api/sprints/{id}/status`; não é calculado
+   pelas datas (`Sprint.cs:16,74`).
+2. **Botão manual:** a UI ainda expõe `Iniciar sprint`.
+3. **Uma ativa por projeto:** domínio e handlers bloqueiam a segunda sprint ativa (`Sprint.cs:85`), contrariando
+   períodos sobrepostos.
+4. **Autorização fixa:** operações exigem no mínimo `ScrumMaster`, e não uma permissão configurável.
+5. **Exclusão ausente:** não existe `DELETE /api/sprints/{id}` nem fluxo transacional de desvinculação.
+6. **Capacidade exposta:** o dashboard mantém editor e KPI de capacidade; precisa ser homologado como
+   informativo ou ocultado.
+7. **Encerramento automático:** não há processamento por data nem mecanismo para exigir destino dos itens
+   abertos quando a data final passa.
+8. **Contrato histórico:** sprints terminais retornam pela API, mas filtros e histórico completo não foram
+   homologados.
+9. **D25 desatualizada:** a regra de sprint única ativa e transição manual conflita com a decisão vigente;
+   `DECISIONS.md` precisa da decisão sucessora antes da implementação.
+
+### Gaps novos do contrato N:N
+
+10. **Sem `SprintProject`:** a entidade, a configuração EF, o índice e a FK não existem.
+11. **Sem `Sprint.OrganizationId`:** o tenant da sprint é hoje derivado do projeto; a sprint não é um agregado
+    de organização.
+12. **Sem validação Projeto-da-tarefa ∈ Sprint:** nada impede hoje vincular uma tarefa a uma sprint de outro
+    projeto além do `ProjectId` fixo.
+13. **Sem gestão de projetos participantes:** não existem endpoints de adicionar/remover projeto na sprint nem
+    o fluxo atômico de tratamento das tarefas ao remover um projeto.
+14. **Sem segmentação por projeto nas métricas:** o dashboard consolida por sprint única de um projeto só.
+15. **Sem autorização multiprojeto:** a checagem atual assume um projeto; falta avaliar todos os participantes.
+16. **Sem backfill:** nenhuma migration converte `Sprint.ProjectId` em `SprintProject`.
+17. **Quadro da sprint monoprojeto:** o agrupamento por `BoardId` existe, mas não há recorte por projeto.
+
+---
 
 ## Impacto de dados e workflow
 
-- A alteração de status persistido para status calculado precisa definir a compatibilidade de sprints já
-  concluídas ou canceladas e de `CompletedAt`/`CancelledAt`.
-- A remoção da unicidade lógica de sprint ativa altera regra de workflow e exige `G-WORKFLOW`.
-- Se índices, constraints ou colunas precisarem mudar, a implementação exige `G-MIGRATION`; esta spec não
-  presume migration sem auditoria do modelo físico.
-- A exclusão deve preservar `SprintItemSnapshot` conforme a política histórica vigente; se houver mudança da
-  estrutura ou semântica imutável, exige `G-HISTORY`.
+- Introduzir `SprintProject` e `Sprint.OrganizationId` é alteração de schema: exige `G-MIGRATION`.
+- A cadeia de migrations é **incremental** e deve permanecer assim: a base real de produção possui dados e um
+  histórico de migrations aplicadas. Consolidação de migrations só ocorre no lote final `migrations-consolidation`.
+- Trocar status persistido por status calculado e remover a exclusividade de sprint ativa altera regra de
+  workflow: exige `G-WORKFLOW`.
+- Se a implementação alterar a estrutura ou a semântica imutável de `SprintItemSnapshot`, exige `G-HISTORY`.
+  Apenas ler os snapshots existentes não aciona esse gate.
+- `SprintItemSnapshot` deve passar a registrar também o `ProjectId` do item quando a sprint for multiprojeto;
+  como isso altera a estrutura do snapshot, esse ponto específico **aciona `G-HISTORY`**.
+
+---
 
 ## Contratos de API esperados
 
 ### Consulta
 
-- `GET /api/projects/{projectId}/sprints` retorna datas e o estado funcional derivado, incluindo sprints
-  encerradas para histórico/filtros.
+- `GET /api/sprints?organizationId=...&projectId=...` retorna sprints da organização, filtráveis por projeto
+  participante, com estado funcional derivado e a lista de projetos participantes.
+- `GET /api/sprints/{id}` inclui `projects[]` e métricas consolidadas.
+- `GET /api/sprints/{id}/metrics?projectId=...` retorna a mesma métrica segmentada.
 
 ### Criação
 
-- `POST /api/projects/{projectId}/sprints`
-- Obrigatórios: `name`, `startDate`, `endDate`.
-- Opcionais: `goal`, `teamId`.
+- `POST /api/sprints` — obrigatórios `name`, `startDate`, `endDate`, `projectIds[]` (pelo menos um).
+  Opcionais `goal`, `teamId`.
 
 ### Edição
 
-- `PUT /api/sprints/{id}` altera nome, objetivo e datas mediante permissão configurável.
+- `PUT /api/sprints/{id}` altera nome, objetivo e datas mediante permissão configurável em todos os projetos.
+
+### Projetos participantes
+
+- `POST /api/sprints/{id}/projects` adiciona um projeto.
+- `DELETE /api/sprints/{id}/projects/{projectId}` exige `openItemsAction` = `Unlink` ou `MoveToSprint` com
+  `destinationSprintId` compatível. Sem esse parâmetro, responde `400` sem alterar nada.
 
 ### Exclusão
 
-- `DELETE /api/sprints/{id}` exige confirmação na UI e permissão configurável.
-- API remove `SprintId` das tarefas e exclui a sprint na mesma transação.
-- Falha em qualquer etapa causa rollback integral.
+- `DELETE /api/sprints/{id}` remove `SprintId` das tarefas e exclui a sprint na mesma transação; falha em
+  qualquer etapa causa rollback integral.
 
-### Tratamento de itens abertos no encerramento
+### Encerramento com itens abertos
 
-- O comando recebe `ReturnToBacklog` ou `MoveToSprint`.
-- `MoveToSprint` exige uma sprint de destino diferente, pertencente ao mesmo projeto.
-- A operação registra o resultado histórico e altera somente o vínculo de sprint dos itens abertos.
+- Comando recebe `ReturnToBacklog` ou `MoveToSprint`; `MoveToSprint` exige sprint destino diferente que contenha
+  o projeto de cada item movido.
 
 ### Movimentação no quadro
 
-- `POST /api/WorkItems/move` recebe `workItemId`, `destinationStageId` e `position`.
-- O movimento não altera `SprintId` nem `BacklogRank`.
+- `POST /api/WorkItems/move` recebe `workItemId`, `destinationStageId` e `position`; não altera `SprintId` nem
+  `BacklogRank`.
+
+---
 
 ## Regras de concorrência e erro
 
-- Planejamento, transferência de itens abertos e exclusão da sprint são transacionais.
-- Uma resposta `409 concurrency_conflict` deve provocar nova leitura dos dados afetados, sem exigir recarga
-  manual da página.
+- Planejamento, transferência de itens abertos, remoção de projeto e exclusão da sprint são transacionais.
+- `409 concurrency_conflict` provoca releitura dos dados afetados, sem recarga manual da página.
 - Se a intenção já estiver refletida no servidor, a UI a trata como concluída.
-- Se ainda for válida, a UI preserva o diálogo/seleção e solicita nova confirmação com dados atuais.
+- Se ainda for válida, a UI preserva o diálogo/seleção e pede nova confirmação com dados atuais.
 - Se deixar de ser válida, a UI encerra ou desabilita a ação e explica o motivo.
-- Falha ao desvincular ou transferir qualquer item causa rollback integral.
-- A sprint de destino não pode ser a própria sprint nem pertencer a outro projeto.
+- A sprint de destino não pode ser a própria sprint e deve conter o projeto de cada tarefa transferida.
+
+---
 
 ## Homologação manual pendente
 
-- Criar sprint somente com nome, data inicial e data final.
-- Confirmar mudança automática entre Planejada, Ativa e Encerrada conforme as datas.
-- Confirmar coexistência de várias sprints ativas no mesmo projeto.
-- Confirmar ausência de `Iniciar sprint`.
-- Confirmar permissão configurável em criação, edição e exclusão.
-- Excluir sprint com tarefas e verificar que elas continuam no mesmo quadro/coluna e ficam sem sprint.
-- Encerrar sprint com itens abertos escolhendo outra sprint e Product Backlog em testes separados.
-- Confirmar filtro do Product Backlog para incluir tarefas em sprint.
-- Confirmar que sprints encerradas continuam disponíveis em histórico e filtros.
-- Confirmar que capacidade não é calculada automaticamente nem bloqueia o ciclo da sprint.
-- Confirmar planejamento hierárquico e rollback em falha.
-- Confirmar movimentação e persistência no quadro da sprint.
+- Criar sprint com nome, datas e dois projetos.
+- Planejar tarefas de ambos os projetos e confirmar que quadro, coluna e posição não mudam.
+- Tentar planejar tarefa de um terceiro projeto e confirmar a rejeição.
+- Consultar métricas consolidadas e segmentadas por projeto.
+- Remover um projeto com tarefas vinculadas e exercitar as duas destinações.
+- Confirmar transição automática entre Planejada, Ativa e Encerrada pelas datas e ausência de `Iniciar sprint`.
+- Confirmar coexistência de sprints com períodos sobrepostos.
+- Excluir sprint com tarefas e verificar preservação integral do Kanban e do histórico.
+- Confirmar permissão configurável avaliada em todos os projetos participantes.
+- Confirmar o backfill em cópia da base real antes de aplicar em produção.
 
 ## Test Gate Mapping
 
-- **.NET:** cálculo do estado por datas; sobreposição de sprints; autorização configurável; validação da
-  criação; exclusão transacional; preservação de quadro/coluna/histórico; destinação atômica de itens abertos;
-  planejamento hierárquico; concorrência.
-- **React/Vitest:** ausência do botão iniciar; formulários; permissões; diálogo de exclusão; escolha de destino;
-  estados históricos; capacidade apenas informativa; rollback acessível.
-- **Playwright:** criar sprint; observar transição por data; manter duas ativas; excluir com tarefas; encerrar
-  para backlog e para outra sprint; filtrar backlog; consultar encerradas; mover card no quadro e recarregar.
+- **.NET:** estado calculado por datas e fuso da organização; sobreposição; N:N `SprintProject`; rejeição de
+  tarefa cujo projeto não participa; remoção de projeto com as duas destinações e rollback; autorização em
+  todos os projetos; exclusão transacional preservando quadro/coluna/histórico; planejamento hierárquico
+  atômico; backfill idempotente e verificável; concorrência `409`.
+- **React/Vitest:** ausência do botão iniciar; seletor de projetos participantes; diálogo de remoção de projeto
+  com destino obrigatório; segmentação de métricas por projeto; rollback acessível.
+- **Playwright:** criar sprint multiprojeto; planejar itens de dois projetos; observar transição por data;
+  manter duas sprints ativas; remover projeto com tarefas; excluir sprint com tarefas; consultar encerradas;
+  mover card no quadro e recarregar.
 
 ## Human Gates para implementação
 
-- `G-SPEC`: já aprovado pelo PO para este contrato.
-- `G-WORKFLOW`: obrigatório para substituir o ciclo manual e a exclusividade de sprint ativa.
-- `G-MIGRATION`: obrigatório somente se a auditoria comprovar alteração real de schema/constraint.
-- `G-HISTORY`: obrigatório somente se a implementação alterar a estrutura ou a semântica imutável dos
-  snapshots existentes.
-- `G-COMPLETION`: conforme a classificação da tarefa de implementação.
+- **`G-SPEC`** — **pendente**. Esta v2 está em `draft` e não pode ser implementada antes da aprovação humana.
+- **`G-MIGRATION`** — **obrigatório**. `SprintProject`, `Sprint.OrganizationId` e o backfill alteram schema.
+- **`G-WORKFLOW`** — **obrigatório**. Estado calculado, fim da exclusividade de sprint ativa e a nova regra de
+  elegibilidade de tarefa alteram regras de workflow.
+- **`G-HISTORY`** — **obrigatório apenas** se `SprintItemSnapshot` passar a persistir `ProjectId` ou qualquer
+  outro campo novo. Somente ler snapshots existentes não aciona o gate.
+- **`G-SCOPE`** — necessário para qualquer requisito não coberto aqui nem em `DECISIONS.md`.
+- **`G-COMPLETION`** — conforme a classificação da tarefa de implementação.
 
-## Riscos
+## Perguntas abertas para o PO (não decidir sem resposta)
 
-- Datas e fuso horário inconsistentes podem produzir estados diferentes entre cliente e servidor; a API deve
-  ser a fonte do estado funcional.
-- Encerramento automático sem resolução dos itens abertos pode deixar vínculos ambíguos; a escolha deve ser
-  explícita e transacional.
-- Excluir sprint sem preservar snapshots pode apagar evidência histórica.
-- Remover a regra de uma sprint ativa exige revisar métricas, notificações e seletores que hoje priorizam uma
-  única sprint ativa.
+1. **Escopo da sprint sem projeto:** uma sprint pode existir temporariamente sem nenhum projeto associado
+   (ex.: recém-criada) ou o mínimo de um projeto é invariante permanente? A spec assume invariante permanente.
+2. **Sprint × equipe:** com a sprint pertencendo à organização, `TeamId` continua útil como rótulo informativo
+   ou deve ser removido da experiência?
+3. **`Sprint.ProjectId` legado:** manter a coluna por uma release inteira como rede de segurança, ou removê-la
+   na mesma migration após a verificação do backfill?
+4. **Snapshot multiprojeto:** aceitar acionar `G-HISTORY` para incluir `ProjectId` em `SprintItemSnapshot`, ou
+   derivar o projeto por join no `WorkItem` e manter o snapshot intacto?
+5. **Segmentação de capacidade:** a capacidade manual passa a ser por pessoa e por projeto, ou permanece por
+   pessoa na sprint inteira?
 
 ## Rastreabilidade
 
-`D25` (a suceder parcialmente) + `D52` + `D54` → `SPEC-S-003` → `TASK-008` / `TASK-022` / `TASK-023` →
-testes .NET, React e Playwright → homologação manual
+`D25` (a suceder) + `D52` + `D54` + `D58` + decisão do PO de 2026-09-08 → **decisão sucessora proposta D81 (não aprovada)**
+→ `SPEC-S-003 v2` → lote `sprint-planning-v2` (`TASK-100`..`TASK-107`) → testes .NET, React e Playwright →
+homologação manual.
