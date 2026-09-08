@@ -378,7 +378,7 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
   audit_2026_09_08: >-
     Confirmado in_progress. A reordenacao persistida ja existe por botoes com
     atualizacao otimista e rollback (Kanban.tsx:761-778, services/api.ts:765).
-    Falta somente o arraste. Escopo remanescente coberto por TASK-014.
+    Falta somente o arraste. Escopo remanescente (arraste) coberto por TASK-124.
   priority: P1
 
 - id: TASK-028
@@ -1469,3 +1469,1075 @@ A recomendação técnica é a Opção A. Nenhuma delas foi escolhida; o backfil
   status: pending
   priority: P0
 ```
+
+---
+
+# Plano de execução — Prisma WorkSpace v2 (2026-09-08)
+
+Todos os gaps da auditoria acima viraram tarefas pequenas, agrupadas nos lotes definidos pelo PO. Cada tarefa
+traz id, spec de origem, dependências, risco, gates exigidos, arquivos previstos e testes exigidos.
+
+Regras invariantes do programa:
+
+- A cadeia de migrations permanece **incremental** do início ao fim (D80). Nenhum lote consolida migrations;
+  isso é exclusividade do lote `migrations-consolidation`, executado **por último**.
+- Nenhum agente aprova Human Gate. Onde falta decisão, a pergunta está registrada na seção final.
+- Lotes que tocam o mesmo arquivo central precisam ser serializados; ver "Arquivos centrais disputados".
+
+## Lote `core-domain-v2`
+
+Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflow-status`,
+`project-management`, `work-item-management`, `quick-create-work-item`, `project-key-auto-generation`,
+`project-methodology-hidden`.
+
+```yaml
+- id: TASK-100
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Expor Stage.Category nos contratos de leitura de coluna (StageDto e consumidores).
+  dependencies: []
+  risk: baixo
+  gates: [backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/Stages/Dtos/StageDto.cs
+    - src/Prisma.Workspace.Application/Features/Stages/Queries
+    - src/Prisma.Workspace.Web/src/services/api.ts
+  tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, src/Prisma.Workspace.Web/src/pages/Kanban.test.tsx]
+  status: pending
+  priority: P0
+
+- id: TASK-101
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Permitir classificar a coluna como aberta ou concluida na gestao de colunas do Kanban.
+  dependencies: [TASK-100]
+  risk: medio
+  gates: [G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Api/Controllers/StagesController.cs
+    - src/Prisma.Workspace.Application/Features/Stages/Commands
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+  tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts]
+  status: pending
+  priority: P0
+
+- id: TASK-102
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Fazer o Kanban enviar a classificacao ao criar coluna e eliminar o default silencioso InProgress.
+  dependencies: [TASK-101]
+  risk: medio
+  gates: [G-WORKFLOW, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/services/api.ts
+    - src/Prisma.Workspace.Application/Features/Stages/Commands/CreateStageCommandHandler.cs
+  tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs]
+  status: pending
+  priority: P0
+
+- id: TASK-103
+  spec: SPEC-WORKFLOW-STATUS
+  requirement: Usar exclusivamente o nome da coluna como status textual da tarefa em todas as superficies.
+  dependencies: [TASK-100, TASK-BUG-001]
+  risk: alto
+  gates: [G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintBacklogPanel.tsx
+    - src/Prisma.Workspace.Application/Features/WorkItemDetails/WorkItemDetailsFeature.cs
+  tests: [src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx, src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts]
+  status: pending
+  priority: P0
+
+- id: TASK-104
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Reclassificar coluna com confirmacao de impacto, conclusao atomica e descendencia recursiva (D62), nos dois sentidos.
+  dependencies: [TASK-101, TASK-121]
+  risk: alto
+  gates: [G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Stages/Commands
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+  tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-105
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Produzir relatorio de colunas candidatas a concluida e, apos decisao humana, aplicar o backfill de Stage.Category.
+  dependencies: [TASK-101]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - scripts
+  tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs]
+  human_gate: sim (estrategia de backfill em aberto; ver perguntas de gate)
+  status: blocked
+  priority: P1
+
+- id: TASK-106
+  spec: SPEC-WORKFLOW-STATUS
+  requirement: Retirar WorkflowStatus, templates e transicoes do governo do status, preservando dados e codigo como legado tecnico.
+  dependencies: [TASK-103]
+  risk: alto
+  gates: [G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/Workflow
+    - src/Prisma.Workspace.Api/Controllers/WorkflowController.cs
+    - src/Prisma.Workspace.Api/Controllers/OrganizationWorkflowTemplatesController.cs
+    - src/Prisma.Workspace.Web/src/features/workflow/ProjectWorkflowSettings.tsx
+    - src/Prisma.Workspace.Web/src/features/organizations/WorkflowTemplatesPanel.tsx
+  tests: [tests/Prisma.Workspace.Tests/OrganizationWorkflowTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-107
+  spec: SPEC-QUICK-CREATE-WORK-ITEM
+  requirement: Exigir titulo, projeto, responsavel, quadro e coluna na criacao de tarefa, na API e na UI.
+  dependencies: [TASK-101]
+  risk: alto
+  gates: [backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommand.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommandValidator.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommandHandler.cs
+    - src/Prisma.Workspace.Web/src/components/GlobalActions.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+  tests: [tests/Prisma.Workspace.Tests/MultiBoardPlacementTests.cs, src/Prisma.Workspace.Web/e2e/quick-create-layout.spec.ts]
+  status: pending
+  priority: P0
+
+- id: TASK-108
+  spec: SPEC-QUICK-CREATE-WORK-ITEM
+  requirement: Remover BoardIds[] do contrato de criacao e consolidar a posicao operacional singular da D52.
+  dependencies: [TASK-107]
+  risk: alto
+  gates: [G-MIGRATION (condicional), backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/WorkItems
+    - src/Prisma.Workspace.Domain/Entities/WorkItemBoardPlacement.cs
+    - src/Prisma.Workspace.Web/src/services/api.ts
+  tests: [tests/Prisma.Workspace.Tests/MultiBoardPlacementTests.cs, tests/Prisma.Workspace.Tests/BoardProjectionCommandTests.cs]
+  human_gate: sim (G-MIGRATION se a conversao dos placements legados alterar dados)
+  status: pending
+  priority: P1
+
+- id: TASK-109
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Adicionar IsArchived/ArchivedAt ao Board e arquivar o quadro junto com suas tarefas, com restauracao por administrador.
+  dependencies: [TASK-110]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Board.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Configurations
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Application/Features/Boards
+  tests: [tests/Prisma.Workspace.Tests/BoardProjectionCommandTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-110
+  spec: SPEC-USER-ACCESS-PERMISSIONS
+  requirement: Criar a permissao configuravel Administrar quadros em PlatformPermission e aplica-la nas operacoes de quadro e coluna.
+  dependencies: []
+  risk: medio
+  gates: [backend-build, backend-test, frontend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Enums/PlatformPermission.cs
+    - src/Prisma.Workspace.Domain/Authorization/RolePermissionCatalog.cs
+    - src/Prisma.Workspace.Infrastructure/Identity/PermissionService.cs
+  tests: [tests/Prisma.Workspace.Tests/OrganizationDomainTests.cs]
+  status: pending
+  priority: P0
+
+- id: TASK-111
+  spec: SPEC-USER-ACCESS-PERMISSIONS
+  requirement: Adicionar o escopo Board a PermissionScope e implementar o acesso derivado Quadro para Projetos.
+  dependencies: [TASK-110]
+  risk: alto
+  gates: [G-MIGRATION (condicional), backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Enums/PermissionScope.cs
+    - src/Prisma.Workspace.Infrastructure/Identity/BoardAccessService.cs
+    - src/Prisma.Workspace.Infrastructure/Identity/ProjectAccessService.cs
+  tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs]
+  human_gate: sim (G-MIGRATION se o enum persistido mudar de dominio)
+  status: pending
+  priority: P0
+
+- id: TASK-112
+  spec: SPEC-USER-ACCESS-PERMISSIONS
+  requirement: Reduzir OrganizationRole aos cinco perfis-base da D55, com mapeamento verificavel dos dez perfis atuais.
+  dependencies: [TASK-111]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Enums/OrganizationRole.cs
+    - src/Prisma.Workspace.Domain/Authorization/RolePermissionCatalog.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
+  tests: [tests/Prisma.Workspace.Tests/OrganizationDomainTests.cs]
+  human_gate: sim (mapeamento de perfis legados exige decisao humana)
+  status: blocked
+  priority: P0
+
+- id: TASK-113
+  spec: SPEC-USER-ACCESS-PERMISSIONS
+  requirement: Eliminar a hierarquia fixa ProjectRole e migrar suas concessoes para o modelo de escopos.
+  dependencies: [TASK-112]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Enums/ProjectRole.cs
+    - src/Prisma.Workspace.Infrastructure/Identity/ProjectAccessService.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+  tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs]
+  status: blocked
+  priority: P1
+
+- id: TASK-114
+  spec: SPEC-USER-ACCESS-PERMISSIONS
+  requirement: Permitir perfis personalizados reutilizaveis por conjunto de permissoes, sem conceder autoridade que o criador nao possui.
+  dependencies: [TASK-112]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Authorization
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Web/src/pages/OrganizationSettings.tsx
+  tests: [tests/Prisma.Workspace.Tests/OrganizationDomainTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-115
+  spec: SPEC-PROJECT-MANAGEMENT
+  requirement: Reduzir ProjectStatus a Ativo e Arquivado com backfill dos cinco estados atuais.
+  dependencies: []
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Enums/ProjectStatus.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectSettings.tsx
+  tests: [tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs]
+  human_gate: sim (mapeamento de Planning/OnHold/Completed/Cancelled exige decisao humana)
+  status: blocked
+  priority: P1
+
+- id: TASK-116
+  spec: SPEC-PROJECT-MANAGEMENT
+  requirement: Arquivar e restaurar projeto com suas tarefas de forma transacional, sem arquivar os quadros transversais.
+  dependencies: [TASK-115, TASK-109]
+  risk: alto
+  gates: [backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Projects/ProjectManagementFeature.cs
+    - src/Prisma.Workspace.Web/src/pages/Projects.tsx
+  tests: [tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs, src/Prisma.Workspace.Web/e2e/project-management.spec.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-117
+  spec: SPEC-ORGANIZATIONS
+  requirement: Criar a autoridade de Administrador da plataforma fora dos perfis do tenant, com seletor de organizacoes exclusivo.
+  dependencies: [TASK-112]
+  risk: alto
+  gates: [G-SCOPE, G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Organization.cs
+    - src/Prisma.Workspace.Api/Middleware/OrganizationContextMiddleware.cs
+    - src/Prisma.Workspace.Api/Controllers/OrganizationsController.cs
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
+  tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs, src/Prisma.Workspace.Web/e2e/organization-switch.spec.ts]
+  human_gate: sim (G-SCOPE para a identidade tecnica do Platform Admin)
+  status: blocked
+  priority: P0
+
+- id: TASK-118
+  spec: SPEC-ORGANIZATIONS
+  requirement: Impor membership unica para usuario comum e ocultar o seletor de organizacao para quem nao e Administrador da plataforma.
+  dependencies: [TASK-117]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Organizations/OrganizationsFeature.cs
+    - src/Prisma.Workspace.Web/src/features/organizations/OrganizationContext.tsx
+  tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs]
+  status: pending
+  priority: P0
+
+- id: TASK-119
+  spec: SPEC-ORGANIZATIONS
+  requirement: Arquivar e restaurar organizacao com leitura restrita ao control plane e bloqueio de escrita.
+  dependencies: [TASK-117]
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Organization.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+  tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-120
+  spec: SPEC-WORK-ITEM-MANAGEMENT
+  requirement: Criar lixeira de 7 dias do WorkItem distinta de arquivar, com escolha sobre subtarefas, reparenting a avo e restauracao familiar.
+  dependencies: []
+  risk: alto
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/WorkItem.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+  tests: [tests/Prisma.Workspace.Tests/BacklogFeatureTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-121
+  spec: SPEC-WORK-ITEM-MANAGEMENT
+  requirement: Condicionar a conclusao do pai a todas as subtarefas concluidas e oferecer acao atomica de concluir a familia.
+  dependencies: [TASK-BUG-001]
+  risk: alto
+  gates: [G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs
+  tests: [tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs]
+  status: pending
+  priority: P0
+
+- id: TASK-122
+  spec: SPEC-PROJECT-KEY-AUTO-GENERATION
+  requirement: Remover o prefixo de chave tecnica das referencias de tarefa exibidas na interface, preservando o uso interno.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+  tests: [src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx]
+  status: pending
+  priority: P2
+
+- id: TASK-123
+  spec: SPEC-PROJECT-METHODOLOGY-HIDDEN
+  requirement: Remover methodology dos contratos de leitura consumidos pela UI, mantendo a coluna por compatibilidade.
+  dependencies: []
+  risk: baixo
+  gates: [backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/features/reports/ReportsHub.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+  tests: [src/Prisma.Workspace.Web/src/pages/ProjectStructureLabels.test.tsx]
+  status: pending
+  priority: P2
+
+- id: TASK-124
+  spec: SPEC-BOARDS-STAGES-WIP
+  requirement: Completar a reordenacao de colunas com arraste, preservando os botoes acessiveis ja existentes.
+  dependencies: [TASK-101]
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+  tests: [src/Prisma.Workspace.Web/e2e/release-shell-navigation.spec.ts]
+  status: pending
+  priority: P2
+```
+
+## Lote `sprint-planning-v2`
+
+Specs: `sprints` (v2 em `draft`), `backlog`, `kanban-visual-order`, `search-saved-filters`.
+
+**Bloqueio de lote:** TASK-200 a TASK-209 dependem do `G-SPEC` da `SPEC-S-003 v2`. Nenhuma delas pode começar
+antes da aprovação humana.
+
+```yaml
+- id: TASK-200
+  spec: SPEC-S-003 v2
+  requirement: Criar SprintProject e Sprint.OrganizationId no dominio, na configuracao EF e nos indices.
+  dependencies: []
+  risk: alto
+  gates: [G-SPEC, G-MIGRATION, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Sprint.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Configurations
+    - src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumDomainTests.cs]
+  human_gate: sim (G-SPEC pendente + G-MIGRATION)
+  status: blocked
+  priority: P0
+
+- id: TASK-201
+  spec: SPEC-S-003 v2
+  requirement: Migration incremental com backfill idempotente e verificavel de Sprint.ProjectId para SprintProject.
+  dependencies: [TASK-200]
+  risk: alto
+  gates: [G-SPEC, G-MIGRATION, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - scripts
+  tests: [tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P0
+
+- id: TASK-202
+  spec: SPEC-S-003 v2
+  requirement: Calcular o estado da sprint pelas datas, remover Iniciar sprint e a exclusividade de sprint ativa.
+  dependencies: [TASK-201]
+  risk: alto
+  gates: [G-SPEC, G-WORKFLOW, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Sprint.cs
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx
+  tests: [tests/Prisma.Workspace.Tests/ScrumDomainTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P0
+
+- id: TASK-203
+  spec: SPEC-S-003 v2
+  requirement: Endpoints de projetos participantes, com remocao exigindo destino atomico das tarefas vinculadas.
+  dependencies: [TASK-201]
+  risk: alto
+  gates: [G-SPEC, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Api/Controllers/SprintsController.cs
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P0
+
+- id: TASK-204
+  spec: SPEC-S-003 v2
+  requirement: Validar que o projeto da tarefa participa da sprint antes de aceitar o vinculo.
+  dependencies: [TASK-203]
+  risk: medio
+  gates: [G-SPEC, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P0
+
+- id: TASK-205
+  spec: SPEC-S-003 v2
+  requirement: Implementar DELETE de sprint transacional que remove somente o SprintId das tarefas.
+  dependencies: [TASK-203]
+  risk: medio
+  gates: [G-SPEC, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Api/Controllers/SprintsController.cs
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P1
+
+- id: TASK-206
+  spec: SPEC-S-003 v2
+  requirement: Trocar a autorizacao fixa por permissao configuravel avaliada em todos os projetos participantes.
+  dependencies: [TASK-203, TASK-112, TASK-114]
+  risk: alto
+  gates: [G-SPEC, backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Infrastructure/Identity/PermissionService.cs
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumApplicationTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P1
+
+- id: TASK-207
+  spec: SPEC-S-003 v2
+  requirement: Metricas consolidadas e segmentaveis por projeto no dashboard e no quadro da sprint.
+  dependencies: [TASK-204]
+  risk: medio
+  gates: [G-SPEC, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/features/scrum/SprintDashboard.tsx
+    - src/Prisma.Workspace.Web/src/utils/scrumAnalytics.ts
+  tests: [src/Prisma.Workspace.Web/src/utils/scrumAnalytics.test.ts]
+  human_gate: sim
+  status: blocked
+  priority: P1
+
+- id: TASK-208
+  spec: SPEC-S-003 v2
+  requirement: Planejamento hierarquico atomico com criacao de sprint preservando a selecao atual.
+  dependencies: [TASK-204]
+  risk: medio
+  gates: [G-SPEC, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+  tests: [tests/Prisma.Workspace.Tests/BacklogFeatureTests.cs]
+  human_gate: sim
+  status: blocked
+  priority: P1
+
+- id: TASK-209
+  spec: SPEC-S-003 v2
+  requirement: Encerramento da sprint exigindo destino explicito para as tarefas abertas, com rollback integral em falha.
+  dependencies: [TASK-205]
+  risk: alto
+  gates: [G-SPEC, G-HISTORY (condicional), backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Sprints/SprintsFeature.cs
+    - src/Prisma.Workspace.Domain/Entities/Sprint.cs
+  tests: [tests/Prisma.Workspace.Tests/ScrumDomainTests.cs]
+  human_gate: sim (G-HISTORY se SprintItemSnapshot mudar de estrutura)
+  status: blocked
+  priority: P1
+
+- id: TASK-210
+  spec: SPEC-KANBAN-VISUAL-ORDER
+  requirement: Fazer a tarefa recem-criada entrar no topo da coluna escolhida, conforme D60.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/kanbanOrdering.ts
+  tests: [src/Prisma.Workspace.Web/src/features/board/kanbanOrdering.test.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-211
+  spec: SPEC-SEARCH-SAVED-FILTERS
+  requirement: Adicionar escopo Quadro atual ou Qualquer quadro acessivel ao SavedFilter.
+  dependencies: []
+  risk: medio
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/SavedFilter.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.tsx
+  tests: [src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.test.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-212
+  spec: SPEC-SEARCH-SAVED-FILTERS
+  requirement: Revalidar criterios do filtro global por quadro e sinalizar por chip os criterios ignorados.
+  dependencies: [TASK-211]
+  risk: medio
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilters.ts
+    - src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.tsx
+  tests: [src/Prisma.Workspace.Web/src/features/board/KanbanFilterBar.test.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-213
+  spec: SPEC-B-001
+  requirement: Serializar e restaurar filtros, item aberto, expansao e rolagem na URL do Product Backlog.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+    - src/Prisma.Workspace.Web/src/pages/ProjectWorkspace.tsx
+  tests: [src/Prisma.Workspace.Web/src/pages/ProjectWorkspace.test.tsx]
+  status: pending
+  priority: P2
+```
+
+## Lote `identity-time-history-v2`
+
+Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-history`,
+`audit-leadtime-history`, `dependencies`, `notifications-realtime`, `attachments`.
+
+```yaml
+- id: TASK-300
+  spec: SPEC-RESPONSIBLE-DISPLAY-NAME
+  requirement: Exigir nome completo no cadastro de novos usuarios, com fallback restrito a dados legados (D63).
+  dependencies: []
+  risk: medio
+  gates: [G-MIGRATION (condicional), backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Api/Controllers/AuthController.cs
+    - src/Prisma.Workspace.Infrastructure/Identity
+    - src/Prisma.Workspace.Web/src/pages/Auth.tsx
+  tests: [tests/Prisma.Workspace.Tests/UserDirectoryTests.cs, tests/Prisma.Workspace.Tests/CanonicalPersonNameTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-301
+  spec: SPEC-RESPONSIBLE-DISPLAY-NAME
+  requirement: Garantir que novos snapshots historicos preservem o nome completo observado no momento do evento.
+  dependencies: [TASK-300]
+  risk: medio
+  gates: [backend-build, backend-test]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/StageHistory.cs
+    - src/Prisma.Workspace.Domain/Entities/TaskEvent.cs
+  tests: [tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs]
+  status: pending
+  priority: P2
+
+- id: TASK-302
+  spec: SPEC-TASK-HISTORY
+  requirement: Substituir a aba Grafo de estados pela Linha do tempo textual das movimentacoes entre colunas (D61).
+  dependencies: []
+  risk: medio
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/features/task
+  tests: [src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx, src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-303
+  spec: SPEC-TASK-HISTORY
+  requirement: Remover TaskStateGraph e o endpoint de nos/arestas apos a Linha do tempo estar em producao.
+  dependencies: [TASK-302]
+  risk: baixo
+  gates: [backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Web/src/features/task/TaskStateGraph.tsx
+    - src/Prisma.Workspace.Api/Controllers/TaskFeedController.cs
+  tests: [tests/Prisma.Workspace.Tests/TaskStateGraphTests.cs]
+  status: pending
+  priority: P2
+
+- id: TASK-304
+  spec: SPEC-AUDIT-LEADTIME-HISTORY
+  requirement: Ocultar lead time e cycle time da interface, preservando a coleta interna.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/BoardDashboard.tsx
+  tests: [src/Prisma.Workspace.Web/e2e/smoke.spec.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-305
+  spec: SPEC-F-009
+  requirement: Ocultar dependencias, pre-requisitos e bloqueios da interface, sem apagar dados (D59).
+  dependencies: []
+  risk: medio
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+    - src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.tsx
+    - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
+  tests: [src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.test.tsx]
+  status: pending
+  priority: P1
+
+- id: TASK-306
+  spec: SPEC-F-009
+  requirement: Remover o efeito operacional de IsBlocked em filtros, badges, priorizacao, notificacoes, relatorios e automacoes.
+  dependencies: [TASK-305]
+  risk: alto
+  gates: [backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/Backlog/BacklogFeature.cs
+    - src/Prisma.Workspace.Application/Features/Me/MyWorkDashboardFeature.cs
+    - src/Prisma.Workspace.Application/Features/Reports/ReportBuilderFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/DependencyGraphTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-307
+  spec: SPEC-TIME-TRACKING
+  requirement: Aplicar as regras aprovadas de precisao, jornada diaria, sobreposicao e timezone no apontamento.
+  dependencies: []
+  risk: medio
+  gates: [backend-build, backend-test, frontend-build, frontend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/TimeEntries
+    - src/Prisma.Workspace.Application/Features/MeTime
+  tests: [tests/Prisma.Workspace.Tests/ProductivityFeatureTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-308
+  spec: SPEC-TIME-TRACKING
+  requirement: Definir e implementar o comportamento do apontamento em tarefa concluida.
+  dependencies: [TASK-307, TASK-BUG-001]
+  risk: medio
+  gates: [backend-build, backend-test, frontend-test]
+  files:
+    - src/Prisma.Workspace.Application/Features/TimeEntries
+  tests: [tests/Prisma.Workspace.Tests/ProductivityFeatureTests.cs]
+  status: pending
+  priority: P2
+
+- id: TASK-309
+  spec: SPEC-ATTACHMENTS
+  requirement: Implementar lixeira de 7 dias para anexos de tarefa, distinta da exclusao imediata atual.
+  dependencies: []
+  risk: medio
+  gates: [G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Domain/Entities/Attachment.cs
+    - src/Prisma.Workspace.Infrastructure/Persistence/Migrations
+    - src/Prisma.Workspace.Application/Features/Attachments/AttachmentsFeature.cs
+  tests: [tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs]
+  status: pending
+  priority: P2
+
+- id: TASK-310
+  spec: SPEC-NOTIF-001
+  requirement: Homologar notificacoes, preferencias por evento/canal e deduplicacao de lembretes.
+  dependencies: []
+  risk: baixo
+  gates: [backend-test, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Application/Features/Notifications/NotificationsFeature.cs
+    - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
+  tests: [tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs]
+  status: pending
+  priority: P2
+```
+
+## Lote `community-modules-v2`
+
+Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-approvals`,
+`bulk-actions-automations`, `gantt-planning`, `prisma-visual-system`, `authenticated-home`,
+`project-work-item-queries`, `top-navigation-shell`.
+
+```yaml
+- id: TASK-400
+  spec: SPEC-GANTT-001
+  requirement: Ocultar Gantt e calendario do seletor de visoes do quadro, preservando componentes e dados.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/BoardGantt.tsx
+    - src/Prisma.Workspace.Web/src/features/board/BoardCalendar.tsx
+  tests: [src/Prisma.Workspace.Web/e2e/smoke.spec.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-401
+  spec: SPEC-BULK-ACTIONS-AUTOMATIONS
+  requirement: Ocultar o editor de automacoes, preservando execucao, validacao e auditoria internas.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/features/board/AutomationManager.tsx
+  tests: [src/Prisma.Workspace.Web/src/features/board/AutomationManager.test.tsx]
+  status: pending
+  priority: P1
+
+- id: TASK-402
+  spec: SPEC-BULK-ACTIONS-AUTOMATIONS
+  requirement: Definir o comportamento hierarquico das acoes em massa entre tarefa e subtarefa.
+  dependencies: [TASK-121]
+  risk: medio
+  gates: [backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files:
+    - src/Prisma.Workspace.Web/src/features/board/KanbanBulkActions.ts
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+  tests: [src/Prisma.Workspace.Web/src/features/board/KanbanBulkToolbar.test.tsx]
+  status: pending
+  priority: P2
+
+- id: TASK-403
+  spec: SPEC-TOP-NAVIGATION-SHELL
+  requirement: Remover layout/Sidebar.tsx, arquivo morto do shell anterior sem nenhum import.
+  dependencies: []
+  risk: baixo
+  gates: [frontend-build, frontend-lint, frontend-test]
+  files:
+    - src/Prisma.Workspace.Web/src/layout/Sidebar.tsx
+  tests: [src/Prisma.Workspace.Web/src/layout/Topbar.test.tsx]
+  status: pending
+  priority: P3
+
+- id: TASK-404
+  spec: SPEC-TEAMS
+  requirement: Homologar equipes, lideranca, capacidade e desativacao logica com preservacao de vinculos.
+  dependencies: []
+  risk: baixo
+  gates: [backend-test, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Application/Features/Teams/TeamsFeature.cs, src/Prisma.Workspace.Web/src/pages/Teams.tsx]
+  tests: [tests/Prisma.Workspace.Tests/OrganizationDomainTests.cs]
+  status: pending
+  priority: P3
+
+- id: TASK-405
+  spec: SPEC-WIKI-001
+  requirement: Homologar wiki, anexos, organizacao de paginas, busca e restauracao de revisao.
+  dependencies: []
+  risk: baixo
+  gates: [backend-test, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Application/Features/Wiki, src/Prisma.Workspace.Web/src/pages/ProjectWiki.tsx]
+  tests: [tests/Prisma.Workspace.Tests/PlatformCrossCuttingTests.cs]
+  status: pending
+  priority: P3
+
+- id: TASK-406
+  spec: SPEC-EXT-001 + SPEC-SLA-001
+  requirement: Homologar portal externo, protocolo, triagem, SLA e aprovacoes com dados reais.
+  dependencies: []
+  risk: medio
+  gates: [backend-test, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Application/Features/ExternalPortal, src/Prisma.Workspace.Application/Features/Sla]
+  tests: [tests/Prisma.Workspace.Tests/ExternalPortalDomainTests.cs, tests/Prisma.Workspace.Tests/SlaReportingAndCustomFieldTests.cs]
+  status: pending
+  priority: P3
+
+- id: TASK-407
+  spec: SPEC-DASHBOARDS-REPORTS
+  requirement: Homologar dashboards, construtor de relatorios e exportacao CSV sob autorizacao.
+  dependencies: []
+  risk: baixo
+  gates: [backend-test, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Application/Features/Reports, src/Prisma.Workspace.Web/src/pages/Reports.tsx]
+  tests: [tests/Prisma.Workspace.Tests/SlaReportingAndCustomFieldTests.cs]
+  status: pending
+  priority: P3
+
+- id: TASK-408
+  spec: SPEC-PRISMA-VISUAL-SYSTEM + SPEC-AUTHENTICATED-HOME + SPEC-PROJECT-WORK-ITEM-QUERIES
+  requirement: Regressao visual e de acessibilidade das rotas principais depois das mudancas dos lotes anteriores.
+  dependencies: [TASK-103, TASK-302, TASK-400, TASK-401]
+  risk: medio
+  gates: [frontend-build, frontend-lint, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Web/src/pages, src/Prisma.Workspace.Web/src/layout]
+  tests: [src/Prisma.Workspace.Web/e2e]
+  status: pending
+  priority: P2
+```
+
+## Lote `productization`
+
+```yaml
+- id: TASK-500
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Neutralizar os residuos institucionais Detran/runrun remanescentes em seed, documentacao e nomes visiveis.
+  dependencies: []
+  risk: medio
+  gates: [backend-build, backend-test, frontend-build, frontend-test, security-audit]
+  files: [src/Prisma.Workspace.Infrastructure/Persistence/DbInitializer.cs, docs, README.md]
+  tests: [tests/Prisma.Workspace.Tests/InstallationSetupTests.cs]
+  status: pending
+  priority: P1
+
+- id: TASK-501
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Escolher e aplicar a licenca do projeto; bloqueia a promocao publica.
+  dependencies: []
+  risk: alto
+  gates: [G-SCOPE]
+  files: [LICENSE, README.md, GOVERNANCE.md]
+  tests: []
+  human_gate: sim (decisao humana obrigatoria; nenhum agente escolhe licenca)
+  status: blocked
+  priority: P0
+
+- id: TASK-502
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Corrigir o passivo npm de 5 altas e 28 moderadas em lotes testados, sem audit fix major automatico (D78).
+  dependencies: []
+  risk: medio
+  gates: [frontend-build, frontend-test, frontend-lint, frontend-e2e, security-audit]
+  files: [src/Prisma.Workspace.Web/package.json, src/Prisma.Workspace.Web/package-lock.json]
+  tests: [src/Prisma.Workspace.Web/e2e]
+  status: pending
+  priority: P1
+
+- id: TASK-503
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Fixar a dependencia transitiva moderada do NuGet (AngleSharp) na menor familia estavel compativel (D38).
+  dependencies: []
+  risk: baixo
+  gates: [backend-build, backend-test, security-audit]
+  files: [src/Prisma.Workspace.Api, tests/Prisma.Workspace.Tests/Prisma.Workspace.Tests.csproj]
+  tests: [tests/Prisma.Workspace.Tests]
+  status: pending
+  priority: P2
+
+- id: TASK-504
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Escrever e verificar a documentacao de instalacao, backup e restauracao da Community Edition.
+  dependencies: []
+  risk: medio
+  gates: [clean-install]
+  files: [docs/installation, scripts, README.md]
+  tests: []
+  status: pending
+  priority: P1
+
+- id: TASK-505
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Gerar SBOM e proveniencia no CI, publicados junto aos artefatos.
+  dependencies: [TASK-502, TASK-503]
+  risk: baixo
+  gates: [security-audit]
+  files: [.github/workflows/ci.yml, docs/maintenance]
+  tests: []
+  status: pending
+  priority: P2
+
+- id: TASK-506
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Adotar SemVer e preparar a primeira release v0.1.0.
+  dependencies: [TASK-501, TASK-505]
+  risk: medio
+  gates: [G-DEPLOY]
+  files: [.github/workflows, docs, README.md]
+  tests: []
+  human_gate: sim (G-DEPLOY e licenca)
+  status: blocked
+  priority: P1
+
+- id: TASK-507
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Ensaiar instalacao limpa e upgrade em ambiente novo, comprovando preservacao de dados.
+  dependencies: [TASK-504]
+  risk: alto
+  gates: [clean-install, backend-test, frontend-e2e]
+  files: [compose.yaml, scripts, docs/installation]
+  tests: [src/Prisma.Workspace.Web/e2e/installation-setup.spec.ts]
+  status: pending
+  priority: P1
+
+- id: TASK-508
+  spec: D80
+  requirement: Publicar o codigo do prisma-workspace em prisma.nordevs.com.br com backup previo, verificacao e rollback documentado.
+  dependencies: [TASK-507]
+  risk: alto
+  gates: [G-DEPLOY, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e, clean-install]
+  files: [compose.yaml, scripts, docs/installation]
+  tests: [src/Prisma.Workspace.Web/e2e]
+  human_gate: sim (G-DEPLOY autorizado pelo PO em 2026-09-08; a execucao ainda exige backup e verificacao)
+  status: pending
+  priority: P0
+```
+
+## Lote `migrations-consolidation` — POR ÚLTIMO
+
+Este lote **não pode** começar antes de todos os anteriores. A base real de produção (`DetranKanban`, 20
+migrations aplicadas, dados reais) é incompatível com a hipótese de migration inicial única
+(fresh-install-only). Durante todo o programa a cadeia permanece incremental, para que produção continue
+subindo com os dados preservados.
+
+```yaml
+- id: TASK-600
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Inventariar as migrations aplicadas em producao e as criadas durante o programa, com hashes e ordem.
+  dependencies: [TASK-508]
+  risk: baixo
+  gates: [backend-build]
+  files: [src/Prisma.Workspace.Infrastructure/Persistence/Migrations, docs/maintenance]
+  tests: []
+  status: pending
+  priority: P1
+
+- id: TASK-601
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Definir a estrategia de consolidacao preservando __EFMigrationsHistory e os dados reais.
+  dependencies: [TASK-600]
+  risk: alto
+  gates: [G-MIGRATION]
+  files: [docs/maintenance]
+  tests: []
+  human_gate: sim (estrategia exige aprovacao humana antes de qualquer script)
+  status: blocked
+  priority: P0
+
+- id: TASK-602
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Ensaiar a consolidacao em copia restaurada da base de producao, com verificacao de dados antes e depois.
+  dependencies: [TASK-601]
+  risk: alto
+  gates: [G-MIGRATION, backend-test, clean-install]
+  files: [scripts, src/Prisma.Workspace.Infrastructure/Persistence/Migrations]
+  tests: [tests/Prisma.Workspace.Tests]
+  status: blocked
+  priority: P0
+
+- id: TASK-603
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  requirement: Aplicar a consolidacao com backup, verificacao pos-aplicacao e rollback documentado.
+  dependencies: [TASK-602]
+  risk: alto
+  gates: [G-MIGRATION, G-DEPLOY, backend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Infrastructure/Persistence/Migrations, scripts, docs/maintenance]
+  tests: [src/Prisma.Workspace.Web/e2e]
+  human_gate: sim
+  status: blocked
+  priority: P0
+```
+
+---
+
+## Arquivos centrais disputados entre lotes
+
+Lista para o coordenador serializar a ordem. Cada linha é um ponto onde dois ou mais lotes escrevem no mesmo
+arquivo, com risco real de conflito semântico — não apenas textual.
+
+| Arquivo central | Lotes que o tocam | Tarefas em disputa | Regra de serialização |
+|---|---|---|---|
+| `src/Prisma.Workspace.Infrastructure/Persistence/Migrations/*` e o snapshot do modelo | core-domain-v2, sprint-planning-v2, identity-time-history-v2, migrations-consolidation | TASK-105, 108, 109, 111, 112, 113, 114, 115, 117, 118, 119, 120, 200, 201, 211, 300, 309, 601-603 | **Uma migration por vez, em série.** Duas migrations criadas em paralelo colidem no snapshot e produzem cadeia divergente. Nenhum lote gera migration enquanto outro tiver migration não integrada. |
+| `src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs` | core-domain-v2, sprint-planning-v2, identity-time-history-v2 | TASK-109, 120, 200, 309 | Serializar por lote; integrar core-domain-v2 antes de sprint-planning-v2. |
+| `src/Prisma.Workspace.Domain/Entities/WorkItem.cs` | core-domain-v2, sprint-planning-v2, identity-time-history-v2 | TASK-108, 120, 121, 204, 301 | core-domain-v2 primeiro (lixeira e conclusão), depois sprint-planning-v2 (vínculo), por último identity. |
+| `src/Prisma.Workspace.Domain/Entities/Stage.cs` e sua configuração EF | core-domain-v2, sprint-planning-v2 | TASK-100, 101, 105, 207 | core-domain-v2 é dono; sprint-planning-v2 só consome. |
+| `src/Prisma.Workspace.Domain/Entities/Sprint.cs` | sprint-planning-v2, migrations-consolidation | TASK-200, 202, 209, 601 | sprint-planning-v2 é dono até a consolidação. |
+| `src/Prisma.Workspace.Domain/Enums/PermissionScope.cs`, `PlatformPermission.cs`, `OrganizationRole.cs`, `ProjectRole.cs` | core-domain-v2, sprint-planning-v2 | TASK-110, 111, 112, 113, 114, 206 | **TASK-206 é bloqueada por TASK-112 e TASK-114.** Não mexer no modelo de permissão em dois lotes ao mesmo tempo. |
+| `src/Prisma.Workspace.Infrastructure/Identity/PermissionService.cs`, `ProjectAccessService.cs`, `BoardAccessService.cs` | core-domain-v2, sprint-planning-v2 | TASK-110, 111, 113, 206 | Mesma regra da linha anterior. |
+| `src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs` | core-domain-v2, identity-time-history-v2, community-modules-v2 | TASK-104, 107, 120, 121, 306, 402 | Arquivo grande e central; integrar core-domain-v2 inteiro antes de abrir os outros lotes nele. |
+| `src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs` | TASK-BUG-001, core-domain-v2, sprint-planning-v2 | TASK-BUG-001, 104, 121, 207 | TASK-BUG-001 vai primeiro; é a base do resto. |
+| `src/Prisma.Workspace.Application/Features/WorkItems/Dtos/WorkItemDto.cs` e `Features/WorkItemDetails/WorkItemDetailsFeature.cs` | core-domain-v2, sprint-planning-v2, identity-time-history-v2 | TASK-103, 108, 204, 302 | **Contrato de DTO consumido por Kanban, backlog, sprint, relatórios e portal.** Toda mudança aqui quebra vários consumidores ao mesmo tempo; alterar em uma única passada por lote. |
+| `src/Prisma.Workspace.Web/src/pages/Kanban.tsx` (2409 linhas) | core-domain-v2, sprint-planning-v2, identity-time-history-v2, community-modules-v2 | TASK-101, 102, 104, 107, 122, 124, 210, 304, 400, 401 | Arquivo mais disputado do frontend. Serializar por lote e considerar quebrá-lo antes de abrir dois lotes nele. |
+| `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx` | core-domain-v2, identity-time-history-v2, community-modules-v2 | TASK-103, 122, 123, 302, 305 | Segundo arquivo mais disputado; core-domain-v2 antes de identity. |
+| `src/Prisma.Workspace.Web/src/services/api.ts` | todos os lotes | quase todas | Alterações aditivas apenas; evitar renomear métodos existentes fora de uma tarefa dedicada. |
+| `src/Prisma.Workspace.Web/src/types/scrum.ts` | core-domain-v2, sprint-planning-v2, identity-time-history-v2 | TASK-103, 204, 207, 302 | Tipos compartilhados entre Kanban, backlog, sprint e gaveta; segue a mesma ordem do DTO backend. |
+| `src/Prisma.Workspace.Domain/Entities/StageHistory.cs`, `TaskEvent.cs`, `AuditLog.cs` e `SprintItemSnapshot` (em `Sprint.cs`) | identity-time-history-v2, sprint-planning-v2 | TASK-209, 301, 302 | **Estruturas de histórico: qualquer mudança aciona `G-HISTORY`.** Não abrir duas frentes simultâneas aqui. |
+| `tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs` e `MultitenancyPersistenceTests.cs` | core-domain-v2, sprint-planning-v2 | TASK-BUG-001, 104, 111, 113, 118, 121 | Reescritos por mais de um lote; consolidar por lote, não por tarefa. |
+
+### Ordem recomendada de execução dos lotes
+
+1. `TASK-BUG-001` isolado — é o defeito relatado pelo PO e a base de `TASK-103`, `TASK-104` e `TASK-121`.
+2. `core-domain-v2` — dono de `Stage`, `WorkItem`, permissões, projeto e organização.
+3. `sprint-planning-v2` — depende de permissões e de `Stage` estabilizados; bloqueado pelo `G-SPEC`.
+4. `identity-time-history-v2` — depende da gaveta e do `WorkItem` estabilizados.
+5. `community-modules-v2` — ocultações e homologações, majoritariamente frontend.
+6. `productization` — pode correr em paralelo com 3-5, exceto `TASK-508`, que vem depois de tudo.
+7. `migrations-consolidation` — por último, sempre.
+
+---
+
+## Perguntas de gate abertas para o PO
+
+1. **`G-SPEC` da `SPEC-S-003 v2`** — aprovar, ajustar ou rejeitar o contrato Sprint ↔ Project N:N. Todo o lote
+   `sprint-planning-v2` está parado até aqui. As cinco perguntas específicas da spec estão em `specs/sprints.md`.
+2. **Backfill de `Stage.Category` (TASK-105)** — Opção A (relatório e confirmação humana), Opção B (heurística
+   por nome, conclui em massa sem revisão) ou Opção C (última coluna de cada quadro). Recomendação técnica: A.
+3. **Mapeamento dos dez perfis para cinco (TASK-112)** — para onde vão `ProjectManager`, `ScrumMaster`,
+   `ProductOwner`, `Developer`, `TeamMember` e `Client`? Sem essa tabela, a migration não pode ser escrita.
+4. **Mapeamento de `ProjectStatus` (TASK-115)** — `Planning`, `OnHold`, `Completed` e `Cancelled` viram `Ativo`
+   ou `Arquivado`? A escolha muda a visibilidade de projetos reais em produção.
+5. **Identidade técnica do Administrador da plataforma (TASK-117)** — `G-SCOPE` ainda pendente desde a D58:
+   flag no Identity, tabela de control plane separada, ou configuração externa?
+6. **Licença do projeto (TASK-501)** — decisão exclusivamente humana; bloqueia a promoção pública e a
+   `v0.1.0`.
+7. **Apontamento em tarefa concluída (TASK-308)** — permitido, permitido com justificativa, ou bloqueado?
+8. **Capacidade da sprint (SPEC-S-003 v2)** — permanece informativa e visível, ou fica oculta até nova decisão?
+9. **`G-HISTORY` do `SprintItemSnapshot` (TASK-209)** — aceitar acionar o gate para incluir `ProjectId` no
+   snapshot, ou derivar o projeto por join e manter o snapshot intacto?
+
+Nenhuma dessas perguntas foi respondida por agente. Onde não há decisão registrada em `DECISIONS.md` nem nas
+specs, a tarefa correspondente está com `status: blocked`.
