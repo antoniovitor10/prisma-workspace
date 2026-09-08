@@ -251,7 +251,11 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
         // Relatório de horas: PDF limpo e tabular por responsável (não captura de tela).
         await exportHoursReportPdf(hoursQuery.data, currentOrg.name, filterSummary);
       } else if (reportRef.current) {
-        await exportNodeToPdf(reportRef.current, `relatorio-${tab}-${to}`);
+        await exportNodeToPdf(reportRef.current, `relatorio-${tab}-${to}`, {
+          organization: currentOrg.name,
+          title: tabs.find(([key]) => key === tab)?.[1] ?? 'Relatório',
+          subtitle: filterSummary,
+        });
       }
     }
     catch { /* falha de exportacao nao deve quebrar a tela */ }
@@ -273,7 +277,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
       <ExportButton type="button" onClick={() => window.print()}><Printer size={13} />Imprimir</ExportButton>
       <ExportButton type="button" $primary onClick={handlePdf} disabled={exporting}><FileDown size={13} />{exporting ? 'Gerando PDF...' : 'Baixar PDF'}</ExportButton>
     </ExportBar>}
-    <div ref={reportRef}>
+    <div ref={reportRef} data-print-root>
       {!error && tab === 'prepared' && <PreparedView report={preparedQuery.data} dashboard={dashboardQuery.data} showPoints={showPoints} />}
       {tab === 'builder' && <ReportBuilder key={projectId ?? 'organization'} projectId={projectId} />}
       {!error && tab === 'hours' && <HoursReport report={hoursQuery.data} orgName={currentOrg.name} filterSummary={filterSummary} />}
