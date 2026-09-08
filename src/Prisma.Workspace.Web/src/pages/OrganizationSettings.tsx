@@ -117,6 +117,10 @@ export function OrganizationSettings() {
   const [form, setForm] = useState({ name: current.name, locale: current.locale, timeZone: current.timeZone, weekStartDay: current.weekStartDay });
   const [invite, setInvite] = useState({ email: '', role: 6 });
   const [inviteLink, setInviteLink] = useState('');
+  // Falso quando o servidor não conseguiu enviar o e-mail (SMTP ausente ou com falha).
+  // Nesse caso o link precisa ser compartilhado à mão, senão a pessoa convidada
+  // se cadastra sem o convite e cai na criação de um ambiente novo.
+  const [inviteEmailSent, setInviteEmailSent] = useState(true);
   const [grant, setGrant] = useState({ userId: '', scope: 1, scopeId: '', permission: 1, isAllowed: true });
 
   const organizationQuery = useQuery({ queryKey: ['organization', 'current'], queryFn: () => api.getCurrentOrganization(), enabled: !previewMode });
@@ -169,7 +173,8 @@ export function OrganizationSettings() {
     onSuccess: data => {
       const url = new URL(window.location.origin);
       url.searchParams.set('invite', data.token);
-      setInviteLink(url.toString());
+      setInviteLink(data.inviteUrl ?? url.toString());
+      setInviteEmailSent(data.emailSent !== false);
       setInvite(currentInvite => ({ ...currentInvite, email: '' }));
     },
   });
@@ -224,7 +229,16 @@ export function OrganizationSettings() {
           <label>E-mail<input required type="email" value={invite.email} onChange={event => setInvite({...invite,email:event.target.value})} placeholder="pessoa@empresa.com"/></label>
           <label>Perfil<select value={invite.role} onChange={event => setInvite({...invite,role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
           <footer>{sendInvite.error && <small>{(sendInvite.error as Error).message}</small>}<Button disabled={sendInvite.isPending}><Mail size={14}/>Gerar convite</Button></footer>
-          {inviteLink && <InviteResult><UserRoundCheck size={15}/><code>{inviteLink}</code><button type="button" onClick={() => navigator.clipboard.writeText(inviteLink)} aria-label="Copiar convite"><Copy size={14}/></button></InviteResult>}
+          {inviteLink && <InviteResult>
+            <UserRoundCheck size={15}/>
+            <code>{inviteLink}</code>
+            <button type="button" onClick={() => navigator.clipboard.writeText(inviteLink)} aria-label="Copiar convite"><Copy size={14}/></button>
+          </InviteResult>}
+          {inviteLink && <small role="status">
+            {inviteEmailSent
+              ? 'Convite enviado por e-mail. O link acima serve como alternativa.'
+              : 'Não foi possível enviar o e-mail. Compartilhe o link acima com a pessoa convidada: sem ele, o cadastro cria um ambiente novo em vez de entrar neste.'}
+          </small>}
         </Invite>}
       </Wide>
 

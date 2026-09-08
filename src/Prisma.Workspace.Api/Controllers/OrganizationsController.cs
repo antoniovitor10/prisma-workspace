@@ -16,8 +16,13 @@ public class OrganizationsController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IApplicationEmailSender _email;
     private readonly IConfiguration _configuration;
-    public OrganizationsController(IMediator mediator, IApplicationEmailSender email, IConfiguration configuration)
-        => (_mediator, _email, _configuration) = (mediator, email, configuration);
+    private readonly ILogger<OrganizationsController> _logger;
+    public OrganizationsController(
+        IMediator mediator,
+        IApplicationEmailSender email,
+        IConfiguration configuration,
+        ILogger<OrganizationsController> logger)
+        => (_mediator, _email, _configuration, _logger) = (mediator, email, configuration, logger);
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
@@ -68,11 +73,19 @@ public class OrganizationsController : ControllerBase
 
         var baseUrl = (_configuration["FrontendBaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
         var link = $"{baseUrl}/?invite={invitation.Token}";
-        await _email.SendAsync(invitation.Email, "Convite para o Detran Kanban",
-            $"Você foi convidado para participar do Detran Kanban.\n\nAceite acessando: {link}\n\n"
+        // O resultado do envio precisa chegar a quem convidou: sem SMTP configurado o
+        // e-mail não sai, e a pessoa convidada fica sem nenhum caminho para o convite.
+        var emailSent = await _email.SendAsync(invitation.Email, "Convite para o Prisma WorkSpace",
+            $"Você foi convidado para participar do Prisma WorkSpace.\n\nAceite acessando: {link}\n\n"
             + $"O convite expira em {invitation.ExpiresAt:dd/MM/yyyy}.", ct);
+        if (!emailSent)
+            _logger.LogWarning(
+                "Convite {InvitationId} criado, mas o e-mail não pôde ser enviado. "
+                + "Quem convidou precisa compartilhar o link manualmente.", invitation.Id);
 
-        return Ok(invitation);
+        return Ok(new InviteOrganizationMemberResponse(
+            invitation.Id, invitation.Email, invitation.Role, invitation.ExpiresAt,
+            invitation.Token, link, emailSent));
     }
 
     [HttpPost("invitations/accept")]
@@ -104,6 +117,18 @@ public record CreateOrganizationRequest(string Name, string? Slug);
 public record UpdateOrganizationRequest(string Name, string Locale, string TimeZone, DayOfWeek WeekStartDay);
 public record UpdateOrganizationMemberRequest(OrganizationRole Role, bool IsActive, string? DisplayName);
 public record InviteOrganizationMemberRequest(string Email, OrganizationRole Role, int? ExpiresInDays);
+/// <summary>
+/// Resposta do convite. <c>EmailSent</c> diz se o e-mail realmente saiu: quando falso,
+/// a interface precisa pedir que o link seja compartilhado manualmente.
+/// </summary>
+public record InviteOrganizationMemberResponse(
+    Guid Id,
+    string Email,
+    OrganizationRole Role,
+    DateTimeOffset ExpiresAt,
+    string Token,
+    string InviteUrl,
+    bool EmailSent);
 public record AcceptOrganizationInvitationRequest(string Token);
 public record SetPermissionGrantRequest(
     string UserId, PermissionScope Scope, Guid? ScopeId,
