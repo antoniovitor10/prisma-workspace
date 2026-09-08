@@ -1289,3 +1289,183 @@ Resumo: 13 `implemented`, 15 `partially_implemented`, 4 `not_implemented`, 1 `bl
    saiu do formulário de projeto e resta apenas o prefixo de referência da tarefa.
 6. **TASK-031 (filtros salvos)** — `in_progress` está correto; a auditoria acrescenta que o gap é estrutural
    (`SavedFilter` não tem campo de escopo), e não apenas visual.
+
+---
+
+# TASK-BUG-001 — "clico em concluído no kanban e não atualiza"
+
+**Origem:** relato direto do PO em 2026-09-08.
+**Specs cruzadas:** `SPEC-WORKFLOW-STATUS` (item "Stage como única fonte funcional de status", D65),
+`SPEC-BOARDS-STAGES-WIP` (colunas classificadas como abertas/concluídas, D52/D62),
+`SPEC-WORK-ITEM-MANAGEMENT` (conclusão da tarefa).
+**Prioridade:** P0.
+**Status:** `pending` — investigação documental concluída, correção não iniciada.
+
+## Cadeia de código auditada
+
+Backend:
+
+- `src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs:144`
+  `workItem.CompletedAt = destStage?.Category == StageCategory.Done ? workItem.CompletedAt ?? now : null;`
+- `src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs:376` — o `UpdateWorkItem`
+  aplica exatamente a mesma condição, então os dois caminhos dependem de `Stage.Category`.
+- `src/Prisma.Workspace.Domain/Entities/Stage.cs:29`
+  `public StageCategory Category { get; set; } = StageCategory.InProgress;`
+- `src/Prisma.Workspace.Application/Features/Stages/Commands/CreateStageCommandHandler.cs:60-101`
+- `src/Prisma.Workspace.Api/Controllers/StagesController.cs:78-81` —
+  `CreateStageRequest(..., StageCategory Category = StageCategory.InProgress, ...)`
+- `src/Prisma.Workspace.Application/Features/Stages/Dtos/StageDto.cs` — **não expõe `Category`**.
+
+Frontend:
+
+- `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:784` —
+  `await api.createStage(selectedBoardId, newStageName, nextPos);` sem `options`.
+- `src/Prisma.Workspace.Web/src/services/api.ts:647-655` — `category` só viaja se vier em `options`.
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:288` —
+  `{details.completedAt?'Concluído':details.workflowStatusName||details.stageName||'Backlog'}`
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:305` — o dropdown `Status` grava `stageId` e
+  chama `api.updateWorkItem`, não o endpoint de movimentação.
+- `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:196-221` — `invalidate()` e o `onMutate`
+  otimista.
+- `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:489,1892-1919` — o Kanban não usa React Query e só recarrega
+  ao fechar a gaveta.
+
+## Hipóteses ranqueadas
+
+### H1 — A coluna "Concluído" criada pela UI nasce com `Category = InProgress` (mais provável)
+
+O Kanban cria colunas sem informar `category`. O backend assume `InProgress`. Em projeto com workflow
+`Inherited`, `CreateStageCommandHandler.cs:70` procura um status ativo cujo `Category == request.Category`,
+ou seja, casa a coluna "Concluído" com o status "Em andamento". Em seguida
+`CreateStageCommandHandler.cs:101` grava `Stage.Category = workflowStatus?.Category ?? request.Category`,
+resultando em `InProgress`.
+
+Consequência: mover ou selecionar a coluna "Concluído" **nunca** satisfaz
+`destStage.Category == StageCategory.Done`, logo `CompletedAt` continua nulo, o chip nunca vira "Concluído",
+o badge do Sprint Backlog (`features/scrum/SprintBacklogPanel.tsx:255`) nunca vira positivo, a contagem de
+`unfinishedItemCount` (`features/scrum/SprintDashboard.tsx:488`) nunca cai e a operação coletiva da D62 nunca
+dispara. É exatamente o sintoma relatado.
+
+Agravante: `StageDto` não expõe `Category` e não existe UI para classificar coluna como aberta/concluída, então
+o usuário não tem nem como corrigir o dado pela interface.
+
+### H2 — O rótulo tem duas fontes de verdade e o `WorkflowStatus` vence a coluna
+
+`TaskDetailDrawer.tsx:288` prefere `workflowStatusName` sobre `stageName`. Como H1 liga a coluna "Concluído"
+ao status "Em andamento", a tarefa aparece como "Em andamento" mesmo estando visualmente na coluna
+"Concluído". Isso viola diretamente o item "Stage como única fonte funcional de status" da
+`SPEC-WORKFLOW-STATUS` e a D65. Mesmo corrigindo H1, esta divergência de rótulo continuaria.
+
+### H3 — A atualização otimista não escreve `completedAt`
+
+`TaskDetailDrawer.tsx:207-221` reescreve `stageId`, `stageName`, `workflowStatusId` e `workflowStatusName`,
+mas nunca `completedAt`. Entre o clique e o refetch, o chip permanece com o valor antigo. Como
+`detailsQuery` usa `retry:false` (`TaskDetailDrawer.tsx:185`), uma falha de rede deixa o valor errado até a
+gaveta ser reaberta. Sozinha, esta hipótese explicaria uma demora perceptível, não um erro permanente.
+
+### H4 — O Kanban por trás da gaveta não é invalidado
+
+`invalidate()` (`TaskDetailDrawer.tsx:196-200`) invalida apenas `['work-item', id]`, `['project-backlog']` e
+`['project-sprints']`. O Kanban não usa React Query: carrega por `loadBoardData` (`Kanban.tsx:489`) e só
+recarrega quando a gaveta fecha (`Kanban.tsx:1919`). Quem muda o status pelo dropdown do detalhe vê o card
+parado na coluna antiga atrás do modal. Explica bem a frase "não atualiza".
+
+### H5 — O item que o Kanban entrega à gaveta não carrega estado de conclusão
+
+`Kanban.tsx:1892-1916` monta o `BacklogItem` sem `completedAt`, `workflowStatusId` e `workflowStatusName`. O
+`fallback` de `TaskDetailDrawer.tsx:174-183` nasce, portanto, como não concluído. Enquanto `detailsQuery` não
+responde — ou se falhar, dado o `retry:false` — é esse fallback que a tela mostra.
+
+### H6 — Quadro transversal sem projeto cai no mesmo defeito por outro caminho
+
+`CreateStageCommandHandler.cs:60` só entra no ramo de workflow quando `board.ProjectId.HasValue`. Num quadro
+transversal da D52, sem projeto, `workflowStatus` fica nulo e `Stage.Category = request.Category = InProgress`.
+Além disso, `MoveWorkItemCommandHandler.cs:95,164` não sincroniza placements quando `WorkflowStatusId` é nulo.
+Mesmo desfecho de H1, origem diferente — e é o caminho que tende a dominar conforme a D52 avança.
+
+## Testes que provam cada hipótese
+
+| Hipótese | Teste | Camada | Resultado esperado hoje |
+|---|---|---|---|
+| H1 | Criar coluna via `POST /api/Stages` com apenas `boardId`, `name` e `position`; ler `Stage.Category` do banco | .NET integração | `InProgress`, mesmo com `name = "Concluído"` |
+| H1 | Mover a tarefa para essa coluna e assertar `WorkItem.CompletedAt` | .NET (`MoveWorkItemCommandHandlerTests`) | permanece `null` |
+| H1 | Mesmo cenário via `UpdateWorkItemCommand` | .NET | permanece `null` |
+| H2 | Renderizar a gaveta com `stageName = "Concluído"` e `workflowStatusName = "Em andamento"` | Vitest (`TaskDetailDrawer.test.tsx`) | o chip mostra "Em andamento" |
+| H3 | Disparar `change('stageId', <coluna Done>, true)` e inspecionar o cache `['work-item', id]` antes do refetch | Vitest | `completedAt` inalterado |
+| H4 | Abrir a gaveta a partir do Kanban, mudar o status e assertar a coluna do card sem fechar o modal | Playwright | o card não muda de coluna |
+| H5 | Abrir a gaveta com `getWorkItemDetails` falhando e assertar o chip | Vitest | mostra o fallback, nunca "Concluído" |
+| H6 | Criar quadro sem `ProjectId`, criar coluna e assertar `Stage.Category` e `Stage.WorkflowStatusId` | .NET integração | `InProgress` e `null` |
+
+## Correção proposta (a implementar após os gates)
+
+1. Tornar a **classificação da coluna** um dado de primeira classe: expor `Category` em `StageDto`, aceitar e
+   editar `aberta`/`concluída` na UI de colunas do Kanban e parar de derivá-la do `WorkflowStatus`.
+2. Fazer o Kanban enviar a classificação ao criar coluna, eliminando o default silencioso `InProgress`.
+3. Trocar `TaskDetailDrawer.tsx:288` para usar **exclusivamente** o nome da coluna como status textual, com
+   `aberta/concluída` como classificação interna, conforme D65.
+4. Incluir `completedAt` na atualização otimista e no `BacklogItem` que o Kanban passa à gaveta.
+5. Fazer a gaveta invalidar também a leitura do quadro, ou migrar o Kanban para React Query, de modo que a
+   mudança de status atualize o card sem fechar o modal.
+6. Backfill de `Stage.Category` para as colunas já existentes que deveriam ser concluídas — **não** por
+   heurística de nome sem confirmação humana; ver a pergunta de gate abaixo.
+
+## Gates exigidos
+
+- **`G-WORKFLOW`** — obrigatório. Muda a regra de conclusão da tarefa e a classificação da coluna.
+- **`G-MIGRATION`** — obrigatório se houver backfill de `Stage.Category` em dados existentes.
+- **`G-SPEC`** — não exigido: `SPEC-WORKFLOW-STATUS` e `SPEC-BOARDS-STAGES-WIP` já estão `approved` e já
+  contratam este comportamento.
+- **`G-HISTORY`** — não aplicável enquanto a estrutura de `StageHistory`/`TaskEvent` não mudar.
+
+## Pergunta de gate para o PO
+
+O backfill de `Stage.Category` das colunas já existentes deve ser feito como?
+
+- **Opção A — relatório primeiro, decisão humana depois.** O sistema lista as colunas candidatas por quadro e o
+  PO ou um administrador confirma quais são "concluídas". Impacto: mais lento, zero risco de concluir tarefa
+  errada.
+- **Opção B — heurística por nome** (`Concluído`, `Done`, `Finalizado`, ...) aplicada automaticamente. Impacto:
+  rápido, mas conclui em massa tarefas reais de produção sem revisão e dispara a operação coletiva da D62.
+- **Opção C — última coluna de cada quadro** vira concluída. Impacto: simples, mas errado em quadros que
+  terminam com coluna de espera ou de arquivamento.
+
+A recomendação técnica é a Opção A. Nenhuma delas foi escolhida; o backfill fica bloqueado até a resposta.
+
+## Entrada estruturada no backlog
+
+```yaml
+- id: TASK-BUG-001
+  spec: SPEC-WORKFLOW-STATUS (specs/workflow-status.md) + SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  requirement: Fazer a coluna ser a unica fonte funcional de status e de conclusao da tarefa, corrigindo o relato do PO de que concluir no Kanban nao atualiza.
+  lote: core-domain-v2
+  domain: workflow
+  type: bugfix
+  risk: alto
+  dependencies: []
+  gates:
+    - G-WORKFLOW
+    - G-MIGRATION (condicional ao backfill)
+    - backend-build
+    - backend-test
+    - frontend-build
+    - frontend-test
+    - frontend-lint
+    - frontend-e2e
+  human_gate: sim (G-WORKFLOW; G-MIGRATION se houver backfill; escolha da estrategia de backfill em aberto)
+  affected_areas:
+    - src/Prisma.Workspace.Application/Features/Stages/Dtos/StageDto.cs
+    - src/Prisma.Workspace.Application/Features/Stages/Commands/CreateStageCommandHandler.cs
+    - src/Prisma.Workspace.Api/Controllers/StagesController.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs
+    - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
+    - src/Prisma.Workspace.Web/src/services/api.ts
+    - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx
+  tests:
+    - tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs
+    - tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs
+    - src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.test.tsx
+    - src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts
+  status: pending
+  priority: P0
+```
