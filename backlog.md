@@ -375,6 +375,10 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
     - frontend-e2e
   human_gate: sim (G-SPEC da SPEC-BOARDS-STAGES-WIP + G-WORKFLOW)
   status: in_progress
+  audit_2026_09_08: >-
+    Confirmado in_progress. A reordenacao persistida ja existe por botoes com
+    atualizacao otimista e rollback (Kanban.tsx:761-778, services/api.ts:765).
+    Falta somente o arraste. Escopo remanescente coberto por TASK-014.
   priority: P1
 
 - id: TASK-028
@@ -486,7 +490,11 @@ Este arquivo contém o backlog estruturado de tarefas derivadas das especificaç
     - frontend-test
     - frontend-e2e
   human_gate: sim (G-SPEC da SPEC-TOP-NAVIGATION-SHELL + G-SCOPE da D51)
-  status: in_progress
+  status: completed
+  audit_2026_09_08: >-
+    Corrigido de in_progress para completed. Shell superior entregue em
+    layout/AppShell.tsx, Topbar.tsx e ContextBar.tsx; layout/Sidebar.tsx nao e
+    importado em lugar nenhum. O arquivo morto residual vira TASK-403.
   priority: P1
 
 - id: TASK-033
@@ -956,7 +964,12 @@ ocultas e sem efeito operacional; `TASK-006`, `TASK-007` e `TASK-014` não autor
     - frontend-lint
     - frontend-e2e
   human_gate: sim (G-SCOPE e G-SPEC aprovados em 2026-09-03)
-  status: in_progress
+  status: completed
+  audit_2026_09_08: >-
+    Corrigido de in_progress para completed. ROADMAP marca a Fase 10 como
+    concluida e PROGRESS de 2026-09-04 registra publicacao e validacao visual.
+    Evidencia: pages/ProjectItemsQuery.tsx, ProjectItemsQuery.logic.ts,
+    ProjectItemsQuery.test.ts e e2e/project-items-query.spec.ts.
   priority: P1
 ```
 
@@ -1198,3 +1211,81 @@ As tarefas listadas abaixo requerem validação ou aprovação humana (Human Gat
    - TASK-011: Histórico do State Graph implantado, sucedido pela D61
    - TASK-016: Histórico de testes; substituir parcela do grafo por cobertura da Linha do tempo
    - Gap D61: decompor a Linha do tempo após revisão manual
+
+---
+
+# Auditoria de specs contra o código real — 2026-09-08
+
+Auditoria feita **contra o código em `src/`** e os testes em `tests/`,
+`src/Prisma.Workspace.Web/src/**/*.test.*` e `src/Prisma.Workspace.Web/e2e/`. O status declarado antes neste
+arquivo **não foi tratado como verdade**; onde ele divergiu da realidade, a divergência está anotada e o
+backlog foi corrigido.
+
+Legenda: `implemented` = contrato atendido; `partially_implemented` = parte do contrato existe e há gap
+comprovado; `not_implemented` = contrato vigente não existe no código; `blocked_by_gate` = implementação
+proibida até aprovação humana; `superseded` = spec encerrada, sem implementação própria.
+
+| # | Spec | Status declarado | Classificação auditada | Evidência (arquivo:linha) |
+|---|------|------------------|------------------------|---------------------------|
+| 1 | `attachments.md` | approved | `partially_implemented` | Exclusão com confirmação existe: `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:241,334`; `src/Prisma.Workspace.Web/src/services/api.ts:818`. Lixeira de 7 dias ausente: `src/Prisma.Workspace.Application/Features/Attachments/AttachmentsFeature.cs:172` declara o gap e aguarda `G-MIGRATION`. |
+| 2 | `audit-leadtime-history.md` | approved | `partially_implemented` | Auditoria e histórico existem (`src/Prisma.Workspace.Domain/Entities/AuditLog.cs`, `StageHistory.cs`, `TaskEvent.cs`). Contrato exige lead time **oculto** na UI, mas o Kanban ainda expõe: `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:1340,2202,2223`. |
+| 3 | `authenticated-home.md` | approved | `implemented` | `src/Prisma.Workspace.Web/src/pages/Home.tsx`, `Home.test.tsx`, entrada `Início` em `src/Prisma.Workspace.Web/src/layout/Topbar.tsx`. |
+| 4 | `auth-security.md` | approved | `partially_implemented` | Refresh rotativo, confirmação, reset e lockout existem (`src/Prisma.Workspace.Domain/Entities/RefreshToken.cs`, `src/Prisma.Workspace.Api/Controllers/AuthController.cs`). Gap: `RegisterRequest` não pede nome completo — `AuthController.cs:230-232` — contra D63. |
+| 5 | `backlog.md` (SPEC-B-001) | approved | `partially_implemented` | Backlog hierárquico em `src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx`. Gaps: lixeira de 7 dias e reparenting (TASK-021) sem `DeletedAt` no domínio — a busca por `DeletedAt` só encontra `src/Prisma.Workspace.Domain/Entities/WikiPage.cs:35`. |
+| 6 | `boards-stages-wip.md` | approved | `partially_implemented` | `Board.OrganizationId` e `ProjectId` nulo existem (`src/Prisma.Workspace.Domain/Entities/Board.cs:13,16`). Gaps: `Board` não tem `IsArchived`; `PlatformPermission` não tem `Administrar quadros` (`src/Prisma.Workspace.Domain/Enums/PlatformPermission.cs`); `PermissionScope` não tem `Board` (`src/Prisma.Workspace.Domain/Enums/PermissionScope.cs`); `StageDto` não expõe `Category` (`src/Prisma.Workspace.Application/Features/Stages/Dtos/StageDto.cs`), logo não existe classificação aberta/concluída na UI nem a operação atômica da D62. |
+| 7 | `bulk-actions-automations.md` | approved | `partially_implemented` | Ações em massa implementadas (`src/Prisma.Workspace.Web/src/features/board/KanbanBulkActions.ts`, `KanbanBulkToolbar.tsx`). O contrato exige automações **ocultas**, mas `features/board/AutomationManager.tsx` continua montado no Kanban. |
+| 8 | `dashboards-reports.md` | approved | `implemented` | `src/Prisma.Workspace.Application/Features/Reports/*`, `src/Prisma.Workspace.Web/src/pages/Reports.tsx`, `Dashboards.tsx`. Homologação manual segue pendente. |
+| 9 | `dependencies.md` (SPEC-F-009) | approved | `not_implemented` | O contrato vigente é **ocultar** dependências (D59). A UI continua expondo criação, listagem e remoção: `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:34,337` e `src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.tsx`. |
+| 10 | `external-portal.md` | approved | `implemented` | `src/Prisma.Workspace.Application/Features/ExternalPortal/*`, `src/Prisma.Workspace.Web/src/pages/PublicPortal.tsx`, `Requests.tsx`. |
+| 11 | `gantt-planning.md` | approved | `not_implemented` | O contrato vigente é **ocultar** Gantt e calendário. O seletor de visões ainda oferece ambos: `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:1326`, com `BoardGantt` montado em `Kanban.tsx:1401`. |
+| 12 | `installation-setup.md` | approved | `implemented` | `src/Prisma.Workspace.Api/Controllers/SetupController.cs`, `src/Prisma.Workspace.Domain/Entities/InstallationState.cs`, `src/Prisma.Workspace.Web/src/pages/Setup.tsx`, `tests/Prisma.Workspace.Tests/InstallationSetupTests.cs`, `e2e/installation-setup.spec.ts`. |
+| 13 | `kanban-visual-order.md` | approved | `partially_implemented` | Ordem manual compartilhada e ordenação filtrada temporária existem (`src/Prisma.Workspace.Web/src/features/board/kanbanOrdering.ts`). Gap D60: tarefa nova entra no **fim** da coluna — `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:798` usa `Math.max(position)+100`. |
+| 14 | `multi-board-views.md` | superseded | `superseded` | Sucessor: `SPEC-BOARDS-STAGES-WIP` + D52. Sem implementação própria. |
+| 15 | `notifications-realtime.md` | approved | `implemented` | `src/Prisma.Workspace.Domain/Entities/Notification.cs`, `src/Prisma.Workspace.Application/Features/Notifications/NotificationsFeature.cs`, centro no `Topbar.tsx`, SignalR em `src/Prisma.Workspace.Web/src/features/board/useBoardRealtime.ts`. |
+| 16 | `open-source-distribution.md` | approved | `partially_implemented` | `compose.yaml`, `Dockerfile`, `.github/workflows/ci.yml`, `CONTRIBUTING.md`, `SECURITY.md`, `GOVERNANCE.md` entregues. Gaps: licença, SBOM, proveniência, SemVer, backup/restauração e passivo npm/NuGet. |
+| 17 | `organizations.md` | approved | `partially_implemented` | Multitenancy e membros existem (`src/Prisma.Workspace.Api/Middleware/OrganizationContextMiddleware.cs`, `src/Prisma.Workspace.Domain/Entities/Organization.cs:58`). Gaps D58: sem Administrador da plataforma, sem membership única e sem arquivamento/restauração — `Organization.cs:10-18` só tem `IsActive`. |
+| 18 | `organization-switch-refresh.md` | superseded | `superseded` | Incorporada por `SPEC-ORGANIZATIONS`. |
+| 19 | `prisma-visual-system.md` | approved | `implemented` | Fase 9 concluída; `src/Prisma.Workspace.Web/src/styles/*`, `layout/AppShell.tsx`, `Topbar.tsx`, `ContextBar.tsx`. |
+| 20 | `project-key-auto-generation.md` | approved | `partially_implemented` | A chave saiu do formulário de projeto (`src/Prisma.Workspace.Web/src/pages/Projects.tsx` não referencia `key`). Gap: ainda aparece como prefixo de referência da tarefa — `src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:175,332` e `src/Prisma.Workspace.Web/src/pages/Kanban.tsx:543`. |
+| 21 | `project-management.md` | approved | `partially_implemented` | Projeto com equipes, membros, etiquetas e classificação existe. Gap D57: `ProjectStatus` ainda tem cinco estados (`src/Prisma.Workspace.Domain/Enums/ProjectStatus.cs`) em vez de apenas Ativo/Arquivado. |
+| 22 | `project-methodology-hidden.md` | approved | `implemented` | Criação fixa `methodology: 1` sem seletor: `src/Prisma.Workspace.Web/src/pages/Projects.tsx:110`. O enum permanece por compatibilidade conforme D48. |
+| 23 | `project-structure.md` | superseded | `superseded` | Sucessor: `SPEC-PROJECT-METHODOLOGY-HIDDEN` (D48). |
+| 24 | `projects-visual-refresh.md` | superseded | `superseded` | Encerrada por D66; a evolução visual vigente é `SPEC-PRISMA-VISUAL-SYSTEM` (D70). |
+| 25 | `project-work-item-queries.md` | approved | `implemented` | `src/Prisma.Workspace.Web/src/pages/ProjectItemsQuery.tsx`, `ProjectItemsQuery.logic.ts`, `ProjectItemsQuery.test.ts`, `e2e/project-items-query.spec.ts`. |
+| 26 | `quick-create-work-item.md` | approved | `partially_implemented` | Criação rápida existe, mas o contrato exige título, projeto, responsável, quadro e coluna obrigatórios: `src/Prisma.Workspace.Application/Features/WorkItems/Commands/CreateWorkItemCommandValidator.cs` só exige título e um destino qualquer; `CreateWorkItemCommand.cs` mantém `StageId`, `ResponsibleId` e `ProjectId` opcionais e ainda aceita `BoardIds[]` do modelo N:N sucedido pela D52. |
+| 27 | `responsible-display-name.md` | approved | `partially_implemented` | `OrganizationMember.DisplayName` e resolução canônica existem (`src/Prisma.Workspace.Domain/Entities/Organization.cs:62`, `src/Prisma.Workspace.Infrastructure/Identity/UserDirectory.cs:126`, `tests/Prisma.Workspace.Tests/CanonicalPersonNameTests.cs`). Gap D63: nome completo não é obrigatório no cadastro — `src/Prisma.Workspace.Api/Controllers/AuthController.cs:230`. |
+| 28 | `search-saved-filters.md` | approved | `partially_implemented` | `SavedFilter` é pessoal por `UserId` (`src/Prisma.Workspace.Domain/Entities/SavedFilter.cs:11-14`). Gaps D64: não existe campo de escopo `Quadro atual` versus `Qualquer quadro acessível`, nem revalidação por quadro com chips de critério ignorado. |
+| 29 | `sla-approvals.md` | approved | `implemented` | `src/Prisma.Workspace.Application/Features/Sla/SlaFeature.cs`, `Features/Approvals/*`, `src/Prisma.Workspace.Domain/Entities/ProjectSlaPolicy.cs`. |
+| 30 | `sprints.md` (SPEC-S-003 v2) | draft | `blocked_by_gate` | Rebaixada a `draft` por decisão do PO em 2026-09-08. `Sprint.ProjectId` 1:N e `Status` manual persistem (`src/Prisma.Workspace.Domain/Entities/Sprint.cs:10,16,74-91`); `SprintProject` não existe. Implementação bloqueada até `G-SPEC`. |
+| 31 | `task-history.md` | approved | `partially_implemented` | Modal com seis abas e histórico separado existem (`src/Prisma.Workspace.Web/src/components/TaskDetailDrawer.tsx:172`, `features/task/TaskFeed.tsx`). Gap D61: a sexta aba ainda é `Grafo de estados` com React Flow — `TaskDetailDrawer.tsx:297,352` e `features/task/TaskStateGraph.tsx` — em vez da `Linha do tempo` textual. |
+| 32 | `teams.md` | approved | `implemented` | `src/Prisma.Workspace.Application/Features/Teams/TeamsFeature.cs`, `src/Prisma.Workspace.Web/src/pages/Teams.tsx`. |
+| 33 | `time-tracking.md` | approved | `partially_implemented` | Timer, lançamento manual, agregações e `DayJustification` existem (`Features/TimeEntries/*`, `Features/MeTime/*`). As regras novas de precisão, jornada, sobreposição, timezone e apontamento em tarefa concluída não estão comprovadas em teste e seguem sem homologação. |
+| 34 | `top-navigation-shell.md` | approved | `implemented` | Shell superior sem sidebar global: `layout/AppShell.tsx`, `Topbar.tsx`, `ContextBar.tsx`; `layout/Sidebar.tsx` permanece como arquivo morto, sem import em nenhum lugar. |
+| 35 | `user-access-permissions.md` | approved | `not_implemented` | O contrato D55 exige cinco perfis-base, perfis personalizados, fim da hierarquia fixa por projeto e escopo `Board`. O código mantém dez perfis (`src/Prisma.Workspace.Domain/Enums/OrganizationRole.cs`), cinco papéis fixos de projeto (`ProjectRole.cs`) e sete escopos sem `Board` (`PermissionScope.cs`). |
+| 36 | `wiki-knowledge.md` | approved | `implemented` | `src/Prisma.Workspace.Application/Features/Wiki/*`, `src/Prisma.Workspace.Domain/Entities/WikiPage.cs`, `src/Prisma.Workspace.Web/src/pages/ProjectWiki.tsx`. |
+| 37 | `workflow-status.md` | approved | `not_implemented` | O contrato D65 é coluna como status canônico único. O código mantém `WorkItem.WorkflowStatusId` paralelo (`src/Prisma.Workspace.Domain/Entities/WorkItem.cs:27`), a UI ainda prefere `workflowStatusName` (`TaskDetailDrawer.tsx:288`) e a conclusão depende de `Stage.Category` (`Features/WorkItems/Commands/MoveWorkItemCommandHandler.cs:144`). Três fontes de verdade concorrentes. Ver `TASK-BUG-001`. |
+| 38 | `work-item-management.md` | approved | `partially_implemented` | Criação, edição, movimentação e arquivamento existem. Gaps D53: sem lixeira de 7 dias (`DeletedAt` não existe em `WorkItem.cs`), sem regra de conclusão do pai condicionada às subtarefas e sem responsável obrigatório na criação. |
+| 39 | `work-items.md` | superseded | `superseded` | Sucessores: `SPEC-WORK-ITEM-MANAGEMENT` e `SPEC-PROJECT-METHODOLOGY-HIDDEN`. |
+| 40 | `work-nature.md` | approved | `implemented` | Natureza e Tipo de Trabalho persistidos e filtráveis; migration `20260904154816_Add_Project_Work_Classification`; `src/Prisma.Workspace.Web/src/pages/projectClassification.ts`. |
+
+Resumo: 13 `implemented`, 15 `partially_implemented`, 4 `not_implemented`, 1 `blocked_by_gate`,
+6 `superseded`, além de `_template.md`, que não é uma spec.
+
+## Divergências entre o backlog e a realidade — corrigidas
+
+1. **TASK-027 (reordenar colunas)** — o backlog dizia `in_progress` sem qualificação. Auditoria: a persistência
+   existe e funciona por botões com atualização otimista e rollback
+   (`src/Prisma.Workspace.Web/src/pages/Kanban.tsx:761-778`, `services/api.ts:765`). O que falta é somente o
+   arraste. Status mantido `in_progress`, agora com a evidência registrada.
+2. **TASK-032 (shell superior)** — estava `in_progress`; a auditoria comprova entrega
+   (`layout/AppShell.tsx`, `Topbar.tsx`, `ContextBar.tsx`, sem nenhum import de `layout/Sidebar.tsx`).
+   Corrigido para `completed`; o arquivo morto vira `TASK-403`.
+3. **TASK-038 (consultas segmentadas)** — estava `in_progress`; o `ROADMAP.md` marca a Fase 10 como concluída e
+   o `PROGRESS.md` de 2026-09-04 registra publicação e validação visual. Corrigido para `completed`.
+4. **TASK-020 (criação rápida)** — marcada `completed`, mas a validação de backend não exige projeto,
+   responsável, quadro e coluna. Permanece `completed` como registro histórico do modelo N:N; o contrato
+   vigente passa a ser coberto por `TASK-107` do lote `core-domain-v2`.
+5. **TASK-024 (chave técnica)** — `pending` está correto, mas a auditoria mostra entrega parcial: a chave já
+   saiu do formulário de projeto e resta apenas o prefixo de referência da tarefa.
+6. **TASK-031 (filtros salvos)** — `in_progress` está correto; a auditoria acrescenta que o gap é estrutural
+   (`SavedFilter` não tem campo de escopo), e não apenas visual.
