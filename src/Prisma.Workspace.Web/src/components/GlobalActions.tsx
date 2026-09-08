@@ -428,7 +428,11 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
         projectId: data.projectId,
         title: data.title,
         priority: 1,
-        position: Date.now(),
+        // Valor crescente para o item entrar no fim da lista. Em segundos, e não em
+        // milissegundos: CreateWorkItemCommandValidator recusa posição >= 999.999.999.999,
+        // teto que Date.now() ultrapassa desde 2001 — era o que fazia toda criação
+        // rápida falhar com 400.
+        position: Math.floor(Date.now() / 1000),
       });
     },
     onSuccess: async () => {
