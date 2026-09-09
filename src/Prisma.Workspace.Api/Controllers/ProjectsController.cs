@@ -37,8 +37,8 @@ public class ProjectsController : ControllerBase
         // CreateBoardCommand já cria a etapa "Backlog" (Ready/pos=100);
         // adicionamos apenas Em andamento e Concluído para completar o fluxo.
         var boardId = await _mediator.Send(new CreateBoardCommand("Quadro principal", UserId, id), ct);
-        await _mediator.Send(new CreateStageCommand(boardId, "Em andamento", 200, null, null, StageCategory.InProgress, "#F59E0B", UserId), ct);
-        await _mediator.Send(new CreateStageCommand(boardId, "Concluído", 300, null, null, StageCategory.Done, "#10B981", UserId), ct);
+        await _mediator.Send(new CreateStageCommand(boardId, "Em andamento", 200, null, StageCategory.InProgress, "#F59E0B", UserId), ct);
+        await _mediator.Send(new CreateStageCommand(boardId, "Concluído", 300, null, StageCategory.Done, "#10B981", UserId), ct);
 
         return CreatedAtAction(nameof(Get), new { id }, id);
     }

@@ -14,7 +14,7 @@ public sealed record WorkflowStatusDto(
 public sealed record WorkflowTransitionDto(Guid SourceStatusId, Guid TargetStatusId);
 public sealed record WorkflowStageDto(
     Guid Id, Guid BoardId, string BoardName, string Name, double Position,
-    int? WipLimit, Guid? WorkflowStatusId);
+    Guid? WorkflowStatusId);
 public sealed record WorkflowBoardDto(Guid Id, string Name, string? CardSettingsJson);
 public sealed record ProjectWorkflowDto(
     WorkflowInheritanceMode InheritanceMode, Guid? WorkflowTemplateId, string? WorkflowTemplateName,
@@ -53,7 +53,7 @@ public sealed class GetProjectWorkflowQueryHandler : IRequestHandler<GetProjectW
             boards.Add(new WorkflowBoardDto(board.Id, board.Name, board.CardSettingsJson));
             stages.AddRange(board.Stages.OrderBy(x => x.Position).Select(x =>
                 new WorkflowStageDto(x.Id, board.Id, board.Name, x.Name, x.Position,
-                    x.WipLimit, x.WorkflowStatusId)));
+                    x.WorkflowStatusId)));
         }
 
         return new ProjectWorkflowDto(
@@ -211,7 +211,7 @@ public sealed class ReplaceWorkflowTransitionsCommandHandler : IRequestHandler<R
 }
 
 public sealed record UpdateWorkflowStageCommand(
-    Guid ProjectId, Guid StageId, string Name, double Position, int? WipLimit,
+    Guid ProjectId, Guid StageId, string Name, double Position,
     Guid WorkflowStatusId, string ActorId) : IRequest;
 public sealed class UpdateWorkflowStageCommandHandler : IRequestHandler<UpdateWorkflowStageCommand>
 {
@@ -231,12 +231,10 @@ public sealed class UpdateWorkflowStageCommandHandler : IRequestHandler<UpdateWo
             "A coluna e o status precisam pertencer ao projeto.");
         DomainException.Garantir(!string.IsNullOrWhiteSpace(request.Name), "Nome da coluna obrigatorio.");
         DomainException.Garantir(request.Position >= 0, "Posicao da coluna invalida.");
-        DomainException.Garantir(request.WipLimit is null or > 0, "O limite de WIP deve ser maior que zero.");
 
         var changedStatus = stage.WorkflowStatusId != status.Id;
         stage.Name = request.Name.Trim();
         stage.Position = request.Position;
-        stage.WipLimit = request.WipLimit;
         stage.WorkflowStatusId = status.Id;
         stage.Category = status.Category;
         await _workflow.SaveAsync(ct);

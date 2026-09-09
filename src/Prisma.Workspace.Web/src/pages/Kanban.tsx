@@ -187,7 +187,6 @@ interface Stage {
   boardId: string;
   name: string;
   position: number;
-  wipLimit?: number | null;
   workflowStatusId?: string | null;
   statusName?: string | null;
   statusColor?: string | null;
@@ -1488,8 +1487,8 @@ export const Kanban: React.FC = () => {
                   <ColumnHeader>
                     <ColumnTitle><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CardCount style={stage.wipLimit && itemsInStage.length >= stage.wipLimit ? { color: '#B42318', borderColor: '#FCA5A5', background: '#FEF2F2' } : undefined}>
-                        {itemsInStage.length}{stage.wipLimit ? ` / ${stage.wipLimit} WIP` : ''}
+                      <CardCount>
+                        {itemsInStage.length}
                       </CardCount>
                       <button
                         type="button"

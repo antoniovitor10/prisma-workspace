@@ -39,8 +39,6 @@ public class CreateStageCommandHandler : IRequestHandler<CreateStageCommand, Gui
             throw new ArgumentException("O Quadro especificado não existe.");
         }
 
-        DomainException.Garantir(request.WipLimit is null or > 0,
-            "O limite de WIP deve ser maior que zero.");
         if (board.ProjectId.HasValue && request.ActorId is not null && _access is not null)
         {
             await _access.EnsureAtLeastAsync(
@@ -97,7 +95,6 @@ public class CreateStageCommandHandler : IRequestHandler<CreateStageCommand, Gui
             WorkflowStatusId = workflowStatus?.Id,
             Name = request.Name,
             Position = request.Position,
-            WipLimit = request.WipLimit,
             Category = workflowStatus?.Category ?? request.Category,
             CreatedAt = DateTimeOffset.UtcNow
         };

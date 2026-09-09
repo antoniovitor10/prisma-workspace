@@ -18,9 +18,5 @@ public class CreateStageCommandValidator : AbstractValidator<CreateStageCommand>
 
         RuleFor(s => s.Position)
             .GreaterThanOrEqualTo(0).WithMessage("A posição da etapa deve ser um valor maior ou igual a zero.");
-
-        RuleFor(s => s.WipLimit)
-            .GreaterThan(0).When(s => s.WipLimit.HasValue)
-            .WithMessage("O limite de WIP deve ser maior que zero, se especificado.");
     }
 }

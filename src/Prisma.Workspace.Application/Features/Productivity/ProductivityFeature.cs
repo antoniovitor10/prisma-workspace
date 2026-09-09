@@ -507,11 +507,6 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
                 stage = await _repository.GetStageAsync(targetId!.Value, ct);
                 DomainException.Garantir(stage is not null && stage.BoardId == request.BoardId,
                     "Etapa de destino inválida.");
-                var entering = items.Count(x => x.StageId != stage.Id);
-                var occupied = await _workflow.CountActiveItemsInStageAsync(stage.Id, ct: ct);
-                DomainException.Garantir(!stage.WipLimit.HasValue
-                    || occupied + entering <= stage.WipLimit.Value,
-                    $"A coluna '{stage.Name}' não comporta a seleção por causa do limite de WIP.");
                 foreach (var item in items.Where(x => x.StageId != stage.Id))
                     await WorkflowMoveGuard.EnsureAllowedAsync(item, stage, _workflow, ct);
                 break;

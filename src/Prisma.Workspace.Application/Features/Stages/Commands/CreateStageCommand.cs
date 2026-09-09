@@ -10,7 +10,6 @@ public record CreateStageCommand(
     Guid BoardId,
     string Name,
     double Position,
-    int? WipLimit,
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B",

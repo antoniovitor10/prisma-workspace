@@ -109,10 +109,10 @@ public static class DbInitializer
         await context.SaveChangesAsync();
 
         // 4. Criar Colunas (Stages) no Board
-        var stage1 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id,             Name = "Ideias", Category = StageCategory.Backlog, Position = 100, WipLimit = 10, CreatedAt = now.AddDays(-15) };
-        var stage2 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Em andamento", Category = StageCategory.InProgress, Position = 200, WipLimit = 5, CreatedAt = now.AddDays(-15) };
-        var stage3 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Revisão", Category = StageCategory.Review, Position = 300, WipLimit = 3, CreatedAt = now.AddDays(-15) };
-        var stage4 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Concluído", Category = StageCategory.Done, Position = 400, WipLimit = 15, CreatedAt = now.AddDays(-15) };
+        var stage1 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id,             Name = "Ideias", Category = StageCategory.Backlog, Position = 100, CreatedAt = now.AddDays(-15) };
+        var stage2 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Em andamento", Category = StageCategory.InProgress, Position = 200, CreatedAt = now.AddDays(-15) };
+        var stage3 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Revisão", Category = StageCategory.Review, Position = 300, CreatedAt = now.AddDays(-15) };
+        var stage4 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Concluído", Category = StageCategory.Done, Position = 400, CreatedAt = now.AddDays(-15) };
 
         await context.Stages.AddRangeAsync(stage1, stage2, stage3, stage4);
 

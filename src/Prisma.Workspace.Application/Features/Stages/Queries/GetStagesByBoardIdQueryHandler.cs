@@ -35,7 +35,6 @@ public class GetStagesByBoardIdQueryHandler : IRequestHandler<GetStagesByBoardId
             BoardId = s.BoardId,
             Name = s.Name,
             Position = s.Position,
-            WipLimit = s.WipLimit,
             WorkflowStatusId = s.WorkflowStatusId,
             Category = s.Category,
             StatusName = s.WorkflowStatus?.Name,

@@ -11,7 +11,6 @@ public class StageDto
     public Guid BoardId { get; set; }
     public string Name { get; set; } = string.Empty;
     public double Position { get; set; }
-    public int? WipLimit { get; set; }
     public Guid? WorkflowStatusId { get; set; }
     /// <summary>
     /// Classificação funcional da coluna. Sem ela a interface não consegue mostrar nem

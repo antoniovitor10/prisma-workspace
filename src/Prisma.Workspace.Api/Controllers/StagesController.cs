@@ -65,7 +65,7 @@ public class StagesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new CreateStageCommand(
-            request.BoardId, request.Name, request.Position, request.WipLimit,
+            request.BoardId, request.Name, request.Position,
             request.WorkflowStatusId, request.Category, request.Color, UserId);
         var stageId = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetByBoardId), new { boardId = request.BoardId }, stageId);
@@ -76,7 +76,7 @@ public class StagesController : ControllerBase
 /// Modelo de request para criar uma coluna.
 /// </summary>
 public record CreateStageRequest(
-    Guid BoardId, string Name, double Position, int? WipLimit,
+    Guid BoardId, string Name, double Position,
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B");

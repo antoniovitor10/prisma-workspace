@@ -102,12 +102,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             selectedStage = await _stageRepository.GetByIdAsync(request.StageId.Value, cancellationToken);
             if (selectedStage is null || selectedStage.BoardId != homeBoard.Id)
                 throw new ArgumentException("A etapa especificada não pertence ao quadro informado.");
-            if (selectedStage.WipLimit.HasValue && _workflow is not null)
-            {
-                var count = await _workflow.CountActiveItemsInStageAsync(selectedStage.Id, ct: cancellationToken);
-                DomainException.Garantir(count < selectedStage.WipLimit.Value,
-                    $"A coluna '{selectedStage.Name}' atingiu o limite de WIP ({selectedStage.WipLimit.Value}).");
-            }
+            // Limite de WIP removido do produto pela D83.
         }
 
         // 5. Validar tarefa pai

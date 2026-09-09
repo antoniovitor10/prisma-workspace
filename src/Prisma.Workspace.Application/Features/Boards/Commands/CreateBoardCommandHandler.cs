@@ -65,7 +65,6 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, Gui
             Name = "Backlog",
             Position = 100,
             Category = StageCategory.Ready,
-            WipLimit = null,
             CreatedAt = DateTimeOffset.UtcNow
         };
         await _stageRepository.AddAsync(backlog, cancellationToken);

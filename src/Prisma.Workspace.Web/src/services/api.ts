@@ -645,12 +645,12 @@ export const api = {
   },
 
   async createStage(
-    boardId: string, name: string, position: number, wipLimit?: number,
+    boardId: string, name: string, position: number,
     options?: { workflowStatusId?: string; category?: number; color?: string }
   ) {
     return this.request('/api/Stages', {
       method: 'POST',
-      body: JSON.stringify({ boardId, name, position, wipLimit, ...options })
+      body: JSON.stringify({ boardId, name, position, ...options })
     });
   },
 
@@ -715,7 +715,7 @@ export const api = {
   },
 
   async updateWorkflowStage(projectId: string, stageId: string, data: {
-    name: string; position: number; wipLimit?: number | null; workflowStatusId: string;
+    name: string; position: number; workflowStatusId: string;
   }) {
     return this.request(`/api/projects/${projectId}/workflow/stages/${stageId}`, {
       method: 'PUT', body: JSON.stringify(data)

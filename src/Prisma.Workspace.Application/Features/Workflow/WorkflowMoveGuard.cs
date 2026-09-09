@@ -18,12 +18,8 @@ public static class WorkflowMoveGuard
             DomainException.Garantir(destinationStatus?.IsActive == true,
                 "O status de destino esta inativo no workflow.");
         }
-        if (destination.WipLimit.HasValue)
-        {
-            var currentCount = await workflow.CountActiveItemsInStageAsync(destination.Id, item.Id, ct);
-            DomainException.Garantir(currentCount < destination.WipLimit.Value,
-                $"A coluna '{destination.Name}' atingiu o limite de WIP ({destination.WipLimit.Value}).");
-        }
+        // O limite de WIP foi removido do produto pela D83. Nenhuma regra bloqueia ou
+        // avisa por quantidade de cartões na coluna.
 
         if (item.WorkflowStatusId.HasValue
             && destination.WorkflowStatusId.HasValue

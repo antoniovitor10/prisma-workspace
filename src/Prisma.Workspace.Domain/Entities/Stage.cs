@@ -23,7 +23,6 @@ public class Stage
     public double Position { get; set; }
 
     /// <summary>Limite de trabalho em progresso (WIP). Nulo = sem limite.</summary>
-    public int? WipLimit { get; set; }
 
     /// <summary>Categoria semântica usada por backlog e métricas.</summary>
     public StageCategory Category { get; set; } = StageCategory.InProgress;

@@ -31,7 +31,6 @@ public class BoardProjectionCommandTests
         Assert.Equal("Backlog", backlog.Name);
         Assert.Equal(StageCategory.Ready, backlog.Category);
         Assert.Equal(100, backlog.Position);
-        Assert.Null(backlog.WipLimit);
         Assert.Equal(boardId, project.DefaultBoardId);
         Assert.Equal(1, projects.SaveCount);
     }
