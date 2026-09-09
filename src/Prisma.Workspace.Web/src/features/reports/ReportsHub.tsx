@@ -148,7 +148,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Kpi $danger><span>Tarefas atrasadas</span><strong>{report.tasks.overdue}</strong></Kpi>
       <Kpi><span>Tarefas bloqueadas</span><strong>{report.tasks.blocked}</strong></Kpi>
       <Kpi><span>Solicitações externas</span><strong>{report.externalRequests.total}</strong></Kpi>
-      <Kpi><span>Cumprimento de SLA</span><strong>{report.sla.compliancePercentage}%</strong></Kpi>
       <Kpi><span>Horas previstas</span><strong>{report.hours.planned.toLocaleString('pt-BR')}h</strong></Kpi>
       <Kpi><span>Horas realizadas</span><strong>{report.hours.realized.toLocaleString('pt-BR')}h</strong></Kpi>
     </Kpis>
@@ -161,11 +160,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Card><h3>Tarefas por projeto</h3><BarsChart data={report.tasksByProject} color="#7A5CC6" /></Card>
       <Card><h3>Solicitações por categoria</h3><BarsChart data={report.externalRequests.byCategory} color="#E8833A" /></Card>
       <Card><h3>Solicitações por solicitante</h3><BarsChart data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
-      <Card><h3>SLA</h3><DonutChart data={[
-        { key: 'met', label: 'Cumprido', value: report.sla.met },
-        { key: 'overdue', label: 'Vencido', value: report.sla.overdue },
-        { key: 'paused', label: 'Pausado', value: report.sla.paused },
-      ]} /></Card>
     </Grid>
     <Grid>
       {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
@@ -173,10 +167,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
         data={[{ label: 'Horas', planned: report.hours.planned, realized: report.hours.realized }]}
         keys={[{ key: 'planned', label: 'Previsto', color: '#06B6D4' }, { key: 'realized', label: 'Realizado', color: '#10B981' }]}
       /></Card>
-      <Card><h3>Tempo médio de atendimento</h3><BarsChart data={[
-        { key: 'first', label: 'Primeira resposta (min)', value: report.sla.averageFirstResponseMinutes ?? 0 },
-        { key: 'resolution', label: 'Resolução (min)', value: report.sla.averageResolutionMinutes ?? 0 },
-      ]} color="#F97316" /></Card>
       <Card><h3>Volume de trabalho por período</h3><AreaTrend points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
       <Card><h3>Burndown da sprint atual</h3><AreaTrend points={report.burndown} color="#D92D20" label="Restante" /></Card>
     </Grid>

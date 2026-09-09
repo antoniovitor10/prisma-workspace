@@ -1,6 +1,5 @@
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
@@ -148,8 +147,6 @@ public class ApplyExternalRequestTriageCommandHandler
                     externalRequest, ExternalRequestMessageAuthor.Agent,
                     request.ActorName, request.ActorId, request.Message!);
                 _portals.AddMessage(publicMessage);
-                SlaCalculator.MarkFirstResponse(externalRequest, publicMessage.CreatedAt);
-                SlaCalculator.Pause(externalRequest, publicMessage.CreatedAt);
                 return "Mais informações foram solicitadas ao solicitante.";
 
             case ExternalRequestTriageAction.CategoryChanged:

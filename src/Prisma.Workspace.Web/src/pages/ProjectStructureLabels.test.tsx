@@ -15,8 +15,8 @@ vi.mock('../features/workflow/ProjectWorkflowSettings', () => ({
 vi.mock('../features/portal/ExternalPortalSettings', () => ({
   ExternalPortalSettings: () => null,
 }));
-vi.mock('../features/portal/ProjectSlaSettings', () => ({
-  ProjectSlaSettings: () => null,
+vi.mock('../features/portal/ExternalPortalSettings', () => ({
+  ExternalPortalSettings: () => null,
 }));
 
 const project: ProjectSummary = {

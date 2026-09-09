@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Prisma.Workspace.Application.Common.Exceptions;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -397,9 +396,6 @@ public class ReportExecutor
                 .Select(item => TaskRow(item, names)).ToList(),
             ReportDataSource.ExternalRequests => (await _analytics.GetExternalRequestsAsync(projectId, ct))
                 .Select(RequestRow).ToList(),
-            ReportDataSource.Slas => (await _analytics.GetExternalRequestsAsync(projectId, ct))
-                .Where(x => x.FirstResponseDueAt.HasValue || x.ResolutionDueAt.HasValue)
-                .Select(SlaRow).ToList(),
             ReportDataSource.Projects => (await _analytics.GetProjectsAsync(ct))
                 .Where(x => !projectId.HasValue || x.Id == projectId).Select(ProjectRow).ToList(),
             ReportDataSource.Teams => (await _analytics.GetTeamsAsync(ct))
@@ -477,7 +473,6 @@ public class ReportExecutor
 
     private static Dictionary<string, object?> RequestRow(ExternalRequest request)
     {
-        var sla = SlaCalculator.MapRequest(request);
         var row = new Dictionary<string, object?>
         {
             ["protocol"] = request.Protocol, ["title"] = request.WorkItem.Title,
@@ -486,25 +481,11 @@ public class ReportExecutor
             ["status"] = request.WorkItem.CompletedAt.HasValue ? "Concluída" : request.WorkItem.WorkflowStatus?.Name ?? request.WorkItem.Stage?.Name ?? "Nova",
             ["triageStatus"] = request.TriageStatus.ToString(), ["priority"] = request.WorkItem.Priority.ToString(),
             ["createdAt"] = request.CreatedAt, ["completedAt"] = request.WorkItem.CompletedAt,
-            ["firstResponseMinutes"] = MilestoneMinutes(request, true),
-            ["resolutionMinutes"] = MilestoneMinutes(request, false),
-            ["slaStatus"] = OverallStatus(sla).ToString(),
             ["plannedHours"] = request.WorkItem.EstimatedHours ?? 0,
             ["realizedHours"] = Math.Round(request.WorkItem.TimeEntries.Sum(DurationHours), 2)
         };
         foreach (var value in request.WorkItem.CustomFieldValues)
             row[$"custom:{value.FieldDefinitionId}"] = value.Value;
-        return row;
-    }
-
-    private static Dictionary<string, object?> SlaRow(ExternalRequest request)
-    {
-        var row = RequestRow(request);
-        var sla = SlaCalculator.MapRequest(request);
-        row["firstResponseStatus"] = sla.FirstResponse.Status.ToString();
-        row["resolutionStatus"] = sla.Resolution.Status.ToString();
-        row["firstResponseDueAt"] = sla.FirstResponse.DueAt;
-        row["resolutionDueAt"] = sla.Resolution.DueAt;
         return row;
     }
 
@@ -668,26 +649,6 @@ public class ReportExecutor
     }
     private static decimal DurationHours(TimeEntry entry)
         => (decimal)Math.Max(0, ((entry.EndedAt ?? DateTimeOffset.UtcNow) - entry.StartedAt).TotalHours);
-    private static decimal? MilestoneMinutes(ExternalRequest request, bool firstResponse)
-    {
-        var end = firstResponse ? request.FirstRespondedAt : request.WorkItem.CompletedAt;
-        if (!end.HasValue) return null;
-        var snapshot = SlaCalculator.Snapshot(request);
-        var minutes = snapshot is null
-            ? Math.Round((decimal)(end.Value - request.CreatedAt).TotalMinutes, 2)
-            : SlaCalculator.BusinessMinutesBetween(request.CreatedAt, end.Value, snapshot);
-        return firstResponse ? minutes : Math.Max(0, minutes - request.SlaPausedBusinessMinutes);
-    }
-    private static SlaStatus OverallStatus(ExternalRequestSlaDto sla)
-    {
-        var values = new[] { sla.FirstResponse.Status, sla.Resolution.Status };
-        if (values.Contains(SlaStatus.Overdue)) return SlaStatus.Overdue;
-        if (values.Contains(SlaStatus.Paused)) return SlaStatus.Paused;
-        if (values.Contains(SlaStatus.NearDue)) return SlaStatus.NearDue;
-        if (values.All(x => x == SlaStatus.Met)) return SlaStatus.Met;
-        if (values.All(x => x == SlaStatus.NotApplicable)) return SlaStatus.NotApplicable;
-        return SlaStatus.WithinDeadline;
-    }
 }
 
 internal static class ReportDefinitionValidator
@@ -813,14 +774,12 @@ internal static class ReportCatalog
         [F("sprint","Sprint"),F("project","Projeto"),F("team","Equipe"),F("status","Status"),F("startDate","Início","date"),F("endDate","Fim","date"),F("plannedPoints","Pontos planejados","number",true),F("completedPoints","Pontos concluídos","number",true),F("velocity","Velocidade","number",true),F("plannedHours","Horas previstas","number",true),F("progress","Progresso (%)","number",true)],
         ReportDataSource.TimeEntries =>
         [F("project","Projeto"),F("team","Equipe"),F("user","Usuário"),F("userId","ID do usuário"),F("task","Tarefa"),F("taskNumber","Número","number",true),F("startedAt","Início","date"),F("endedAt","Fim","date"),F("hours","Horas","number",true),F("plannedHours","Horas previstas","number",true),F("realizedHours","Horas realizadas","number",true),F("note","Observação")],
-        ReportDataSource.Slas =>
-        [F("protocol","Protocolo"),F("title","Título"),F("project","Projeto"),F("category","Categoria"),F("requester","Solicitante"),F("priority","Prioridade"),F("createdAt","Criação","date"),F("slaStatus","SLA"),F("firstResponseStatus","SLA 1ª resposta"),F("resolutionStatus","SLA resolução"),F("firstResponseDueAt","Vencimento 1ª resposta","date"),F("resolutionDueAt","Vencimento resolução","date"),F("firstResponseMinutes","Tempo de 1ª resposta (min)","number",true),F("resolutionMinutes","Tempo de resolução (min)","number",true)],
         _ => []
     };
 
     public static string DateField(ReportDataSource source) => source switch
     {
-        ReportDataSource.WorkItems or ReportDataSource.ExternalRequests or ReportDataSource.Slas => "createdAt",
+        ReportDataSource.WorkItems or ReportDataSource.ExternalRequests => "createdAt",
         ReportDataSource.Projects => "startDate",
         ReportDataSource.Teams or ReportDataSource.Users => string.Empty,
         ReportDataSource.Sprints => "startDate",
@@ -834,6 +793,6 @@ internal static class ReportCatalog
         ReportDataSource.WorkItems => "Tarefas", ReportDataSource.ExternalRequests => "Solicitações",
         ReportDataSource.Projects => "Projetos", ReportDataSource.Teams => "Equipes",
         ReportDataSource.Users => "Usuários", ReportDataSource.Sprints => "Sprints",
-        ReportDataSource.TimeEntries => "Apontamentos", ReportDataSource.Slas => "SLAs", _ => source.ToString()
+        ReportDataSource.TimeEntries => "Apontamentos", _ => source.ToString()
     };
 }

@@ -902,17 +902,6 @@ export const api = {
     return this.request(`/api/TimeEntries/my/weekly${query}`);
   },
 
-  async getProjectSla(projectId: string) {
-    return this.request(`/api/projects/${projectId}/sla`);
-  },
-
-  async saveProjectSla(projectId: string, data: unknown) {
-    return this.request(`/api/projects/${projectId}/sla`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  },
-
   async getProjectTimeReport(projectId: string, filters: {from?:string;to?:string;teamId?:string;userId?:string} = {}) {
     const query = new URLSearchParams();
     Object.entries(filters).forEach(([key,value]) => { if (value) query.set(key,value); });

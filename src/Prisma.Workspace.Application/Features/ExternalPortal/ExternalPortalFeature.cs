@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
@@ -64,7 +63,6 @@ public record ExternalRequestDto(
     DateTimeOffset? CompletionConfirmedAt,
     IReadOnlyDictionary<string, string?> SubmittedValues,
     IReadOnlyList<ExternalRequestTriageEventDto> TriageEvents,
-    ExternalRequestSlaDto Sla,
     IReadOnlyList<ExternalRequestMessageDto> Messages,
     IReadOnlyList<ExternalRequestAttachmentDto> Attachments);
 
@@ -128,7 +126,6 @@ internal static class ExternalPortalMapper
             request.TriageEvents.OrderBy(x => x.CreatedAt)
                 .Select(x => new ExternalRequestTriageEventDto(
                     x.Id, x.Action, x.ActorName, x.Description, x.DataJson, x.CreatedAt)).ToList(),
-            SlaCalculator.MapRequest(request),
             request.Messages.OrderBy(x => x.CreatedAt)
                 .Select(x => new ExternalRequestMessageDto(x.Id, x.AuthorType, x.AuthorName, x.Content, x.CreatedAt))
                 .ToList(),
@@ -386,13 +383,11 @@ public class CreateExternalRequestCommandHandler
     : IRequestHandler<CreateExternalRequestCommand, CreatedExternalRequestDto>
 {
     private readonly IExternalPortalRepository _portals;
-    private readonly ISlaRepository _sla;
     private readonly IPlatformNotificationPublisher? _notifications;
     public CreateExternalRequestCommandHandler(
         IExternalPortalRepository portals,
-        ISlaRepository sla,
         IPlatformNotificationPublisher? notifications = null)
-        => (_portals, _sla, _notifications) = (portals, sla, notifications);
+        => (_portals, _notifications) = (portals, notifications);
 
     public async Task<CreatedExternalRequestDto> Handle(CreateExternalRequestCommand request, CancellationToken ct)
     {
@@ -455,8 +450,6 @@ public class CreateExternalRequestCommandHandler
             AccessKeyHash = PortalSecurity.Hash(accessKey), RequesterEmail = email,
             CreatedAt = now, UpdatedAt = now
         };
-        SlaCalculator.ApplyPolicy(externalRequest,
-            await _sla.GetByProjectAsync(portal.ProjectId, ct), null, workItem.Priority, now);
         if (invitation is not null) invitation.UsedAt = now;
         if (verification is not null) verification.UsedAt = now;
         await _portals.CreateRequestAsync(workItem, externalRequest, ct);
@@ -539,7 +532,6 @@ public class AddExternalRequestReplyCommandHandler
         var message = NewMessage(externalRequest, ExternalRequestMessageAuthor.Requester,
             externalRequest.WorkItem.RequesterName ?? "Solicitante", null, request.Content);
         _portals.AddMessage(message);
-        SlaCalculator.Resume(externalRequest, message.CreatedAt);
         if (externalRequest.TriageStatus == ExternalRequestTriageStatus.WaitingForInformation)
             externalRequest.TriageStatus = ExternalRequestTriageStatus.New;
         _portals.AddTaskEvent(TaskEvent.Registrar(
@@ -610,7 +602,6 @@ public class AddInternalExternalRequestReplyCommandHandler
             externalRequest, ExternalRequestMessageAuthor.Agent,
             request.ActorName, request.ActorId, request.Content);
         _portals.AddMessage(message);
-        SlaCalculator.MarkFirstResponse(externalRequest, message.CreatedAt);
         _portals.AddTaskEvent(TaskEvent.Registrar(
             externalRequest.WorkItemId, request.ActorId, "external_public_reply"));
         await _portals.SaveAsync(ct);

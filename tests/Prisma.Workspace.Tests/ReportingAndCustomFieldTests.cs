@@ -2,78 +2,14 @@ using System.Text.Json;
 using Prisma.Workspace.Application.Features.ExternalPortal;
 using Prisma.Workspace.Application.Features.Projects;
 using Prisma.Workspace.Application.Features.Reports;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 
 namespace Prisma.Workspace.Tests;
 
-public class SlaReportingAndCustomFieldTests
+public class ReportingAndCustomFieldTests
 {
-    private static readonly SlaPolicySnapshotDto WeekdayPolicy = new(
-        120, 480, "08:00", "18:00", 62, "UTC", true, true, 60,
-        [], null, null);
-
-    [Fact]
-    public void SlaCalendar_SkipsWeekendsAndHolidays()
-    {
-        var friday = new DateTimeOffset(2026, 7, 17, 17, 30, 0, TimeSpan.Zero);
-
-        var afterWeekend = SlaCalculator.AddBusinessMinutes(friday, 120, WeekdayPolicy);
-        var withHoliday = SlaCalculator.AddBusinessMinutes(
-            friday, 120, WeekdayPolicy with { Holidays = ["2026-07-20"] });
-
-        Assert.Equal(new DateTimeOffset(2026, 7, 20, 9, 30, 0, TimeSpan.Zero), afterWeekend);
-        Assert.Equal(new DateTimeOffset(2026, 7, 21, 9, 30, 0, TimeSpan.Zero), withHoliday);
-    }
-
-    [Fact]
-    public void SlaPause_ExtendsDeadlinesOnlyByBusinessMinutes()
-    {
-        var request = new ExternalRequest
-        {
-            WorkItem = new WorkItem(),
-            SlaPolicySnapshotJson = JsonSerializer.Serialize(WeekdayPolicy, SlaCalculator.JsonOptions),
-            FirstResponseDueAt = new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero),
-            ResolutionDueAt = new DateTimeOffset(2026, 7, 20, 16, 0, 0, TimeSpan.Zero)
-        };
-
-        SlaCalculator.Pause(request, new DateTimeOffset(2026, 7, 17, 17, 30, 0, TimeSpan.Zero));
-        SlaCalculator.Resume(request, new DateTimeOffset(2026, 7, 20, 9, 30, 0, TimeSpan.Zero));
-
-        Assert.Equal(120, request.SlaPausedBusinessMinutes);
-        Assert.Equal(new DateTimeOffset(2026, 7, 20, 14, 0, 0, TimeSpan.Zero), request.FirstResponseDueAt);
-        Assert.Equal(new DateTimeOffset(2026, 7, 20, 18, 0, 0, TimeSpan.Zero), request.ResolutionDueAt);
-        Assert.Null(request.SlaPausedAt);
-    }
-
-    [Fact]
-    public void SlaProjection_DistinguishesNearDueOverduePausedAndMet()
-    {
-        var due = new DateTimeOffset(2026, 7, 20, 15, 0, 0, TimeSpan.Zero);
-        var request = new ExternalRequest
-        {
-            WorkItem = new WorkItem(),
-            SlaPolicySnapshotJson = JsonSerializer.Serialize(WeekdayPolicy, SlaCalculator.JsonOptions),
-            FirstResponseDueAt = due,
-            ResolutionDueAt = due.AddHours(4)
-        };
-
-        Assert.Equal(SlaStatus.NearDue,
-            SlaCalculator.MapRequest(request, due.AddMinutes(-30)).FirstResponse.Status);
-        Assert.Equal(SlaStatus.Overdue,
-            SlaCalculator.MapRequest(request, due.AddMinutes(1)).FirstResponse.Status);
-
-        request.SlaPausedAt = due.AddMinutes(-10);
-        Assert.Equal(SlaStatus.Paused,
-            SlaCalculator.MapRequest(request, due.AddHours(1)).FirstResponse.Status);
-
-        request.SlaPausedAt = null;
-        request.FirstRespondedAt = due.AddMinutes(-5);
-        Assert.Equal(SlaStatus.Met,
-            SlaCalculator.MapRequest(request, due.AddHours(1)).FirstResponse.Status);
-    }
 
     [Fact]
     public void CustomFields_ValidateEveryExtendedDataKind()
@@ -122,7 +58,8 @@ public class SlaReportingAndCustomFieldTests
 
         Assert.DoesNotContain(reportProperties,
             property => forbidden.Any(term => property.Contains(term, StringComparison.OrdinalIgnoreCase)));
-        Assert.Equal(8, Enum.GetValues<ReportDataSource>().Length);
+        // 7 e nao 8: a fonte de dados Slas saiu com a remocao do SLA (D83).
+        Assert.Equal(7, Enum.GetValues<ReportDataSource>().Length);
         Assert.Equal(7, Enum.GetValues<ReportVisualization>().Length);
         Assert.Contains(ReportMetricOperation.PlannedVersusActual,
             Enum.GetValues<ReportMetricOperation>());

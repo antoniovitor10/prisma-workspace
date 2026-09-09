@@ -9,7 +9,6 @@ import type { ProjectSummary } from './Projects';
 import { workNatureOptions, workTypeOptions } from './projectClassification';
 import { ProjectWorkflowSettings } from '../features/workflow/ProjectWorkflowSettings';
 import { ExternalPortalSettings } from '../features/portal/ExternalPortalSettings';
-import { ProjectSlaSettings } from '../features/portal/ProjectSlaSettings';
 import { Page as BasePage } from '../components/PageLayout';
 
 interface OrganizationMember { userId: string; name: string; role: number; isActive: boolean; }
@@ -125,6 +124,5 @@ export function ProjectSettings() {
     <Section><header><Clock3 size={16}/><h2>Histórico do projeto</h2></header><History>{historyQuery.data?.map(item=><Event key={item.id}><strong>{item.kind.replaceAll('_',' ')}</strong><small>{new Date(item.createdAt).toLocaleString('pt-BR')} · {memberNames.get(item.actorId)??item.actorId}</small></Event>)}{!historyQuery.data?.length&&<Empty>Nenhuma alteração administrativa registrada.</Empty>}</History></Section>
     <ProjectWorkflowSettings projectId={project.id}/>
     <ExternalPortalSettings project={project}/>
-    <ProjectSlaSettings projectId={project.id}/>
   </Grid></Page>;
 }

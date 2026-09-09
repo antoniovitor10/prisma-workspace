@@ -57,7 +57,6 @@ public class AppDbContext : IdentityDbContext
     public DbSet<ProjectTag> ProjectTags => Set<ProjectTag>();
     public DbSet<ProjectCustomFieldDefinition> ProjectCustomFields => Set<ProjectCustomFieldDefinition>();
     public DbSet<ProjectEvent> ProjectEvents => Set<ProjectEvent>();
-    public DbSet<ProjectSlaPolicy> ProjectSlaPolicies => Set<ProjectSlaPolicy>();
     public DbSet<Sprint> Sprints => Set<Sprint>();
     public DbSet<SprintCapacity> SprintCapacities => Set<SprintCapacity>();
     public DbSet<SprintItemSnapshot> SprintItemSnapshots => Set<SprintItemSnapshot>();
@@ -168,7 +167,6 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<ProjectTag>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<ProjectCustomFieldDefinition>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<ProjectEvent>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
-        builder.Entity<ProjectSlaPolicy>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkflowStatus>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkflowTransition>().HasQueryFilter(x => x.SourceStatus.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<Sprint>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
@@ -219,7 +217,7 @@ public class AppDbContext : IdentityDbContext
     private static readonly HashSet<string> AuditedEntityTypes = new(StringComparer.Ordinal)
     {
         nameof(WorkItem), nameof(ExternalRequest), nameof(Project), nameof(ProjectMember),
-        nameof(ProjectTeam), nameof(ProjectCustomFieldDefinition), nameof(ProjectSlaPolicy),
+        nameof(ProjectTeam), nameof(ProjectCustomFieldDefinition),
         nameof(OrganizationMember), nameof(PermissionGrant), nameof(Sprint), nameof(SprintCapacity),
         nameof(WorkflowStatus), nameof(WorkflowTransition), nameof(Stage), nameof(TimeEntry),
         nameof(OrganizationWorkflowTemplate), nameof(OrganizationWorkflowStatus), nameof(OrganizationWorkflowTransition),

@@ -123,35 +123,5 @@ public sealed class NotificationReminderWorker : BackgroundService
         });
         await publisher.PublishManyAsync(taskMessages, cancellationToken);
 
-        var requests = await db.ExternalRequests.IgnoreQueryFilters().AsNoTracking()
-            .Include(x => x.WorkItem).ThenInclude(x => x.Assignees)
-            .Include(x => x.WorkItem).ThenInclude(x => x.Board).ThenInclude(x => x.Project)
-            .Where(x => x.SlaPausedAt == null && x.SlaPolicySnapshotJson != null
-                && ((!x.FirstRespondedAt.HasValue && x.FirstResponseDueAt.HasValue
-                        && x.FirstResponseDueAt <= now.AddHours(2))
-                    || (!x.WorkItem.CompletedAt.HasValue && x.ResolutionDueAt.HasValue
-                        && x.ResolutionDueAt <= now.AddHours(2))))
-            .OrderBy(x => x.ResolutionDueAt).Take(300).ToListAsync(cancellationToken);
-        var slaMessages = new List<NotificationEnvelope>();
-        foreach (var request in requests)
-        {
-            var recipients = request.WorkItem.Assignees.Select(x => x.UserId)
-                .Append(request.WorkItem.ResponsibleId ?? string.Empty)
-                .Append(request.WorkItem.Board.Project?.OwnerId ?? string.Empty)
-                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
-            var dueAt = !request.FirstRespondedAt.HasValue ? request.FirstResponseDueAt : request.ResolutionDueAt;
-            if (!dueAt.HasValue) continue;
-            var overdue = dueAt <= now;
-            var type = overdue ? NotificationType.SlaOverdue : NotificationType.SlaNearDue;
-            foreach (var userId in recipients)
-                slaMessages.Add(new NotificationEnvelope(
-                    request.WorkItem.Board.OrganizationId, userId, type,
-                    overdue ? "SLA vencido" : "SLA próximo do vencimento",
-                    $"A solicitação {request.Protocol} exige atenção da equipe.",
-                    $"/requests?request={request.Id}", request.WorkItemId, request.Id,
-                    request.WorkItem.Board.ProjectId,
-                    DeduplicationKey: $"sla:{request.Id}:{dueAt:yyyyMMddHHmm}:{type}"));
-        }
-        await publisher.PublishManyAsync(slaMessages, cancellationToken);
     }
 }

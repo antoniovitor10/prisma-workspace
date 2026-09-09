@@ -58,7 +58,6 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IMyWorkRepository, MyWorkRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IExternalPortalRepository, ExternalPortalRepository>();
-        services.AddScoped<ISlaRepository, SlaRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();

@@ -8,7 +8,6 @@ using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using Prisma.Workspace.Application.Features.Workflow;
 using Prisma.Workspace.Application.Features.ExternalPortal;
-using Prisma.Workspace.Application.Features.Sla;
 using FluentValidation;
 using MediatR;
 
@@ -39,7 +38,6 @@ public record WorkItemExternalCommunicationDto(
     int? Rating,
     string? RatingComment,
     DateTimeOffset? CompletionConfirmedAt,
-    ExternalRequestSlaDto Sla,
     IReadOnlyList<ExternalRequestMessageDto> Messages);
 
 public record WorkItemDetailsDto(
@@ -182,7 +180,6 @@ public class GetWorkItemDetailsQueryHandler : IRequestHandler<GetWorkItemDetails
                 item.ExternalRequest.Rating,
                 item.ExternalRequest.RatingComment,
                 item.ExternalRequest.CompletionConfirmedAt,
-                SlaCalculator.MapRequest(item.ExternalRequest),
                 item.ExternalRequest.Messages.OrderBy(x => x.CreatedAt)
                     .Select(x => new ExternalRequestMessageDto(
                         x.Id, x.AuthorType, x.AuthorName, x.Content, x.CreatedAt)).ToList()),

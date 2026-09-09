@@ -42,7 +42,6 @@ public class Project : IOrganizationOwned
     public ICollection<ProjectCustomFieldDefinition> CustomFields { get; set; } = new List<ProjectCustomFieldDefinition>();
     public ICollection<ProjectEvent> Events { get; set; } = new List<ProjectEvent>();
     public ICollection<WorkflowStatus> WorkflowStatuses { get; set; } = new List<WorkflowStatus>();
-    public ProjectSlaPolicy? SlaPolicy { get; set; }
 
     public static Project Criar(
         string chave,

@@ -71,7 +71,6 @@ export interface WorkItemExternalCommunication {
   rating?: number;
   ratingComment?: string;
   completionConfirmedAt?: string;
-  sla: import('./portal').ExternalRequestSla;
   messages: import('./portal').ExternalRequestMessage[];
 }
 

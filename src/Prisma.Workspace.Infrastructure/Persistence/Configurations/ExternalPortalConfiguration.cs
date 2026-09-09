@@ -37,13 +37,10 @@ public class ExternalRequestConfiguration : IEntityTypeConfiguration<ExternalReq
         builder.Property(x => x.TriageStatus).HasConversion<int>()
             .HasDefaultValue(Prisma.Workspace.Domain.Enums.ExternalRequestTriageStatus.New);
         builder.Property(x => x.RatingComment).HasMaxLength(1000);
-        builder.Property(x => x.SlaPolicySnapshotJson).HasColumnType("nvarchar(max)");
         builder.HasIndex(x => x.Protocol).IsUnique();
         builder.HasIndex(x => x.WorkItemId).IsUnique();
         builder.HasIndex(x => x.ExternalFormId);
         builder.HasIndex(x => new { x.ExternalPortalId, x.CreatedAt });
-        builder.HasIndex(x => x.FirstResponseDueAt);
-        builder.HasIndex(x => x.ResolutionDueAt);
         builder.HasOne(x => x.ExternalPortal).WithMany(x => x.Requests)
             .HasForeignKey(x => x.ExternalPortalId).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne(x => x.WorkItem).WithOne(x => x.ExternalRequest)

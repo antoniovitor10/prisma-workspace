@@ -1,5 +1,4 @@
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using MediatR;
@@ -130,19 +129,6 @@ public sealed class GetMyWorkDashboardQueryHandler
         result.AddRange(approvals.Take(8).Select(x => new MyWorkNotificationDto(
             "approval", "info", $"Aprovação pendente em #{x.WorkItemNumber}",
             x.WorkItemTitle, x.WorkItemId, x.CreatedAt)));
-        result.AddRange(sourceTasks.Where(x => x.ExternalRequest is not null && x.CompletedAt is null)
-            .Select(x => new { Item = x, Sla = SlaCalculator.MapRequest(x.ExternalRequest!) })
-            .Where(x => x.Sla.AlertsEnabled && (x.Sla.FirstResponse.Status is SlaStatus.NearDue or SlaStatus.Overdue
-                || x.Sla.Resolution.Status is SlaStatus.NearDue or SlaStatus.Overdue))
-            .Take(8)
-            .Select(x => new MyWorkNotificationDto(
-                "sla",
-                x.Sla.FirstResponse.Status == SlaStatus.Overdue || x.Sla.Resolution.Status == SlaStatus.Overdue
-                    ? "danger" : "warning",
-                $"SLA exige atenção em #{x.Item.Number}",
-                x.Item.Title,
-                x.Item.Id,
-                now)));
         return result.OrderByDescending(x => x.OccurredAt).Take(24).ToList();
     }
 }
