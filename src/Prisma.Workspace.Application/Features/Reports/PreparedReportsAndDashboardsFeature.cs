@@ -114,8 +114,8 @@ public class GetPreparedReportsQueryHandler
             Breakdown(periodItems, x => (x.TeamId ?? x.Board.TeamId)?.ToString() ?? "unassigned",
                 key => periodItems.FirstOrDefault(x => (x.TeamId ?? x.Board.TeamId)?.ToString() == key)?.Team?.Name
                     ?? periodItems.FirstOrDefault(x => x.Board.TeamId?.ToString() == key)?.Board.Team?.Name ?? "Sem equipe"),
-            Breakdown(periodItems, x => x.Board.ProjectId?.ToString() ?? "legacy",
-                key => periodItems.FirstOrDefault(x => x.Board.ProjectId?.ToString() == key)?.Board.Project?.Name ?? "Sem projeto"),
+            Breakdown(periodItems, x => x.Board.ProjectId.ToString(),
+                key => periodItems.FirstOrDefault(x => x.Board.ProjectId.ToString() == key)?.Board.Project?.Name ?? "Sem projeto"),
             Breakdown(periodItems, x => x.CompletedAt.HasValue ? "completed" : x.WorkflowStatus?.Name ?? x.Stage?.Name ?? "backlog",
                 key => key == "completed" ? "Concluída" : key),
             Breakdown(periodItems, x => x.Priority.ToString(), key => PriorityLabel(key)),

@@ -4,33 +4,25 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
-using Prisma.Workspace.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace Prisma.Workspace.Tests;
 
 public class BoardProjectionCommandTests
 {
     [Fact]
-    public async Task CreateBoard_ComProjetoValido_CriaBoardEBacklogEConfiguraDefault()
+    public async Task CreateBoard_ComProjetoValido_CriaBoardEConfiguraDefaultSemCriarStage()
     {
         var project = new Project { Id = Guid.NewGuid(), Name = "Projeto", Key = "PRJ", OwnerId = "admin" };
         var boards = new BoardRepositoryFake();
-        var stages = new StageRepositoryFake();
         var projects = new ProjectRepositoryFake(project);
         var access = new ProjectAccessFake();
-        var handler = new CreateBoardCommandHandler(boards, stages, projects, access);
+        var handler = new CreateBoardCommandHandler(boards, projects, access);
 
         var boardId = await handler.Handle(new CreateBoardCommand("Operação", "admin", project.Id), CancellationToken.None);
 
         var board = Assert.Single(boards.Added);
         Assert.Equal(boardId, board.Id);
         Assert.Equal(project.Id, board.ProjectId);
-        var backlog = Assert.Single(stages.Added);
-        Assert.Equal(boardId, backlog.BoardId);
-        Assert.Equal("Backlog", backlog.Name);
-        Assert.Equal(StageCategory.Ready, backlog.Category);
-        Assert.Equal(100, backlog.Position);
         Assert.Equal(boardId, project.DefaultBoardId);
         Assert.Equal(1, projects.SaveCount);
     }
@@ -40,37 +32,35 @@ public class BoardProjectionCommandTests
     {
         var projectId = Guid.NewGuid();
         var boards = new BoardRepositoryFake();
-        var stages = new StageRepositoryFake();
         var projects = new ProjectRepositoryFake();
         var access = new ProjectAccessFake(new UnauthorizedAccessException("Acesso negado"));
-        var handler = new CreateBoardCommandHandler(boards, stages, projects, access);
+        var handler = new CreateBoardCommandHandler(boards, projects, access);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             handler.Handle(new CreateBoardCommand("Proibido", "user", projectId), CancellationToken.None));
 
         Assert.Empty(boards.Added);
-        Assert.Empty(stages.Added);
         Assert.Equal(0, projects.SaveCount);
     }
 
     [Fact]
-    public async Task ReorderStages_AlteraSomenteStagesInformadasDoBoard()
+    public async Task ReorderStages_AlteraSomenteStagesInformadasDoProjeto()
     {
-        var board = NewBoard(Guid.NewGuid());
-        var first = NewStage(board.Id, 100);
-        var second = NewStage(board.Id, 200);
-        var untouched = NewStage(board.Id, 300);
-        var otherBoardStage = NewStage(Guid.NewGuid(), 400);
-        var stages = new StageRepositoryFake(first, second, untouched, otherBoardStage);
-        var workItem = new WorkItem { Id = Guid.NewGuid(), BoardId = board.Id, StageId = first.Id, WorkflowStatusId = Guid.NewGuid() };
-        var handler = new ReorderStagesCommandHandler(stages, new BoardRepositoryFake(board));
+        var project = new Project { Id = Guid.NewGuid(), Name = "Projeto", Key = "PRJ", OwnerId = "admin" };
+        var first = NewStage(project.Id, 100);
+        var second = NewStage(project.Id, 200);
+        var untouched = NewStage(project.Id, 300);
+        var otherProjectStage = NewStage(Guid.NewGuid(), 400);
+        var stages = new StageRepositoryFake(first, second, untouched, otherProjectStage);
+        var workItem = new WorkItem { Id = Guid.NewGuid(), BoardId = Guid.NewGuid(), StageId = first.Id, WorkflowStatusId = Guid.NewGuid() };
+        var handler = new ReorderStagesCommandHandler(stages, new ProjectRepositoryFake(project));
 
-        await handler.Handle(new ReorderStagesCommand(board.Id, [second.Id, first.Id], "admin"), CancellationToken.None);
+        await handler.Handle(new ReorderStagesCommand(project.Id, [second.Id, first.Id], "admin"), CancellationToken.None);
 
         Assert.Equal(100, second.Position);
         Assert.Equal(200, first.Position);
         Assert.Equal(300, untouched.Position);
-        Assert.Equal(400, otherBoardStage.Position);
+        Assert.Equal(400, otherProjectStage.Position);
         Assert.Equal([second.Id, first.Id], stages.Updated.Select(stage => stage.Id).ToArray());
         Assert.Equal(first.Id, workItem.StageId);
         Assert.NotNull(workItem.WorkflowStatusId);
@@ -79,26 +69,26 @@ public class BoardProjectionCommandTests
     [Fact]
     public async Task ReorderStages_ComListaVazia_RejeitaSemUpdate()
     {
-        var board = NewBoard(Guid.NewGuid());
-        var stages = new StageRepositoryFake(NewStage(board.Id, 100));
-        var handler = new ReorderStagesCommandHandler(stages, new BoardRepositoryFake(board));
+        var project = new Project { Id = Guid.NewGuid(), Name = "Projeto", Key = "PRJ", OwnerId = "admin" };
+        var stages = new StageRepositoryFake(NewStage(project.Id, 100));
+        var handler = new ReorderStagesCommandHandler(stages, new ProjectRepositoryFake(project));
 
         await Assert.ThrowsAsync<DomainException>(() =>
-            handler.Handle(new ReorderStagesCommand(board.Id, [], "admin"), CancellationToken.None));
+            handler.Handle(new ReorderStagesCommand(project.Id, [], "admin"), CancellationToken.None));
 
         Assert.Empty(stages.Updated);
     }
 
     [Fact]
-    public async Task ReorderStages_ComStageDeOutroBoard_RejeitaSemUpdate()
+    public async Task ReorderStages_ComStageDeOutroProjeto_RejeitaSemUpdate()
     {
-        var board = NewBoard(Guid.NewGuid());
-        var ownStage = NewStage(board.Id, 100);
+        var project = new Project { Id = Guid.NewGuid(), Name = "Projeto", Key = "PRJ", OwnerId = "admin" };
+        var ownStage = NewStage(project.Id, 100);
         var stages = new StageRepositoryFake(ownStage);
-        var handler = new ReorderStagesCommandHandler(stages, new BoardRepositoryFake(board));
+        var handler = new ReorderStagesCommandHandler(stages, new ProjectRepositoryFake(project));
 
         await Assert.ThrowsAsync<DomainException>(() =>
-            handler.Handle(new ReorderStagesCommand(board.Id, [Guid.NewGuid()], "admin"), CancellationToken.None));
+            handler.Handle(new ReorderStagesCommand(project.Id, [Guid.NewGuid()], "admin"), CancellationToken.None));
 
         Assert.Empty(stages.Updated);
         Assert.Equal(100, ownStage.Position);
@@ -111,7 +101,7 @@ public class BoardProjectionCommandTests
         var source = NewBoard(project.Id);
         var destination = NewBoard(project.Id);
         project.DefaultBoardId = source.Id;
-        var backlog = NewStage(destination.Id, 100);
+        var backlog = NewStage(project.Id, 100);
         backlog.Name = "Backlog";
         backlog.Category = StageCategory.Ready;
         var item = new WorkItem { Id = Guid.NewGuid(), BoardId = source.Id, StageId = Guid.NewGuid(), Position = 50 };
@@ -135,9 +125,9 @@ public class BoardProjectionCommandTests
         Id = Guid.NewGuid(), ProjectId = projectId, Name = "Quadro", CreatedAt = DateTimeOffset.UtcNow
     };
 
-    private static Stage NewStage(Guid boardId, double position) => new()
+    private static Stage NewStage(Guid projectId, double position) => new()
     {
-        Id = Guid.NewGuid(), BoardId = boardId, Name = "Etapa", Position = position, CreatedAt = DateTimeOffset.UtcNow
+        Id = Guid.NewGuid(), ProjectId = projectId, Name = "Etapa", Position = position, CreatedAt = DateTimeOffset.UtcNow
     };
 
     private sealed class BoardRepositoryFake(params Board[] boards) : IBoardRepository
@@ -159,7 +149,7 @@ public class BoardProjectionCommandTests
         public List<Stage> Added { get; } = [];
         public List<Stage> Updated { get; } = [];
         public Task<Stage?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(_stages.FirstOrDefault(stage => stage.Id == id));
-        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(stage => stage.BoardId == boardId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(stage => stage.ProjectId == projectId).ToList());
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default) { Added.Add(stage); _stages.Add(stage); return Task.FromResult(stage); }
         public Task UpdateAsync(Stage stage, CancellationToken cancellationToken = default) { Updated.Add(stage); return Task.CompletedTask; }
         public Task DeleteAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -182,6 +172,8 @@ public class BoardProjectionCommandTests
     {
         public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default) => Task.FromResult<ProjectRole?>(failure is null ? ProjectRole.ProjectAdmin : null);
         public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default) => failure is null ? Task.CompletedTask : Task.FromException(failure);
+        public Task<IReadOnlySet<Guid>> GetAccessibleProjectIdsAsync(IEnumerable<Guid> projectIds, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlySet<Guid>>(projectIds.ToHashSet());
     }
 
     private sealed class WorkItemRepositoryFake(params WorkItem[] exclusiveItems) : IWorkItemRepository

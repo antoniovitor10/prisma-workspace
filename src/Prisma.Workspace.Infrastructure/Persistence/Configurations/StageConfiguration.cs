@@ -16,8 +16,6 @@ public class StageConfiguration : IEntityTypeConfiguration<Stage>
 
         builder.HasKey(s => s.Id);
 
-        // --- Propriedades escalares ---
-
         builder.Property(s => s.Name)
             .IsRequired()
             .HasMaxLength(200);
@@ -32,18 +30,13 @@ public class StageConfiguration : IEntityTypeConfiguration<Stage>
             .HasConversion<int>()
             .IsRequired();
 
-        // --- Índices ---
-
-        builder.HasIndex(s => s.BoardId);
+        builder.HasIndex(s => s.ProjectId);
         builder.HasIndex(s => s.WorkflowStatusId);
+        builder.HasIndex(s => new { s.ProjectId, s.Position });
 
-        // --- Relacionamentos ---
-
-        // Board → Stages já configurado em BoardConfiguration (lado principal).
-        // Aqui apenas reforçamos a FK para clareza.
-        builder.HasOne(s => s.Board)
-            .WithMany(b => b.Stages)
-            .HasForeignKey(s => s.BoardId)
+        builder.HasOne(s => s.Project)
+            .WithMany(p => p.Stages)
+            .HasForeignKey(s => s.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(s => s.WorkItems)

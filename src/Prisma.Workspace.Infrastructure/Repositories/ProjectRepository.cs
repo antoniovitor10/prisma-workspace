@@ -28,7 +28,7 @@ public class ProjectRepository : IProjectRepository
             .OrderBy(x => x.Name).ToListAsync(cancellationToken);
 
     public Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _context.Projects.Include(x => x.Boards).ThenInclude(x => x.Stages)
+        => _context.Projects.Include(x => x.Boards).Include(x => x.Stages)
             .Include(x => x.WorkflowStatuses).Include(x => x.WorkflowTemplate)
             .Include(x => x.Teams).ThenInclude(x => x.Team)
             .Include(x => x.Tags).ThenInclude(x => x.Tag)
@@ -37,7 +37,7 @@ public class ProjectRepository : IProjectRepository
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<Project?> GetByIdWithMembersAsync(Guid id, CancellationToken cancellationToken = default)
-        => _context.Projects.Include(x => x.Members).Include(x => x.Boards).ThenInclude(x => x.Stages)
+        => _context.Projects.Include(x => x.Members).Include(x => x.Boards).Include(x => x.Stages)
             .Include(x => x.WorkflowStatuses).Include(x => x.WorkflowTemplate)
             .Include(x => x.Teams).ThenInclude(x => x.Team)
             .Include(x => x.Tags).ThenInclude(x => x.Tag)

@@ -44,10 +44,10 @@ public sealed class WorkflowRepository : IWorkflowRepository
             && x.TargetStatusId == targetStatusId, ct);
 
     public Task<Board?> GetBoardAsync(Guid boardId, CancellationToken ct = default)
-        => _context.Boards.Include(x => x.Stages).FirstOrDefaultAsync(x => x.Id == boardId, ct);
+        => _context.Boards.FirstOrDefaultAsync(x => x.Id == boardId, ct);
 
     public Task<Stage?> GetStageAsync(Guid stageId, CancellationToken ct = default)
-        => _context.Stages.Include(x => x.Board).FirstOrDefaultAsync(x => x.Id == stageId, ct);
+        => _context.Stages.Include(x => x.Project).FirstOrDefaultAsync(x => x.Id == stageId, ct);
 
     public Task<int> CountActiveItemsInStageAsync(
         Guid stageId, Guid? excludingWorkItemId = null, CancellationToken ct = default)

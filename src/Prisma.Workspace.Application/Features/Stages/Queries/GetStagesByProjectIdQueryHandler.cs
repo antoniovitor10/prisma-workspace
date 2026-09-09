@@ -6,33 +6,33 @@ using MediatR;
 namespace Prisma.Workspace.Application.Features.Stages.Queries;
 
 /// <summary>
-/// Handler da query de listagem de Stages por Board.
+/// Handler da query de listagem de Stages por projeto.
 /// </summary>
-public class GetStagesByBoardIdQueryHandler : IRequestHandler<GetStagesByBoardIdQuery, IReadOnlyList<StageDto>>
+public class GetStagesByProjectIdQueryHandler : IRequestHandler<GetStagesByProjectIdQuery, IReadOnlyList<StageDto>>
 {
     private readonly IStageRepository _stageRepository;
-    private readonly IBoardAccessService _access;
+    private readonly IProjectAccessService _access;
 
-    public GetStagesByBoardIdQueryHandler(
+    public GetStagesByProjectIdQueryHandler(
         IStageRepository stageRepository,
-        IBoardAccessService access)
+        IProjectAccessService access)
     {
         _stageRepository = stageRepository;
         _access = access;
     }
 
     public async Task<IReadOnlyList<StageDto>> Handle(
-        GetStagesByBoardIdQuery request,
+        GetStagesByProjectIdQuery request,
         CancellationToken cancellationToken)
     {
-        await _access.EnsureAsync(request.BoardId, request.ActorId,
-            PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
-        var stages = await _stageRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
+        await _access.EnsureAtLeastAsync(
+            request.ProjectId, request.ActorId, ProjectRole.Viewer, cancellationToken);
+        var stages = await _stageRepository.GetByProjectIdAsync(request.ProjectId, cancellationToken);
 
         return stages.Select(s => new StageDto
         {
             Id = s.Id,
-            BoardId = s.BoardId,
+            ProjectId = s.ProjectId,
             Name = s.Name,
             Position = s.Position,
             WorkflowStatusId = s.WorkflowStatusId,

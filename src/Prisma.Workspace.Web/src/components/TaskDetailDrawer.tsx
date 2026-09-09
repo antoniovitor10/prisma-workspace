@@ -186,7 +186,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
   const detailsQuery=useQuery<WorkItemDetails>({queryKey:['work-item',item?.id],queryFn:()=>api.getWorkItemDetails(item!.id),enabled:Boolean(item)&&realMode,retry:false});
   const details=detailsQuery.data??fallback;
-  const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.boardId],queryFn:()=>api.getStages(details!.boardId),enabled:Boolean(details)&&realMode});
+  const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.projectId],queryFn:()=>api.getStages(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const usersQuery=useQuery<AssignableUser[]>({queryKey:['assignable-users'],queryFn:()=>api.getAssignableUsers(),enabled:realMode});
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});

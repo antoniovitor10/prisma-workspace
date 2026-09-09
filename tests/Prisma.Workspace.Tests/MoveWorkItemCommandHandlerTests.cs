@@ -9,6 +9,7 @@ public class MoveWorkItemCommandHandlerTests
     [Fact]
     public async Task Handle_WhenStageChanges_ClosesCurrentHistoryAndAddsNewHistoryForInsert()
     {
+        var projectId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var sourceStageId = Guid.NewGuid();
         var destinationStageId = Guid.NewGuid();
@@ -25,6 +26,7 @@ public class MoveWorkItemCommandHandlerTests
         {
             Id = currentHistory.WorkItemId,
             BoardId = boardId,
+            Board = new Board { Id = boardId, ProjectId = projectId, Name = "Quadro" },
             StageId = sourceStageId,
             Title = "Card",
             Position = 100,
@@ -37,7 +39,7 @@ public class MoveWorkItemCommandHandlerTests
         var stageRepository = new FakeStageRepository(new Stage
         {
             Id = destinationStageId,
-            BoardId = boardId,
+            ProjectId = projectId,
             Name = "Destino",
             Position = 200,
             CreatedAt = DateTimeOffset.UtcNow
@@ -180,7 +182,7 @@ public class MoveWorkItemCommandHandlerTests
             return Task.FromResult(id == _stage.Id ? _stage : null);
         }
 
-        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid boardId, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

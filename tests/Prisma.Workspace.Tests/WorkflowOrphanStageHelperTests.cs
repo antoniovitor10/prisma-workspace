@@ -38,7 +38,7 @@ public sealed class WorkflowOrphanStageHelperTests
         var column = new Stage
         {
             Id = Guid.NewGuid(),
-            BoardId = Guid.NewGuid(),
+            ProjectId = project.Id,
             Name = "Concluído",
             WorkflowStatusId = obsolete.Id,
             Category = StageCategory.Done,
@@ -72,7 +72,7 @@ public sealed class WorkflowOrphanStageHelperTests
         obsolete.Stages.Add(new Stage
         {
             Id = Guid.NewGuid(),
-            BoardId = Guid.NewGuid(),
+            ProjectId = project.Id,
             Name = "Revisão",
             WorkflowStatusId = obsolete.Id,
             Category = StageCategory.InProgress,

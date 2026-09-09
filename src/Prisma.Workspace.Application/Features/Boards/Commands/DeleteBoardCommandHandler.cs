@@ -10,7 +10,7 @@ namespace Prisma.Workspace.Application.Features.Boards.Commands;
 /// Exclui um quadro do projeto com segurança:
 /// — Proíbe excluir o último quadro.
 /// — Realoca itens exclusivos ao quadro de destino antes de remover.
-/// — Nunca deleta WorkItems.
+/// — Nunca deleta WorkItems. Colunas pertencem ao projeto (D83), não ao quadro.
 /// </summary>
 public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand>
 {
@@ -40,19 +40,13 @@ public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand>
         if (board is null)
             throw new ArgumentException("O quadro especificado não existe.");
 
-        if (!board.ProjectId.HasValue)
-            throw new DomainException("Somente quadros vinculados a projetos podem ser excluídos por este endpoint.");
-
-        // Verifica permissão: somente ProjectAdmin
         await _projectAccess.EnsureAtLeastAsync(
-            board.ProjectId.Value, request.ActorId, ProjectRole.ProjectAdmin, cancellationToken);
+            board.ProjectId, request.ActorId, ProjectRole.ProjectAdmin, cancellationToken);
 
-        // Não pode excluir o único quadro do projeto
-        var boardsDoProject = await _boardRepository.GetByProjectIdAsync(board.ProjectId.Value, cancellationToken);
+        var boardsDoProject = await _boardRepository.GetByProjectIdAsync(board.ProjectId, cancellationToken);
         DomainException.Garantir(boardsDoProject.Count > 1,
             "Não é possível excluir o único quadro do projeto.");
 
-        // Itens exclusivos deste quadro (home = este, sem outros placements)
         var itensExclusivos = await _workItemRepository.GetExclusiveToBoardAsync(request.BoardId, cancellationToken);
 
         if (itensExclusivos.Count > 0)
@@ -65,18 +59,17 @@ public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand>
             DomainException.Garantir(destBoard is not null && destBoard.ProjectId == board.ProjectId,
                 "O quadro de destino não existe ou pertence a outro projeto.");
 
-            // Localiza Backlog no destino
-            var stagesDestino = await _stageRepository.GetByBoardIdAsync(destBoard!.Id, cancellationToken);
-            var backlogDestino = stagesDestino.FirstOrDefault(s =>
+            // Colunas são do projeto — Backlog do fluxo do projeto
+            var stagesDoProjeto = await _stageRepository.GetByProjectIdAsync(destBoard!.ProjectId, cancellationToken);
+            var backlogDestino = stagesDoProjeto.FirstOrDefault(s =>
                     string.Equals(s.Name.Trim(), "Backlog", StringComparison.OrdinalIgnoreCase))
-                ?? stagesDestino.FirstOrDefault(s => s.Category == StageCategory.Ready);
+                ?? stagesDoProjeto.FirstOrDefault(s => s.Category == StageCategory.Ready);
             DomainException.Garantir(backlogDestino is not null,
-                $"O quadro de destino '{destBoard.Name}' não possui uma etapa Backlog (Ready).");
+                $"O projeto do quadro '{destBoard.Name}' não possui uma etapa Backlog (Ready).");
 
             var now = DateTimeOffset.UtcNow;
             foreach (var item in itensExclusivos)
             {
-                // Muda home para o destino
                 item.BoardId = destBoard.Id;
                 item.StageId = backlogDestino!.Id;
                 item.UpdatedAt = now;
@@ -85,8 +78,7 @@ public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand>
             }
         }
 
-        // Atualiza DefaultBoardId do projeto se necessário
-        var project = await _projectRepository.GetByIdAsync(board.ProjectId.Value, cancellationToken);
+        var project = await _projectRepository.GetByIdAsync(board.ProjectId, cancellationToken);
         if (project is not null && project.DefaultBoardId == request.BoardId)
         {
             project.DefaultBoardId = request.DestinationBoardId

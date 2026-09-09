@@ -9,7 +9,7 @@ namespace Prisma.Workspace.Application.Features.Company;
 public class ProjectSummaryDto
 {
     public Guid Id { get; init; }
-    public Guid? ProjectId { get; init; }
+    public Guid ProjectId { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
     public Guid? ClientId { get; init; }
@@ -42,8 +42,8 @@ public class GetCompanyProjectsQueryHandler
             PermissionScope.Organization, cancellationToken: ct);
         var items = await _queries.GetProjectsAsync(ct);
         var accessible = await _projectAccess.GetAccessibleProjectIdsAsync(
-            items.Where(x => x.ProjectId.HasValue).Select(x => x.ProjectId!.Value), request.ActorId, ct);
-        return items.Where(x => x.ProjectId.HasValue && accessible.Contains(x.ProjectId.Value)).ToList();
+            items.Select(x => x.ProjectId), request.ActorId, ct);
+        return items.Where(x => accessible.Contains(x.ProjectId)).ToList();
     }
 }
 

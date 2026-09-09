@@ -146,6 +146,11 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
             if (template is not null)
                 WorkflowTemplateProjection.ApplyToNewProject(project, template);
         }
+
+        // Fluxo do projeto: colunas espelham status ativos do template (ou Backlog mínimo).
+        // Criar quadro NÃO cria mais colunas (D83).
+        EnsureProjectStages(project);
+
         project.Events.Add(ProjectEvent.Register(
             project.Id, request.OwnerId, "created",
             JsonSerializer.Serialize(new { project.Name, project.Key, project.Methodology, project.Nature, project.WorkType })));
@@ -198,6 +203,47 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
             var candidata = $"{iniciais}{sufixo}";
             if (!await _projects.KeyExistsAsync(candidata, ct)) return candidata;
         }
+    }
+
+    /// <summary>
+    /// Garante colunas no projeto a partir dos status de workflow (ou um Backlog Ready mínimo).
+    /// </summary>
+    private static void EnsureProjectStages(Project project)
+    {
+        if (project.Stages.Count > 0) return;
+
+        var statuses = project.WorkflowStatuses
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.Position)
+            .ToList();
+
+        if (statuses.Count > 0)
+        {
+            foreach (var status in statuses)
+            {
+                project.Stages.Add(new Stage
+                {
+                    Id = Guid.NewGuid(),
+                    ProjectId = project.Id,
+                    WorkflowStatusId = status.Id,
+                    Name = status.Name,
+                    Position = status.Position,
+                    Category = status.Category,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+            return;
+        }
+
+        project.Stages.Add(new Stage
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = project.Id,
+            Name = "Backlog",
+            Position = 100,
+            Category = StageCategory.Ready,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
     }
 }
 

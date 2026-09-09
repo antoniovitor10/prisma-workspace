@@ -63,7 +63,7 @@ public class ApplyExternalRequestTriageCommandHandler
         var externalRequest = await _portals.GetRequestByProtocolAsync(request.Protocol.Trim(), ct)
             ?? throw new NaoEncontradoException("Solicitação");
         var item = externalRequest.WorkItem;
-        var currentProjectId = item.Board.ProjectId!.Value;
+        var currentProjectId = item.Board.ProjectId;
         await _access.EnsureAtLeastAsync(currentProjectId, request.ActorId, ProjectRole.Member, ct);
         var currentProject = await _projects.GetByIdWithMembersAsync(currentProjectId, ct)
             ?? throw new NaoEncontradoException("Projeto");
@@ -198,8 +198,8 @@ public class ApplyExternalRequestTriageCommandHandler
 
             case ExternalRequestTriageAction.SentToKanban:
                 var stage = request.StageId.HasValue
-                    ? item.Board.Stages.FirstOrDefault(x => x.Id == request.StageId)
-                    : item.Board.Stages.OrderBy(x => x.Position).FirstOrDefault();
+                    ? currentProject.Stages.FirstOrDefault(x => x.Id == request.StageId)
+                    : currentProject.Stages.OrderBy(x => x.Position).FirstOrDefault();
                 DomainException.Garantir(stage is not null, "Selecione uma coluna válida do Kanban.");
                 item.StageId = stage!.Id;
                 item.Stage = stage;
@@ -266,7 +266,7 @@ public class ApplyExternalRequestTriageCommandHandler
             : await _portals.GetWorkItemByNumberAsync(request.RelatedWorkItemNumber!.Value, ct);
         target = target
             ?? throw new NaoEncontradoException("Tarefa relacionada");
-        await _access.EnsureAtLeastAsync(target.Board.ProjectId!.Value,
+        await _access.EnsureAtLeastAsync(target.Board.ProjectId,
             request.ActorId, ProjectRole.Viewer, ct);
         DomainException.Garantir(!await _portals.WorkItemLinkExistsAsync(
                 source.Id, target.Id, type, ct),

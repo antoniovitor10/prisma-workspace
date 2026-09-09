@@ -116,9 +116,7 @@ public class AssignUserCommandHandler : IRequestHandler<AssignUserCommand>
                 item.Board.OrganizationId, request.TargetUserId, NotificationType.TaskAssigned,
                 "Tarefa atribuída a você",
                 $"{actorName} atribuiu #{item.Number} {item.Title} a você.",
-                item.Board.ProjectId.HasValue
-                    ? $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}"
-                    : $"/boards/{item.BoardId}?item={item.Id}",
+                $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}",
                 WorkItemId: item.Id, ProjectId: item.Board.ProjectId), cancellationToken);
     }
 }

@@ -644,18 +644,18 @@ export const api = {
     return this.request(`/api/Boards/${boardId}/lead-time`);
   },
 
-  // Stages
-  async getStages(boardId: string) {
-    return this.request(`/api/Stages/board/${boardId}`);
+  // Stages (fluxo do projeto — D83)
+  async getStages(projectId: string) {
+    return this.request(`/api/Stages/project/${projectId}`);
   },
 
   async createStage(
-    boardId: string, name: string, position: number,
+    projectId: string, name: string, position: number,
     options?: { workflowStatusId?: string; category?: number; color?: string }
   ) {
     return this.request('/api/Stages', {
       method: 'POST',
-      body: JSON.stringify({ boardId, name, position, ...options })
+      body: JSON.stringify({ projectId, name, position, ...options })
     });
   },
 
@@ -766,8 +766,8 @@ export const api = {
     return this.request(`/api/Boards/${id}${query}`, { method: 'DELETE' });
   },
 
-  async reorderStages(boardId: string, orderedStageIds: string[]) {
-    return this.request(`/api/Stages/board/${boardId}/order`, {
+  async reorderStages(projectId: string, orderedStageIds: string[]) {
+    return this.request(`/api/Stages/project/${projectId}/order`, {
       method: 'PUT',
       body: JSON.stringify(orderedStageIds)
     });

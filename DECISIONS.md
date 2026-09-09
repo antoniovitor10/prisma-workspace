@@ -508,6 +508,8 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   permissões. Esta decisão sucede a `SPEC-BOARDS-STAGES-WIP` pela `SPEC-BOARD-AS-VIEW`. `G-SPEC`,
   `G-MIGRATION` e `G-WORKFLOW` aprovados pela instrução direta do PO; `G-HISTORY` não se aplica porque
   `StageHistory` e `TaskEvent` não mudam de estrutura. (2026-09-08)
+  **Constatação em implementação Stage→Project (2026-09-09):** `PermissionScope.Board` permanece no enum e
+  no código até decisão explícita do PO no lote de perfis — **não remover nesta migration**.
 
 - **D84 — SUCEDE E REVOGA D81.** Sprint volta a pertencer a **um único projeto**. O PO determinou em
   2026-09-09, textualmente: *"a sprint pode ter apenas 1 projeto, mas 1 projeto pode ter várias sprints"*.

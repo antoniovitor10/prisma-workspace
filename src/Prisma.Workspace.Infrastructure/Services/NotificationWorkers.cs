@@ -117,7 +117,7 @@ public sealed class NotificationReminderWorker : BackgroundService
                 item.Board.OrganizationId, userId, type,
                 isOverdue ? "Tarefa atrasada" : "Prazo próximo",
                 $"#{item.Number} {item.Title} vence em {item.DueDate:dd/MM/yyyy}.",
-                projectId.HasValue ? $"/projects/{projectId}/backlog?item={item.Id}" : "/my-work",
+                projectId != Guid.Empty ? $"/projects/{projectId}/backlog?item={item.Id}" : "/my-work",
                 WorkItemId: item.Id, ProjectId: projectId,
                 DeduplicationKey: $"task-due:{item.Id}:{item.DueDate:yyyyMMdd}:{type}"));
         });

@@ -26,7 +26,7 @@ public sealed class GetSavedFiltersQueryHandler
     public async Task<IReadOnlyList<SavedFilterDto>> Handle(GetSavedFiltersQuery request, CancellationToken ct)
     {
         var board = await ProductivityAccess.GetBoardAsync(_repository, request.BoardId, ct);
-        await _access.EnsureAtLeastAsync(board.ProjectId!.Value, request.UserId, ProjectRole.Viewer, ct);
+        await _access.EnsureAtLeastAsync(board.ProjectId, request.UserId, ProjectRole.Viewer, ct);
         return (await _repository.GetFiltersAsync(request.BoardId, request.UserId, ct))
             .Select(x => new SavedFilterDto(x.Id, x.Name, x.FilterJson))
             .ToList();
@@ -68,7 +68,7 @@ public sealed class CreateSavedFilterCommandHandler
         }
 
         var board = await ProductivityAccess.GetBoardAsync(_repository, request.BoardId, ct);
-        await _access.EnsureAtLeastAsync(board.ProjectId!.Value, request.UserId, ProjectRole.Member, ct);
+        await _access.EnsureAtLeastAsync(board.ProjectId, request.UserId, ProjectRole.Member, ct);
         var filter = new SavedFilter
         {
             Id = Guid.NewGuid(),
@@ -96,7 +96,7 @@ public sealed class DeleteSavedFilterCommandHandler : IRequestHandler<DeleteSave
     public async Task Handle(DeleteSavedFilterCommand request, CancellationToken ct)
     {
         var board = await ProductivityAccess.GetBoardAsync(_repository, request.BoardId, ct);
-        await _access.EnsureAtLeastAsync(board.ProjectId!.Value, request.UserId, ProjectRole.Member, ct);
+        await _access.EnsureAtLeastAsync(board.ProjectId, request.UserId, ProjectRole.Member, ct);
         await _repository.DeleteFilterAsync(request.BoardId, request.Id, request.UserId, ct);
     }
 }
@@ -130,7 +130,7 @@ public sealed class GetAutomationRulesQueryHandler
         CancellationToken ct)
     {
         var board = await ProductivityAccess.GetBoardAsync(_repository, request.BoardId, ct);
-        var projectId = board.ProjectId!.Value;
+        var projectId = board.ProjectId;
         await _access.EnsureAtLeastAsync(projectId, request.UserId, ProjectRole.Viewer, ct);
         await _permissions.EnsureAsync(
             request.UserId, PlatformPermission.View, PermissionScope.Project, projectId, ct);
@@ -301,8 +301,10 @@ public static class AutomationRuleGuard
         CancellationToken ct)
     {
         var trigger = await repository.GetStageAsync(triggerStageId, ct);
-        DomainException.Garantir(trigger is not null && trigger.BoardId == boardId,
-            "A etapa de disparo não pertence ao quadro.");
+        var board = await repository.GetBoardAsync(boardId, ct);
+        DomainException.Garantir(board is not null, "Quadro não encontrado.");
+        DomainException.Garantir(trigger is not null && trigger.ProjectId == board.ProjectId,
+            "A etapa de disparo não pertence ao projeto do quadro.");
 
         string normalized;
         switch (actionType)
@@ -316,8 +318,8 @@ public static class AutomationRuleGuard
                 DomainException.Garantir(Guid.TryParse(actionValue, out var destinationId),
                     "A etapa de destino é inválida.");
                 var destination = await repository.GetStageAsync(destinationId, ct);
-                DomainException.Garantir(destination is not null && destination.BoardId == boardId,
-                    "A etapa de destino não pertence ao quadro.");
+                DomainException.Garantir(destination is not null && destination.ProjectId == board.ProjectId,
+                    "A etapa de destino não pertence ao projeto do quadro.");
                 DomainException.Garantir(destinationId != triggerStageId,
                     "A automação não pode mover uma tarefa para a própria etapa de disparo.");
                 normalized = destinationId.ToString();
@@ -447,7 +449,7 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
     public async Task Handle(BulkWorkItemsCommand request, CancellationToken ct)
     {
         var board = await ProductivityAccess.GetBoardAsync(_repository, request.BoardId, ct);
-        var projectId = board.ProjectId!.Value;
+        var projectId = board.ProjectId;
         await _access.EnsureAtLeastAsync(projectId, request.ActorId, ProjectRole.Member, ct);
         await _permissions.EnsureAsync(
             request.ActorId, PermissionFor(request.Action), PermissionScope.Project, projectId, ct);
@@ -505,7 +507,7 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
             case BulkActionType.Move:
                 DomainException.Garantir(targetId.HasValue, "Etapa de destino obrigatória.");
                 stage = await _repository.GetStageAsync(targetId!.Value, ct);
-                DomainException.Garantir(stage is not null && stage.BoardId == request.BoardId,
+                DomainException.Garantir(stage is not null && stage.ProjectId == board.ProjectId,
                     "Etapa de destino inválida.");
                 foreach (var item in items.Where(x => x.StageId != stage.Id))
                     await WorkflowMoveGuard.EnsureAllowedAsync(item, stage, _workflow, ct);
@@ -634,9 +636,7 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
             var detail = request.Action == BulkActionType.Move
                 ? $"movida para {target.Stage!.Name}"
                 : $"alterada por ação em massa ({request.Action})";
-            var link = board.ProjectId.HasValue
-                ? $"/projects/{board.ProjectId}/backlog?item={item.Id}"
-                : $"/boards/{board.Id}?item={item.Id}";
+            var link = $"/projects/{board.ProjectId}/backlog?item={item.Id}";
             envelopes.AddRange(recipients.Select(userId => new NotificationEnvelope(
                 board.OrganizationId,
                 userId,
@@ -681,7 +681,6 @@ internal static class ProductivityAccess
     {
         var board = await repository.GetBoardAsync(boardId, ct)
             ?? throw new NaoEncontradoException("Quadro");
-        DomainException.Garantir(board.ProjectId.HasValue, "Quadro ainda não vinculado a projeto.");
         return board;
     }
 
@@ -693,7 +692,7 @@ internal static class ProductivityAccess
         IPermissionService permissions,
         CancellationToken ct)
     {
-        var projectId = board.ProjectId!.Value;
+        var projectId = board.ProjectId;
         await access.EnsureAtLeastAsync(projectId, actorId, ProjectRole.ProjectAdmin, ct);
         await permissions.EnsureAsync(actorId, permission, PermissionScope.Project, projectId, ct);
     }

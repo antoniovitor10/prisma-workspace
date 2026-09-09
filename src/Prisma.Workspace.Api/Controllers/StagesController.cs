@@ -10,7 +10,7 @@ using Prisma.Workspace.Domain.Enums;
 namespace Prisma.Workspace.Api.Controllers;
 
 /// <summary>
-/// Controller para gerenciar Etapas (colunas do Kanban).
+/// Controller para gerenciar Etapas (colunas do fluxo do projeto).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,36 +26,36 @@ public class StagesController : ControllerBase
     }
 
     /// <summary>
-    /// Retorna todas as colunas/etapas de um Quadro (Board) específico.
+    /// Retorna todas as colunas/etapas do fluxo de um projeto.
     /// </summary>
-    [HttpGet("board/{boardId:guid}")]
+    [HttpGet("project/{projectId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<StageDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByBoardId(Guid boardId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByProjectId(Guid projectId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetStagesByBoardIdQuery(boardId, UserId), cancellationToken);
+            new GetStagesByProjectIdQuery(projectId, UserId), cancellationToken);
         return Ok(result);
     }
 
     /// <summary>
-    /// Reordena as etapas de um quadro.
+    /// Reordena as etapas de um projeto.
     /// O corpo é um array JSON de GUIDs na nova ordem.
     /// </summary>
-    [HttpPut("board/{boardId:guid}/order")]
+    [HttpPut("project/{projectId:guid}/order")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Reorder(
-        Guid boardId,
+        Guid projectId,
         [FromBody] Guid[] orderedStageIds,
         CancellationToken cancellationToken)
     {
-        var command = new ReorderStagesCommand(boardId, orderedStageIds, UserId);
+        var command = new ReorderStagesCommand(projectId, orderedStageIds, UserId);
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
 
     /// <summary>
-    /// Cria uma nova coluna/etapa no Kanban.
+    /// Cria uma nova coluna/etapa no fluxo do projeto.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
@@ -65,10 +65,10 @@ public class StagesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new CreateStageCommand(
-            request.BoardId, request.Name, request.Position,
+            request.ProjectId, request.Name, request.Position,
             request.WorkflowStatusId, request.Category, request.Color, UserId);
         var stageId = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetByBoardId), new { boardId = request.BoardId }, stageId);
+        return CreatedAtAction(nameof(GetByProjectId), new { projectId = request.ProjectId }, stageId);
     }
 }
 
@@ -76,7 +76,7 @@ public class StagesController : ControllerBase
 /// Modelo de request para criar uma coluna.
 /// </summary>
 public record CreateStageRequest(
-    Guid BoardId, string Name, double Position,
+    Guid ProjectId, string Name, double Position,
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B");

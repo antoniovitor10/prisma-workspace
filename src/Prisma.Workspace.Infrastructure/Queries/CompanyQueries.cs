@@ -25,7 +25,7 @@ public class CompanyQueries : ICompanyQueries
                 b.Description,
                 b.ClientId,
                 ClientName = b.Client != null ? b.Client.Name : null,
-                Stages = b.Stages.OrderBy(s => s.Position).Select(s => s.Id).ToList(),
+                Stages = b.Project.Stages.OrderBy(s => s.Position).Select(s => s.Id).ToList(),
                 Items = b.WorkItems.Where(w => w.ParentId == null)
                     .Select(w => new { w.StageId }).ToList(),
                 TotalSeconds = b.WorkItems

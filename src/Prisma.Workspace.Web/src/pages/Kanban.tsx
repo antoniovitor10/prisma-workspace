@@ -412,8 +412,14 @@ export const Kanban: React.FC = () => {
   const loadBoardData = useCallback(async (boardId: string) => {
     if (!boardId) return;
     try {
+      const board = boards.find(b => b.id === boardId);
+      const projectId = board?.projectId;
+      if (!projectId) {
+        console.error('Quadro sem projectId — não é possível carregar o fluxo do projeto.');
+        return;
+      }
       const [stageData, itemData] = await Promise.all([
-        api.getStages(boardId),
+        api.getStages(projectId),
         api.getWorkItems(boardId)
       ]);
       setStages(stageData);
@@ -423,7 +429,7 @@ export const Kanban: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [boards]);
 
   const refreshRealtimeBoard = useCallback(() => {
     if (selectedBoardId) loadBoardData(selectedBoardId);
@@ -655,7 +661,9 @@ export const Kanban: React.FC = () => {
     setStages(newStages);
 
     try {
-      await api.reorderStages(selectedBoardId, newStages.map(s => s.id));
+      const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
+      if (!projectId) throw new Error('Projeto do quadro não encontrado.');
+      await api.reorderStages(projectId, newStages.map(s => s.id));
     } catch (err) {
       setStages(stages);
       alert((err as Error).message || 'Erro ao reordenar colunas.');
@@ -666,8 +674,10 @@ export const Kanban: React.FC = () => {
     e.preventDefault();
     if (!newStageName.trim() || !selectedBoardId) return;
     try {
+      const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
+      if (!projectId) throw new Error('Projeto do quadro não encontrado.');
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(selectedBoardId, newStageName, nextPos, { category: newStageCategory });
+      await api.createStage(projectId, newStageName, nextPos, { category: newStageCategory });
       setNewStageName('');
       setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);

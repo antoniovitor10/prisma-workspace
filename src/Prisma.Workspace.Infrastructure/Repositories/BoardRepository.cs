@@ -36,7 +36,6 @@ public class BoardRepository : IBoardRepository
     {
         return await _context.Boards
             .AsNoTracking()
-            .Include(b => b.Stages)
             .Where(b => b.ProjectId == projectId)
             .OrderBy(b => b.Name)
             .ToListAsync(cancellationToken);

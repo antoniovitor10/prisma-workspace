@@ -26,17 +26,17 @@ public class WorkItemStageUpdateTests
         => new()
         {
             Id = Guid.NewGuid(),
-            ProjectId = null,
+            ProjectId = Guid.NewGuid(),
             OrganizationId = Guid.NewGuid(),
             Name = "Quadro",
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-    private static Stage CriarStage(Guid boardId, string nome, StageCategory categoria, Guid? statusId = null)
+    private static Stage CriarStage(Guid projectId, string nome, StageCategory categoria, Guid? statusId = null)
         => new()
         {
             Id = Guid.NewGuid(),
-            BoardId = boardId,
+            ProjectId = projectId,
             Name = nome,
             Category = categoria,
             WorkflowStatusId = statusId,
@@ -101,8 +101,8 @@ public class WorkItemStageUpdateTests
     public async Task Update_AoMudarEtapa_GravaEtapaEConclusao()
     {
         var board = CriarBoard();
-        var emAndamento = CriarStage(board.Id, "Em andamento", StageCategory.InProgress);
-        var concluido = CriarStage(board.Id, "Concluído", StageCategory.Done);
+        var emAndamento = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
+        var concluido = CriarStage(board.ProjectId, "Concluído", StageCategory.Done);
         var item = CriarItem(board, emAndamento);
 
         var handler = CriarHandler(item, emAndamento, concluido);
@@ -116,8 +116,8 @@ public class WorkItemStageUpdateTests
     public async Task Update_AoSairDaConclusao_LimpaCompletedAt()
     {
         var board = CriarBoard();
-        var backlog = CriarStage(board.Id, "Backlog", StageCategory.Ready);
-        var concluido = CriarStage(board.Id, "Concluído", StageCategory.Done);
+        var backlog = CriarStage(board.ProjectId, "Backlog", StageCategory.Ready);
+        var concluido = CriarStage(board.ProjectId, "Concluído", StageCategory.Done);
         var item = CriarItem(board, backlog);
 
         var handler = CriarHandler(item, backlog, concluido);
@@ -173,8 +173,8 @@ public class WorkItemStageUpdateTests
     {
         public Task<Stage?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(stages.FirstOrDefault(s => s.Id == id));
-        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
-            => Task.FromResult<IReadOnlyList<Stage>>(stages.Where(s => s.BoardId == boardId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Stage>>(stages.Where(s => s.ProjectId == projectId).ToList());
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default) => Task.FromResult(stage);
         public Task UpdateAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;
