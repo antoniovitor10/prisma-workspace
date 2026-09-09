@@ -1,6 +1,7 @@
 # HANDOFF — programa Prisma WorkSpace v2
 
-Estado em 2026-09-09, ao fim da sessão do coordenador. Leia `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md`, as duas
+Estado em 2026-09-09, ao fim da sessão. **Suíte E2E verde: 65 passed, 4 skipped, 0 failed.**
+xUnit 140/140, `tsc -b` limpo, Vitest 51/51. Leia `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md`, as duas
 últimas entradas de `PROGRESS.md` e `context/index.yaml` antes de tocar em código.
 
 Branch de trabalho: **`integration/all-specs-v2`**, criada a partir de `01bb081`. Nada foi mesclado em `main`.
@@ -24,7 +25,8 @@ backfill em vários pontos e reduz o risco das migrations.
 
 ## 2. O que foi entregue
 
-Quinze commits. Todos com build limpo, xUnit e Vitest verdes.
+Vinte e cinco commits na `integration/all-specs-v2`. Todos com build limpo e testes verdes.
+A tabela abaixo lista os principais; `git log --oneline 01bb081..HEAD` traz o conjunto completo.
 
 | Commit | Entrega |
 |---|---|
@@ -46,57 +48,122 @@ Três migrations novas, todas com `Down` reversível: `Remove_Stage_WipLimit`, `
 
 ---
 
-## 3. Risco herdado — leia antes de continuar
+## 3. Estado da validação
 
-**Os lotes de SLA e de placement não foram validados ponta a ponta.** Estão cobertos por build, testes
-unitários e typecheck, mas **não por E2E**, porque a máquina ficou sem memória (~0,5 GB livres) e o engine do
-Docker parou de subir, deixando o ambiente sem banco.
+**Tudo que foi entregue está validado ponta a ponta.** O risco herdado que existia — SLA e
+placement sem E2E — foi resolvido: a suíte completa rodou contra banco recriado do zero e
+fechou **65 passed / 4 skipped / 0 failed**.
 
-O de SLA é o mais delicado: mexeu fundo no portal externo, que é **justamente o módulo que o PO relatou como
-quebrado**. Primeira coisa a fazer quando houver banco:
+Para levantar o ambiente:
 
 ```
-# resetar o banco E2E (o seed exige instalação vazia)
+# recriar o banco do zero (o seed exige instalação vazia)
 docker exec -i prisma-workspace-e2e-sql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
   -P "<senha em .env.e2e.connection>" -C -b < scripts/e2e-create-database.sql
-.\scripts\run-api-e2e.ps1                     # API em 127.0.0.1:5400
+.\scripts\run-api-e2e.ps1                     # API em 127.0.0.1:5400, semeia ao subir
 npm run dev -- --port 5450 --host 127.0.0.1   # front em modo e2e
-npx playwright test                            # suite completa
+npx playwright test                            # suíte completa
 ```
 
----
+**Padrão a conhecer:** desde que o estado da sprint virou derivado das datas (D84), todo
+teste com data fixa apodrece sozinho. Três fixtures já foram corrigidos para datas
+relativas. Se um cenário de sprint começar a falhar sem mudança de código, é a primeira
+hipótese.
+
+**Memória é o gargalo real da máquina.** Com menos de 1 GB livre, API, Vite e Playwright
+não convivem. Parar os containers do Supabase (projeto yumply) e o `nodecast-tv` libera o
+suficiente.
 
 ## 4. O que falta, em ordem
 
-### 4.1 Validar o que já foi feito
-Rodar a suíte E2E completa contra os três lotes sem validação. Corrigir o que aparecer.
+### 4.1 Concluído nesta sessão
+
+- **Onda 0**: `WorkflowMoveGuard` (status desativado no sync de template) e responsivo do Kanban.
+- **Onda 1**: wiki/solicitações (B) e acessibilidade/resíduos (C).
+- **Sprints v3**: os nove gaps da `SPEC-S-003 v3`, incluindo o defeito relatado pelo PO —
+  sprint de janeiro aceitava tarefas em setembro porque o estado era coluna persistida.
+- **Meu trabalho**: projetos vigentes, sprints em curso com progresso geral e pessoal
+  separados, horas da semana.
+- **Tipos de item**: `features/workItems/workItemKinds.ts` como fonte única de rótulo, cor,
+  descrição e hierarquia. Antes eram dez tipos com três cores e nenhuma explicação.
+- **Arquivadas**: filtro no backlog, selo na linha, `includeArchived` no endpoint. Antes
+  arquivar era caminho sem volta.
+- **Seed**: conjunto que mostra o produto — hierarquia completa, os dez tipos, três sprints
+  em três estados, uma arquivada e apontamentos na semana.
 
 ### 4.2 Terminar a D83 — mover `Stage` para o projeto
-Metade feita (o placement saiu). Falta mover `Stage.BoardId` → `Stage.ProjectId`, tornar `Board.ProjectId`
-obrigatório e passar equipe e permissão do quadro para o projeto. **É a única parte com migração de dados**:
-as colunas de quadros diferentes do mesmo projeto precisam ser consolidadas, fundindo equivalentes pelo
-`WorkflowStatusId`. Não faça sem banco. Contrato completo em `specs/board-as-view.md`.
 
-### 4.3 Sprints — `SPEC-S-003 v3`
-Nove gaps listados na spec. Os mais visíveis para o PO: estado calculado pelas datas, fim do botão "Iniciar
-sprint", várias sprints ativas, e **sprint encerrada recusando novas tarefas** (relatado por ele). Não exige
-migration, salvo se remover `Sprint.Status` da tabela.
+Metade feita: `WorkItemBoardPlacement` foi eliminado e a tarefa já tem etapa e posição
+únicas. Falta mover `Stage.BoardId` para `Stage.ProjectId`.
 
-### 4.4 "Meu trabalho" completo — `specs/my-work-hub.md`
-Spec nova, em `draft`, aguardando `G-SPEC`. Seis blocos: resumo do dia, minhas tarefas agrupáveis, projetos
-vigentes, sprints em curso com progresso geral e pessoal, "precisa de você" e horas da semana. Sem mudança de
-schema.
+**Análise já feita (2026-09-09), para não ser refeita.** A implementação foi iniciada e
+descartada de propósito: é um refactor que não se entrega pela metade, e uma branch parada
+no meio deixaria código quebrado sem sinalizar o que era intencional. O que ficou apurado:
 
-### 4.5 Defeitos confirmados e ainda abertos
+**O backfill é trivial, ao contrário do que a spec temia.** Consultado no banco real:
 
-- **Solicitações não funciona** — relatado pelo PO, não reproduzido. A tela abre limpa, sem erro de console
-  nem de rede, mas é fila só de leitura. Faltam os passos exatos.
-- **Imagem na wiki não insere** — a API foi testada e salva `<img>` com data URI de 1,4 MB corretamente. O
-  defeito está no editor TipTap, não isolado.
+```sql
+SELECT p.Name, COUNT(DISTINCT b.Id) AS Quadros, COUNT(s.Id) AS Colunas
+FROM Projects p LEFT JOIN Boards b ON b.ProjectId=p.Id LEFT JOIN Stages s ON s.BoardId=b.Id
+GROUP BY p.Name;
+-- todo projeto tem exatamente 1 quadro
+
+SELECT COUNT(*) FROM Boards WHERE ProjectId IS NULL;              -- 0
+SELECT COUNT(*) FROM Stages s JOIN Boards b ON b.Id=s.BoardId
+WHERE b.ProjectId IS NULL;                                        -- 0
+```
+
+Nenhum projeto tem dois quadros e nenhum quadro é órfão, então **não existe consolidação de
+colunas equivalentes** a fazer. O backfill é uma cópia direta:
+`UPDATE Stages SET ProjectId = (SELECT ProjectId FROM Boards WHERE Id = Stages.BoardId)`.
+
+**Alcance medido:**
+
+| Camada | Volume |
+|---|---|
+| Erros de compilação após mudar a entidade | 19, em 8 arquivos |
+| Cadeias de `Include` no EF a revisar | 9 |
+| Rotas de API afetadas | 3 (`/api/Stages/board/{boardId}` vira project-scoped) |
+| Frontend | `Kanban.tsx`, 2400 linhas |
+| Migration | 1, com backfill |
+
+**Os 19 sites, por padrão de erro:**
+
+- `Stage.BoardId` → `Stage.ProjectId`: `CreateBoardCommandHandler:64`,
+  `CreateStageCommandHandler:36,94`, `GetStagesByBoardIdQueryHandler:35`,
+  `ProductivityFeature:304,319,508`, `MoveWorkItemCommandHandler:74`.
+- `Board.Stages` → stages do projeto: `ExternalFormsFeature:213,339,340,342`,
+  `ExternalPortalFeature:427,429`, `ExternalRequestTriageFeature:201,202`,
+  `WorkflowFeature:54`.
+- `Stage.Board` → `Stage.Project`: `WorkflowFeature:230,258`.
+
+**Decisões semânticas que o refactor exige, e que já foram identificadas:**
+
+1. `CreateBoardCommandHandler` cria hoje uma etapa "Backlog" junto com o quadro. Com o fluxo
+   no projeto, criar quadro deixa de criar coluna — quem passa a garantir o fluxo é a
+   criação do projeto.
+2. A validação "a etapa pertence ao quadro da tarefa" vira "pertence ao projeto da tarefa",
+   em `CreateWorkItemCommandHandler`, `MoveWorkItemCommandHandler` e
+   `WorkItemManagementFeature`.
+3. `portal.Board.Stages` vira `portal.Project.Stages`, o que muda o que cada consulta
+   precisa incluir — daí as 9 cadeias de `Include`.
+
+**Ordem sugerida:** entidade e configuration → migration com backfill → os 19 sites →
+`Include` chains → rotas de API → `Kanban.tsx` → E2E. Não faça sem banco de pé: o
+compilador não valida movimentação de dados.
+
+### 4.3 Defeitos confirmados e ainda abertos
+
+- **Solicitações** — investigado por duas frentes independentes, ambas chegando à mesma conclusão: a tela é
+  **fila de leitura, não defeito**. O fluxo público→fila→resposta funciona e tem cobertura E2E. Se o relato
+  persistir, é preciso saber o que a pessoa clicou.
+- ~~Imagem na wiki~~ — **resolvido** pelo agente B: faltava `allowBase64` na extensão Image do TipTap.
 - **Excluir tarefa não existe.** `DELETE /api/WorkItems/{id}` **arquiva**, não exclui. E arquivar some de todas
   as listagens, sem tela para achar e restaurar — caminho sem volta. `specs/backlog.md` prevê lixeira de sete
   dias com exclusão hierárquica e restauração; é o que falta construir.
-- **Responsivo da barra de ações** — no mobile o quadro estoura (803 px em viewport de 393) e os botões de
+- ~~Responsivo da barra de ações~~ e ~~Equipes no mobile~~ e ~~acessibilidade de selects~~ — **resolvidos** nas
+  Ondas 0 e 1.
+- (histórico) o defeito era: no mobile o quadro estourava (803 px em viewport de 393) e os botões de
   visão passam por cima do "Nova Coluna", que fica inalcançável. O Sergio relatou o mesmo na resolução dele:
   *"atropelou na minha resolução o botão"*.
 - **Equipes estoura no mobile** (509 px em 393).
@@ -110,7 +177,7 @@ schema.
 - **Código morto** — `legacyTaskModalEnabled = false` no `Kanban.tsx` com centenas de linhas embaixo, e
   `pages/Dashboards.tsx` não é importado em lugar nenhum.
 
-### 4.6 Pedidos dos devs ainda não implementados
+### 4.4 Pedidos dos devs ainda não implementados
 Do PDF de análise e da conversa com o Sergio, já filtrados contra as decisões do PO:
 
 - Gantt **volta** (o PO decidiu manter o pedido do Sergio, contrariando a spec que mandava ocultar).
@@ -122,7 +189,7 @@ Do PDF de análise e da conversa com o Sergio, já filtrados contra as decisões
 - Configurações do projeto com menu lateral por categoria.
 - Remoção do ícone de responsável ausente no topo da tarefa.
 
-### 4.7 Decisões abertas para o PO
+### 4.5 Decisões abertas para o PO
 
 - **`G-SPEC` da `specs/my-work-hub.md`.**
 - **D85 — banco escolhível.** Ver seção 5.
