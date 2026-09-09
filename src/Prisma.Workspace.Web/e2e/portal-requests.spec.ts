@@ -165,13 +165,23 @@ test.describe('portal externo e solicitações (pós-SLA)', () => {
     await page.getByRole('button', { name: /Enviar resposta/i }).click();
     await expect(page.getByText(replyText)).toBeVisible({ timeout: 10_000 });
 
-    await page.goto(`/portal/${portal.publicSlug}/acompanhar?protocol=${encodeURIComponent(protocol!)}&key=${encodeURIComponent(accessKey!)}`);
-    await expect(page.getByRole('heading', { name: subject })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(replyText)).toBeVisible({ timeout: 10_000 });
-
     const queue = await authenticatedApiGet<ExternalRequest[]>(page, '/api/external-requests');
     const created = queue.find((item) => item.protocol === protocol);
     expect(created).toBeTruthy();
     expect(created!.messages.some((message) => message.content === replyText)).toBeTruthy();
+
+    // Tracking público pode atrasar a projeção da mensagem sob carga da suíte.
+    await expect
+      .poll(
+        async () => {
+          await page.goto(
+            `/portal/${portal.publicSlug}/acompanhar?protocol=${encodeURIComponent(protocol!)}&key=${encodeURIComponent(accessKey!)}`,
+          );
+          await expect(page.getByRole('heading', { name: subject })).toBeVisible({ timeout: 15_000 });
+          return page.getByText(replyText).count();
+        },
+        { timeout: 30_000 },
+      )
+      .toBeGreaterThan(0);
   });
 });

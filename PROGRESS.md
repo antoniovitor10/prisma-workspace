@@ -5,6 +5,13 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (coordenador) — B+C mesclados; E2E quase verde
+- **Fiz:** Merge `fix/wiki-solicitacoes` (`2f189f2`) e `fix/a11y-residuos` (`11490bb`) em `integration/all-specs-v2`. Conflito só em `PROGRESS.md` (ambas as entradas preservadas). Reiniciei API com CORS `:5450` + `Seed__DemoEnabled=false` e front integrado em `:5450`.
+- **Testes:** 1ª suíte completa sem CORS → 54 failed (ambiente). Com CORS: **57–58 passed / 4 skipped**, falha residual flaky em `portal-requests` (reply no tracking público sob carga; isolado **passed**). Endureci o assert com poll+reload.
+- **Decisões novas:** nenhuma. D86 intacta; Sprint/* não tocado.
+- **Próximo passo:** confirmar suíte verde pós-endurecimento; liberar restante Onda 1 / Stage→Project (migration serializada).
+- **Bloqueios:** nenhum de merge. Flake portal sob carga em observação.
+
 ## [2026-09-09] — Composer (Agente C) — a11y selects, Equipes mobile, resíduos Auth, orphan workflow tests
 - **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-a11y` na branch `fix/a11y-residuos` a partir de `51d14a9` (D86). `aria-label` nos selects de Empresa, OrganizationSettings e ProjectSettings; Equipes sem overflow horizontal no mobile (`overflow-x: clip`, grids `minmax(0,…)`, `AddMember` sem `min-width:240px`); AuthController: assuntos de e-mail Prisma WorkSpace; cookie de refresh emite `prisma_refresh`/`__Host-prisma_refresh` e ainda lê `detran_refresh`/`__Host-detran_refresh` (sessão antiga sobrevive); removi `pages/Dashboards.tsx` morto; helpers `DeactivateUnlessBackingColumns`/`RemapOrphanedStageStatuses` `internal` + 3 xUnit; `AuthRefreshCookie` + testes de dual-cookie.
 - **Arquivos tocados:** `Company.tsx`, `OrganizationSettings.tsx`, `ProjectSettings.tsx`, `Teams.tsx`, `AuthController.cs`, `AuthRefreshCookie.cs`, `OrganizationWorkflowFeature.cs`, csprojs (InternalsVisibleTo), `e2e/a11y-residuos.spec.ts`, testes xUnit, este `PROGRESS.md`. Removido `Dashboards.tsx`.
