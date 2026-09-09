@@ -24,6 +24,31 @@ public class Sprint
     public ICollection<WorkItem> WorkItems { get; set; } = new List<WorkItem>();
     public ICollection<SprintItemSnapshot> ItemSnapshots { get; set; } = new List<SprintItemSnapshot>();
 
+    /// <summary>
+    /// Estado funcional da sprint, calculado a partir das datas (D84 / SPEC-S-003 v3).
+    ///
+    /// Encerramento e cancelamento continuam sendo atos explícitos, registrados em
+    /// <see cref="CompletedAt"/> e <see cref="CancelledAt"/>; o que deixa de existir é a
+    /// transição manual para <c>Ativa</c>. Uma sprint cuja data final já passou é
+    /// <c>Closed</c> mesmo sem encerramento explícito — era isso que permitia planejar
+    /// tarefas numa sprint de janeiro já vencida.
+    ///
+    /// A coluna <see cref="Status"/> permanece na tabela por compatibilidade, mas NÃO é a
+    /// fonte funcional: leia sempre por aqui. Removê-la exige migration própria.
+    /// </summary>
+    public SprintStatus StatusEm(DateOnly hoje)
+    {
+        if (CancelledAt.HasValue) return SprintStatus.Cancelled;
+        if (CompletedAt.HasValue) return SprintStatus.Closed;
+        if (hoje < StartDate) return SprintStatus.Planned;
+        if (hoje > EndDate) return SprintStatus.Closed;
+        return SprintStatus.Active;
+    }
+
+    /// <summary>Sprint terminal não recebe tarefa nova nem é editada.</summary>
+    public bool EstaEncerradaEm(DateOnly hoje)
+        => StatusEm(hoje) is SprintStatus.Closed or SprintStatus.Cancelled;
+
     public bool IsTerminal => Status is SprintStatus.Closed or SprintStatus.Cancelled;
 
     public static Sprint Criar(Guid projectId, Guid? teamId, string nome, DateOnly inicio, DateOnly fim, string? meta)
@@ -41,7 +66,8 @@ public class Sprint
 
     public void Update(string name, string? goal, DateOnly startDate, DateOnly endDate)
     {
-        DomainException.Garantir(!IsTerminal, "Sprint concluída ou cancelada não pode ser editada.");
+        DomainException.Garantir(!CompletedAt.HasValue && !CancelledAt.HasValue,
+            "Sprint concluída ou cancelada não pode ser editada.");
         DomainException.Garantir(!string.IsNullOrWhiteSpace(name), "Nome da sprint obrigatório.");
         DomainException.Garantir(endDate >= startDate, "Fim da sprint deve ser igual ou posterior ao início.");
 
@@ -71,19 +97,20 @@ public class Sprint
         }
     }
 
-    public void ChangeStatus(SprintStatus nextStatus, bool projectHasAnotherActiveSprint = false)
+    /// <summary>
+    /// Encerra ou cancela a sprint. Não existe mais transição manual para <c>Ativa</c>:
+    /// isso passou a ser derivado das datas (D84). Também não existe mais a regra de uma
+    /// única sprint ativa por projeto — períodos sobrepostos são permitidos.
+    /// </summary>
+    public void Encerrar(SprintStatus nextStatus, DateOnly hoje)
     {
-        if (Status == nextStatus) return;
-
-        var isAllowedTransition =
-            Status == SprintStatus.Planned && nextStatus == SprintStatus.Active
-            || Status == SprintStatus.Active && nextStatus == SprintStatus.Closed
-            || Status is SprintStatus.Planned or SprintStatus.Active && nextStatus == SprintStatus.Cancelled;
-
-        DomainException.Garantir(isAllowedTransition,
-            "A sprint deve seguir o ciclo Planejada → Ativa → Concluída, podendo ser cancelada antes da conclusão.");
-        DomainException.Garantir(nextStatus != SprintStatus.Active || !projectHasAnotherActiveSprint,
-            "Já existe uma sprint ativa para o projeto.");
+        DomainException.Garantir(nextStatus is SprintStatus.Closed or SprintStatus.Cancelled,
+            "Só é possível encerrar ou cancelar a sprint; o início passou a ser determinado pelas datas.");
+        // Sprint vencida por data PRECISA poder ser encerrada explicitamente: é o
+        // encerramento que captura o snapshot e dá destino às tarefas abertas. O que
+        // bloqueia é já ter sido encerrada ou cancelada de fato.
+        DomainException.Garantir(!CancelledAt.HasValue && !CompletedAt.HasValue,
+            "Sprint já encerrada ou cancelada não pode mudar de estado.");
 
         Status = nextStatus;
         if (nextStatus == SprintStatus.Closed) CompletedAt = DateTimeOffset.UtcNow;

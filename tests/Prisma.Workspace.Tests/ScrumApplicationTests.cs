@@ -25,21 +25,26 @@ public class ScrumApplicationTests
     }
 
     [Fact]
-    public async Task ChangeSprintStatus_ActivatesOnlyWhenProjectHasNoActiveSprint()
+    public async Task ChangeSprintStatus_EncerraSemExigirAtivacaoManual()
     {
+        // D84: não existe mais transição manual para Ativa nem exclusividade de sprint
+        // ativa. O handler só encerra ou cancela; o estado Ativa vem das datas.
         var sprint = Sprint.Criar(Guid.NewGuid(), Guid.NewGuid(), "Sprint 1",
             new DateOnly(2026, 7, 15), new DateOnly(2026, 7, 25), "Meta");
-        var repository = new SprintRepositoryFake(sprint) { HasActive = false };
+        var repository = new SprintRepositoryFake(sprint) { HasActive = true };
         var handler = new ChangeSprintStatusCommandHandler(repository, new ProjectAccessFake());
 
-        await handler.Handle(new ChangeSprintStatusCommand(sprint.Id, SprintStatus.Active, "actor"), default);
+        // Outra sprint ativa no projeto não impede nada.
+        await handler.Handle(new ChangeSprintStatusCommand(sprint.Id, SprintStatus.Closed, "actor"), default);
+        Assert.NotNull(sprint.CompletedAt);
 
-        Assert.Equal(SprintStatus.Active, sprint.Status);
-
-        sprint.Status = SprintStatus.Planned;
-        repository.HasActive = true;
-        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
-            new ChangeSprintStatusCommand(sprint.Id, SprintStatus.Active, "actor"), default));
+        // E pedir ativação manual é recusado.
+        var outra = Sprint.Criar(Guid.NewGuid(), null, "Sprint 2",
+            new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 10), null);
+        var handler2 = new ChangeSprintStatusCommandHandler(
+            new SprintRepositoryFake(outra), new ProjectAccessFake());
+        await Assert.ThrowsAsync<DomainException>(() => handler2.Handle(
+            new ChangeSprintStatusCommand(outra.Id, SprintStatus.Active, "actor"), default));
     }
 
     private sealed class ProjectRepositoryFake : IProjectRepository

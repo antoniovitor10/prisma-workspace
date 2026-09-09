@@ -32,6 +32,10 @@ public class GetProjectSprintsQueryHandler : IRequestHandler<GetProjectSprintsQu
         await _access.EnsureAtLeastAsync(request.ProjectId, request.UserId, ProjectRole.Viewer, ct);
         return (await _sprints.GetByProjectAsync(request.ProjectId, ct)).Select(Map).ToList();
     }
+    /// <summary>
+    /// O DTO devolve o estado calculado pelas datas (D84), nunca a coluna persistida:
+    /// a API é a única fonte funcional do estado da sprint.
+    /// </summary>
     internal static SprintDto Map(Sprint sprint)
     {
         var snapshots = sprint.ItemSnapshots;
@@ -53,14 +57,16 @@ public class GetProjectSprintsQueryHandler : IRequestHandler<GetProjectSprintsQu
         var plannedHours = hasSnapshot
             ? snapshots.Sum(x => x.EstimatedHours ?? 0)
             : sprint.WorkItems.Sum(x => x.EstimatedHours ?? 0);
-        var remainingHours = sprint.IsTerminal
+        var hoje = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
+        var statusFuncional = sprint.StatusEm(hoje);
+        var remainingHours = sprint.EstaEncerradaEm(hoje)
             ? 0
             : sprint.WorkItems.Where(x => !x.CompletedAt.HasValue).Sum(x => x.RemainingHours ?? 0);
         var capacityHours = sprint.Capacities.Sum(x => Math.Max(0, x.AvailableHours - x.DaysOffHours));
         var progress = itemCount == 0 ? 0 : (int)Math.Round(completedItemCount * 100m / itemCount);
 
         return new SprintDto(sprint.Id, sprint.ProjectId, sprint.TeamId, sprint.Team?.Name, sprint.Name, sprint.Goal,
-            sprint.StartDate, sprint.EndDate, sprint.Status, itemCount, completedItemCount,
+            sprint.StartDate, sprint.EndDate, statusFuncional, itemCount, completedItemCount,
             storyPoints, completedStoryPoints, plannedHours, remainingHours, capacityHours, progress,
             sprint.CompletedAt, sprint.CancelledAt,
             sprint.Capacities.Select(x => new SprintCapacityDto(x.UserId, x.AvailableHours, x.DaysOffHours)).ToList(),
@@ -128,6 +134,9 @@ public class UpdateSprintCommandHandler : IRequestHandler<UpdateSprintCommand>
     }
 }
 
+/// <summary>
+/// Encerra ou cancela a sprint. Não inicia: o estado Ativa é derivado das datas (D84).
+/// </summary>
 public record ChangeSprintStatusCommand(
     Guid SprintId,
     SprintStatus Status,
@@ -148,11 +157,8 @@ public class ChangeSprintStatusCommandHandler : IRequestHandler<ChangeSprintStat
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct) ?? throw new NaoEncontradoException("Sprint");
         await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
-        var hasAnotherActiveSprint = request.Status == SprintStatus.Active
-            && sprint.Status != SprintStatus.Active
-            && await _sprints.HasActiveAsync(sprint.ProjectId, sprint.Id, ct);
+        var hoje = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
 
-        if (request.Status is SprintStatus.Closed or SprintStatus.Cancelled)
         {
             Sprint? targetSprint = null;
             if (request.IncompleteItemsAction == SprintIncompleteItemsAction.MoveToSprint)
@@ -163,8 +169,8 @@ public class ChangeSprintStatusCommandHandler : IRequestHandler<ChangeSprintStat
                     ?? throw new NaoEncontradoException("Sprint de destino");
                 DomainException.Garantir(targetSprint.ProjectId == sprint.ProjectId,
                     "A sprint de destino não pertence ao projeto.");
-                DomainException.Garantir(!targetSprint.IsTerminal,
-                    "A sprint de destino não pode estar concluída ou cancelada.");
+                DomainException.Garantir(!targetSprint.EstaEncerradaEm(hoje),
+                    "A sprint de destino não pode estar encerrada ou cancelada.");
             }
 
             sprint.CaptureHistory(sprint.WorkItems, request.IncompleteItemsAction, targetSprint?.Id);
@@ -172,21 +178,17 @@ public class ChangeSprintStatusCommandHandler : IRequestHandler<ChangeSprintStat
                 item.SprintId = targetSprint?.Id;
         }
 
-        var previousStatus = sprint.Status;
-        sprint.ChangeStatus(request.Status, hasAnotherActiveSprint);
+        sprint.Encerrar(request.Status, hoje);
         await _sprints.SaveAsync(ct);
-        if (_notifications is not null && previousStatus != sprint.Status
-            && sprint.Status is SprintStatus.Active or SprintStatus.Closed or SprintStatus.Cancelled)
+        if (_notifications is not null)
         {
-            var started = sprint.Status == SprintStatus.Active;
             var recipients = (sprint.Team?.Members.Select(x => x.UserId) ?? Enumerable.Empty<string>())
                 .Append(sprint.Project.OwnerId)
                 .Where(x => !string.IsNullOrWhiteSpace(x) && x != request.ActorId).Distinct();
             await _notifications.PublishManyAsync(recipients.Select(userId => new NotificationEnvelope(
-                sprint.Project.OrganizationId, userId,
-                started ? NotificationType.SprintStarted : NotificationType.SprintCompleted,
-                started ? "Sprint iniciada" : "Sprint encerrada",
-                $"{sprint.Name} foi {(started ? "iniciada" : "encerrada")}.",
+                sprint.Project.OrganizationId, userId, NotificationType.SprintCompleted,
+                "Sprint encerrada",
+                $"{sprint.Name} foi encerrada.",
                 $"/projects/{sprint.ProjectId}/sprints?sprint={sprint.Id}",
                 ProjectId: sprint.ProjectId, SprintId: sprint.Id)), ct);
         }
@@ -213,7 +215,9 @@ public class SetSprintCapacityCommandHandler : IRequestHandler<SetSprintCapacity
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct) ?? throw new NaoEncontradoException("Sprint");
         await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
-        DomainException.Garantir(!sprint.IsTerminal, "Não é possível alterar capacidade de sprint concluída ou cancelada.");
+        DomainException.Garantir(
+            !sprint.EstaEncerradaEm(DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime)),
+            "Não é possível alterar capacidade de sprint encerrada ou cancelada.");
         var capacity = sprint.Capacities.FirstOrDefault(x => x.UserId == request.UserId);
         if (capacity is null)
             sprint.Capacities.Add(new SprintCapacity { SprintId = sprint.Id, UserId = request.UserId,
