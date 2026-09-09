@@ -40,7 +40,8 @@ import { TaskWikiPages } from '../features/task/TaskWikiPages';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import type { BacklogItem, WorkItemCustomField, WorkItemDetails } from '../types/scrum';
-import { kindNames, linkTypeNames, originNames, priorityNames } from '../types/scrum';
+import { linkTypeNames, originNames, priorityNames } from '../types/scrum';
+import { kindDisplayOrder, kindMeta, workItemKinds } from '../features/workItems/workItemKinds';
 import { userDisplayLabel } from '../utils/userDisplayName';
 
 interface StageOption {
@@ -115,7 +116,8 @@ const Body = styled.div`flex:1;overflow-y:auto;padding:20px 26px 40px;@media(max
 const Tabs = styled.nav`position:sticky;top:0;z-index:2;flex:0 0 auto;display:flex;gap:4px;overflow-x:auto;margin:16px -26px 0;padding:8px 26px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({theme})=>theme.color.surface};@media(max-width:600px){margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;}`;
 const Tab = styled.button<{ $active:boolean }>`flex:0 0 auto;min-height:34px;padding:0 11px;border-radius:${({theme})=>theme.radius.md};background:${({theme,$active})=>$active?theme.color.brand:theme.color.neutral[50]};color:${({theme,$active})=>$active?theme.color.onBrand:theme.color.textMuted};font-size:13px;font-weight:800;`;
 const TypeLine = styled.div`display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px;`;
-const TypeBadge = styled.span<{ $kind:number }>`display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:${({theme})=>theme.radius.sm};background:${({$kind,theme})=>$kind===4||$kind===10?theme.color.danger:$kind<=2?theme.color.brand:theme.color.accentBlue};color:white;font-size:12px;font-weight:800;text-transform:uppercase;`;
+// Cada tipo tem cor propria (ver workItemKinds.ts): antes eram tres cores para dez tipos.
+const TypeBadge = styled.span<{ $kind:number }>`display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:${({theme})=>theme.radius.sm};background:${({$kind})=>kindMeta($kind).color};color:white;font-size:12px;font-weight:800;text-transform:uppercase;`;
 const OriginBadge = styled.span<{ $external?:boolean }>`display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;background:${({theme,$external})=>`color-mix(in srgb, ${$external?theme.color.warning:theme.color.neutral[400]} 14%, white)`};color:${({theme,$external})=>$external?theme.color.neutral[800]:theme.color.textMuted};font-size:12px;font-weight:750;`;
 const ItemCode = styled.span`color:${({theme})=>theme.color.textMuted};font-size:13px;font-weight:750;`;
 const Title = styled(Dialog.Title)`color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.display};font-size:clamp(20px,3vw,27px);font-weight:800;line-height:1.2;overflow-wrap:anywhere;`;
@@ -283,7 +285,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </div>
     </Header>
     {!details||!draft?<Progress>{detailsQuery.isLoading?'Carregando detalhes...':'Preparando tarefa...'}</Progress>:<Body>
-      <TypeLine><TypeBadge $kind={draft.kind}>{kindNames[draft.kind]??'Item'}</TypeBadge><ItemCode>{details.reference}</ItemCode><OriginBadge $external={draft.origin===2}>{originNames[draft.origin]??'Origem não informada'}</OriginBadge>{details.isArchived&&<OriginBadge>Arquivada</OriginBadge>}</TypeLine>
+      <TypeLine><TypeBadge $kind={draft.kind} title={kindMeta(draft.kind).description}>{kindMeta(draft.kind).label}</TypeBadge><ItemCode>{details.reference}</ItemCode><OriginBadge $external={draft.origin===2}>{originNames[draft.origin]??'Origem não informada'}</OriginBadge>{details.isArchived&&<OriginBadge>Arquivada</OriginBadge>}</TypeLine>
       <Title>{draft.title}</Title><span id={`task-description-${item.id}`} style={{position:'absolute',width:1,height:1,overflow:'hidden'}}>Detalhes editáveis da tarefa {draft.title}.</span>
       <Meta><MetaChip><CircleDot size={12}/>{details.completedAt?'Concluído':details.workflowStatusName||details.stageName||'Backlog'}</MetaChip><MetaChip><Target size={12}/>{priorityNames[draft.priority]??'Média'}</MetaChip><MetaChip><FolderKanban size={12}/>{details.boardName}</MetaChip>{(details.sprintName||sprintName)&&<MetaChip><GitBranch size={12}/>{details.sprintName||sprintName}</MetaChip>}</Meta>
       {detailsQuery.error&&<ErrorBox>{(detailsQuery.error as Error).message}. Exibindo os dados disponíveis na tela atual.</ErrorBox>}
@@ -301,7 +303,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Section><h2><Save size={14}/>Dados principais</h2><FormGrid>
         <Field $wide>Título<input value={draft.title} maxLength={500} onChange={e=>change('title',e.target.value)} onBlur={()=>draft.title.trim()&&commit({...draft,title:draft.title.trim()})}/></Field>
         <Field $wide>Descrição<textarea value={draft.description} onChange={e=>change('description',e.target.value)} onBlur={()=>commit(draft)} placeholder="Contexto, escopo e resultado esperado"/></Field>
-        <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)}>{Object.entries(kindNames).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></Field>
+        <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)} title={kindMeta(draft.kind).description}>{kindDisplayOrder.map(id=><option key={id} value={id} title={workItemKinds[id].description}>{workItemKinds[id].label} — {workItemKinds[id].description}</option>)}</select></Field>
         <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="">Backlog / sem etapa</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.statusName&&stage.statusName!==stage.name?`${stage.statusName} — ${stage.name}`:stage.statusName||stage.name}</option>)}</select></Field>
         <Field>Prioridade<select value={draft.priority} onChange={e=>change('priority',Number(e.target.value),true)}><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></Field>
         <Field>Responsável<select value={draft.responsibleId} onChange={e=>change('responsibleId',e.target.value,true)}><option value="">Não atribuído</option>{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field>

@@ -44,6 +44,7 @@ import { TaskDetailDrawer } from '../../components/TaskDetailDrawer';
 import type { ProjectSummary } from '../../pages/Projects';
 import { previewBacklog, previewMode, previewSprints } from '../../preview';
 import { api } from '../../services/api';
+import { kindMeta } from '../workItems/workItemKinds';
 import type { BacklogItem, Sprint } from '../../types/scrum';
 import { getItemDepth, kindNames, priorityNames } from '../../types/scrum';
 import {
@@ -392,10 +393,23 @@ const Selection = styled.label`
   input { width: 14px; height: 14px; accent-color: ${({ theme }) => theme.color.brand}; }
 `;
 
+// Cor vem da taxonomia (workItemKinds.ts): cada tipo tem a sua, nao tres para dez.
 const Kind = styled.span<{ $kind: number }>`
-  color: ${({ $kind, theme }) => $kind === 4 ? theme.color.danger : $kind <= 2 ? theme.color.brand : theme.color.accentBlue};
+  color: ${({ $kind }) => kindMeta($kind).color};
   font-size: 11px;
   font-weight: 850;
+  text-transform: uppercase;
+`;
+
+const ArchivedTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: ${({ theme }) => theme.radius.pill};
+  background: ${({ theme }) => theme.color.neutral[200]};
+  color: ${({ theme }) => theme.color.neutral[700]};
+  font-size: 10.5px;
+  font-weight: 800;
   text-transform: uppercase;
 `;
 
@@ -589,7 +603,10 @@ function SortableWorkItem({
       <Selection title="Selecionar item">
         <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} aria-label={`Selecionar ${item.title}`} />
       </Selection>
-      <Kind className="item-kind" $kind={item.kind}>{kindNames[item.kind] ?? 'Item'}</Kind>
+      <Kind className="item-kind" $kind={item.kind} title={kindMeta(item.kind).description}>
+        {kindMeta(item.kind).label}
+        {item.isArchived && <> <ArchivedTag>Arquivada</ArchivedTag></>}
+      </Kind>
       <InlineTitle className="item-title">
         <small>#{item.number ?? '—'} · {saving ? 'Salvando...' : item.boardName}</small>
         <input
@@ -799,11 +816,13 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  // A chave inclui includeArchived: arquivadas vêm em outra consulta, e sem isso o
+  // cache devolveria a lista sem elas ao ligar o filtro.
   const backlogQuery = useQuery<BacklogItem[]>({
-    queryKey: ['project-backlog', project.id],
+    queryKey: ['project-backlog', project.id, filters.includeArchived],
     retry: false,
     queryFn: async () => {
-      try { return await api.getProjectBacklog(project.id); }
+      try { return await api.getProjectBacklog(project.id, filters.includeArchived); }
       catch { return previewMode ? previewBacklog : []; }
     },
   });
@@ -835,7 +854,8 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     || filters.kind !== 'all'
     || filters.priority !== 'all'
     || filters.boardId !== 'all'
-    || filters.relation !== 'all';
+    || filters.relation !== 'all'
+    || filters.includeArchived;
   const contextualBacklogItems = useMemo(
     () => contextualItems.filter(item => !item.sprintId),
     [contextualItems],
@@ -865,7 +885,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const selectedItems = items.filter((item) => selectedIds.has(item.id));
   const selectedItem = items.find((item) => item.id === searchParams.get('item')) ?? null;
   const activeFilterCount = [filters.kind, filters.priority, filters.boardId]
-    .filter((value) => value !== 'all').length + (filters.relation === 'all' ? 0 : 1) + (filters.search ? 1 : 0);
+    .filter((value) => value !== 'all').length + (filters.relation === 'all' ? 0 : 1) + (filters.search ? 1 : 0) + (filters.includeArchived ? 1 : 0);
 
   const openItem = (item: BacklogItem) => {
     const next = new URLSearchParams(searchParams);
@@ -1053,6 +1073,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         <SelectField>Tipo<select value={filters.kind} onChange={(event) => setFilters((current) => ({ ...current, kind: event.target.value }))}><option value="all">Todos</option>{Object.entries(kindNames).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
         <SelectField>Prioridade<select value={filters.priority} onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}><option value="all">Todas</option>{[0, 1, 2, 3].map((priority) => <option key={priority} value={priority}>{priorityNames[priority]}</option>)}</select></SelectField>
         <SelectField>Quadro<select value={filters.boardId} onChange={(event) => setFilters((current) => ({ ...current, boardId: event.target.value }))}><option value="all">Todos</option>{boards.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
+        <SelectField>Arquivadas<select aria-label="Mostrar tarefas arquivadas" value={filters.includeArchived ? 'yes' : 'no'} onChange={(event) => setFilters((current) => ({ ...current, includeArchived: event.target.value === 'yes' }))}><option value="no">Ocultar</option><option value="yes">Mostrar</option></select></SelectField>
         <SelectField>Relações<select value={filters.relation} onChange={(event) => setFilters((current) => ({ ...current, relation: event.target.value as BacklogFilterState['relation'] }))}><option value="all">Todas</option><option value="blocked">Bloqueados</option><option value="dependencies">Com dependências</option><option value="unparented">Sem épico</option></select></SelectField>
         <SelectField>Agrupar por<select value={groupBy} onChange={(event) => setGroupBy(event.target.value as BacklogGroupBy)}><option value="none">Sem agrupamento</option><option value="epic">Épico</option><option value="kind">Tipo</option><option value="priority">Prioridade</option><option value="board">Quadro</option></select></SelectField>
         <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }} disabled={activeFilterCount === 0 && groupBy === 'none'}><RotateCcw size={12} />Limpar</Button>

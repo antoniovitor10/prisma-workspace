@@ -10,13 +10,14 @@ public class BacklogRepository : IBacklogRepository
     private readonly AppDbContext _context;
     public BacklogRepository(AppDbContext context) => _context = context;
 
-    public async Task<IReadOnlyList<WorkItem>> GetProjectBacklogAsync(Guid projectId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WorkItem>> GetProjectBacklogAsync(
+        Guid projectId, bool includeArchived = false, CancellationToken cancellationToken = default)
         => await _context.WorkItems.AsNoTracking().AsSplitQuery()
             .Include(x => x.Board).Include(x => x.Stage).Include(x => x.Assignees)
             .Include(x => x.WorkItemTags).ThenInclude(x => x.Tag)
             .Include(x => x.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(x => x.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
-            .Where(x => x.Board.ProjectId == projectId && !x.IsArchived)
+            .Where(x => x.Board.ProjectId == projectId && (includeArchived || !x.IsArchived))
             .OrderBy(x => x.BacklogRank).ThenBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 

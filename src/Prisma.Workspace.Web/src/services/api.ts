@@ -400,8 +400,9 @@ export const api = {
     return this.request(`/api/projects/${projectId}/custom-fields/${fieldId}`, { method: 'DELETE' });
   },
 
-  async getProjectBacklog(projectId: string) {
-    return this.request(`/api/projects/${projectId}/backlog`);
+  async getProjectBacklog(projectId: string, includeArchived = false) {
+    const query = includeArchived ? '?includeArchived=true' : '';
+    return this.request(`/api/projects/${projectId}/backlog${query}`);
   },
 
   async reorderBacklog(projectId: string, orderedIds: string[]) {

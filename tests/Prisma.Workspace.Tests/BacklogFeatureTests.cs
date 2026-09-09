@@ -176,8 +176,9 @@ public class BacklogFeatureTests
         public bool Saved { get; private set; }
 
         public Task<IReadOnlyList<WorkItem>> GetProjectBacklogAsync(
-            Guid projectId, CancellationToken cancellationToken = default)
-            => Task.FromResult(items);
+            Guid projectId, bool includeArchived = false, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<WorkItem>>(
+                includeArchived ? items : items.Where(x => !x.IsArchived).ToList());
 
         public Task<IReadOnlyList<WorkItem>> GetTrackedByIdsAsync(
             Guid projectId,
