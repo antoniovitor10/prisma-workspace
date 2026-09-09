@@ -2,14 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { Fragment, useMemo } from 'react';
-import { TaskFeed } from '../features/task/TaskFeed';
-import { TaskTaxonomyPanel } from '../features/task/TaskTaxonomyPanel';
-import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
-import { TaskDescriptionPanel } from '../features/task/TaskDescriptionPanel';
 import { BoardCalendar } from '../features/board/BoardCalendar';
 import { BoardGantt } from '../features/board/BoardGantt';
 import { BoardDashboard } from '../features/board/BoardDashboard';
-import { TaskApprovalPanel } from '../features/task/TaskApprovalPanel';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
@@ -24,7 +19,6 @@ import {
 import { useBoardRealtime } from '../features/board/useBoardRealtime';
 import {
   Plus,
-  Play,
   Square,
   ChevronLeft,
   ChevronRight,
@@ -32,10 +26,8 @@ import {
   FolderPlus,
   AlertTriangle,
   Users,
-  UserPlus,
   X,
   Paperclip,
-  Download,
   CheckSquare,
   BarChart2,
   Trash2,
@@ -46,6 +38,9 @@ import {
   MainContent,
   BoardHeader,
   SelectorContainer,
+  BoardActions,
+  ViewSwitcher,
+  ViewSwitcherButton,
   Select,
   ActionButton,
   AddCardButton,
@@ -69,17 +64,8 @@ import {
   ModalOverlay,
   Modal,
   ModalTitle,
-  DetailSection,
-  DetailLabel,
   DetailText,
-  SectionHeader,
-  SectionTitle,
-  ListPanel,
-  ListItem,
-  MutedText,
-  InlineForm,
   SmallButton,
-  FileInput,
   ModalForm,
   FormRow,
   Input,
@@ -102,23 +88,6 @@ import {
   TempoPct,
   TempoAdjust,
   TempoTodayBadge,
-  TaskModal,
-  TaskTopbar,
-  TaskTimerBtn,
-  TaskBody,
-  TaskMain,
-  TaskSidebar,
-  TaskH1,
-  TaskMeta,
-  SidebarRow,
-  SidebarLabel,
-  SidebarValue,
-  Avatars,
-  Avatar,
-  ProgressTrack,
-  ProgressFill,
-  TaskTabs,
-  TaskTab
 } from './Kanban.styles';
 import { StageCategory, stageCategoryOptions, type StageCategoryValue } from '../features/workflow/stageCategories';
 
@@ -261,19 +230,7 @@ interface SprintOptionDto {
   status: number;
 }
 
-interface AssignedUser extends UserDto {
-  assignedAt: string;
-}
 
-interface Attachment {
-  id: string;
-  workItemId: string;
-  fileName: string;
-  fileSize?: number;
-  mimeType?: string;
-  uploadedBy?: string;
-  createdAt: string;
-}
 
 interface TimeEntry {
   id: string;
@@ -283,35 +240,6 @@ interface TimeEntry {
   endedAt?: string | null;
   durationSeconds?: number;
 }
-
-// Mantido temporariamente durante a migração visual; a gaveta canônica é TaskDetailDrawer.
-const legacyTaskModalEnabled = false;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 interface DailyTime {
@@ -414,18 +342,10 @@ export const Kanban: React.FC = () => {
     await loadAdjustData(adjustDay);
   };
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
-  const [taskTab, setTaskTab] = useState<'descricao' | 'comentarios' | 'anexos' | 'subtarefas'>('descricao');
   const [targetStageIdForNewItem, setTargetStageIdForNewItem] = useState<string | null>(null);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dropTargetStageId, setDropTargetStageId] = useState<string | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<UserDto[]>([]);
-  const [selectedItemAssignees, setSelectedItemAssignees] = useState<AssignedUser[]>([]);
-  const [selectedItemSubItems, setSelectedItemSubItems] = useState<WorkItem[]>([]);
-  const [selectedItemAttachments, setSelectedItemAttachments] = useState<Attachment[]>([]);
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState('');
-  const [newSubItemTitle, setNewSubItemTitle] = useState('');
-  const [uploadingAttachment, setUploadingAttachment] = useState(false);
-  const [manualMinutes, setManualMinutes] = useState<number | undefined>(undefined);
   const [leadTimeData, setLeadTimeData] = useState<StageLeadTime[]>([]);
   const [loadingLeadTime, setLoadingLeadTime] = useState(false);
   const [dragPreview, setDragPreview] = useState<{
@@ -641,28 +561,6 @@ export const Kanban: React.FC = () => {
     }
   };
 
-  const loadSelectedItemDetails = useCallback(async (itemId: string) => {
-    try {
-      const [users, assignees, subItems, attachments] = await Promise.all([
-        api.getAssignableUsers(),
-        api.getAssignees(itemId),
-        api.getSubItems(itemId),
-        api.getAttachments(itemId)
-      ]);
-
-      setAssignableUsers(users);
-      setSelectedItemAssignees(assignees);
-      setSelectedItemSubItems(subItems);
-      setSelectedItemAttachments(attachments);
-
-      const assignedIds = new Set(assignees.map((user: AssignedUser) => user.id));
-      const firstAvailableUser = users.find((user: UserDto) => !assignedIds.has(user.id));
-      setSelectedAssigneeId(firstAvailableUser?.id || '');
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   const loadRunningTimer = useCallback(async () => {
     try {
       const running = await api.getRunningTimeEntry() as TimeEntry | null;
@@ -691,21 +589,6 @@ export const Kanban: React.FC = () => {
       loadBoardData(selectedBoardId);
     }
   }, [selectedBoardId, loadBoardData]);
-
-  useEffect(() => {
-    if (selectedItem) {
-      setTaskTab('descricao');
-      loadSelectedItemDetails(selectedItem.id);
-      return;
-    }
-
-    setSelectedItemAssignees([]);
-    setSelectedItemSubItems([]);
-    setSelectedItemAttachments([]);
-    setSelectedAssigneeId('');
-    setNewSubItemTitle('');
-    setManualMinutes(undefined);
-  }, [selectedItem, loadSelectedItemDetails]);
 
   // Contagem visual baseada no timer persistido.
   useEffect(() => {
@@ -958,123 +841,6 @@ export const Kanban: React.FC = () => {
     setSelectedItem(item);
   };
 
-  const handleAssignUser = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !selectedAssigneeId) return;
-
-    try {
-      await api.assignUser(selectedItem.id, selectedAssigneeId);
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao atribuir responsavel');
-    }
-  };
-
-  const handleRemoveAssignee = async (userId: string) => {
-    if (!selectedItem) return;
-
-    try {
-      await api.removeAssignee(selectedItem.id, userId);
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao remover responsavel');
-    }
-  };
-
-  const handleCreateSubItem = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !newSubItemTitle.trim()) return;
-
-    const nextPos = selectedItemSubItems.length > 0
-      ? Math.max(...selectedItemSubItems.map(item => item.position)) + 100
-      : 100;
-
-    try {
-      await api.createWorkItem({
-        boardId: selectedItem.boardId,
-        stageId: selectedItem.stageId || undefined,
-        parentId: selectedItem.id,
-        title: newSubItemTitle,
-        priority: 0,
-        position: nextPos
-      });
-
-      setNewSubItemTitle('');
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao criar subtarefa');
-    }
-  };
-
-  const handleUploadAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedItem || !event.target.files?.[0]) return;
-
-    try {
-      setUploadingAttachment(true);
-      await api.uploadAttachment(selectedItem.id, event.target.files[0]);
-      event.target.value = '';
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao enviar anexo');
-    } finally {
-      setUploadingAttachment(false);
-    }
-  };
-
-  const handleDownloadAttachment = async (attachment: Attachment) => {
-    if (!selectedItem) return;
-
-    try {
-      const blob = await api.downloadAttachment(selectedItem.id, attachment.id);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = attachment.fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      alert('Erro ao baixar anexo');
-    }
-  };
-
-  const handleCreateManualTimeEntry = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !manualMinutes || manualMinutes <= 0) return;
-
-    const endedAt = new Date();
-    const startedAt = new Date(endedAt.getTime() - manualMinutes * 60 * 1000);
-
-    try {
-      await api.createManualTimeEntry({
-        workItemId: selectedItem.id,
-        startedAt: startedAt.toISOString(),
-        endedAt: endedAt.toISOString()
-      });
-
-      // Reflete o lançamento imediatamente no "Tempo nesta tarefa"
-      // (antes, o total só atualizava ao reabrir o modal).
-      const addedSeconds = manualMinutes * 60;
-      setSelectedItem(prev => prev
-        ? { ...prev, totalTimeSeconds: (prev.totalTimeSeconds || 0) + addedSeconds }
-        : prev);
-
-      setManualMinutes(undefined);
-      await loadSelectedItemDetails(selectedItem.id);
-
-      if (selectedBoardId) {
-        await loadBoardData(selectedBoardId);
-      }
-    } catch {
-      alert('Erro ao lancar tempo manual');
-    }
-  };
-
   const toggleTimer = async (itemId: string) => {
     try {
       if (runningItemId === itemId) {
@@ -1083,10 +849,6 @@ export const Kanban: React.FC = () => {
         setRunningStartedAt(null);
         setActiveTime(0);
         window.dispatchEvent(new Event('timer-change'));
-
-        if (selectedItem?.id === itemId) {
-          await loadSelectedItemDetails(itemId);
-        }
 
         if (selectedBoardId) {
           await loadBoardData(selectedBoardId);
@@ -1117,17 +879,6 @@ export const Kanban: React.FC = () => {
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const formatTotalHours = (seconds?: number) => {
-    if (!seconds) return '0.00h';
-    return `${(seconds / 3600).toFixed(2)}h`;
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '0 KB';
-    if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   const getUserLabel = (user: UserDto) => userDisplayLabel(user);
@@ -1325,17 +1076,18 @@ export const Kanban: React.FC = () => {
           </SelectorContainer>
 
           {selectedBoardId && (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'inline-flex', border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}>
+            <BoardActions>
+              <ViewSwitcher role="group" aria-label="Visão do quadro">
                 {([['kanban', 'Kanban'], ['lista', 'Lista'], ['calendario', 'Calendário'], ['gantt', 'Gantt'], ['dashboard', 'Dashboard']] as const).map(([key, label]) => (
-                  <button
+                  <ViewSwitcherButton
                     key={key}
                     type="button"
+                    $active={boardView === key}
+                    aria-pressed={boardView === key}
                     onClick={() => setBoardView(key)}
-                    style={{ padding: '8px 14px', fontSize: 15, fontWeight: 700, background: boardView === key ? '#1E7BD7' : '#fff', color: boardView === key ? '#fff' : '#64748B' }}
-                  >{label}</button>
+                  >{label}</ViewSwitcherButton>
                 ))}
-              </div>
+              </ViewSwitcher>
               <ActionButton onClick={() => {
                 loadLeadTime();
                 setShowLeadTimeModal(true);
@@ -1353,7 +1105,7 @@ export const Kanban: React.FC = () => {
                 <Plus size={16} />
                 <span>Nova Coluna</span>
               </ActionButton>
-            </div>
+            </BoardActions>
           )}
         </BoardHeader>
 
@@ -1492,7 +1244,8 @@ export const Kanban: React.FC = () => {
                       </CardCount>
                       <button
                         type="button"
-                        title="Mover coluna para esquerda"
+                        title={`Mover coluna ${stage.name} para a esquerda`}
+                        aria-label={`Mover coluna ${stage.name} para a esquerda`}
                         disabled={stages.indexOf(stage) === 0}
                         onClick={() => handleMoveStage(stage.id, 'left')}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === 0 ? 0.3 : 1 }}
@@ -1501,7 +1254,8 @@ export const Kanban: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        title="Mover coluna para direita"
+                        title={`Mover coluna ${stage.name} para a direita`}
+                        aria-label={`Mover coluna ${stage.name} para a direita`}
                         disabled={stages.indexOf(stage) === stages.length - 1}
                         onClick={() => handleMoveStage(stage.id, 'right')}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === stages.length - 1 ? 0.3 : 1 }}
@@ -1644,6 +1398,8 @@ export const Kanban: React.FC = () => {
                         <CardActions>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <ActionIcon
+                              aria-label="Mover tarefa para a coluna anterior"
+                              title="Mover tarefa para a coluna anterior"
                               onClick={event => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'left');
@@ -1653,6 +1409,8 @@ export const Kanban: React.FC = () => {
                               <ChevronLeft size={16} />
                             </ActionIcon>
                             <ActionIcon
+                              aria-label="Mover tarefa para a próxima coluna"
+                              title="Mover tarefa para a próxima coluna"
                               onClick={event => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'right');
@@ -1664,6 +1422,8 @@ export const Kanban: React.FC = () => {
                           </div>
 
                           <ActionIcon
+                            aria-label={runningItemId === item.id ? 'Parar cronômetro da tarefa' : 'Iniciar cronômetro da tarefa'}
+                            title={runningItemId === item.id ? 'Parar cronômetro' : 'Iniciar cronômetro'}
                             $color={runningItemId === item.id ? '#EF4444' : '#10B981'}
                             onClick={event => {
                               event.stopPropagation();
@@ -1933,283 +1693,6 @@ export const Kanban: React.FC = () => {
         onItemUpdated={()=>{if(selectedBoardId)void loadBoardData(selectedBoardId);}}
       />
 
-      {selectedItem && legacyTaskModalEnabled && (() => {
-        const boardName = boards.find(b => b.id === selectedItem.boardId)?.name || '—';
-        const stageName = stages.find(s => s.id === selectedItem.stageId)?.name || '—';
-        const isCurrent = runningItemId === selectedItem.id;
-        const totalSecs = (selectedItem.totalTimeSeconds || 0) + (isCurrent ? activeTime : 0);
-        const userSecs = (selectedItem.userTimeSeconds || 0) + (isCurrent ? activeTime : 0);
-        const estSecs = (selectedItem.estimatedHours || 0) * 3600;
-        const timePct = estSecs > 0 ? (totalSecs / estSecs) * 100 : 0;
-        return (
-        <ModalOverlay onClick={() => setSelectedItem(null)}>
-          <TaskModal onClick={event => event.stopPropagation()}>
-            <TaskTopbar>
-              <TaskTimerBtn $running={isCurrent} onClick={() => toggleTimer(selectedItem.id)}>
-                {isCurrent ? <Square size={16} /> : <Play size={16} />}
-                <span>{isCurrent ? formatTime(activeTime) : 'Iniciar'}</span>
-              </TaskTimerBtn>
-              <Avatars>
-                {selectedItemAssignees.slice(0, 5).map(user => (
-                  <Avatar key={user.id} title={getUserLabel(user)}>
-                    {getUserLabel(user).slice(0, 2).toUpperCase()}
-                  </Avatar>
-                ))}
-              </Avatars>
-              <div style={{ flex: 1 }} />
-              <Tag $priority={selectedItem.priority}>
-                {selectedItem.priority === 2 ? 'Alta' : selectedItem.priority === 1 ? 'Media' : 'Baixa'}
-              </Tag>
-              <ActionIcon onClick={() => setSelectedItem(null)} title="Fechar">
-                <X size={18} />
-              </ActionIcon>
-            </TaskTopbar>
-
-            <TaskBody>
-              <TaskMain>
-                <TaskH1>{selectedItem.title}</TaskH1>
-                <TaskMeta>
-                  Criada em {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleDateString('pt-BR') : '—'}
-                </TaskMeta>
-
-                <TaskTabs>
-                  <TaskTab $active={taskTab === 'descricao'} onClick={() => setTaskTab('descricao')}>Descrição</TaskTab>
-                  <TaskTab $active={taskTab === 'comentarios'} onClick={() => setTaskTab('comentarios')}>Comentários</TaskTab>
-                  <TaskTab $active={taskTab === 'subtarefas'} onClick={() => setTaskTab('subtarefas')}>Subtarefas</TaskTab>
-                  <TaskTab $active={taskTab === 'anexos'} onClick={() => setTaskTab('anexos')}>Anexos</TaskTab>
-                </TaskTabs>
-
-                {taskTab === 'comentarios' && <TaskFeed workItemId={selectedItem.id} />}
-
-                {taskTab === 'descricao' && (<>
-                {selectedItem.subtitle && (
-                  <DetailSection>
-                    <DetailLabel>Subtitulo</DetailLabel>
-                    <DetailText>{selectedItem.subtitle}</DetailText>
-                  </DetailSection>
-                )}
-
-                <DetailSection>
-                  <DetailLabel>Descrição</DetailLabel>
-                  <TaskDescriptionPanel
-                    workItemId={selectedItem.id}
-                    description={selectedItem.description}
-                    onChanged={text => {
-                      setSelectedItem(prev => prev ? { ...prev, description: text ?? undefined } : prev);
-                      setWorkItems(items => items.map(w => w.id === selectedItem.id ? { ...w, description: text ?? undefined } : w));
-                    }}
-                  />
-                </DetailSection>
-                </>)}
-
-                {taskTab === 'subtarefas' && (
-                <DetailSection>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <CheckSquare size={16} />
-                      <span>Subtarefas</span>
-                    </SectionTitle>
-                    <InlineForm onSubmit={handleCreateSubItem}>
-                      <Input
-                        type="text"
-                        placeholder="Nova subtarefa"
-                        value={newSubItemTitle}
-                        onChange={event => setNewSubItemTitle(event.target.value)}
-                      />
-                      <SmallButton type="submit" disabled={!newSubItemTitle.trim()}>
-                        <Plus size={14} />
-                        <span>Criar</span>
-                      </SmallButton>
-                    </InlineForm>
-                  </SectionHeader>
-
-                  <ListPanel>
-                    {selectedItemSubItems.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhuma subtarefa criada.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemSubItems.map(subItem => (
-                        <ListItem key={subItem.id}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <span>{subItem.title}</span>
-                            {subItem.subtitle && <MutedText>{subItem.subtitle}</MutedText>}
-                          </div>
-                          <Tag $priority={subItem.priority}>
-                            {subItem.priority === 2 ? 'Alta' : subItem.priority === 1 ? 'Media' : 'Baixa'}
-                          </Tag>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-                )}
-
-                {taskTab === 'anexos' && (
-                <DetailSection>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <Paperclip size={16} />
-                      <span>Anexos</span>
-                    </SectionTitle>
-                    <FileInput
-                      type="file"
-                      onChange={handleUploadAttachment}
-                      disabled={uploadingAttachment}
-                    />
-                  </SectionHeader>
-
-                  <ListPanel>
-                    {selectedItemAttachments.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhum anexo enviado.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemAttachments.map(attachment => (
-                        <ListItem key={attachment.id}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                            <span style={{ overflowWrap: 'anywhere' }}>{attachment.fileName}</span>
-                            <MutedText>{formatFileSize(attachment.fileSize)}</MutedText>
-                          </div>
-                          <SmallButton type="button" onClick={() => handleDownloadAttachment(attachment)}>
-                            <Download size={14} />
-                            <span>Baixar</span>
-                          </SmallButton>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-                )}
-              </TaskMain>
-
-              <TaskSidebar>
-                <SidebarRow>
-                  <SidebarLabel>Quadro</SidebarLabel>
-                  <SidebarValue>{boardName}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Etapa</SidebarLabel>
-                  <SidebarValue>{stageName}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Horas estimadas</SidebarLabel>
-                  <SidebarValue>{selectedItem.estimatedHours ? `${selectedItem.estimatedHours}h` : '—'}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Vencimento</SidebarLabel>
-                  <SidebarValue>{selectedItem.dueDate || '—'}</SidebarValue>
-                </SidebarRow>
-
-                <TaskTaxonomyPanel
-                  workItemId={selectedItem.id}
-                  taskTypeId={selectedItem.taskTypeId}
-                  points={selectedItem.points}
-                  tagIds={(selectedItem.tags || []).map(t => t.id)}
-                  showPoints={showStoryPoints}
-                  onChanged={async () => {
-                    if (!selectedBoardId) return;
-                    const fresh = await api.getWorkItems(selectedBoardId);
-                    setWorkItems(fresh);
-                    const updated = fresh.find((w: WorkItem) => w.id === selectedItem.id);
-                    if (updated) setSelectedItem(updated);
-                  }}
-                />
-
-                <TaskApprovalPanel workItemId={selectedItem.id} users={assignableUsers} />
-
-                <TaskChecklistPanel
-                  workItemId={selectedItem.id}
-                  onChanged={async () => {
-                    if (!selectedBoardId) return;
-                    const fresh = await api.getWorkItems(selectedBoardId);
-                    setWorkItems(fresh);
-                    const updated = fresh.find((w: WorkItem) => w.id === selectedItem.id);
-                    if (updated) setSelectedItem(updated);
-                  }}
-                />
-
-                <div style={{ padding: '14px 0', borderBottom: '1px solid #edf2f7' }}>
-                  <SidebarLabel><Clock size={14} /> Tempo nesta tarefa</SidebarLabel>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontWeight: 600, fontSize: 15 }}>
-                    <span>
-                      {formatTotalHours(totalSecs)}
-                      {totalSecs !== userSecs ? ` (Você ${formatTotalHours(userSecs)})` : ''}
-                    </span>
-                    <span>{selectedItem.estimatedHours ? `${selectedItem.estimatedHours}h` : ''}</span>
-                  </div>
-                  <ProgressTrack><ProgressFill $pct={timePct} /></ProgressTrack>
-                  {isCurrent && (
-                    <div style={{ marginTop: 8, color: '#008ECF', fontWeight: 'bold' }}>
-                      ● {formatTime(activeTime)} agora
-                    </div>
-                  )}
-                  <InlineForm onSubmit={handleCreateManualTimeEntry} style={{ marginTop: 12 }}>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="Minutos"
-                      value={manualMinutes || ''}
-                      onChange={event => setManualMinutes(event.target.value ? Number(event.target.value) : undefined)}
-                    />
-                    <SmallButton type="submit" disabled={!manualMinutes || manualMinutes <= 0}>
-                      <Plus size={14} />
-                      <span>Lançar</span>
-                    </SmallButton>
-                  </InlineForm>
-                </div>
-
-                <DetailSection style={{ marginTop: 14 }}>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <Users size={16} />
-                      <span>Responsáveis</span>
-                    </SectionTitle>
-                  </SectionHeader>
-                  <InlineForm onSubmit={handleAssignUser}>
-                    <Select
-                      value={selectedAssigneeId}
-                      onChange={event => setSelectedAssigneeId(event.target.value)}
-                      disabled={assignableUsers.length === selectedItemAssignees.length}
-                    >
-                      <option value="">Selecionar usuario</option>
-                      {assignableUsers
-                        .filter(user => !selectedItemAssignees.some(assignee => assignee.id === user.id))
-                        .map(user => (
-                          <option key={user.id} value={user.id}>
-                            {getUserLabel(user)}
-                          </option>
-                        ))}
-                    </Select>
-                    <SmallButton type="submit" disabled={!selectedAssigneeId}>
-                      <UserPlus size={14} />
-                      <span>Atribuir</span>
-                    </SmallButton>
-                  </InlineForm>
-                  <ListPanel>
-                    {selectedItemAssignees.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhum responsavel atribuido.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemAssignees.map(user => (
-                        <ListItem key={user.id}>
-                          <span>{getUserLabel(user)}</span>
-                          <ActionIcon onClick={() => handleRemoveAssignee(user.id)} title="Remover">
-                            <X size={14} />
-                          </ActionIcon>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-              </TaskSidebar>
-            </TaskBody>
-          </TaskModal>
-        </ModalOverlay>
-        );
-      })()}
-
       {showLeadTimeModal && (
         <ModalOverlay onClick={() => setShowLeadTimeModal(false)}>
           <Modal wide onClick={event => event.stopPropagation()}>
@@ -2385,7 +1868,7 @@ export const Kanban: React.FC = () => {
                         <span>{j.reason}</span>
                         <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
                           <strong>{j.hours}h</strong>
-                          <button type="button" onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></button>
+                          <button type="button" aria-label={`Remover justificativa ${j.reason}`} onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></button>
                         </span>
                       </div>
                     ))}

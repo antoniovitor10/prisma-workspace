@@ -5,6 +5,15 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (Agente 2) — Kanban responsivo, a11y de ícones e remoção do modal legado
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-kanban-resp` na branch `fix/kanban-responsivo` a partir de `integration/all-specs-v2`. Corrigi a barra de ações do quadro (wrap + `max-width: 100vw` / `overflow-x: clip`) para o Pixel 5 não estourar horizontalmente e "Nova Coluna" ficar clicável. Dei `aria-label` descritivo aos botões só-ícone (reordenar coluna, mover cartão, cronômetro, remover justificativa). Removi `legacyTaskModalEnabled` e todo o modal/código morto associado (+ estilos órfãos). Front E2E serviu o worktree em `:5450` (API `:5400` com seed desligado).
+- **Arquivos tocados:** `src/Prisma.Workspace.Web/src/pages/Kanban.tsx`, `Kanban.styles.ts`, `e2e/kanban-responsive.spec.ts`, `PROGRESS.md`.
+- **Prova de não-vacuidade:** contra o front antigo (`scrollWidth=803` em viewport 393) o novo spec falhou com `Expected: <= 393, Received: 803` e sem os `aria-label` de coluna; após o fix, mobile clica "Nova Coluna" e `scrollWidth <= clientWidth`.
+- **Testes:** `kanban-responsive` 4/4 (1 skip desktop no cenário mobile-only). Desktop suite: 25 passed / 1 failed (`board-stage-sync` pré-existente de contrato). Mobile suite: 24 passed / 3 failed (mesmo `board-stage-sync` + invite/switch flaky). Suíte completa: **50 passed / 3 skipped / 2 failed** (`board-stage-sync` desktop + smoke logout mobile). `tsc -b` limpo.
+- **Decisões novas:** nenhuma.
+- **Próximo passo:** merge em `integration/all-specs-v2` após o Agente 1 fechar o contrato de etapa; não reabrir o modal legado.
+- **Bloqueios:** nenhum no recorte do Agente 2.
+
 ## [2026-09-09] — Composer (coordenador) — Onda 0: ambiente E2E restaurado; suíte NÃO verde
 - **Fiz:** Li `HANDOFF-V2.md` e o contexto vigente (D80–D85). Liberei RAM parando containers não E2E (Supabase/nodecast). Subi `prisma-workspace-e2e-sql`, resetei `DetranKanban_E2E`, apliquei migrations, API em `:5400` e front com `--mode e2e` em `:5450` (sem o mode o Vite apontava para `localhost:5216`). Validei pela interface via `playwright-cli`: login, Solicitações, Kanban, configurações do portal, formulário público `/portal/demo` (POST 201 → protocolo `2026-001005` aparece na fila). Rodei `npx playwright test`: **43 passed / 2 skipped / 6 failed**.
 - **Falhas isoladas:** (1) `board-stage-sync` — PUT `/api/WorkItems/{id}` ao mudar Status para Concluído retorna **400** `"O status de destino esta inativo no workflow."`; a lista permanece em Revisão. (2) `stage-category` — coluna criada como "Concluída" grava `category: 3` (Em andamento), não `5`. (3) mobile `Nova Coluna` interceptada por `Gantt` (803px em viewport 393). (4) `quick-create-layout` — dialog sem checkbox de quadros. Portal pós-SLA **ok** na validação manual.
