@@ -47,8 +47,7 @@ public static class DbInitializer
             || await context.WikiPages.IgnoreQueryFilters().AnyAsync()
             || await context.SavedReports.IgnoreQueryFilters().AnyAsync();
         if (hasExistingData)
-            throw new InvalidOperationException(
-                "O seed demo exige uma instalação vazia e nunca altera dados existentes.");
+            return;
 
         // 2. Criar usuários de demonstração
         var user1 = new IdentityUser { UserName = "admin@prisma.example.invalid", Email = "admin@prisma.example.invalid", EmailConfirmed = true };
@@ -288,6 +287,9 @@ public static class DbInitializer
                     statuses.Add(status);
                     projectStatuses.Add(status);
                 }
+                // Colunas do seed precisam apontar para status ATIVO: o WorkflowMoveGuard
+                // recusa destino com IsActive != true (caso a do board-stage-sync).
+                status.IsActive = true;
                 stage.WorkflowStatusId = status.Id;
             }
         }

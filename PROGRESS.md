@@ -5,6 +5,14 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (Agente 1 WorkflowMoveGuard) — Caso (a): status inativo + transições removidas na herança
+- **Fiz:** Diagnostiquei `board-stage-sync` no SQL E2E: `Stages.WorkflowStatusId` aponta para `WorkflowStatuses` existentes com `IsActive = 0` (caso **a**, não b — `w.Id` não nulo). Causa: herdar template (`SynchronizeProject` com `attachCustom`) desativava status legados do seed sem remapejar colunas e ainda substituía as transições, removendo `Revisão→Concluído`. Corrigi o seed para forçar `IsActive = true` em status ligados a colunas; no sync, não desativo status que ainda sustentam colunas/tarefas, remapejo órfãos homônimos ou reativo, e **preservo transições entre status ativos**; `GetProjectGraphAsync` passa a incluir `Stages`/`WorkItems` dos status. Seed demo deixa de derrubar a API em instalação já inicializada (return em vez de throw). Curei o banco E2E (reativar + recriar pares entre status de coluna).
+- **Arquivos tocados:** `DbInitializer.cs`, `OrganizationWorkflowFeature.cs`, `OrganizationWorkflowRepository.cs`, este `PROGRESS.md`.
+- **Decisões novas:** nenhuma. Asserção `destinationStatus?.IsActive == true` mantida.
+- **Testes:** prova API PUT Revisão→Concluído **204** após a cura; `board-stage-sync` desktop+mobile verde isolado; suíte `npx playwright test` **49 passed / 2 skipped / 0 failed** (log `.artifacts/onda0-workflow-guard-e2e.txt`).
+- **Próximo passo:** coordenador integrar `fix/onda0-workflow-guard`; Agente 2 / responsivo conforme Onda 0.
+- **Bloqueios:** nenhum neste lote. Risco residual: banco E2E sujo de suítes anteriores ainda pode precisar da cura SQL se a API antiga rodou sem o fix de sync.
+
 ## [2026-09-09] — Composer (coordenador) — Onda 0: ambiente E2E restaurado; suíte NÃO verde
 - **Fiz:** Li `HANDOFF-V2.md` e o contexto vigente (D80–D85). Liberei RAM parando containers não E2E (Supabase/nodecast). Subi `prisma-workspace-e2e-sql`, resetei `DetranKanban_E2E`, apliquei migrations, API em `:5400` e front com `--mode e2e` em `:5450` (sem o mode o Vite apontava para `localhost:5216`). Validei pela interface via `playwright-cli`: login, Solicitações, Kanban, configurações do portal, formulário público `/portal/demo` (POST 201 → protocolo `2026-001005` aparece na fila). Rodei `npx playwright test`: **43 passed / 2 skipped / 6 failed**.
 - **Falhas isoladas:** (1) `board-stage-sync` — PUT `/api/WorkItems/{id}` ao mudar Status para Concluído retorna **400** `"O status de destino esta inativo no workflow."`; a lista permanece em Revisão. (2) `stage-category` — coluna criada como "Concluída" grava `category: 3` (Em andamento), não `5`. (3) mobile `Nova Coluna` interceptada por `Gantt` (803px em viewport 393). (4) `quick-create-layout` — dialog sem checkbox de quadros. Portal pós-SLA **ok** na validação manual.
