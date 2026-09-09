@@ -245,6 +245,105 @@ public static class DbInitializer
 
         await context.TimeEntries.AddRangeAsync(time1, time2, time3);
 
+        // 10. Conjunto de demonstracao que mostra o produto de verdade: hierarquia completa,
+        // os tipos de item, sprints nos tres estados e uma tarefa arquivada.
+        var hoje = DateOnly.FromDateTime(now.UtcDateTime);
+
+        // 10.1 Sprints. O estado e derivado das datas (D84), entao basta posicionar o
+        // periodo: encerrada, em curso e planejada, sem nenhuma acao manual.
+        var sprintEncerrada = Sprint.Criar(project.Id, null, "Sprint 1 — Fundacao",
+            hoje.AddDays(-42), hoje.AddDays(-28), "Estruturar o cadastro e o fluxo basico.");
+        var sprintAtual = Sprint.Criar(project.Id, null, "Sprint 2 — Relatorios",
+            hoje.AddDays(-4), hoje.AddDays(10), "Entregar os relatorios previstos e o portal externo.");
+        var sprintFutura = Sprint.Criar(project.Id, null, "Sprint 3 — Automacao",
+            hoje.AddDays(11), hoje.AddDays(25), "Automatizar triagem e notificacoes.");
+        await context.Sprints.AddRangeAsync(sprintEncerrada, sprintAtual, sprintFutura);
+
+        WorkItem Item(
+            string titulo, WorkItemKind tipo, Stage etapa, double posicao,
+            Guid? pai = null, Guid? sprint = null, string? descricao = null,
+            Priority prioridade = Priority.Medium, int? pontos = null,
+            decimal? horas = null, int criadoHaDias = 20, int? concluidoHaDias = null,
+            bool arquivada = false, string? responsavel = null)
+            => new()
+            {
+                Id = Guid.NewGuid(), BoardId = board.Id, StageId = etapa.Id, ParentId = pai,
+                SprintId = sprint, Kind = tipo, Title = titulo, Description = descricao,
+                Priority = prioridade, Points = pontos, EstimatedHours = horas,
+                RemainingHours = concluidoHaDias.HasValue ? 0 : horas,
+                Position = posicao, BacklogRank = Convert.ToDecimal(posicao),
+                IsArchived = arquivada,
+                ResponsibleId = responsavel ?? user2.Id,
+                CreatedBy = user1.Id, CreatedAt = now.AddDays(-criadoHaDias),
+                UpdatedAt = now.AddDays(-1),
+                CompletedAt = concluidoHaDias.HasValue ? now.AddDays(-concluidoHaDias.Value) : null,
+            };
+
+        // 10.2 Hierarquia completa: Epico -> Feature -> Historia -> Tarefa -> Subtarefa.
+        var epico = Item("Portal de atendimento ao cidadao", WorkItemKind.Epic, stage2, 1000,
+            descricao: "Permitir que o cidadao abra e acompanhe solicitacoes sem ligar para o suporte.",
+            prioridade: Priority.High, criadoHaDias: 45);
+        var feature = Item("Acompanhamento publico por protocolo", WorkItemKind.Feature, stage2, 1100,
+            pai: epico.Id, sprint: sprintAtual.Id,
+            descricao: "Consulta publica do andamento a partir do numero de protocolo.",
+            prioridade: Priority.High, pontos: 13, horas: 40, criadoHaDias: 40);
+        var historia = Item("Como cidada, quero acompanhar minha solicitacao pelo protocolo",
+            WorkItemKind.UserStory, stage2, 1200, pai: feature.Id, sprint: sprintAtual.Id,
+            descricao: "Ver situacao, historico e respostas sem precisar de conta.",
+            prioridade: Priority.High, pontos: 5, horas: 16, criadoHaDias: 30);
+        var tarefa = Item("Criar pagina publica de acompanhamento", WorkItemKind.Task, stage2, 1300,
+            pai: historia.Id, sprint: sprintAtual.Id, horas: 8, criadoHaDias: 25, responsavel: user3.Id);
+        var subtarefa = Item("Montar o layout responsivo da consulta", WorkItemKind.Subtask, stage3, 1400,
+            pai: tarefa.Id, sprint: sprintAtual.Id, horas: 3, criadoHaDias: 20, responsavel: user3.Id);
+
+        // 10.3 Os demais tipos, para que cada um apareca com sua cor e finalidade.
+        var bug = Item("Protocolo duplicado ao reenviar o formulario", WorkItemKind.Bug, stage2, 1500,
+            sprint: sprintAtual.Id, descricao: "Dois cliques rapidos geram dois protocolos.",
+            prioridade: Priority.Critical, horas: 4, criadoHaDias: 6, responsavel: user3.Id);
+        var incidente = Item("Portal fora do ar por 12 minutos", WorkItemKind.Incident, stage4, 1600,
+            descricao: "Indisponibilidade durante o pico da manha. Causa ja corrigida.",
+            prioridade: Priority.Critical, horas: 2, criadoHaDias: 12, concluidoHaDias: 11);
+        var melhoria = Item("Reduzir passos do formulario de abertura", WorkItemKind.Improvement, stage1, 1700,
+            sprint: sprintFutura.Id, prioridade: Priority.Medium, pontos: 3, horas: 6, criadoHaDias: 9);
+        var debito = Item("Substituir consulta N+1 na fila de solicitacoes",
+            WorkItemKind.TechnicalDebt, stage1, 1800, sprint: sprintFutura.Id,
+            descricao: "A listagem faz uma consulta por linha; nao muda comportamento, sustenta o ritmo.",
+            prioridade: Priority.Medium, horas: 5, criadoHaDias: 8);
+        var solicitacao = Item("Segunda via do comprovante de licenciamento",
+            WorkItemKind.Request, stage1, 1900,
+            descricao: "Pedido recebido pelo portal externo.", criadoHaDias: 3);
+
+        // 10.4 Trabalho da sprint encerrada, que sustenta o historico e as metricas.
+        var entregue1 = Item("Cadastro de solicitantes", WorkItemKind.UserStory, stage4, 900,
+            sprint: sprintEncerrada.Id, prioridade: Priority.High, pontos: 8, horas: 20,
+            criadoHaDias: 44, concluidoHaDias: 29);
+        var entregue2 = Item("Fluxo de triagem inicial", WorkItemKind.UserStory, stage4, 910,
+            sprint: sprintEncerrada.Id, pontos: 5, horas: 14, criadoHaDias: 43, concluidoHaDias: 30);
+
+        // 10.5 Uma tarefa arquivada, para o filtro "Arquivadas" ter o que mostrar.
+        var arquivada = Item("Estudo de viabilidade do app nativo", WorkItemKind.Task, stage1, 2000,
+            descricao: "Descartado apos a decisao de priorizar o portal web.",
+            criadoHaDias: 35, arquivada: true);
+
+        await context.WorkItems.AddRangeAsync(
+            epico, feature, historia, tarefa, subtarefa,
+            bug, incidente, melhoria, debito, solicitacao,
+            entregue1, entregue2, arquivada);
+
+        await context.WorkItemAssignees.AddRangeAsync(
+            new WorkItemAssignee { WorkItemId = feature.Id, UserId = user2.Id, AssignedAt = now.AddDays(-30) },
+            new WorkItemAssignee { WorkItemId = historia.Id, UserId = user3.Id, AssignedAt = now.AddDays(-25) },
+            new WorkItemAssignee { WorkItemId = tarefa.Id, UserId = user3.Id, AssignedAt = now.AddDays(-20) },
+            new WorkItemAssignee { WorkItemId = bug.Id, UserId = user3.Id, AssignedAt = now.AddDays(-6) },
+            new WorkItemAssignee { WorkItemId = entregue1.Id, UserId = user2.Id, AssignedAt = now.AddDays(-44) });
+
+        // 10.6 Apontamentos da semana corrente, para "Minhas horas" ter conteudo.
+        await context.TimeEntries.AddRangeAsync(
+            TimeEntry.Manual(tarefa.Id, user3.Id, now.AddDays(-2).AddHours(9), now.AddDays(-2).AddHours(13), "Estrutura da pagina."),
+            TimeEntry.Manual(tarefa.Id, user3.Id, now.AddDays(-1).AddHours(14), now.AddDays(-1).AddHours(17), "Consulta por protocolo."),
+            TimeEntry.Manual(bug.Id, user3.Id, now.AddHours(-3), now.AddHours(-1), "Reproducao do protocolo duplicado."),
+            TimeEntry.Manual(historia.Id, user2.Id, now.AddDays(-3).AddHours(10), now.AddDays(-3).AddHours(12), "Refinamento com a equipe."));
+
         project.DefaultBoardId = board.Id;
 
         // 10. Salvar alterações no banco e marcar a instalação como inicializada
