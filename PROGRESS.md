@@ -5,6 +5,15 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (Agente C) — a11y selects, Equipes mobile, resíduos Auth, orphan workflow tests
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-a11y` na branch `fix/a11y-residuos` a partir de `51d14a9` (D86). `aria-label` nos selects de Empresa, OrganizationSettings e ProjectSettings; Equipes sem overflow horizontal no mobile (`overflow-x: clip`, grids `minmax(0,…)`, `AddMember` sem `min-width:240px`); AuthController: assuntos de e-mail Prisma WorkSpace; cookie de refresh emite `prisma_refresh`/`__Host-prisma_refresh` e ainda lê `detran_refresh`/`__Host-detran_refresh` (sessão antiga sobrevive); removi `pages/Dashboards.tsx` morto; helpers `DeactivateUnlessBackingColumns`/`RemapOrphanedStageStatuses` `internal` + 3 xUnit; `AuthRefreshCookie` + testes de dual-cookie.
+- **Arquivos tocados:** `Company.tsx`, `OrganizationSettings.tsx`, `ProjectSettings.tsx`, `Teams.tsx`, `AuthController.cs`, `AuthRefreshCookie.cs`, `OrganizationWorkflowFeature.cs`, csprojs (InternalsVisibleTo), `e2e/a11y-residuos.spec.ts`, testes xUnit, este `PROGRESS.md`. Removido `Dashboards.tsx`.
+- **Prova de não-vacuidade:** front antigo `:5450` → Equipes `scrollWidth=509` em viewport 393 e Empresa sem combobox `Cliente do projeto`; após o fix no worktree (Vite `:5450`) os dois passam. Cookie: `TryRead` aceita legado; `EmitName` não contém `detran`.
+- **Testes:** xUnit filtro orphan+cookie **7/7**; `npx tsc -b` limpo; Playwright `a11y-residuos` mobile **3 passed** (setup + 2 specs). Front E2E do worktree em `:5450`; API `:5400`.
+- **Decisões novas:** nenhuma. D86 preservada.
+- **Próximo passo:** coordenador integrar `fix/a11y-residuos` em `integration/all-specs-v2`.
+- **Bloqueios:** nenhum no recorte do Agente C.
+
 ## [2026-09-09] — Composer (coordenador) — Onda 0 integrada e E2E verde
 - **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2` (`ed6f675` / `5601b86`). Conflito só em `PROGRESS.md`. Reiniciei API+front com o código integrado e rodei a suíte completa.
 - **Testes:** `npx playwright test` **52 passed / 3 skipped / 0 failed** (`.artifacts/onda0-integration-e2e.txt`).

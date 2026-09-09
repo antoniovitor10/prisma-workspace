@@ -226,7 +226,11 @@ export const Company: React.FC = () => {
                 <span>{p.progress}% · {p.tasksDone}/{p.tasksTotal} tarefas</span>
                 <span>{p.totalHours}h</span>
               </Meta>
-              <Field value={p.clientId ?? ''} onChange={e => changeClient(p, e.target.value)}>
+              <Field
+                aria-label={`Cliente do projeto ${p.name}`}
+                value={p.clientId ?? ''}
+                onChange={e => changeClient(p, e.target.value)}
+              >
                 <option value="">Sem cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Field>

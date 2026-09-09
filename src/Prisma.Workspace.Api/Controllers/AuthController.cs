@@ -50,7 +50,7 @@ public sealed class AuthController : ControllerBase
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var link = BuildFrontendLink("confirm-email", user.Id, token);
-        var emailSent = await _emailSender.SendAsync(user.Email!, "Confirme seu e-mail — Detran Kanban",
+        var emailSent = await _emailSender.SendAsync(user.Email!, "Confirme seu e-mail — Prisma WorkSpace",
             $"Confirme seu cadastro acessando: {link}", ct);
         if (!emailSent)
             _logger.LogWarning("Cadastro do usuário {UserId} criado, mas o e-mail de confirmação não pôde ser enviado.", user.Id);
@@ -117,7 +117,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
-        if (!Request.Cookies.TryGetValue(RefreshCookieName, out var current))
+        if (!TryReadRefreshCookie(out var current))
             return Unauthorized(ApiErrors.Problem(401, "invalid_refresh_token", "Sessão expirada",
                 "Entre novamente para continuar.", HttpContext.TraceIdentifier));
         var rotated = await _refreshTokens.RotateAsync(current, ClientIp(), ct);
@@ -144,7 +144,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
-        if (Request.Cookies.TryGetValue(RefreshCookieName, out var token))
+        if (TryReadRefreshCookie(out var token))
             await _refreshTokens.RevokeFamilyAsync(token, ClientIp(), ct);
         ClearRefreshCookie();
         return NoContent();
@@ -158,7 +158,7 @@ public sealed class AuthController : ControllerBase
         if (user is null || !user.EmailConfirmed) return Accepted(new RecoveryAcceptedResponse());
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var link = BuildFrontendLink("reset-password", user.Id, token);
-        await _emailSender.SendAsync(user.Email!, "Recuperação de senha — Detran Kanban",
+        await _emailSender.SendAsync(user.Email!, "Recuperação de senha — Prisma WorkSpace",
             $"Redefina sua senha acessando: {link}", ct);
         _logger.LogInformation("Recuperação de senha solicitada para o usuário {UserId}.", user.Id);
         return Accepted(new RecoveryAcceptedResponse(
@@ -200,29 +200,41 @@ public sealed class AuthController : ControllerBase
             $"&token={Uri.EscapeDataString(token)}";
     }
 
-    private string RefreshCookieName => _environment.IsDevelopment()
-        ? "detran_refresh"
-        : "__Host-detran_refresh";
+    private bool IsDev => _environment.IsDevelopment();
+
+    private string RefreshCookieName => AuthRefreshCookie.EmitName(IsDev);
+
+    private bool TryReadRefreshCookie(out string token)
+        => AuthRefreshCookie.TryRead(Request.Cookies, IsDev, out token);
 
     private void SetRefreshCookie(RefreshTokenIssue refresh)
-        => Response.Cookies.Append(RefreshCookieName, refresh.Token, new CookieOptions
+    {
+        // Emite só o nome novo; remove o legado para migrar a sessão sem derrubá-la.
+        Response.Cookies.Delete(AuthRefreshCookie.LegacyName(IsDev), CookieClearOptions());
+        Response.Cookies.Append(RefreshCookieName, refresh.Token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = !_environment.IsDevelopment(),
+            Secure = !IsDev,
             SameSite = SameSiteMode.Strict,
             Path = "/",
             Expires = refresh.ExpiresAt,
             IsEssential = true
         });
+    }
 
     private void ClearRefreshCookie()
-        => Response.Cookies.Delete(RefreshCookieName, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = !_environment.IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
-            Path = "/"
-        });
+    {
+        foreach (var name in AuthRefreshCookie.ReadableNames(IsDev))
+            Response.Cookies.Delete(name, CookieClearOptions());
+    }
+
+    private CookieOptions CookieClearOptions() => new()
+    {
+        HttpOnly = true,
+        Secure = !IsDev,
+        SameSite = SameSiteMode.Strict,
+        Path = "/"
+    };
 
     private string? ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }
