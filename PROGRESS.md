@@ -5,11 +5,12 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
-## [2026-09-09] — Composer (coordenador) — Integra Onda 0: workflow guard + Kanban responsivo
-- **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2`. Conflito só em `PROGRESS.md`, resolvido mantendo as duas entradas. Sem conflito de código (arquivos disjuntos).
-- **Decisões novas:** nenhuma.
-- **Próximo passo:** suíte E2E completa na integração; se verde, liberar Onda 1 (A/B/C sem migration).
-- **Bloqueios:** aguardando validação E2E pós-merge.
+## [2026-09-09] — Composer (coordenador) — Onda 0 integrada e E2E verde
+- **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2` (`ed6f675` / `5601b86`). Conflito só em `PROGRESS.md`. Reiniciei API+front com o código integrado e rodei a suíte completa.
+- **Testes:** `npx playwright test` **52 passed / 3 skipped / 0 failed** (`.artifacts/onda0-integration-e2e.txt`).
+- **Decisões novas:** nenhuma. **Onda 0 fechada.** Onda 1 (A/B/C, sem migration) liberável.
+- **Próximo passo:** liberar Onda 1 — Kanban já coberto; A pode pular o que o Agente 2 fechou, ou focar resíduos; B Wiki/Solicitações; C a11y/resíduos institucionais.
+- **Bloqueios:** nenhum no portão E2E.
 
 ## [2026-09-09] — Composer (Agente 1 WorkflowMoveGuard) — Caso (a): status inativo + transições removidas na herança
 - **Fiz:** Diagnostiquei `board-stage-sync` no SQL E2E: `Stages.WorkflowStatusId` aponta para `WorkflowStatuses` existentes com `IsActive = 0` (caso **a**, não b — `w.Id` não nulo). Causa: herdar template (`SynchronizeProject` com `attachCustom`) desativava status legados do seed sem remapejar colunas e ainda substituía as transições, removendo `Revisão→Concluído`. Corrigi o seed para forçar `IsActive = true` em status ligados a colunas; no sync, não desativo status que ainda sustentam colunas/tarefas, remapejo órfãos homônimos ou reativo, e **preservo transições entre status ativos**; `GetProjectGraphAsync` passa a incluir `Stages`/`WorkItems` dos status. Seed demo deixa de derrubar a API em instalação já inicializada (return em vez de throw). Curei o banco E2E (reativar + recriar pares entre status de coluna).
