@@ -5,6 +5,31 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (coordenador) — B+C mesclados; E2E verde
+- **Fiz:** Merge `fix/wiki-solicitacoes` (`2f189f2`) e `fix/a11y-residuos` (`11490bb`) em `integration/all-specs-v2`. Conflito só em `PROGRESS.md`. Reiniciei API com CORS `:5450` + `Seed__DemoEnabled=false` e front integrado. Endureci `portal-requests` (poll+reload no tracking público sob carga).
+- **Testes:** `npx playwright test` **59 passed / 4 skipped / 0 failed** (`.artifacts/onda1-bc-integration-e2e.txt`). SHA handoff `1f8bec0`.
+- **Decisões novas:** nenhuma. D86 intacta; Sprint/* não tocado.
+- **Próximo passo:** liberar restante Onda 1 / Stage→Project (migration serializada, um agente).
+- **Bloqueios:** nenhum no portão E2E.
+
+## [2026-09-09] — Composer (Agente C) — a11y selects, Equipes mobile, resíduos Auth, orphan workflow tests
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-a11y` na branch `fix/a11y-residuos` a partir de `51d14a9` (D86). `aria-label` nos selects de Empresa, OrganizationSettings e ProjectSettings; Equipes sem overflow horizontal no mobile (`overflow-x: clip`, grids `minmax(0,…)`, `AddMember` sem `min-width:240px`); AuthController: assuntos de e-mail Prisma WorkSpace; cookie de refresh emite `prisma_refresh`/`__Host-prisma_refresh` e ainda lê `detran_refresh`/`__Host-detran_refresh` (sessão antiga sobrevive); removi `pages/Dashboards.tsx` morto; helpers `DeactivateUnlessBackingColumns`/`RemapOrphanedStageStatuses` `internal` + 3 xUnit; `AuthRefreshCookie` + testes de dual-cookie.
+- **Arquivos tocados:** `Company.tsx`, `OrganizationSettings.tsx`, `ProjectSettings.tsx`, `Teams.tsx`, `AuthController.cs`, `AuthRefreshCookie.cs`, `OrganizationWorkflowFeature.cs`, csprojs (InternalsVisibleTo), `e2e/a11y-residuos.spec.ts`, testes xUnit, este `PROGRESS.md`. Removido `Dashboards.tsx`.
+- **Prova de não-vacuidade:** front antigo `:5450` → Equipes `scrollWidth=509` em viewport 393 e Empresa sem combobox `Cliente do projeto`; após o fix no worktree (Vite `:5450`) os dois passam. Cookie: `TryRead` aceita legado; `EmitName` não contém `detran`.
+- **Testes:** xUnit filtro orphan+cookie **7/7**; `npx tsc -b` limpo; Playwright `a11y-residuos` mobile **3 passed** (setup + 2 specs). Front E2E do worktree em `:5450`; API `:5400`.
+- **Decisões novas:** nenhuma. D86 preservada.
+- **Próximo passo:** coordenador integrar `fix/a11y-residuos` em `integration/all-specs-v2`.
+- **Bloqueios:** nenhum no recorte do Agente C.
+
+## [2026-09-09] — Composer (Agente B Wiki/Solicitações) — TipTap imagem + portal pós-SLA
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-wiki` na branch `fix/wiki-solicitacoes` @ `51d14a9`. Validei remoção de SLA no portal (settings + `/portal/demo` sem texto SLA). Isolamento TipTap no navegador: API guarda `<img data:...>` mas o editor sumia no reload porque `@tiptap/extension-image` tem `allowBase64: false` (parseHTML exclui `src^=data:`). Corrigi com `allowBase64: true`. Solicitações: **não reproduzi bug de código** — a fila é só leitura/triagem por desenho; sem portal habilitado+formulário a tela abre limpa. Documentei o caminho na empty state. E2E novos: `wiki-image.spec.ts`, `portal-requests.spec.ts`.
+- **Arquivos tocados:** `ProjectWiki.tsx`, `Requests.tsx`, `e2e/wiki-image.spec.ts`, `e2e/portal-requests.spec.ts`, este `PROGRESS.md`.
+- **Prova antes/depois:** `wiki-image` no front antigo falhou no reload (`element(s) not found` para `.ProseMirror img`); após o fix, **passed**. Portal: submit → fila → Aceitar → resposta pública **passed**.
+- **Testes:** `npx tsc -b` 0; `npx playwright test e2e/wiki-image.spec.ts e2e/portal-requests.spec.ts --project=chromium-desktop` **3 passed** (setup+2). Front E2E do worktree em `:5450`.
+- **Decisões novas:** nenhuma. D86 intocado.
+- **Próximo passo:** merge em `integration/all-specs-v2`. PO: criar solicitações exige Portal Externo em Configurações do projeto.
+- **Bloqueios:** nenhum no recorte. Não toquei Sprint/Kanban/Auth/Company/Teams/OrganizationSettings/Workflow.
+
 ## [2026-09-09] — Composer (coordenador) — Onda 0 integrada e E2E verde
 - **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2` (`ed6f675` / `5601b86`). Conflito só em `PROGRESS.md`. Reiniciei API+front com o código integrado e rodei a suíte completa.
 - **Testes:** `npx playwright test` **52 passed / 3 skipped / 0 failed** (`.artifacts/onda0-integration-e2e.txt`).

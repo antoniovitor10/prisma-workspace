@@ -203,9 +203,9 @@ export function OrganizationSettings() {
       <Section><header><Building2 size={16}/><h2>Preferências gerais</h2>{!canAdmin && <p>Somente leitura</p>}</header>
         <Form onSubmit={submitOrganization}>
           <label>Nome<input disabled={!canAdmin} value={form.name} onChange={event => setForm({...form, name: event.target.value})}/></label>
-          <label>Idioma<select disabled={!canAdmin} value={form.locale} onChange={event => setForm({...form, locale: event.target.value})}><option value="pt-BR">Português (Brasil)</option><option value="en-US">English (US)</option></select></label>
+          <label>Idioma<select aria-label="Idioma" disabled={!canAdmin} value={form.locale} onChange={event => setForm({...form, locale: event.target.value})}><option value="pt-BR">Português (Brasil)</option><option value="en-US">English (US)</option></select></label>
           <label>Fuso horário<input disabled={!canAdmin} value={form.timeZone} onChange={event => setForm({...form, timeZone: event.target.value})}/></label>
-          <label>Início da semana<select disabled={!canAdmin} value={form.weekStartDay} onChange={event => setForm({...form, weekStartDay: Number(event.target.value)})}><option value={1}>Segunda-feira</option><option value={0}>Domingo</option></select></label>
+          <label>Início da semana<select aria-label="Início da semana" disabled={!canAdmin} value={form.weekStartDay} onChange={event => setForm({...form, weekStartDay: Number(event.target.value)})}><option value={1}>Segunda-feira</option><option value={0}>Domingo</option></select></label>
           <footer>{saveOrganization.error && <small>{(saveOrganization.error as Error).message}</small>}{canAdmin && <Button disabled={saveOrganization.isPending}><Check size={14}/>Salvar preferências</Button>}</footer>
         </Form>
       </Section>
@@ -222,12 +222,12 @@ export function OrganizationSettings() {
             pending={updateMember.isPending}
             onSave={displayName => updateMember.mutate({ ...member, displayName })}
           />
-          <select disabled={!canManageMembers || updateMember.isPending} value={member.role} onChange={event => updateMember.mutate({...member, role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select>
+          <select aria-label={`Perfil de ${member.name}`} disabled={!canManageMembers || updateMember.isPending} value={member.role} onChange={event => updateMember.mutate({...member, role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select>
           <label><input type="checkbox" disabled={!canManageMembers || updateMember.isPending} checked={member.isActive} onChange={event => updateMember.mutate({...member, isActive:event.target.checked})}/>Ativo</label>
         </MemberRow>)}</Members>
         {canManageMembers && <Invite onSubmit={submitInvite}>
           <label>E-mail<input required type="email" value={invite.email} onChange={event => setInvite({...invite,email:event.target.value})} placeholder="pessoa@empresa.com"/></label>
-          <label>Perfil<select value={invite.role} onChange={event => setInvite({...invite,role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+          <label>Perfil<select aria-label="Perfil do convite" value={invite.role} onChange={event => setInvite({...invite,role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
           <footer>{sendInvite.error && <small>{(sendInvite.error as Error).message}</small>}<Button disabled={sendInvite.isPending}><Mail size={14}/>Gerar convite</Button></footer>
           {inviteLink && <InviteResult>
             <UserRoundCheck size={15}/>
@@ -244,11 +244,11 @@ export function OrganizationSettings() {
 
       {canManagePermissions && <Wide><header><KeyRound size={16}/><h2>Permissões específicas</h2><p>Uma negação explícita prevalece</p></header>
         <GrantForm onSubmit={submitGrant}>
-          <label>Membro<select required value={grant.userId} onChange={event => setGrant({...grant,userId:event.target.value})}><option value="">Selecione...</option>{membersQuery.data?.filter(item => item.isActive).map(item => <option key={item.userId} value={item.userId}>{item.name}</option>)}</select></label>
-          <label>Escopo<select value={grant.scope} onChange={event => setGrant({...grant,scope:Number(event.target.value),scopeId:''})}>{scopes.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+          <label>Membro<select aria-label="Membro da permissão" required value={grant.userId} onChange={event => setGrant({...grant,userId:event.target.value})}><option value="">Selecione...</option>{membersQuery.data?.filter(item => item.isActive).map(item => <option key={item.userId} value={item.userId}>{item.name}</option>)}</select></label>
+          <label>Escopo<select aria-label="Escopo da permissão" value={grant.scope} onChange={event => setGrant({...grant,scope:Number(event.target.value),scopeId:''})}>{scopes.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
           <label>ID do recurso<input disabled={grant.scope === 1} required={grant.scope !== 1} value={grant.scopeId} onChange={event => setGrant({...grant,scopeId:event.target.value})} placeholder="UUID"/></label>
-          <label>Permissão<select value={grant.permission} onChange={event => setGrant({...grant,permission:Number(event.target.value)})}>{permissions.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-          <label>Decisão<select value={grant.isAllowed ? 'allow':'deny'} onChange={event => setGrant({...grant,isAllowed:event.target.value==='allow'})}><option value="allow">Permitir</option><option value="deny">Negar</option></select></label>
+          <label>Permissão<select aria-label="Permissão específica" value={grant.permission} onChange={event => setGrant({...grant,permission:Number(event.target.value)})}>{permissions.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+          <label>Decisão<select aria-label="Decisão da permissão" value={grant.isAllowed ? 'allow':'deny'} onChange={event => setGrant({...grant,isAllowed:event.target.value==='allow'})}><option value="allow">Permitir</option><option value="deny">Negar</option></select></label>
           <footer><Button disabled={saveGrant.isPending}>Aplicar</Button></footer>
         </GrantForm>
         {grantsQuery.data?.length ? grantsQuery.data.map(item => <GrantRow key={item.id}><span>{membersQuery.data?.find(member => member.userId === item.userId)?.name ?? item.userId}</span><span>{scopeLabel(item.scope)}</span><span>{permissionLabel(item.permission)}</span><strong>{item.isAllowed ? 'Permitido':'Negado'}</strong><button onClick={() => deleteGrant.mutate(item.id)} aria-label="Remover permissão">×</button></GrantRow>) : <Empty>Nenhuma exceção cadastrada. Os perfis-base estão em uso.</Empty>}
