@@ -1,6 +1,6 @@
 # SPEC-MY-WORK-HUB: "Meu trabalho" como painel completo da pessoa
 
-**Status:** draft
+**Status:** approved
 
 **Sucede parcialmente:** `SPEC-AUTHENTICATED-HOME` (`specs/authenticated-home.md`) quanto ao conteúdo da
 página inicial autenticada. A D23 permanece válida: "Meu trabalho" é **projeção de leitura** sobre o mesmo
@@ -9,7 +9,7 @@ página inicial autenticada. A D23 permanece válida: "Meu trabalho" é **proje�
 **Origem:** pedido do PO em 2026-09-09 — *"uma ideia de 'meu trabalho' mais completa, com a visão dos projetos
 que estão vigentes, com a visão das sprints, queria algo mais completão mesmo"*.
 
-**Natureza:** contrato proposto. Exige `G-SPEC` antes da implementação.
+**Natureza:** contrato aprovado. O PO autorizou a implementação em 2026-09-09 (*"quero sim vamos finalizar todos os pontos pendentes"*).
 
 ---
 
@@ -131,7 +131,7 @@ Um único endpoint de leitura, para evitar seis chamadas em paralelo no carregam
 
 ## Human Gates
 
-- `G-SPEC` — **pendente**.
+- `G-SPEC` — **aprovado pelo PO em 2026-09-09**.
 - `G-MIGRATION` — não se aplica; nenhuma mudança de schema.
 
 ## Rastreabilidade
