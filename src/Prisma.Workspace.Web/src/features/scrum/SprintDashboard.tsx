@@ -14,7 +14,6 @@ import {
   ListTree,
   LoaderCircle,
   Pencil,
-  Play,
   Plus,
   Target,
   Users,
@@ -587,7 +586,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
             <GoalSide>
               <GoalProgress><small><span>Progresso da meta</span><b>{progress}%</b></small><ProgressTrack><ProgressFill $value={progress} /></ProgressTrack></GoalProgress>
               <div>
-                {selectedSprint.status === 1 && <Secondary disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ sprintId: selectedSprint.id, status: 2 })}><Play size={13} />Iniciar sprint</Secondary>}
+                {/* D84: não existe "Iniciar sprint". O estado Ativa vem das datas. */}
                 {selectedSprint.status < 3 && <Secondary onClick={openEdit}><Pencil size={13} />Editar</Secondary>}
                 {selectedSprint.status === 2 && <Secondary disabled={statusMutation.isPending} onClick={() => openLifecycle(3)}><CheckCircle2 size={13} />Concluir sprint</Secondary>}
                 {selectedSprint.status < 3 && <Secondary disabled={statusMutation.isPending} onClick={() => openLifecycle(4)}><Ban size={13} />Cancelar sprint</Secondary>}

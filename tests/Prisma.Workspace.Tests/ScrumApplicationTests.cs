@@ -61,11 +61,61 @@ public class ScrumApplicationTests
         public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+    [Fact]
+    public async Task DeleteSprint_DesvinculaTarefasSemAsTocar()
+    {
+        // SPEC-S-003 v3, itens 17 e 18: excluir a sprint remove só o vínculo. Quadro,
+        // coluna, posição e conteúdo da tarefa ficam intactos.
+        var sprint = Sprint.Criar(Guid.NewGuid(), null, "Sprint 1",
+            new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 15), null);
+        var boardId = Guid.NewGuid();
+        var stageId = Guid.NewGuid();
+        var tarefa = new WorkItem
+        {
+            Id = Guid.NewGuid(), Number = 42, Title = "Tarefa vinculada",
+            BoardId = boardId, StageId = stageId, Position = 300, SprintId = sprint.Id,
+        };
+        sprint.WorkItems.Add(tarefa);
+
+        var repository = new SprintRepositoryFake(sprint);
+        var handler = new DeleteSprintCommandHandler(repository, new ProjectAccessFake());
+
+        await handler.Handle(new DeleteSprintCommand(sprint.Id, "actor"), default);
+
+        Assert.True(repository.Removed);
+        Assert.Null(tarefa.SprintId);
+        // A tarefa continua onde estava.
+        Assert.Equal(boardId, tarefa.BoardId);
+        Assert.Equal(stageId, tarefa.StageId);
+        Assert.Equal(300, tarefa.Position);
+        Assert.False(tarefa.IsArchived);
+        Assert.Equal("Tarefa vinculada", tarefa.Title);
+    }
+
+    [Fact]
+    public async Task DeleteSprint_FuncionaComSprintJaEncerrada()
+    {
+        var sprint = Sprint.Criar(Guid.NewGuid(), null, "Sprint de janeiro",
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 30), null);
+        var repository = new SprintRepositoryFake(sprint);
+        var handler = new DeleteSprintCommandHandler(repository, new ProjectAccessFake());
+
+        await handler.Handle(new DeleteSprintCommand(sprint.Id, "actor"), default);
+
+        Assert.True(repository.Removed);
+    }
+
     private sealed class SprintRepositoryFake(Sprint sprint) : ISprintRepository
     {
         public bool HasActive { get; set; }
+        public bool Removed { get; private set; }
         public Task<Sprint?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<Sprint?>(id == sprint.Id ? sprint : null);
-        public Task<bool> HasActiveAsync(Guid projectId, Guid? excludingId = null, CancellationToken cancellationToken = default) => Task.FromResult(HasActive);
+        public Task RemoveWithUnlinkAsync(Sprint value, CancellationToken cancellationToken = default)
+        {
+            Removed = true;
+            foreach (var item in value.WorkItems) item.SprintId = null;
+            return Task.CompletedTask;
+        }
         public Task<IReadOnlyList<Sprint>> GetByProjectAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Sprint>>([sprint]);
         public Task AddAsync(Sprint value, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

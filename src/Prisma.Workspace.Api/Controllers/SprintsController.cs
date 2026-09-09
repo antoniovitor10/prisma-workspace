@@ -43,6 +43,18 @@ public class SprintsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Exclui a sprint. As tarefas vinculadas voltam ao Product Backlog preservando
+    /// quadro, coluna, posição e histórico.
+    /// </summary>
+    [HttpDelete("api/sprints/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteSprintCommand(id, UserId), ct);
+        return NoContent();
+    }
+
     [HttpPut("api/sprints/{id:guid}/capacity/{memberId}")]
     public async Task<IActionResult> SetCapacity(Guid id, string memberId, [FromBody] SprintCapacityRequest request, CancellationToken ct)
     {

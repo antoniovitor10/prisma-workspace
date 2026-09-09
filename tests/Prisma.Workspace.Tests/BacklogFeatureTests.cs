@@ -215,9 +215,8 @@ public class BacklogFeatureTests
         public Task<Sprint?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult<Sprint?>(id == sprint.Id ? sprint : null);
 
-        public Task<bool> HasActiveAsync(
-            Guid projectId, Guid? excludingId = null, CancellationToken cancellationToken = default)
-            => Task.FromResult(false);
+        public Task RemoveWithUnlinkAsync(Sprint value, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
 
         public Task AddAsync(Sprint value, CancellationToken cancellationToken = default)
             => Task.CompletedTask;

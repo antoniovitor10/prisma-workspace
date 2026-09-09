@@ -1,6 +1,5 @@
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
-using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,9 +20,18 @@ public class SprintRepository : ISprintRepository
             .Include(x => x.Capacities).Include(x => x.WorkItems).Include(x => x.ItemSnapshots)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public Task<bool> HasActiveAsync(Guid projectId, Guid? excludingId = null, CancellationToken cancellationToken = default)
-        => _context.Sprints.AnyAsync(x => x.ProjectId == projectId && x.Status == SprintStatus.Active
-            && (!excludingId.HasValue || x.Id != excludingId.Value), cancellationToken);
+    public async Task RemoveWithUnlinkAsync(Sprint sprint, CancellationToken cancellationToken = default)
+    {
+        // Desvincular e excluir precisam ser atômicos: falha em qualquer etapa não pode
+        // deixar tarefa órfã apontando para sprint inexistente.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        foreach (var item in sprint.WorkItems) item.SprintId = null;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _context.Sprints.Remove(sprint);
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
 
     public async Task AddAsync(Sprint sprint, CancellationToken cancellationToken = default)
     {

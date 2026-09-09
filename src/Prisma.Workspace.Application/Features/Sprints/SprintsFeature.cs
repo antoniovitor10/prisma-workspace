@@ -195,6 +195,33 @@ public class ChangeSprintStatusCommandHandler : IRequestHandler<ChangeSprintStat
     }
 }
 
+/// <summary>
+/// Exclui a sprint. As tarefas vinculadas apenas perdem o <c>SprintId</c> e voltam ao
+/// Product Backlog: nunca são excluídas, arquivadas nem movidas de quadro, coluna ou
+/// posição (SPEC-S-003 v3, itens 17 a 19).
+/// </summary>
+public record DeleteSprintCommand(Guid SprintId, string ActorId) : IRequest;
+
+public class DeleteSprintCommandHandler : IRequestHandler<DeleteSprintCommand>
+{
+    private readonly ISprintRepository _sprints;
+    private readonly IProjectAccessService _access;
+
+    public DeleteSprintCommandHandler(ISprintRepository sprints, IProjectAccessService access)
+        => (_sprints, _access) = (sprints, access);
+
+    public async Task Handle(DeleteSprintCommand request, CancellationToken ct)
+    {
+        var sprint = await _sprints.GetByIdAsync(request.SprintId, ct)
+            ?? throw new NaoEncontradoException("Sprint");
+        await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+
+        // Excluir é permitido em qualquer estado, inclusive encerrada: o que a spec proíbe
+        // é a exclusão tocar na tarefa, não a exclusão em si.
+        await _sprints.RemoveWithUnlinkAsync(sprint, ct);
+    }
+}
+
 public record SetSprintCapacityCommand(Guid SprintId, string UserId, decimal AvailableHours,
     decimal DaysOffHours, string ActorId) : IRequest;
 public class SetSprintCapacityCommandValidator : AbstractValidator<SetSprintCapacityCommand>
