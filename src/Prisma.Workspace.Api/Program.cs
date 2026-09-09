@@ -339,8 +339,12 @@ try
             {
                 var demoPassword = app.Configuration["Seed:DemoPassword"]
                     ?? throw new InvalidOperationException("Seed:DemoPassword não configurada nos User Secrets.");
-                await Prisma.Workspace.Infrastructure.Persistence.DbInitializer.SeedDataAsync(
-                    dbContext, userManager, demoPassword);
+                var seeded = await Prisma.Workspace.Infrastructure.Persistence.DbInitializer
+                    .SeedDataAsync(dbContext, userManager, demoPassword);
+                if (!seeded)
+                    Log.Warning(
+                        "Seed demo habilitado, mas a instalação já possui dados: nada foi semeado. "
+                        + "Para semear do zero, recrie o banco antes de subir a aplicação.");
             }
         }
         catch (Exception ex)

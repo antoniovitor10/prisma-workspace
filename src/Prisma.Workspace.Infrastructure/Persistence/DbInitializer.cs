@@ -17,7 +17,11 @@ public static class DbInitializer
 {
     public static readonly Guid DefaultOrganizationId = Guid.Parse("11111111-1111-4111-8111-111111111111");
 
-    public static async Task SeedDataAsync(
+    /// <summary>
+    /// Semeia os dados de demonstração. Devolve <c>false</c> quando a instalação já tem
+    /// dados e o seed é pulado, para que quem chamou possa avisar — ver D86.
+    /// </summary>
+    public static async Task<bool> SeedDataAsync(
         AppDbContext context,
         UserManager<IdentityUser> userManager,
         string demoPassword)
@@ -46,8 +50,11 @@ public static class DbInitializer
             || await context.ExternalRequests.IgnoreQueryFilters().AnyAsync()
             || await context.WikiPages.IgnoreQueryFilters().AnyAsync()
             || await context.SavedReports.IgnoreQueryFilters().AnyAsync();
+        // D86: instalação com dados não é erro, é motivo para pular. O seed nunca altera
+        // dado existente, e derrubar a aplicação no boot por causa disso era pior. Quem
+        // chamou recebe false e registra o aviso, para que o pulo não seja silencioso.
         if (hasExistingData)
-            return;
+            return false;
 
         // 2. Criar usuários de demonstração
         var user1 = new IdentityUser { UserName = "admin@prisma.example.invalid", Email = "admin@prisma.example.invalid", EmailConfirmed = true };
@@ -245,6 +252,7 @@ public static class DbInitializer
         await context.SaveChangesAsync();
         await EnsureProjectWorkflowsAsync(context);
         await transaction.CommitAsync();
+        return true;
     }
 
     private static async Task EnsureProjectWorkflowsAsync(AppDbContext context)
