@@ -84,7 +84,7 @@ public sealed class NotificationReminderWorker : BackgroundService
         {
             try { await GenerateAsync(stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-            catch (Exception ex) { _logger.LogError(ex, "Falha ao gerar lembretes de prazo e SLA."); }
+            catch (Exception ex) { _logger.LogError(ex, "Falha ao gerar lembretes de prazo."); }
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
