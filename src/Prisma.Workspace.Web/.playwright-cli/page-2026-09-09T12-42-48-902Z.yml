@@ -1,0 +1,151 @@
+- generic [ref=f2e109]:
+  - banner [ref=f2e111]:
+    - button "Abrir menu" [ref=f2e896] [cursor=pointer]
+    - link "Prisma WorkSpace — página inicial" [ref=f2e112] [cursor=pointer]:
+      - /url: /home
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f2e137] [cursor=pointer]
+    - generic "Organização ativa" [ref=f2e143]:
+      - combobox "Selecionar organização" [ref=f2e147] [cursor=pointer]:
+        - option "Prisma Demo" [selected]
+    - button "Novo item" [ref=f2e148] [cursor=pointer]
+    - button "Notificações" [ref=f2e152] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f2e156] [cursor=pointer]
+    - button "Menu da conta" [ref=f2e160] [cursor=pointer]: EU
+  - main [ref=f2e163]:
+    - generic [ref=f2e663]:
+      - generic [ref=f2e664]:
+        - generic [ref=f2e665]:
+          - generic [ref=f2e666]:
+            - combobox [ref=f2e667] [cursor=pointer]:
+              - option "Planejamento do Produto Demo" [selected]
+            - button "Novo Quadro" [ref=f2e668] [cursor=pointer]
+            - button "Meu Tempo" [ref=f2e672] [cursor=pointer]
+          - generic [ref=f2e677]:
+            - generic [ref=f2e678]:
+              - button "Kanban" [ref=f2e679] [cursor=pointer]
+              - button "Lista" [ref=f2e680] [cursor=pointer]
+              - button "Calendário" [ref=f2e681] [cursor=pointer]
+              - button "Gantt" [ref=f2e682] [cursor=pointer]
+              - button "Dashboard" [ref=f2e683] [cursor=pointer]
+            - button "Lead Time" [ref=f2e684] [cursor=pointer]
+            - button "Automações" [ref=f2e687] [cursor=pointer]
+            - button "Nova Coluna" [ref=f2e691] [cursor=pointer]
+        - region "Filtros do Kanban" [ref=f2e694]:
+          - generic [ref=f2e695]:
+            - generic "Buscar nos cartões" [ref=f2e696]:
+              - textbox "Buscar nos cartões" [ref=f2e700]
+            - button "Filtros" [ref=f2e701] [cursor=pointer]
+            - combobox "Ordenar cartões" [ref=f2e704]:
+              - option "Ordem do quadro"
+              - option "Prioridade"
+              - option "Prazo"
+              - option "Título"
+              - option "Mais recentes" [selected]
+            - generic [ref=f2e705]: 3 de 3 cartão(ões)
+        - region "Ações em massa do quadro" [ref=f2e706]:
+          - generic [ref=f2e707] [cursor=pointer]:
+            - checkbox "Selecionar tarefas visíveis" [ref=f2e708]
+            - text: Selecionar visíveis (3)
+        - generic [ref=f2e709]:
+          - generic [ref=f2e710]:
+            - generic [ref=f2e711]:
+              - heading "●Ideias" [level=3] [ref=f2e712]
+              - generic [ref=f2e713]:
+                - generic [ref=f2e714]: "1"
+                - button "Mover coluna para esquerda" [disabled] [ref=f2e715] [cursor=pointer]
+                - button "Mover coluna para direita" [ref=f2e718] [cursor=pointer]
+            - generic [ref=f2e721]:
+              - generic [ref=f2e722]:
+                - generic [ref=f2e723]:
+                  - generic [ref=f2e724]:
+                    - 'checkbox "Selecionar #1000 Mapear melhorias do fluxo de trabalho" [ref=f2e725]'
+                    - generic [ref=f2e726]: Baixa
+                  - generic [ref=f2e727]:
+                    - generic [ref=f2e728]: 21/09
+                    - generic [ref=f2e732]: 40h est.
+                - heading "#1000 · Mapear melhorias do fluxo de trabalho" [level=4] [ref=f2e737]
+                - generic [ref=f2e738]: Descoberta de produto
+                - generic [ref=f2e739]: Sem responsável
+                - generic [ref=f2e748]:
+                  - generic [ref=f2e749]:
+                    - button [disabled] [ref=f2e750]
+                    - button [ref=f2e753] [cursor=pointer]
+                  - button [ref=f2e756] [cursor=pointer]
+              - button "Novo Card" [ref=f2e759] [cursor=pointer]
+          - generic [ref=f2e762]:
+            - generic [ref=f2e763]:
+              - heading "●Em andamento" [level=3] [ref=f2e764]
+              - generic [ref=f2e765]:
+                - generic [ref=f2e766]: "1"
+                - button "Mover coluna para esquerda" [ref=f2e767] [cursor=pointer]
+                - button "Mover coluna para direita" [ref=f2e770] [cursor=pointer]
+            - generic [ref=f2e773]:
+              - generic [ref=f2e774]:
+                - generic [ref=f2e775]:
+                  - generic [ref=f2e776]:
+                    - 'checkbox "Selecionar #1002 Definir objetivos da próxima versão" [ref=f2e777]'
+                    - generic [ref=f2e778]: Alta
+                  - generic [ref=f2e779]:
+                    - generic [ref=f2e780]: 14/09
+                    - generic [ref=f2e784]: 8h est.
+                - heading "#1002 · Definir objetivos da próxima versão" [level=4] [ref=f2e789]
+                - generic [ref=f2e790]: Planejamento trimestral
+                - generic [ref=f2e791]:
+                  - generic [ref=f2e792]:
+                    - generic [ref=f2e793]: Usuário 80d791ec, Usuário b7709ce9
+                    - generic [ref=f2e800]: "2"
+                  - generic [ref=f2e805]: "06:00:00 (Você: 03:00:00)"
+                - generic [ref=f2e810]:
+                  - generic [ref=f2e811]:
+                    - button [ref=f2e812] [cursor=pointer]
+                    - button [ref=f2e815] [cursor=pointer]
+                  - button [ref=f2e818] [cursor=pointer]
+              - button "Novo Card" [ref=f2e821] [cursor=pointer]
+          - generic [ref=f2e824]:
+            - generic [ref=f2e825]:
+              - heading "●Revisão" [level=3] [ref=f2e826]
+              - generic [ref=f2e827]:
+                - generic [ref=f2e828]: "1"
+                - button "Mover coluna para esquerda" [ref=f2e829] [cursor=pointer]
+                - button "Mover coluna para direita" [ref=f2e832] [cursor=pointer]
+            - generic [ref=f2e835]:
+              - generic [ref=f2e836]:
+                - generic [ref=f2e837]:
+                  - generic [ref=f2e838]:
+                    - 'checkbox "Selecionar #1001 Revisar protótipo da área de relatórios" [ref=f2e839]'
+                    - generic [ref=f2e840]: Média
+                  - generic [ref=f2e841]:
+                    - generic [ref=f2e842]: 11/09
+                    - generic [ref=f2e846]: 16h est.
+                - heading "#1001 · Revisar protótipo da área de relatórios" [level=4] [ref=f2e851]
+                - generic [ref=f2e852]: Revisão de experiência
+                - generic [ref=f2e853]:
+                  - generic [ref=f2e854]: Usuário 56691770
+                  - generic [ref=f2e862]: "08:00:00 (Você: 00:00:00)"
+                - generic [ref=f2e867]:
+                  - generic [ref=f2e868]:
+                    - button [ref=f2e869] [cursor=pointer]
+                    - button [ref=f2e872] [cursor=pointer]
+                  - button [ref=f2e875] [cursor=pointer]
+              - button "Novo Card" [ref=f2e878] [cursor=pointer]
+          - generic [ref=f2e881]:
+            - generic [ref=f2e882]:
+              - heading "●Concluído" [level=3] [ref=f2e883]
+              - generic [ref=f2e884]:
+                - generic [ref=f2e885]: "0"
+                - button "Mover coluna para esquerda" [ref=f2e886] [cursor=pointer]
+                - button "Mover coluna para direita" [disabled] [ref=f2e889] [cursor=pointer]
+            - button "Novo Card" [ref=f2e893] [cursor=pointer]
+      - generic [ref=f2e899]:
+        - heading "Criar Nova Coluna" [level=3] [ref=f2e900]
+        - generic [ref=f2e901]:
+          - textbox "Nome da Coluna" [active] [ref=f2e902]
+          - combobox "Classificação da coluna" [ref=f2e903] [cursor=pointer]:
+            - option "Backlog"
+            - option "Pronta"
+            - option "Em andamento" [selected]
+            - option "Revisão"
+            - option "Concluída"
+          - generic [ref=f2e904]:
+            - button "Cancelar" [ref=f2e905] [cursor=pointer]
+            - button "Adicionar" [ref=f2e906] [cursor=pointer]

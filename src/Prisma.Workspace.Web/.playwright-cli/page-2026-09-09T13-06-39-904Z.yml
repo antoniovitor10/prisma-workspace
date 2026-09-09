@@ -1,0 +1,94 @@
+- generic [ref=f6e109]:
+  - banner [ref=f6e111]:
+    - link "Prisma WorkSpace — página inicial" [ref=f6e112] [cursor=pointer]:
+      - /url: /home
+      - generic [ref=f6e119]:
+        - text: Prisma
+        - emphasis [ref=f6e120]: WorkSpace
+    - navigation "Navegação principal" [ref=f6e121]:
+      - link "Início" [ref=f6e122] [cursor=pointer]:
+        - /url: /home
+      - link "Meu trabalho" [ref=f6e126] [cursor=pointer]:
+        - /url: /me/tasks
+      - link "Projetos" [ref=f6e130] [cursor=pointer]:
+        - /url: /projects
+      - link "Solicitações" [ref=f6e133] [cursor=pointer]:
+        - /url: /requests
+      - link "Relatórios" [ref=f6e137] [cursor=pointer]:
+        - /url: /reports
+      - link "Equipes" [ref=f6e140] [cursor=pointer]:
+        - /url: /teams
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f6e146] [cursor=pointer]:
+      - generic [ref=f6e150]: Buscar...
+      - generic [ref=f6e151]: Ctrl K
+    - generic "Organização ativa" [ref=f6e152]:
+      - combobox "Selecionar organização" [ref=f6e156]:
+        - option "Organização E2E 1788958374360" [selected]
+        - option "Organização E2E 1788958509708"
+        - option "Organização E2E 1788958759376"
+        - option "Organização E2E 1788958927998"
+        - option "Prisma Demo"
+    - button "Novo item" [ref=f6e157] [cursor=pointer]
+    - button "Notificações" [ref=f6e161] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f6e165] [cursor=pointer]
+    - button "Menu da conta" [ref=f6e169] [cursor=pointer]: EU
+  - main [ref=f6e172]:
+    - generic [ref=f6e173]:
+      - generic [ref=f6e174]:
+        - generic [ref=f6e175]:
+          - generic [ref=f6e176]: Bom dia · visão geral
+          - heading "O trabalho que importa, claro desde o primeiro olhar." [level=1] [ref=f6e180]
+          - paragraph [ref=f6e181]: Veja o que pede atenção agora, retome seus projetos e avance sem precisar procurar onde começar em Organização E2E 1788958374360.
+        - generic [ref=f6e182]:
+          - button "Ver meu trabalho" [ref=f6e183] [cursor=pointer]
+          - button "Explorar projetos" [ref=f6e187] [cursor=pointer]
+      - region "Resumo do trabalho" [ref=f6e190]:
+        - button [ref=f6e191] [cursor=pointer]:
+          - generic [ref=f6e196]:
+            - text: Atribuídas
+            - strong [ref=f6e197]: "0"
+        - button [ref=f6e200] [cursor=pointer]:
+          - generic [ref=f6e205]:
+            - text: Para hoje
+            - strong [ref=f6e206]: "0"
+        - button [ref=f6e209] [cursor=pointer]:
+          - generic [ref=f6e213]:
+            - text: Atrasadas
+            - strong [ref=f6e214]: "0"
+        - button [ref=f6e217] [cursor=pointer]:
+          - generic [ref=f6e222]:
+            - text: Bloqueadas
+            - strong [ref=f6e223]: "0"
+      - generic [ref=f6e226]:
+        - generic [ref=f6e227]:
+          - generic [ref=f6e228]:
+            - generic [ref=f6e232]:
+              - heading "Sua prioridade agora" [level=2] [ref=f6e233]
+              - paragraph [ref=f6e234]: Ordenada por atraso, bloqueio, prazo e importância.
+            - button "Ver tudo" [ref=f6e235] [cursor=pointer]
+          - generic [ref=f6e238]: Tudo em ordem por aqui.
+        - complementary [ref=f6e243]:
+          - generic [ref=f6e244]:
+            - generic [ref=f6e245]:
+              - generic [ref=f6e248]:
+                - heading "Projetos recentes" [level=2] [ref=f6e249]
+                - paragraph [ref=f6e250]: Continue de onde parou.
+              - button "Todos" [ref=f6e251] [cursor=pointer]
+            - generic [ref=f6e254]: Nenhum projeto disponível.
+          - generic [ref=f6e255]:
+            - generic [ref=f6e262]:
+              - heading "Acesso rápido" [level=2] [ref=f6e263]
+              - paragraph [ref=f6e264]: Atalhos para os fluxos mais usados.
+            - generic [ref=f6e265]:
+              - button "Projetos Backlog, sprints e quadros." [ref=f6e266] [cursor=pointer]:
+                - strong [ref=f6e269]: Projetos
+                - generic [ref=f6e270]: Backlog, sprints e quadros.
+              - button "Relatórios Indicadores e análises." [ref=f6e271] [cursor=pointer]:
+                - strong [ref=f6e274]: Relatórios
+                - generic [ref=f6e275]: Indicadores e análises.
+              - button "Solicitações Demandas e atendimento." [ref=f6e276] [cursor=pointer]:
+                - strong [ref=f6e280]: Solicitações
+                - generic [ref=f6e281]: Demandas e atendimento.
+              - button "Meu trabalho Fila pessoal de atenção." [ref=f6e282] [cursor=pointer]:
+                - strong [ref=f6e286]: Meu trabalho
+                - generic [ref=f6e287]: Fila pessoal de atenção.

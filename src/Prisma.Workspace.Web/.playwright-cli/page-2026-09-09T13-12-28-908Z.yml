@@ -1,0 +1,134 @@
+- generic [ref=f9e4]:
+  - banner [ref=f9e6]:
+    - link "Prisma WorkSpace — página inicial" [ref=f9e7] [cursor=pointer]:
+      - /url: /home
+      - generic [ref=f9e14]:
+        - text: Prisma
+        - emphasis [ref=f9e15]: WorkSpace
+    - navigation "Navegação principal" [ref=f9e16]:
+      - link "Início" [ref=f9e17] [cursor=pointer]:
+        - /url: /home
+      - link "Meu trabalho" [ref=f9e21] [cursor=pointer]:
+        - /url: /me/tasks
+      - link "Projetos" [ref=f9e25] [cursor=pointer]:
+        - /url: /projects
+      - link "Solicitações" [ref=f9e28] [cursor=pointer]:
+        - /url: /requests
+      - link "Relatórios" [ref=f9e32] [cursor=pointer]:
+        - /url: /reports
+      - link "Equipes" [ref=f9e35] [cursor=pointer]:
+        - /url: /teams
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f9e41] [cursor=pointer]:
+      - generic [ref=f9e45]: Buscar...
+      - generic [ref=f9e46]: Ctrl K
+    - generic "Organização ativa" [ref=f9e47]:
+      - combobox "Selecionar organização" [ref=f9e51]:
+        - option "Organização E2E 1788958374360"
+        - option "Organização E2E 1788958509708"
+        - option "Organização E2E 1788958759376"
+        - option "Organização E2E 1788958927998"
+        - option "Prisma Demo" [selected]
+    - button "Novo item" [ref=f9e52] [cursor=pointer]
+    - button "Notificações" [ref=f9e56] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f9e60] [cursor=pointer]
+    - button "Menu da conta" [ref=f9e64] [cursor=pointer]: EU
+  - main [ref=f9e67]:
+    - generic [ref=f9e69]:
+      - generic [ref=f9e70]:
+        - generic [ref=f9e71]:
+          - combobox [ref=f9e72] [cursor=pointer]:
+            - option "Planejamento do Produto Demo" [selected]
+          - button "Novo Quadro" [ref=f9e73] [cursor=pointer]
+          - button "Meu Tempo" [ref=f9e77] [cursor=pointer]
+        - generic [ref=f9e82]:
+          - generic [ref=f9e83]:
+            - button "Kanban" [ref=f9e84] [cursor=pointer]
+            - button "Lista" [active] [ref=f9e85] [cursor=pointer]
+            - button "Calendário" [ref=f9e86] [cursor=pointer]
+            - button "Gantt" [ref=f9e87] [cursor=pointer]
+            - button "Dashboard" [ref=f9e88] [cursor=pointer]
+          - button "Lead Time" [ref=f9e89] [cursor=pointer]
+          - button "Automações" [ref=f9e92] [cursor=pointer]
+          - button "Nova Coluna" [ref=f9e96] [cursor=pointer]
+      - region "Filtros do Kanban" [ref=f9e99]:
+        - generic [ref=f9e100]:
+          - generic "Buscar nos cartões" [ref=f9e101]:
+            - textbox "Buscar nos cartões" [ref=f9e105]
+          - button "Filtros" [ref=f9e106] [cursor=pointer]
+          - combobox "Ordenar cartões" [ref=f9e109]:
+            - option "Ordem do quadro"
+            - option "Prioridade"
+            - option "Prazo"
+            - option "Título"
+            - option "Mais recentes" [selected]
+          - generic [ref=f9e110]: 7 de 7 cartão(ões)
+      - region "Ações em massa do quadro" [ref=f9e111]:
+        - generic [ref=f9e112] [cursor=pointer]:
+          - checkbox "Selecionar tarefas visíveis" [ref=f9e113]
+          - text: Selecionar visíveis (7)
+      - table [ref=f9e115]:
+        - rowgroup [ref=f9e116]:
+          - row [ref=f9e117]:
+            - columnheader [ref=f9e118]: ✓
+            - columnheader "Tarefa ▲" [ref=f9e119] [cursor=pointer]
+            - columnheader "Responsável" [ref=f9e120] [cursor=pointer]
+            - columnheader "Etapa" [ref=f9e121] [cursor=pointer]
+            - columnheader "Entrega" [ref=f9e122] [cursor=pointer]
+            - columnheader "Tempo" [ref=f9e123] [cursor=pointer]
+        - rowgroup [ref=f9e124]:
+          - row [ref=f9e125] [cursor=pointer]:
+            - cell [ref=f9e126]:
+              - 'checkbox "Selecionar #1002 Definir objetivos da próxima versão" [ref=f9e127]'
+            - cell "Definir objetivos da próxima versão" [ref=f9e128]
+            - cell "PO E2E, Gabriel Tavares E2E" [ref=f9e129]
+            - cell "Concluído" [ref=f9e130]
+            - cell "14/09" [ref=f9e131]
+            - cell "06:00:00" [ref=f9e132]
+          - row [ref=f9e133] [cursor=pointer]:
+            - cell [ref=f9e134]:
+              - 'checkbox "Selecionar #1001 Mapear melhorias do fluxo de trabalho" [ref=f9e135]'
+            - cell "Mapear melhorias do fluxo de trabalho" [ref=f9e136]
+            - cell "Sem responsável" [ref=f9e137]
+            - cell "Ideias" [ref=f9e138]
+            - cell "21/09" [ref=f9e139]
+            - cell "00:00:00" [ref=f9e140]
+          - row [ref=f9e141] [cursor=pointer]:
+            - cell [ref=f9e142]:
+              - 'checkbox "Selecionar #1006 QA criação rápida 1788958390321" [ref=f9e143]'
+            - cell "QA criação rápida 1788958390321" [ref=f9e144]
+            - cell "Sem responsável" [ref=f9e145]
+            - cell "Ideias" [ref=f9e146]
+            - cell "—" [ref=f9e147]
+            - cell "00:00:00" [ref=f9e148]
+          - row [ref=f9e149] [cursor=pointer]:
+            - cell [ref=f9e150]:
+              - 'checkbox "Selecionar #1008 QA criação rápida 1788958516630" [ref=f9e151]'
+            - cell "QA criação rápida 1788958516630" [ref=f9e152]
+            - cell "Sem responsável" [ref=f9e153]
+            - cell "Ideias" [ref=f9e154]
+            - cell "—" [ref=f9e155]
+            - cell "00:00:00" [ref=f9e156]
+          - row [ref=f9e157] [cursor=pointer]:
+            - cell [ref=f9e158]:
+              - 'checkbox "Selecionar #1010 QA criação rápida 1788958765197" [ref=f9e159]'
+            - cell "QA criação rápida 1788958765197" [ref=f9e160]
+            - cell "Sem responsável" [ref=f9e161]
+            - cell "Ideias" [ref=f9e162]
+            - cell "—" [ref=f9e163]
+            - cell "00:00:00" [ref=f9e164]
+          - row [ref=f9e165] [cursor=pointer]:
+            - cell [ref=f9e166]:
+              - 'checkbox "Selecionar #1012 QA criação rápida 1788958933537" [ref=f9e167]'
+            - cell "QA criação rápida 1788958933537" [ref=f9e168]
+            - cell "Sem responsável" [ref=f9e169]
+            - cell "Ideias" [ref=f9e170]
+            - cell "—" [ref=f9e171]
+            - cell "00:00:00" [ref=f9e172]
+          - row [ref=f9e173] [cursor=pointer]:
+            - cell [ref=f9e174]:
+              - 'checkbox "Selecionar #1000 Revisar protótipo da área de relatórios" [ref=f9e175]'
+            - cell "Revisar protótipo da área de relatórios" [ref=f9e176]
+            - cell "Usuário f4e5becb" [ref=f9e177]
+            - cell "Revisão" [ref=f9e178]
+            - cell "11/09" [ref=f9e179]
+            - cell "08:00:00" [ref=f9e180]

@@ -1,0 +1,71 @@
+- generic [ref=f2e109]:
+  - banner [ref=f2e111]:
+    - link "Prisma WorkSpace — página inicial" [ref=f2e112] [cursor=pointer]:
+      - /url: /home
+      - generic [ref=f2e119]:
+        - text: Prisma
+        - emphasis [ref=f2e120]: WorkSpace
+    - navigation "Navegação principal" [ref=f2e121]:
+      - link "Início" [ref=f2e122] [cursor=pointer]:
+        - /url: /home
+      - link "Meu trabalho" [ref=f2e126] [cursor=pointer]:
+        - /url: /me/tasks
+      - link "Projetos" [active] [ref=f2e130] [cursor=pointer]:
+        - /url: /projects
+      - link "Solicitações" [ref=f2e133] [cursor=pointer]:
+        - /url: /requests
+      - link "Relatórios" [ref=f2e275] [cursor=pointer]:
+        - /url: /reports
+      - link "Equipes" [ref=f2e278] [cursor=pointer]:
+        - /url: /teams
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f2e137] [cursor=pointer]:
+      - generic [ref=f2e141]: Buscar...
+      - generic [ref=f2e142]: Ctrl K
+    - generic "Organização ativa" [ref=f2e143]:
+      - combobox "Selecionar organização" [ref=f2e147]:
+        - option "Prisma Demo" [selected]
+    - button "Novo item" [ref=f2e148] [cursor=pointer]
+    - button "Notificações" [ref=f2e152] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f2e156] [cursor=pointer]
+    - button "Menu da conta" [ref=f2e160] [cursor=pointer]: EU
+  - main [ref=f2e163]:
+    - generic [ref=f2e356]:
+      - generic [ref=f2e357]:
+        - generic [ref=f2e358]:
+          - generic [ref=f2e359]: Portfólio de trabalho
+          - heading "Projetos" [level=1] [ref=f2e360]
+          - paragraph [ref=f2e361]: Centralize objetivos, equipes e todas as visões de execução em um só lugar.
+        - generic [ref=f2e362]:
+          - generic [ref=f2e363]:
+            - textbox "Buscar projetos" [ref=f2e368]
+            - generic [ref=f2e369]:
+              - checkbox "Exibir arquivados" [ref=f2e370]
+              - text: Exibir arquivados
+            - combobox "Filtrar por natureza" [ref=f2e371]:
+              - option "Todas as naturezas" [selected]
+              - option "Projeto"
+              - option "Melhoria"
+              - option "Sustentação"
+            - combobox "Filtrar por tipo de trabalho" [ref=f2e372]:
+              - option "Todos os tipos" [selected]
+              - option "Desenvolvimento"
+              - option "Infraestrutura"
+              - option "Banco de Dados"
+              - option "Suporte"
+              - option "Segurança"
+              - option "Dados/BI"
+              - option "Integração"
+              - option "Documentação"
+              - option "Gestão"
+          - button "Novo projeto" [ref=f2e373] [cursor=pointer]
+      - button "Produto Demo Ativo Exemplo genérico para explorar planejamento e execução de trabalho. Projeto Desenvolvimento 1 quadro(s) 0 time(s)" [ref=f2e376] [cursor=pointer]:
+        - generic [ref=f2e377]:
+          - heading "Produto Demo" [level=2] [ref=f2e378]
+          - generic [ref=f2e379]: Ativo
+        - paragraph [ref=f2e380]: Exemplo genérico para explorar planejamento e execução de trabalho.
+        - generic [ref=f2e381]:
+          - generic [ref=f2e382]: Projeto
+          - generic [ref=f2e383]: Desenvolvimento
+        - generic [ref=f2e384]:
+          - generic [ref=f2e385]: 1 quadro(s)
+          - generic [ref=f2e388]: 0 time(s)

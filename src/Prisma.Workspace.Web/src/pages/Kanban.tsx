@@ -784,7 +784,7 @@ export const Kanban: React.FC = () => {
     if (!newStageName.trim() || !selectedBoardId) return;
     try {
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(selectedBoardId, newStageName, nextPos, undefined, { category: newStageCategory });
+      await api.createStage(selectedBoardId, newStageName, nextPos, { category: newStageCategory });
       setNewStageName('');
       setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);

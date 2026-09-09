@@ -1,0 +1,18 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - heading "Produto Demo" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Abra uma solicitação ou acompanhe o atendimento com seu protocolo.
+  - generic [ref=e7]:
+    - navigation [ref=e8]:
+      - button "Nova solicitação" [ref=e9] [cursor=pointer]
+      - button "Acompanhar" [ref=e13] [cursor=pointer]
+    - generic [ref=e51]:
+      - heading "Solicitação registrada" [level=2] [ref=e52]
+      - paragraph [ref=e56]: Recebemos sua solicitação. Guarde o protocolo e a chave de acompanhamento.
+      - generic [ref=e57]:
+        - text: Protocolo
+        - code [ref=e58]: 2026-001005
+      - generic [ref=e59]:
+        - text: Chave de acompanhamento
+        - code [ref=e60]: 307083EE08C5
+      - button "Acompanhar agora" [ref=e61] [cursor=pointer]
