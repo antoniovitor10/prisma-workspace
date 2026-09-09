@@ -1,6 +1,6 @@
 # SPEC-BOARD-AS-VIEW: Quadro como visão opcional
 
-**Status:** draft
+**Status:** approved
 
 **Sucede:** `SPEC-BOARDS-STAGES-WIP` (`specs/boards-stages-wip.md`), que permanece vigente até a aprovação desta.
 
@@ -10,7 +10,8 @@ determinou a remoção do limite de WIP (*"tira o wip por favor"*).
 
 **Autoridade:** decisão humana explícita. Não é autoaprovação de agente.
 
-**Natureza:** contrato proposto. Exige `G-SPEC`, `G-MIGRATION` e `G-WORKFLOW` antes de qualquer implementação.
+**Natureza:** contrato aprovado. O PO decidiu os três pontos em aberto em 2026-09-08 e autorizou a
+implementação com *"pode seguir"*. Ver D83 em `DECISIONS.md`.
 
 ---
 
@@ -101,26 +102,29 @@ Hoje `Board` é um contêiner obrigatório, e não uma forma de olhar o trabalho
 
 ## Human Gates
 
-- `G-SPEC` — **pendente**. Esta spec está em `draft` e não autoriza implementação.
-- `G-MIGRATION` — **pendente**. Movimentação de `Stage` e remoção de `WorkItemBoardPlacement`.
-- `G-WORKFLOW` — **pendente**. Remoção de WIP e da posição por quadro.
+- `G-SPEC` — **aprovado pelo PO em 2026-09-08**, após decidir os três pontos em aberto.
+- `G-MIGRATION` — **aprovado pela mesma instrução**. Movimentação de `Stage` para o projeto e remoção de
+  `WorkItemBoardPlacement` não são realizáveis sem alteração de schema.
+- `G-WORKFLOW` — **aprovado pela mesma instrução**. Remoção do WIP e da posição por quadro.
+- `G-HISTORY` — não se aplica: `StageHistory` e `TaskEvent` não mudam de estrutura. Passa a ser exigido se a
+  implementação precisar alterá-las.
 
-## Decisões que faltam ao PO
+## Decisões do PO em 2026-09-08
 
-1. **Visão transversal a vários projetos.** A `SPEC-BOARDS-STAGES-WIP` vigente define o quadro como transversal
-   à organização, reunindo tarefas de projetos diferentes. Se o fluxo passa a pertencer ao projeto, uma visão
-   transversal precisa lidar com projetos que têm colunas diferentes. Alternativas:
-   - **A.** A visão transversal agrupa por projeto, cada bloco com as colunas do seu projeto. Preserva a
-     verdade de cada projeto; a tela fica mais alta.
-   - **B.** As colunas passam a pertencer à organização, e todos os projetos compartilham o mesmo fluxo. Visão
-     transversal fica trivial; projetos perdem fluxo próprio.
-   - **C.** Visões transversais deixam de existir; toda visão pertence a um projeto. É o mais simples e o mais
-     alinhado a "quadro é opcional", mas remove uma capacidade hoje aprovada.
-   - *Recomendação técnica:* **C**, com **A** como evolução caso a necessidade apareça.
-2. **Nome do objeto na interface.** Manter "Quadro" para a visão salva, ou renomear para "Visão"? Manter o nome
-   evita reaprendizado; renomear deixa explícito que ela não contém nada.
-3. **Equipes e permissões hoje associadas ao quadro.** Passam a ser do projeto, ou a visão continua podendo
-   restringir quem a enxerga?
+1. **Visão transversal deixa de existir.** Todo quadro pertence a um projeto. A capacidade de reunir tarefas de
+   projetos diferentes num mesmo quadro, prevista na `SPEC-BOARDS-STAGES-WIP`, é **revogada**. Consequência
+   direta: `Board.OrganizationId` deixa de ser suficiente e `Board.ProjectId` passa a ser obrigatório.
+2. **O nome "Quadro" é mantido** na interface. Não há renomeação para "Visão" nem para "Filtro salvo".
+3. **Equipe e permissão passam a ser do projeto.** O quadro não restringe quem o enxerga: quem tem acesso ao
+   projeto enxerga todos os seus quadros. `PermissionScope.Board`, previsto na spec de permissões, perde
+   propósito neste modelo e deve ser reavaliado no lote de perfis e permissões.
+
+## Contratos revogados por esta spec
+
+- Quadro transversal à organização, reunindo tarefas de projetos diferentes.
+- Associação direta de usuários e equipes ao quadro.
+- Limite de WIP por coluna, em qualquer forma.
+- Posição da tarefa por quadro (`WorkItemBoardPlacement`).
 
 ## Rastreabilidade
 
