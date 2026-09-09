@@ -92,11 +92,13 @@ public class CreateSprintCommandHandler : IRequestHandler<CreateSprintCommand, G
     private readonly ISprintRepository _sprints;
     private readonly IProjectRepository _projects;
     private readonly IProjectAccessService _access;
-    public CreateSprintCommandHandler(ISprintRepository sprints, IProjectRepository projects, IProjectAccessService access)
-        => (_sprints, _projects, _access) = (sprints, projects, access);
+    private readonly IPermissionService? _permissions;
+    public CreateSprintCommandHandler(ISprintRepository sprints, IProjectRepository projects,
+        IProjectAccessService access, IPermissionService? permissions = null)
+        => (_sprints, _projects, _access, _permissions) = (sprints, projects, access, permissions);
     public async Task<Guid> Handle(CreateSprintCommand request, CancellationToken ct)
     {
-        await _access.EnsureAtLeastAsync(request.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        await SprintAccessGuard.EnsureCanManageAsync(request.ProjectId, request.ActorId, _access, _permissions, ct);
         var project = await _projects.GetByIdAsync(request.ProjectId, ct) ?? throw new NaoEncontradoException("Projeto");
         DomainException.Garantir(!request.TeamId.HasValue || project.Teams.Any(x => x.TeamId == request.TeamId),
             "O time não pertence ao projeto.");
@@ -121,14 +123,16 @@ public class UpdateSprintCommandHandler : IRequestHandler<UpdateSprintCommand>
 {
     private readonly ISprintRepository _sprints;
     private readonly IProjectAccessService _access;
-    public UpdateSprintCommandHandler(ISprintRepository sprints, IProjectAccessService access)
-        => (_sprints, _access) = (sprints, access);
+    private readonly IPermissionService? _permissions;
+    public UpdateSprintCommandHandler(ISprintRepository sprints, IProjectAccessService access,
+        IPermissionService? permissions = null)
+        => (_sprints, _access, _permissions) = (sprints, access, permissions);
 
     public async Task Handle(UpdateSprintCommand request, CancellationToken ct)
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct)
             ?? throw new NaoEncontradoException("Sprint");
-        await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        await SprintAccessGuard.EnsureCanManageAsync(sprint.ProjectId, request.ActorId, _access, _permissions, ct);
         sprint.Update(request.Name, request.Goal, request.StartDate, request.EndDate);
         await _sprints.SaveAsync(ct);
     }
@@ -148,15 +152,17 @@ public class ChangeSprintStatusCommandHandler : IRequestHandler<ChangeSprintStat
     private readonly ISprintRepository _sprints;
     private readonly IProjectAccessService _access;
     private readonly IPlatformNotificationPublisher? _notifications;
+    private readonly IPermissionService? _permissions;
     public ChangeSprintStatusCommandHandler(
         ISprintRepository sprints,
         IProjectAccessService access,
-        IPlatformNotificationPublisher? notifications = null)
-        => (_sprints, _access, _notifications) = (sprints, access, notifications);
+        IPlatformNotificationPublisher? notifications = null,
+        IPermissionService? permissions = null)
+        => (_sprints, _access, _notifications, _permissions) = (sprints, access, notifications, permissions);
     public async Task Handle(ChangeSprintStatusCommand request, CancellationToken ct)
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct) ?? throw new NaoEncontradoException("Sprint");
-        await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        await SprintAccessGuard.EnsureCanManageAsync(sprint.ProjectId, request.ActorId, _access, _permissions, ct);
         var hoje = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
 
         {
@@ -206,15 +212,17 @@ public class DeleteSprintCommandHandler : IRequestHandler<DeleteSprintCommand>
 {
     private readonly ISprintRepository _sprints;
     private readonly IProjectAccessService _access;
+    private readonly IPermissionService? _permissions;
 
-    public DeleteSprintCommandHandler(ISprintRepository sprints, IProjectAccessService access)
-        => (_sprints, _access) = (sprints, access);
+    public DeleteSprintCommandHandler(ISprintRepository sprints, IProjectAccessService access,
+        IPermissionService? permissions = null)
+        => (_sprints, _access, _permissions) = (sprints, access, permissions);
 
     public async Task Handle(DeleteSprintCommand request, CancellationToken ct)
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct)
             ?? throw new NaoEncontradoException("Sprint");
-        await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        await SprintAccessGuard.EnsureCanManageAsync(sprint.ProjectId, request.ActorId, _access, _permissions, ct);
 
         // Excluir é permitido em qualquer estado, inclusive encerrada: o que a spec proíbe
         // é a exclusão tocar na tarefa, não a exclusão em si.
@@ -236,12 +244,14 @@ public class SetSprintCapacityCommandHandler : IRequestHandler<SetSprintCapacity
 {
     private readonly ISprintRepository _sprints;
     private readonly IProjectAccessService _access;
-    public SetSprintCapacityCommandHandler(ISprintRepository sprints, IProjectAccessService access)
-        => (_sprints, _access) = (sprints, access);
+    private readonly IPermissionService? _permissions;
+    public SetSprintCapacityCommandHandler(ISprintRepository sprints, IProjectAccessService access,
+        IPermissionService? permissions = null)
+        => (_sprints, _access, _permissions) = (sprints, access, permissions);
     public async Task Handle(SetSprintCapacityCommand request, CancellationToken ct)
     {
         var sprint = await _sprints.GetByIdAsync(request.SprintId, ct) ?? throw new NaoEncontradoException("Sprint");
-        await _access.EnsureAtLeastAsync(sprint.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        await SprintAccessGuard.EnsureCanManageAsync(sprint.ProjectId, request.ActorId, _access, _permissions, ct);
         DomainException.Garantir(
             !sprint.EstaEncerradaEm(DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime)),
             "Não é possível alterar capacidade de sprint encerrada ou cancelada.");
@@ -255,5 +265,27 @@ public class SetSprintCapacityCommandHandler : IRequestHandler<SetSprintCapacity
             capacity.DaysOffHours = request.DaysOffHours;
         }
         await _sprints.SaveAsync(ct);
+    }
+}
+
+/// <summary>
+/// Autorização de gestão de sprint. O acesso ao projeto continua sendo pré-requisito, mas
+/// quem pode criar, editar, encerrar ou excluir é definido pela permissão configurável
+/// <c>ManageSprint</c>, e não mais pelo papel fixo <c>ScrumMaster</c> (SPEC-S-003 v3,
+/// item 16). A API é a autoridade final, mesmo quando a interface oculta a ação.
+/// </summary>
+internal static class SprintAccessGuard
+{
+    public static async Task EnsureCanManageAsync(
+        Guid projectId,
+        string actorId,
+        IProjectAccessService access,
+        IPermissionService? permissions,
+        CancellationToken ct)
+    {
+        await access.EnsureAtLeastAsync(projectId, actorId, ProjectRole.Member, ct);
+        if (permissions is not null)
+            await permissions.EnsureAsync(
+                actorId, PlatformPermission.ManageSprint, PermissionScope.Project, projectId, ct);
     }
 }

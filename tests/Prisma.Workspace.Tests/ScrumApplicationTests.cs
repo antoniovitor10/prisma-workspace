@@ -121,6 +121,52 @@ public class ScrumApplicationTests
         public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+    [Fact]
+    public async Task GestaoDeSprint_ExigePermissaoConfiguravel_NaoPapelFixo()
+    {
+        // SPEC-S-003 v3, item 16: quem gerencia sprint é definido pela permissão
+        // configurável ManageSprint, não mais pelo papel fixo ScrumMaster.
+        var sprint = Sprint.Criar(Guid.NewGuid(), null, "Sprint 1",
+            new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 15), null);
+        var permissoes = new PermissionServiceFake { Permitido = false };
+        var handler = new DeleteSprintCommandHandler(
+            new SprintRepositoryFake(sprint), new ProjectAccessFake(), permissoes);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(
+            new DeleteSprintCommand(sprint.Id, "sem-permissao"), default));
+
+        Assert.Equal(PlatformPermission.ManageSprint, permissoes.UltimaPermissao);
+        Assert.Equal(PermissionScope.Project, permissoes.UltimoEscopo);
+
+        // Com a permissão concedida, a mesma pessoa consegue.
+        permissoes.Permitido = true;
+        var repositorio = new SprintRepositoryFake(sprint);
+        await new DeleteSprintCommandHandler(repositorio, new ProjectAccessFake(), permissoes)
+            .Handle(new DeleteSprintCommand(sprint.Id, "com-permissao"), default);
+        Assert.True(repositorio.Removed);
+    }
+
+    private sealed class PermissionServiceFake : IPermissionService
+    {
+        public bool Permitido { get; set; } = true;
+        public PlatformPermission? UltimaPermissao { get; private set; }
+        public PermissionScope? UltimoEscopo { get; private set; }
+
+        public Task<bool> HasAsync(string userId, PlatformPermission permission,
+            PermissionScope scope = PermissionScope.Organization, Guid? scopeId = null,
+            CancellationToken cancellationToken = default) => Task.FromResult(Permitido);
+
+        public Task EnsureAsync(string userId, PlatformPermission permission,
+            PermissionScope scope = PermissionScope.Organization, Guid? scopeId = null,
+            CancellationToken cancellationToken = default)
+        {
+            UltimaPermissao = permission;
+            UltimoEscopo = scope;
+            if (!Permitido) throw new UnauthorizedAccessException("Permissão negada.");
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class ProjectAccessFake : IProjectAccessService
     {
         public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default) => Task.FromResult<ProjectRole?>(ProjectRole.ProjectAdmin);
