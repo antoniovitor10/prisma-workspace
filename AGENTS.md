@@ -45,6 +45,22 @@ src/Prisma.Workspace.Web              -> React 19 + TypeScript + Vite + Styled C
 - Tudo que toca banco é `async` (sufixo `Async`).
 - Idioma: código e identificadores em inglês; comentários e docs em pt-BR.
 
+## Gate de tipos do frontend — use `tsc -b`
+
+`npx tsc --noEmit` **não checa arquivo nenhum** neste projeto e sempre sai com código 0.
+O `tsconfig.json` da raiz tem `"files": []` e só referências de projeto, então o `--noEmit`
+resolve a configuração vazia da raiz e não olha `src/`.
+
+O comando correto, dentro de `src/Prisma.Workspace.Web`:
+
+```
+npx tsc -b
+```
+
+Isso já deixou passar um defeito real em produção: uma chamada com 5 argumentos numa
+função de 4 (`TS2554`), que fez a coluna criada pelo Kanban nascer com a categoria
+errada. Nunca reporte "typecheck limpo" com base no `--noEmit`.
+
 ## Verificação final E2E (obrigatória)
 
 Antes de concluir qualquer tarefa que modifique:
