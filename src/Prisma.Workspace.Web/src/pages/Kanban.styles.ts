@@ -12,6 +12,11 @@ export const AppLayout = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+  box-sizing: border-box;
   background-color: ${props => props.theme.color.bg};
 `;
 
@@ -19,6 +24,11 @@ export const AppLayout = styled.div`
 // dois landmarks main na mesma página quebram a navegação por leitor de tela.
 export const MainContent = styled.div`
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  box-sizing: border-box;
   padding: 20px clamp(14px, 2.2vw, 32px) 32px;
   display: flex;
   flex-direction: column;
@@ -28,16 +38,67 @@ export const MainContent = styled.div`
 export const BoardHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: ${props => props.theme.space[4]};
+  gap: ${props => props.theme.space[3]};
   padding: 3px 0 5px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 export const SelectorContainer = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: ${props => props.theme.space[3]};
+  min-width: 0;
+  max-width: 100%;
+`;
+
+export const BoardActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
+export const ViewSwitcher = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
+`;
+
+export const ViewSwitcherButton = styled.button<{ $active?: boolean }>`
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  background: ${p => (p.$active ? '#1E7BD7' : '#fff')};
+  color: ${p => (p.$active ? '#fff' : '#64748B')};
+  border: none;
+  cursor: pointer;
+
+  @media (max-width: 640px) {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
 `;
 
 export const Select = styled.select`
@@ -50,6 +111,8 @@ export const Select = styled.select`
   outline: none;
   cursor: pointer;
   transition: ${props => props.theme.transition};
+  max-width: 100%;
+  min-width: 0;
 
   &:focus {
     border-color: ${props => props.theme.color.accentBlue};
@@ -69,6 +132,9 @@ export const ActionButton = styled.button`
   gap: ${props => props.theme.space[2]};
   transition: ${props => props.theme.transition};
   box-shadow: ${props => props.theme.shadow.sm};
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
 
   &:hover {
     background: ${props => props.theme.color.neutral[50]};
@@ -105,6 +171,9 @@ export const KanbanGrid = styled.div`
   align-items: flex-start;
   padding-bottom: ${props => props.theme.space[3]};
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 `;
 
 export const Column = styled.div<{ $isDropTarget?: boolean; $isDraggingAny?: boolean }>`
@@ -365,73 +434,11 @@ export const ModalTitle = styled.h3`
   font-family: ${props => props.theme.font.display};
 `;
 
-export const DetailSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${props => props.theme.space[2]};
-`;
-
-export const DetailLabel = styled.div`
-  font-size: ${props => props.theme.fontSize.xs};
-  font-weight: ${props => props.theme.fontWeight.bold};
-  text-transform: uppercase;
-  color: ${props => props.theme.color.textMuted};
-`;
-
 export const DetailText = styled.div`
   color: ${props => props.theme.color.text};
   font-size: ${props => props.theme.fontSize.sm};
   line-height: 1.5;
   white-space: pre-wrap;
-`;
-
-export const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${props => props.theme.space[3]};
-`;
-
-export const SectionTitle = styled.h4`
-  color: ${props => props.theme.color.text};
-  font-size: ${props => props.theme.fontSize.sm};
-  font-weight: ${props => props.theme.fontWeight.bold};
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.space[2]};
-`;
-
-export const ListPanel = styled.div`
-  border: 1px solid ${props => props.theme.color.border};
-  border-radius: ${props => props.theme.radius.md};
-  overflow: hidden;
-  background-color: ${props => props.theme.color.neutral[50]};
-`;
-
-export const ListItem = styled.div`
-  padding: ${props => props.theme.space[2]} ${props => props.theme.space[3]};
-  border-bottom: 1px solid ${props => props.theme.color.border};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${props => props.theme.space[3]};
-  color: ${props => props.theme.color.text};
-  font-size: ${props => props.theme.fontSize.sm};
-
-  &:last-child {
-    border-bottom: 0;
-  }
-`;
-
-export const MutedText = styled.span`
-  color: ${props => props.theme.color.textMuted};
-  font-size: ${props => props.theme.fontSize.xs};
-`;
-
-export const InlineForm = styled.form`
-  display: flex;
-  gap: ${props => props.theme.space[2]};
-  align-items: center;
 `;
 
 export const SmallButton = styled.button`
@@ -455,12 +462,6 @@ export const SmallButton = styled.button`
     cursor: not-allowed;
     opacity: 0.45;
   }
-`;
-
-export const FileInput = styled.input`
-  color: ${props => props.theme.color.textMuted};
-  font-size: ${props => props.theme.fontSize.xs};
-  max-width: 220px;
 `;
 
 export const ModalForm = styled.form`
@@ -692,158 +693,4 @@ export const TempoTodayBadge = styled.span`
   font-weight: 700;
   padding: 2px 10px;
   border-radius: 999px;
-`;
-
-export const TaskModal = styled.div`
-  background: #ffffff;
-  border-radius: 12px;
-  width: min(1080px, 96vw);
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-`;
-
-export const TaskTopbar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid #e2e8f0;
-`;
-
-export const TaskTimerBtn = styled.button<{ $running?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  cursor: pointer;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 700;
-  font-size: 15px;
-  color: #ffffff;
-  background: ${p => (p.$running ? '#e53e3e' : '#2b6cb0')};
-`;
-
-export const TaskBody = styled.div`
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  /* Em telas estreitas (ou com zoom) as colunas empilham para não cortar a lateral. */
-  @media (max-width: 1024px) { flex-direction: column; overflow-y: auto; }
-`;
-
-export const TaskMain = styled.div`
-  flex: 1;
-  min-width: 0;
-  padding: 20px 24px;
-  overflow-y: auto;
-`;
-
-export const TaskSidebar = styled.div`
-  width: 340px;
-  flex: 0 0 340px;
-  border-left: 1px solid #e2e8f0;
-  padding: 18px 20px;
-  overflow-y: auto;
-  /* Sem deslize lateral: a coluna é fixa e o conteúdo se ajusta à largura. */
-  overflow-x: hidden;
-  background: #fafbfc;
-  & select, & input, & button { max-width: 100%; min-width: 0; }
-  @media (max-width: 1024px) {
-    width: 100%;
-    flex: 1 1 auto;
-    border-left: none;
-    border-top: 1px solid #e2e8f0;
-  }
-`;
-
-export const TaskH1 = styled.h2`
-  margin: 0 0 4px;
-  font-size: 22px;
-  color: #1a202c;
-`;
-
-export const TaskMeta = styled.div`
-  font-size: 14px;
-  color: ${p => p.theme.color.textMuted};
-  margin-bottom: 16px;
-`;
-
-export const SidebarRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #edf2f7;
-  font-size: 15px;
-`;
-
-export const SidebarLabel = styled.span`
-  color: ${p => p.theme.color.textMuted};
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-export const SidebarValue = styled.span`
-  color: #1a202c;
-  font-weight: 600;
-  text-align: right;
-  min-width: 0;
-  overflow-wrap: anywhere;
-`;
-
-export const Avatars = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-export const Avatar = styled.span`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #2b6cb0;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #ffffff;
-  margin-left: -6px;
-`;
-
-export const ProgressTrack = styled.div`
-  height: 8px;
-  border-radius: 999px;
-  background: #e2e8f0;
-  overflow: hidden;
-  margin-top: 6px;
-`;
-
-export const ProgressFill = styled.div<{ $pct: number }>`
-  height: 100%;
-  width: ${p => Math.min(100, Math.max(0, p.$pct))}%;
-  background: #38a169;
-`;
-
-export const TaskTabs = styled.div`
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 16px;
-`;
-
-export const TaskTab = styled.button<{ $active?: boolean }>`
-  padding: 8px 14px;
-  font-size: 15px;
-  font-weight: 700;
-  color: ${p => (p.$active ? p.theme.color.brand : p.theme.color.textMuted)};
-  border-bottom: 2px solid ${p => (p.$active ? p.theme.color.brand : 'transparent')};
-  margin-bottom: -1px;
-  &:hover { color: ${p => p.theme.color.text}; }
 `;

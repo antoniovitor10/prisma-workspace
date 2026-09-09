@@ -5,6 +5,12 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (coordenador) — Integra Onda 0: workflow guard + Kanban responsivo
+- **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2`. Conflito só em `PROGRESS.md`, resolvido mantendo as duas entradas. Sem conflito de código (arquivos disjuntos).
+- **Decisões novas:** nenhuma.
+- **Próximo passo:** suíte E2E completa na integração; se verde, liberar Onda 1 (A/B/C sem migration).
+- **Bloqueios:** aguardando validação E2E pós-merge.
+
 ## [2026-09-09] — Composer (Agente 1 WorkflowMoveGuard) — Caso (a): status inativo + transições removidas na herança
 - **Fiz:** Diagnostiquei `board-stage-sync` no SQL E2E: `Stages.WorkflowStatusId` aponta para `WorkflowStatuses` existentes com `IsActive = 0` (caso **a**, não b — `w.Id` não nulo). Causa: herdar template (`SynchronizeProject` com `attachCustom`) desativava status legados do seed sem remapejar colunas e ainda substituía as transições, removendo `Revisão→Concluído`. Corrigi o seed para forçar `IsActive = true` em status ligados a colunas; no sync, não desativo status que ainda sustentam colunas/tarefas, remapejo órfãos homônimos ou reativo, e **preservo transições entre status ativos**; `GetProjectGraphAsync` passa a incluir `Stages`/`WorkItems` dos status. Seed demo deixa de derrubar a API em instalação já inicializada (return em vez de throw). Curei o banco E2E (reativar + recriar pares entre status de coluna).
 - **Arquivos tocados:** `DbInitializer.cs`, `OrganizationWorkflowFeature.cs`, `OrganizationWorkflowRepository.cs`, este `PROGRESS.md`.
@@ -12,6 +18,15 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 - **Testes:** prova API PUT Revisão→Concluído **204** após a cura; `board-stage-sync` desktop+mobile verde isolado; suíte `npx playwright test` **49 passed / 2 skipped / 0 failed** (log `.artifacts/onda0-workflow-guard-e2e.txt`).
 - **Próximo passo:** coordenador integrar `fix/onda0-workflow-guard`; Agente 2 / responsivo conforme Onda 0.
 - **Bloqueios:** nenhum neste lote. Risco residual: banco E2E sujo de suítes anteriores ainda pode precisar da cura SQL se a API antiga rodou sem o fix de sync.
+
+## [2026-09-09] — Composer (Agente 2) — Kanban responsivo, a11y de ícones e remoção do modal legado
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-kanban-resp` na branch `fix/kanban-responsivo` a partir de `integration/all-specs-v2`. Corrigi a barra de ações do quadro (wrap + `max-width: 100vw` / `overflow-x: clip`) para o Pixel 5 não estourar horizontalmente e "Nova Coluna" ficar clicável. Dei `aria-label` descritivo aos botões só-ícone (reordenar coluna, mover cartão, cronômetro, remover justificativa). Removi `legacyTaskModalEnabled` e todo o modal/código morto associado (+ estilos órfãos). Front E2E serviu o worktree em `:5450` (API `:5400` com seed desligado).
+- **Arquivos tocados:** `src/Prisma.Workspace.Web/src/pages/Kanban.tsx`, `Kanban.styles.ts`, `e2e/kanban-responsive.spec.ts`, `PROGRESS.md`.
+- **Prova de não-vacuidade:** contra o front antigo (`scrollWidth=803` em viewport 393) o novo spec falhou com `Expected: <= 393, Received: 803` e sem os `aria-label` de coluna; após o fix, mobile clica "Nova Coluna" e `scrollWidth <= clientWidth`.
+- **Testes:** `kanban-responsive` 4/4 (1 skip desktop no cenário mobile-only). Desktop suite: 25 passed / 1 failed (`board-stage-sync` pré-existente de contrato). Mobile suite: 24 passed / 3 failed (mesmo `board-stage-sync` + invite/switch flaky). Suíte completa: **50 passed / 3 skipped / 2 failed** (`board-stage-sync` desktop + smoke logout mobile). `tsc -b` limpo.
+- **Decisões novas:** nenhuma.
+- **Próximo passo:** merge em `integration/all-specs-v2` após o Agente 1 fechar o contrato de etapa; não reabrir o modal legado.
+- **Bloqueios:** nenhum no recorte do Agente 2.
 
 ## [2026-09-09] — Composer (coordenador) — Onda 0: ambiente E2E restaurado; suíte NÃO verde
 - **Fiz:** Li `HANDOFF-V2.md` e o contexto vigente (D80–D85). Liberei RAM parando containers não E2E (Supabase/nodecast). Subi `prisma-workspace-e2e-sql`, resetei `DetranKanban_E2E`, apliquei migrations, API em `:5400` e front com `--mode e2e` em `:5450` (sem o mode o Vite apontava para `localhost:5216`). Validei pela interface via `playwright-cli`: login, Solicitações, Kanban, configurações do portal, formulário público `/portal/demo` (POST 201 → protocolo `2026-001005` aparece na fila). Rodei `npx playwright test`: **43 passed / 2 skipped / 6 failed**.
