@@ -349,7 +349,7 @@ public static class WorkflowTemplateProjection
     /// Status que ainda sustentam colunas ou tarefas não podem ficar inativos:
     /// o WorkflowMoveGuard bloqueia qualquer movimento para destino com IsActive != true.
     /// </summary>
-    private static void DeactivateUnlessBackingColumns(WorkflowStatus status)
+    internal static void DeactivateUnlessBackingColumns(WorkflowStatus status)
     {
         if (status.Stages.Count > 0 || status.WorkItems.Count > 0)
             return;
@@ -360,7 +360,7 @@ public static class WorkflowTemplateProjection
     /// Quando o template cria um status ativo homônimo e o legado ficou inativo,
     /// remapeia colunas/tarefas; se não houver substituto, reativa o legado em uso.
     /// </summary>
-    private static void RemapOrphanedStageStatuses(Project project)
+    internal static void RemapOrphanedStageStatuses(Project project)
     {
         var active = project.WorkflowStatuses.Where(x => x.IsActive).ToList();
         foreach (var inactive in project.WorkflowStatuses.Where(x => !x.IsActive).ToList())
@@ -373,6 +373,9 @@ public static class WorkflowTemplateProjection
                 && x.Name.Equals(inactive.Name, StringComparison.OrdinalIgnoreCase));
             if (replacement is null)
             {
+                // Intencional: sem substituto homônimo ativo, reativa o legado em uso
+                // para as colunas/tarefas não ficarem órfãs e o WorkflowMoveGuard não
+                // bloquear movimentos para um destino inativo.
                 inactive.IsActive = true;
                 continue;
             }
