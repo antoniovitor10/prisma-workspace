@@ -81,39 +81,9 @@ public class DeleteBoardCommandHandler : IRequestHandler<DeleteBoardCommand>
                 item.StageId = backlogDestino!.Id;
                 item.UpdatedAt = now;
 
-                // Remove placement antigo deste board (se existia)
-                var plOld = item.BoardPlacements.FirstOrDefault(p => p.BoardId == request.BoardId);
-                if (plOld is not null)
-                    item.BoardPlacements.Remove(plOld);
-
-                // Cria/atualiza placement no destino
-                var plDest = item.BoardPlacements.FirstOrDefault(p => p.BoardId == destBoard.Id);
-                if (plDest is null)
-                {
-                    item.BoardPlacements.Add(new WorkItemBoardPlacement
-                    {
-                        Id = Guid.NewGuid(),
-                        WorkItemId = item.Id,
-                        BoardId = destBoard.Id,
-                        StageId = backlogDestino.Id,
-                        Position = item.Position,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    });
-                }
-                else
-                {
-                    plDest.StageId = backlogDestino.Id;
-                    plDest.UpdatedAt = now;
-                }
-
                 await _workItemRepository.UpdateAsync(item, cancellationToken);
             }
         }
-
-        // Remove placements de itens não-exclusivos que apontavam para este board
-        // (esses itens têm outros placements, continuam visíveis em seus outros quadros)
-        // EF Cascade ou ClientSetNull cuidarão dos registros restantes ao deletar o board.
 
         // Atualiza DefaultBoardId do projeto se necessário
         var project = await _projectRepository.GetByIdAsync(board.ProjectId.Value, cancellationToken);

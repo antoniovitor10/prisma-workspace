@@ -37,7 +37,6 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.Assignees)
             .Include(w => w.Followers)
             .Include(w => w.StageHistories)
-            .Include(w => w.BoardPlacements)
             .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
     }
 
@@ -57,13 +56,8 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.CustomFieldValues)
             .Include(w => w.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(w => w.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
-            .Include(w => w.BoardPlacements)
-            // Retorna itens onde este quadro é o home OU há placement registrado
-            .Where(w => (w.BoardId == boardId || w.BoardPlacements.Any(p => p.BoardId == boardId))
-                && w.ParentId == null && !w.IsArchived)
-            .OrderBy(w => w.BoardPlacements.Any(p => p.BoardId == boardId)
-                ? (double?)w.BoardPlacements.FirstOrDefault(p => p.BoardId == boardId)!.Position
-                : w.Position)
+            .Where(w => w.BoardId == boardId && w.ParentId == null && !w.IsArchived)
+            .OrderBy(w => w.Position)
             .ToListAsync(cancellationToken);
     }
 
@@ -191,12 +185,10 @@ public class WorkItemRepository : IWorkItemRepository
 
     public async Task<IReadOnlyList<WorkItem>> GetExclusiveToBoardAsync(Guid boardId, CancellationToken cancellationToken = default)
     {
-        // Item é exclusivo ao quadro quando:
-        //   - seu BoardId (home) é este E não tem outros placements em outros quadros
+        // A tarefa pertence a um único quadro (D83), então todo item não arquivado
+        // do quadro é exclusivo dele.
         return await _context.WorkItems
-            .Include(w => w.BoardPlacements)
-            .Where(w => !w.IsArchived
-                && (w.BoardId == boardId && !w.BoardPlacements.Any(p => p.BoardId != boardId)))
+            .Where(w => !w.IsArchived && w.BoardId == boardId)
             .ToListAsync(cancellationToken);
     }
 

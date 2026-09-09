@@ -55,7 +55,6 @@ public class WorkItemManagementRepository : IWorkItemManagementRepository, IWork
             .Include(x => x.ChecklistItems)
             .Include(x => x.StageHistories)
             .Include(x => x.CustomFieldValues)
-            .Include(x => x.BoardPlacements)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<WorkItemLink?> GetLinkAsync(

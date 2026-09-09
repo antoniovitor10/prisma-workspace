@@ -63,7 +63,6 @@ public class BoardProjectionCommandTests
         var otherBoardStage = NewStage(Guid.NewGuid(), 400);
         var stages = new StageRepositoryFake(first, second, untouched, otherBoardStage);
         var workItem = new WorkItem { Id = Guid.NewGuid(), BoardId = board.Id, StageId = first.Id, WorkflowStatusId = Guid.NewGuid() };
-        workItem.BoardPlacements.Add(new WorkItemBoardPlacement { Id = Guid.NewGuid(), WorkItemId = workItem.Id, BoardId = board.Id, StageId = first.Id, Position = 75 });
         var handler = new ReorderStagesCommandHandler(stages, new BoardRepositoryFake(board));
 
         await handler.Handle(new ReorderStagesCommand(board.Id, [second.Id, first.Id], "admin"), CancellationToken.None);
@@ -74,8 +73,6 @@ public class BoardProjectionCommandTests
         Assert.Equal(400, otherBoardStage.Position);
         Assert.Equal([second.Id, first.Id], stages.Updated.Select(stage => stage.Id).ToArray());
         Assert.Equal(first.Id, workItem.StageId);
-        Assert.Equal(first.Id, Assert.Single(workItem.BoardPlacements).StageId);
-        Assert.Equal(75, Assert.Single(workItem.BoardPlacements).Position);
         Assert.NotNull(workItem.WorkflowStatusId);
     }
 
@@ -118,7 +115,6 @@ public class BoardProjectionCommandTests
         backlog.Name = "Backlog";
         backlog.Category = StageCategory.Ready;
         var item = new WorkItem { Id = Guid.NewGuid(), BoardId = source.Id, StageId = Guid.NewGuid(), Position = 50 };
-        item.BoardPlacements.Add(new WorkItemBoardPlacement { Id = Guid.NewGuid(), WorkItemId = item.Id, BoardId = source.Id, StageId = item.StageId, Position = 50 });
         var boards = new BoardRepositoryFake(source, destination);
         var workItems = new WorkItemRepositoryFake(item);
         var projects = new ProjectRepositoryFake(project);
@@ -128,47 +124,10 @@ public class BoardProjectionCommandTests
 
         Assert.Equal(destination.Id, item.BoardId);
         Assert.Equal(backlog.Id, item.StageId);
-        Assert.Equal(destination.Id, Assert.Single(item.BoardPlacements).BoardId);
         Assert.Equal(1, workItems.UpdateCount);
         Assert.Equal(0, workItems.DeleteCount);
         Assert.Equal(source, Assert.Single(boards.Deleted));
         Assert.Equal(destination.Id, project.DefaultBoardId);
-    }
-
-    [Fact]
-    public async Task DeleteBoard_ComItemCompartilhado_NaoDeletaWorkItem()
-    {
-        var projectId = Guid.NewGuid();
-        var source = NewBoard(projectId);
-        var destination = NewBoard(projectId);
-        var shared = new WorkItem { Id = Guid.NewGuid(), BoardId = destination.Id, StageId = Guid.NewGuid() };
-        shared.BoardPlacements.Add(new WorkItemBoardPlacement { Id = Guid.NewGuid(), WorkItemId = shared.Id, BoardId = source.Id });
-        shared.BoardPlacements.Add(new WorkItemBoardPlacement { Id = Guid.NewGuid(), WorkItemId = shared.Id, BoardId = destination.Id });
-        var boards = new BoardRepositoryFake(source, destination);
-        var workItems = new WorkItemRepositoryFake();
-        var handler = new DeleteBoardCommandHandler(boards, workItems, new StageRepositoryFake(), new ProjectRepositoryFake(), new ProjectAccessFake());
-
-        await handler.Handle(new DeleteBoardCommand(source.Id, "admin", destination.Id), CancellationToken.None);
-
-        Assert.Equal(0, workItems.UpdateCount);
-        Assert.Equal(0, workItems.DeleteCount);
-        Assert.Equal(source, Assert.Single(boards.Deleted));
-        Assert.Equal(2, shared.BoardPlacements.Count);
-    }
-
-    [Fact]
-    public void WorkItemBoardPlacement_ModelTemIndiceUnicoPorWorkItemEBoard()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase($"placement-model-{Guid.NewGuid()}")
-            .Options;
-        using var context = new AppDbContext(options);
-
-        var entity = context.Model.FindEntityType(typeof(WorkItemBoardPlacement));
-        var index = Assert.Single(entity!.GetIndexes(), candidate =>
-            candidate.Properties.Select(property => property.Name).SequenceEqual(["WorkItemId", "BoardId"]));
-
-        Assert.True(index.IsUnique);
     }
 
     private static Board NewBoard(Guid projectId) => new()

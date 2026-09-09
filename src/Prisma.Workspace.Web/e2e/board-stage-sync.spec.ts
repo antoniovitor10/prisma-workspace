@@ -5,9 +5,9 @@ type BoardItem = { id: string; title: string; stageId: string | null };
 
 /**
  * Regressão: concluir a tarefa pela gaveta de detalhe deixava o card preso na coluna
- * antiga do quadro. O quadro lê a etapa de WorkItemBoardPlacement e o update só gravava
- * WorkItem.StageId, então a divergência ficava persistida no banco e sobrevivia a
- * qualquer recarregamento de página.
+ * antiga do quadro, porque o quadro lia a etapa de WorkItemBoardPlacement enquanto o
+ * update só gravava WorkItem.StageId. A projeção foi eliminada pela D83 e a tarefa passou
+ * a ter etapa única, mas o comportamento observável continua valendo como contrato.
  */
 test('concluir pela gaveta move o card no quadro e a mudança sobrevive ao recarregamento',
   async ({ page, authenticatedGoto, resolveSeedProject }) => {

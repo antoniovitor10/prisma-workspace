@@ -9,12 +9,10 @@ public class CreateWorkItemCommandValidator : AbstractValidator<CreateWorkItemCo
 {
     public CreateWorkItemCommandValidator()
     {
-        // Quadro: BoardId != empty OU BoardIds não vazia OU ProjectId informado
+        // Quadro: BoardId informado OU ProjectId (que resolve o quadro padrão)
         RuleFor(w => w)
-            .Must(w => w.BoardId != Guid.Empty
-                || (w.BoardIds != null && w.BoardIds.Count > 0)
-                || w.ProjectId.HasValue)
-            .WithMessage("Informe BoardId, BoardIds ou ProjectId para definir o quadro da tarefa.");
+            .Must(w => w.BoardId != Guid.Empty || w.ProjectId.HasValue)
+            .WithMessage("Informe BoardId ou ProjectId para definir o quadro da tarefa.");
 
         RuleFor(w => w.Title)
             .NotEmpty().WithMessage("O título da tarefa é obrigatório.")

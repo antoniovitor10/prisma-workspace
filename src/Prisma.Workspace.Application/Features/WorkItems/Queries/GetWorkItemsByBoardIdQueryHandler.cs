@@ -31,15 +31,14 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
 
         return items.Select(w =>
         {
-            // Usa o placement deste quadro quando o item vem de outro quadro home
-            var placement = w.BoardPlacements.FirstOrDefault(p => p.BoardId == request.BoardId);
+            // Etapa e posição vêm do próprio item: fonte única, sem projeção por quadro.
             return new WorkItemDto
             {
             Id = w.Id,
             Number = w.Number,
-            BoardId = placement is not null ? request.BoardId : w.BoardId,
+            BoardId = w.BoardId,
             TeamId = w.TeamId,
-            StageId = placement?.StageId ?? w.StageId,
+            StageId = w.StageId,
             WorkflowStatusId = w.WorkflowStatusId,
             StatusName = w.WorkflowStatus?.Name,
             StatusColor = w.WorkflowStatus?.Color,
@@ -61,7 +60,7 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
             DueDate = w.DueDate,
             StartDate = w.StartDate,
             AcceptanceCriteria = w.AcceptanceCriteria,
-            Position = placement?.Position ?? w.Position,
+            Position = w.Position,
             BacklogRank = w.BacklogRank,
             CompletedAt = w.CompletedAt,
             IsArchived = w.IsArchived,
@@ -105,10 +104,7 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
                     && x.SourceWorkItem.CompletedAt == null),
             CustomFields = w.CustomFieldValues
                 .Select(x => new WorkItemCustomValueDto(x.FieldDefinitionId, x.Value)).ToList(),
-            BoardIds = w.BoardPlacements.Count > 0
-                ? w.BoardPlacements.Select(p => p.BoardId)
-                    .Append(w.BoardId).Distinct().ToList().AsReadOnly()
-                : new List<Guid> { w.BoardId }.AsReadOnly()
+            BoardIds = new List<Guid> { w.BoardId }.AsReadOnly()
             };
         }).ToList().AsReadOnly();
     }

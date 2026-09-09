@@ -51,13 +51,11 @@ public class Board : IOrganizationOwned
     public ICollection<WorkItem> WorkItems { get; set; }
 
     /// <summary>Projeções de tarefas neste quadro.</summary>
-    public ICollection<WorkItemBoardPlacement> Placements { get; set; }
 
     public Board()
     {
         Stages = new List<Stage>();
         WorkItems = new List<WorkItem>();
-        Placements = new List<WorkItemBoardPlacement>();
     }
 
     /// <summary>Vincula cliente e descrição ao projeto (nulos limpam o vínculo).</summary>

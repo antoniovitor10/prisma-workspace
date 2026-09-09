@@ -8,15 +8,15 @@ using Prisma.Workspace.Domain.Exceptions;
 namespace Prisma.Workspace.Tests;
 
 /// <summary>
-/// Regressão do defeito em que concluir uma tarefa pela tela de detalhe deixava o card
-/// preso na coluna antiga do Kanban.
+/// Cobre a alteração de etapa pela tela de detalhe.
 ///
-/// O quadro lê etapa e posição de <see cref="WorkItemBoardPlacement"/>
-/// (ver GetWorkItemsByBoardIdQueryHandler), enquanto o update gravava somente
-/// <see cref="WorkItem.StageId"/>. As duas fontes divergiam de forma permanente no banco,
-/// e nenhum recarregamento de tela corrigia.
+/// O defeito original era a divergência entre <see cref="WorkItem.StageId"/> e a projeção
+/// por quadro, que deixava o card preso na coluna antiga. A projeção foi eliminada pela
+/// D83 e a tarefa passou a ter etapa e posição únicas, o que torna a divergência
+/// impossível por construção. Estes testes protegem o comportamento observável que
+/// motivou a correção: etapa e conclusão precisam refletir o destino escolhido.
 /// </summary>
-public class WorkItemStagePlacementSyncTests
+public class WorkItemStageUpdateTests
 {
     private const string ActorId = "user-1";
 
@@ -59,16 +59,6 @@ public class WorkItemStagePlacementSyncTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
-        item.BoardPlacements.Add(new WorkItemBoardPlacement
-        {
-            Id = Guid.NewGuid(),
-            WorkItemId = item.Id,
-            BoardId = board.Id,
-            StageId = stageAtual.Id,
-            Position = 100,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
-        });
         return item;
     }
 
@@ -108,7 +98,7 @@ public class WorkItemStagePlacementSyncTests
     // ── testes ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Update_AoMudarEtapa_SincronizaPlacementDoQuadroHome()
+    public async Task Update_AoMudarEtapa_GravaEtapaEConclusao()
     {
         var board = CriarBoard();
         var emAndamento = CriarStage(board.Id, "Em andamento", StageCategory.InProgress);
@@ -118,99 +108,26 @@ public class WorkItemStagePlacementSyncTests
         var handler = CriarHandler(item, emAndamento, concluido);
         await handler.Handle(Comando(item, concluido.Id), CancellationToken.None);
 
-        var placement = Assert.Single(item.BoardPlacements);
         Assert.Equal(concluido.Id, item.StageId);
-        // O defeito original deixava o placement em "Em andamento" para sempre.
-        Assert.Equal(concluido.Id, placement.StageId);
         Assert.NotNull(item.CompletedAt);
     }
 
     [Fact]
-    public async Task Update_AoMudarEtapa_MantemPlacementEStageIdConvergentes()
+    public async Task Update_AoSairDaConclusao_LimpaCompletedAt()
     {
         var board = CriarBoard();
         var backlog = CriarStage(board.Id, "Backlog", StageCategory.Ready);
-        var emAndamento = CriarStage(board.Id, "Em andamento", StageCategory.InProgress);
         var concluido = CriarStage(board.Id, "Concluído", StageCategory.Done);
         var item = CriarItem(board, backlog);
 
-        var handler = CriarHandler(item, backlog, emAndamento, concluido);
-
-        await handler.Handle(Comando(item, emAndamento.Id), CancellationToken.None);
-        Assert.Equal(item.StageId, Assert.Single(item.BoardPlacements).StageId);
-        Assert.Null(item.CompletedAt);
+        var handler = CriarHandler(item, backlog, concluido);
 
         await handler.Handle(Comando(item, concluido.Id), CancellationToken.None);
-        Assert.Equal(item.StageId, Assert.Single(item.BoardPlacements).StageId);
         Assert.NotNull(item.CompletedAt);
-    }
 
-    [Fact]
-    public async Task Update_ComQuadroSecundario_SincronizaPeloWorkflowStatus()
-    {
-        var statusAndamento = Guid.NewGuid();
-        var statusConcluido = Guid.NewGuid();
-
-        var home = CriarBoard();
-        var secundario = CriarBoard();
-        var homeAndamento = CriarStage(home.Id, "Em andamento", StageCategory.InProgress, statusAndamento);
-        var homeConcluido = CriarStage(home.Id, "Concluído", StageCategory.Done, statusConcluido);
-        var secAndamento = CriarStage(secundario.Id, "Fazendo", StageCategory.InProgress, statusAndamento);
-        var secConcluido = CriarStage(secundario.Id, "Pronto", StageCategory.Done, statusConcluido);
-
-        var item = CriarItem(home, homeAndamento);
-        item.BoardPlacements.Add(new WorkItemBoardPlacement
-        {
-            Id = Guid.NewGuid(),
-            WorkItemId = item.Id,
-            BoardId = secundario.Id,
-            StageId = secAndamento.Id,
-            Position = 100,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
-        });
-
-        var handler = CriarHandler(item, homeAndamento, homeConcluido, secAndamento, secConcluido);
-        await handler.Handle(Comando(item, homeConcluido.Id), CancellationToken.None);
-
-        Assert.Equal(homeConcluido.Id, item.BoardPlacements.Single(p => p.BoardId == home.Id).StageId);
-        Assert.Equal(secConcluido.Id, item.BoardPlacements.Single(p => p.BoardId == secundario.Id).StageId);
-    }
-
-    [Fact]
-    public async Task Update_ComQuadroSecundarioIncompativel_NaoAlteraNada()
-    {
-        var statusAndamento = Guid.NewGuid();
-        var statusConcluido = Guid.NewGuid();
-
-        var home = CriarBoard();
-        var secundario = CriarBoard();
-        var homeAndamento = CriarStage(home.Id, "Em andamento", StageCategory.InProgress, statusAndamento);
-        var homeConcluido = CriarStage(home.Id, "Concluído", StageCategory.Done, statusConcluido);
-        // O quadro secundário não possui etapa com o status de destino.
-        var secAndamento = CriarStage(secundario.Id, "Fazendo", StageCategory.InProgress, statusAndamento);
-
-        var item = CriarItem(home, homeAndamento);
-        item.BoardPlacements.Add(new WorkItemBoardPlacement
-        {
-            Id = Guid.NewGuid(),
-            WorkItemId = item.Id,
-            BoardId = secundario.Id,
-            StageId = secAndamento.Id,
-            Position = 100,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
-        });
-
-        var handler = CriarHandler(item, homeAndamento, homeConcluido, secAndamento);
-
-        await Assert.ThrowsAsync<DomainException>(
-            () => handler.Handle(Comando(item, homeConcluido.Id), CancellationToken.None));
-
-        // A falha precisa deixar a tarefa exatamente como estava.
-        Assert.Equal(homeAndamento.Id, item.StageId);
-        Assert.Equal(homeAndamento.Id, item.BoardPlacements.Single(p => p.BoardId == home.Id).StageId);
-        Assert.Equal(secAndamento.Id, item.BoardPlacements.Single(p => p.BoardId == secundario.Id).StageId);
+        // Voltar para uma coluna aberta precisa reabrir a tarefa.
+        await handler.Handle(Comando(item, backlog.Id), CancellationToken.None);
+        Assert.Equal(backlog.Id, item.StageId);
         Assert.Null(item.CompletedAt);
     }
 

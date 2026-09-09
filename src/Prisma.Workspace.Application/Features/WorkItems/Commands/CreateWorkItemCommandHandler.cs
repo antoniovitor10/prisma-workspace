@@ -9,7 +9,7 @@ namespace Prisma.Workspace.Application.Features.WorkItems.Commands;
 
 /// <summary>
 /// Handler do comando de criação de WorkItem.
-/// Suporta criação em múltiplos quadros via BoardIds ou resolução pelo ProjectId.
+/// A tarefa nasce em um único quadro, informado por BoardId ou pelo padrão do projeto.
 /// </summary>
 public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemCommand, Guid>
 {
@@ -50,20 +50,10 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
 
     public async Task<Guid> Handle(CreateWorkItemCommand request, CancellationToken cancellationToken)
     {
-        // 1. Resolver lista de quadros de destino
-        List<Guid> boardIds = await ResolverBoardIdsAsync(request, cancellationToken);
-
-        // 2. Carregar todos os quadros e validar existência
-        var boards = new List<Board>();
-        foreach (var bid in boardIds)
-        {
-            var b = await _boardRepository.GetByIdAsync(bid, cancellationToken);
-            if (b is null)
-                throw new ArgumentException($"O Quadro {bid} não existe.");
-            boards.Add(b);
-        }
-
-        var homeBoard = boards[0];
+        // 1. Resolver o quadro de destino. A tarefa pertence a um único quadro (D83).
+        var boardId = await ResolverBoardIdAsync(request, cancellationToken);
+        var homeBoard = await _boardRepository.GetByIdAsync(boardId, cancellationToken)
+            ?? throw new ArgumentException($"O Quadro {boardId} não existe.");
 
         if (_permissions is not null && request.CreatedBy is not null)
         {
@@ -75,27 +65,19 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
                 homeBoard.ProjectId ?? homeBoard.TeamId, cancellationToken);
         }
 
-        // 3. Para cada quadro, localizar estágio Backlog (nome exato primeiro, depois Category Ready)
-        var stagePorBoard = new Dictionary<Guid, Stage>();
-        foreach (var board in boards)
-        {
-            var stages = await _stageRepository.GetByBoardIdAsync(board.Id, cancellationToken);
-            var backlog = stages.FirstOrDefault(s =>
-                    string.Equals(s.Name.Trim(), "Backlog", StringComparison.OrdinalIgnoreCase))
-                ?? stages.FirstOrDefault(s =>
-                    s.Name.Contains("backlog", StringComparison.OrdinalIgnoreCase))
-                ?? stages.OrderBy(s => s.Position)
-                    .FirstOrDefault(s => s.Category is StageCategory.Ready or StageCategory.Backlog);
-            if (backlog is null)
-                throw new ArgumentException(
-                    $"O quadro '{board.Name}' não possui uma etapa 'Backlog'. " +
-                    "Crie uma etapa com nome 'Backlog' e categoria Ready antes de adicionar itens.");
-            stagePorBoard[board.Id] = backlog;
-        }
+        // 2. Localizar a etapa Backlog (nome exato primeiro, depois Category Ready)
+        var boardStages = await _stageRepository.GetByBoardIdAsync(homeBoard.Id, cancellationToken);
+        var homeBacklog = boardStages.FirstOrDefault(s =>
+                string.Equals(s.Name.Trim(), "Backlog", StringComparison.OrdinalIgnoreCase))
+            ?? boardStages.FirstOrDefault(s =>
+                s.Name.Contains("backlog", StringComparison.OrdinalIgnoreCase))
+            ?? boardStages.OrderBy(s => s.Position)
+                .FirstOrDefault(s => s.Category is StageCategory.Ready or StageCategory.Backlog)
+            ?? throw new ArgumentException(
+                $"O quadro '{homeBoard.Name}' não possui uma etapa 'Backlog'. " +
+                "Crie uma etapa com nome 'Backlog' e categoria Ready antes de adicionar itens.");
 
-        var homeBacklog = stagePorBoard[homeBoard.Id];
-
-        // 4. Coluna de destino explícita (se informada) — deve pertencer ao quadro home
+        // 3. Coluna de destino explícita (se informada) — deve pertencer ao quadro
         Stage? selectedStage = homeBacklog;
         if (request.StageId.HasValue)
         {
@@ -112,11 +94,8 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             parent = await _workItemRepository.GetByIdAsync(request.ParentId.Value, cancellationToken);
             if (parent is null)
                 throw new ArgumentException("A tarefa pai especificada não existe.");
-            // Pai deve compartilhar pelo menos um quadro com o item
-            var parentBoardIds = parent.BoardPlacements.Select(p => p.BoardId)
-                .Append(parent.BoardId)
-                .Distinct();
-            bool comparteQuadro = parentBoardIds.Any(bid => boardIds.Contains(bid));
+            // Pai deve estar no mesmo quadro do item
+            bool comparteQuadro = parent.BoardId == homeBoard.Id;
             if (!comparteQuadro)
                 throw new ArgumentException(
                     "A tarefa pai não compartilha nenhum quadro com o item sendo criado.");
@@ -200,34 +179,6 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             });
         }
 
-        // Placement no quadro home (sempre cria)
-        workItem.BoardPlacements.Add(new WorkItemBoardPlacement
-        {
-            Id = Guid.NewGuid(),
-            WorkItemId = workItem.Id,
-            BoardId = homeBoard.Id,
-            StageId = selectedStage?.Id,
-            Position = request.Position,
-            CreatedAt = now,
-            UpdatedAt = now
-        });
-
-        // Placements nos quadros extras (exceto home já adicionado)
-        foreach (var board in boards.Skip(1))
-        {
-            var stage = stagePorBoard[board.Id];
-            workItem.BoardPlacements.Add(new WorkItemBoardPlacement
-            {
-                Id = Guid.NewGuid(),
-                WorkItemId = workItem.Id,
-                BoardId = board.Id,
-                StageId = stage.Id,
-                Position = request.Position,
-                CreatedAt = now,
-                UpdatedAt = now
-            });
-        }
-
         await _workItemRepository.AddAsync(workItem, cancellationToken);
 
         if (_notifications is not null)
@@ -244,8 +195,8 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
 
         if (_realtime is not null)
         {
-            foreach (var bid in boardIds)
-                await _realtime.BoardChangedAsync(bid, "workItemCreated", workItem.Id, cancellationToken);
+            await _realtime.BoardChangedAsync(
+                homeBoard.Id, "workItemCreated", workItem.Id, cancellationToken);
         }
 
         return workItem.Id;
@@ -255,15 +206,12 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
     /// Resolve a lista definitiva de board IDs a partir das opções do request.
     /// Prioridade: BoardIds > BoardId > ProjectId.DefaultBoardId.
     /// </summary>
-    private async Task<List<Guid>> ResolverBoardIdsAsync(
+    private async Task<Guid> ResolverBoardIdAsync(
         CreateWorkItemCommand request,
         CancellationToken cancellationToken)
     {
-        if (request.BoardIds is { Count: > 0 })
-            return request.BoardIds.Distinct().ToList();
-
         if (request.BoardId != Guid.Empty)
-            return [request.BoardId];
+            return request.BoardId;
 
         if (request.ProjectId.HasValue)
         {
@@ -273,9 +221,9 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             if (project.DefaultBoardId is null)
                 throw new ArgumentException(
                     "O projeto não possui um quadro padrão. Crie um quadro antes de adicionar itens.");
-            return [project.DefaultBoardId.Value];
+            return project.DefaultBoardId.Value;
         }
 
-        throw new ArgumentException("Informe BoardId, BoardIds ou ProjectId para definir o quadro da tarefa.");
+        throw new ArgumentException("Informe BoardId ou ProjectId para definir o quadro da tarefa.");
     }
 }

@@ -309,39 +309,7 @@ const CreateButton = styled.button`
   &:disabled { cursor: not-allowed; opacity: .55; }
 `;
 
-const BoardCheckboxList = styled.div`
-  max-height: 120px;
-  overflow-y: auto;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.radius.md};
-  padding: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
 
-const BoardCheckboxItem = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 7px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  font-size: 13.5px;
-  cursor: pointer;
-  color: ${({ theme }) => theme.color.text};
-  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; }
-  span { min-width: 0; overflow-wrap: anywhere; }
-  input {
-    width: 16px;
-    height: 16px;
-    min-height: 16px;
-    flex: 0 0 16px;
-    margin: 0;
-    padding: 0;
-    cursor: pointer;
-    accent-color: ${({ theme }) => theme.color.brand};
-  }
-`;
 
 const FieldLabel = styled.p`
   margin-bottom: 5px;
@@ -355,7 +323,7 @@ const FieldLabel = styled.p`
 const quickItemSchema = z.object({
   title: z.string().trim().min(1, 'Digite um título.').max(500, 'Use no máximo 500 caracteres.'),
   projectId: z.string().min(1, 'Selecione um projeto.'),
-  boardIds: z.array(z.string()).min(1, 'Selecione pelo menos um quadro.'),
+  boardId: z.string().min(1, 'Selecione um quadro.'),
 });
 
 type QuickItemForm = z.infer<typeof quickItemSchema>;
@@ -387,11 +355,11 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
     formState: { errors },
   } = useForm<QuickItemForm>({
     resolver: zodResolver(quickItemSchema),
-    defaultValues: { title: '', projectId: currentProjectId ?? '', boardIds: [] },
+    defaultValues: { title: '', projectId: currentProjectId ?? '', boardId: '' },
   });
   const projectId = watch('projectId');
   const title = watch('title') ?? '';
-  const boardIds = watch('boardIds') ?? [];
+  const boardId = watch('boardId') ?? '';
   const selectedProject = useMemo(() => projects.find((project) => project.id === projectId), [projectId, projects]);
 
   const getDefaultBoardId = (project: ProjectSummary | undefined) =>
@@ -402,29 +370,21 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
     const nextProject = projects.find((project) => project.id === currentProjectId) ?? projects[0];
     setValue('projectId', nextProject.id);
     const defaultId = getDefaultBoardId(nextProject);
-    setValue('boardIds', defaultId ? [defaultId] : []);
+    setValue('boardId', defaultId ?? '');
   }, [currentProjectId, open, projects, setValue]);
 
   const updateProject = (nextProjectId: string) => {
     const project = projects.find((candidate) => candidate.id === nextProjectId);
     setValue('projectId', nextProjectId);
     const defaultId = getDefaultBoardId(project);
-    setValue('boardIds', defaultId ? [defaultId] : [], { shouldValidate: true });
-  };
-
-  const toggleBoard = (boardId: string) => {
-    const next = boardIds.includes(boardId)
-      ? boardIds.filter((id) => id !== boardId)
-      : [...boardIds, boardId];
-    setValue('boardIds', next, { shouldValidate: true });
+    setValue('boardId', defaultId ?? '', { shouldValidate: true });
   };
 
   const mutation = useMutation({
     mutationFn: async (data: QuickItemForm) => {
       if (previewMode) return `preview-${Date.now()}`;
       return api.createWorkItem({
-        boardId: data.boardIds[0],
-        boardIds: data.boardIds,
+        boardId: data.boardId,
         projectId: data.projectId,
         title: data.title,
         priority: 1,
@@ -441,13 +401,13 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
       await queryClient.invalidateQueries({ queryKey: ['project-backlog', currentProjectId2] });
       await queryClient.invalidateQueries({ queryKey: ['workItems'] });
       const defaultId = getDefaultBoardId(selectedProject);
-      reset({ title: '', projectId: currentProjectId2, boardIds: defaultId ? [defaultId] : [] });
+      reset({ title: '', projectId: currentProjectId2, boardId: defaultId ?? '' });
       onOpenChange(false);
       onCreated(`"${title}" foi adicionado ao quadro.`);
     },
   });
 
-  const canSubmit = !mutation.isPending && title.trim().length > 0 && projects.length > 0 && boardIds.length > 0;
+  const canSubmit = !mutation.isPending && title.trim().length > 0 && projects.length > 0 && boardId.length > 0;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -468,31 +428,28 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
                 </select>
               </div>
               <div>
-                <FieldLabel>Quadros</FieldLabel>
+                <FieldLabel>Quadro</FieldLabel>
                 {(selectedProject?.boards ?? []).length === 0 ? (
                   <p style={{ fontSize: 13, color: '#94A3B8', padding: '8px 4px' }}>Nenhum quadro disponível.</p>
                 ) : (
-                  <BoardCheckboxList>
+                  <select
+                    aria-label="Quadro"
+                    value={boardId}
+                    style={{ width: '100%', minHeight: 36, padding: '0 10px', fontSize: 13.5 }}
+                    onChange={(event) => setValue('boardId', event.target.value, { shouldValidate: true })}
+                  >
                     {(selectedProject?.boards ?? []).map((board) => (
-                      <BoardCheckboxItem key={board.id} htmlFor={`qb-${board.id}`}>
-                        <input
-                          id={`qb-${board.id}`}
-                          type="checkbox"
-                          checked={boardIds.includes(board.id)}
-                          onChange={() => toggleBoard(board.id)}
-                        />
-                        <span>{board.name}</span>
-                      </BoardCheckboxItem>
+                      <option key={board.id} value={board.id}>{board.name}</option>
                     ))}
-                  </BoardCheckboxList>
+                  </select>
                 )}
               </div>
             </ContextRow>
-            {(errors.title || errors.projectId || errors.boardIds || mutation.error) && (
+            {(errors.title || errors.projectId || errors.boardId || mutation.error) && (
               <ErrorText>
                 {errors.title?.message
                   || errors.projectId?.message
-                  || errors.boardIds?.message
+                  || errors.boardId?.message
                   || (mutation.error as Error | null)?.message}
               </ErrorText>
             )}

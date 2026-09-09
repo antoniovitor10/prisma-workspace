@@ -107,7 +107,6 @@ public class WorkItemsController : ControllerBase
             request.RequesterEmail,
             request.StartDate,
             request.AcceptanceCriteria,
-            BoardIds: request.BoardIds,
             ProjectId: request.ProjectId
         );
 
@@ -251,9 +250,7 @@ public record CreateWorkItemRequest(
     string? RequesterEmail = null,
     DateOnly? StartDate = null,
     string? AcceptanceCriteria = null,
-    /// <summary>Lista de quadros para posicionar o item (multi-board). Quando presente, sobrepõe BoardId.</summary>
-    IReadOnlyList<Guid>? BoardIds = null,
-    /// <summary>Quando BoardId e BoardIds são omitidos, resolve o quadro padrão deste projeto.</summary>
+    /// <summary>Quando BoardId é omitido, resolve o quadro padrão deste projeto.</summary>
     Guid? ProjectId = null
 );
 

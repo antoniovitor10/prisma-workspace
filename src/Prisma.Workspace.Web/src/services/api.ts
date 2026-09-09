@@ -739,7 +739,6 @@ export const api = {
 
   async createWorkItem(data: {
     boardId: string;
-    boardIds?: string[];
     projectId?: string;
     stageId?: string;
     parentId?: string;

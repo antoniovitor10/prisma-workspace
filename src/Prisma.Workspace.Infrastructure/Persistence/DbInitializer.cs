@@ -240,20 +240,6 @@ public static class DbInitializer
         await context.TimeEntries.AddRangeAsync(time1, time2, time3);
 
         project.DefaultBoardId = board.Id;
-        var seedItems = new[] { card1, card2, card3, subCard1, subCard2 };
-        foreach (var item in seedItems)
-        {
-            context.WorkItemBoardPlacements.Add(new WorkItemBoardPlacement
-            {
-                Id = Guid.NewGuid(),
-                WorkItemId = item.Id,
-                BoardId = board.Id,
-                StageId = item.StageId,
-                Position = item.Position,
-                CreatedAt = item.CreatedAt,
-                UpdatedAt = item.UpdatedAt
-            });
-        }
 
         // 10. Salvar alterações no banco e marcar a instalação como inicializada
         installationState.MarkInitialized(now);

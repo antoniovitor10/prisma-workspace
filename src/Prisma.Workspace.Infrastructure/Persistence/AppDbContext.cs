@@ -33,7 +33,6 @@ public class AppDbContext : IdentityDbContext
     public DbSet<Board> Boards => Set<Board>();
     public DbSet<Stage> Stages => Set<Stage>();
     public DbSet<WorkItem> WorkItems => Set<WorkItem>();
-    public DbSet<WorkItemBoardPlacement> WorkItemBoardPlacements => Set<WorkItemBoardPlacement>();
     public DbSet<WorkItemAssignee> WorkItemAssignees => Set<WorkItemAssignee>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<TimeEntry> TimeEntries => Set<TimeEntry>();
