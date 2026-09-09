@@ -299,6 +299,12 @@ test('workflow alterna entre personalizado e herdado da organização', async ({
   }
 });
 
+const isoHojeMais = (dias: number) => {
+  const data = new Date();
+  data.setUTCDate(data.getUTCDate() + dias);
+  return data.toISOString().slice(0, 10);
+};
+
 test('quadro da sprint move item por drag-and-drop e persiste a etapa', async ({ page, authenticatedGoto }, testInfo) => {
   await authenticatedGoto('/projects');
   const scrumProjectId = await createProjectThroughUi(page);
@@ -311,7 +317,13 @@ test('quadro da sprint move item por drag-and-drop e persiste a etapa', async ({
     expect(stages.length).toBeGreaterThanOrEqual(2);
     const sprintId = await appApi<string>(page, `/api/projects/${scrumProjectId}/sprints`, {
       method: 'POST',
-      body: { teamId: null, name: 'Sprint E2E', goal: 'Validar DnD', startDate: '2026-08-20', endDate: '2026-08-27' },
+      // Datas relativas: com o estado da sprint derivado das datas (D84), um período fixo
+      // no passado passa a estar encerrado, e o quadro de sprint encerrada é somente
+      // leitura — o arraste ficaria desativado e o teste falharia por envelhecimento.
+      body: {
+        teamId: null, name: 'Sprint E2E', goal: 'Validar DnD',
+        startDate: isoHojeMais(-1), endDate: isoHojeMais(13),
+      },
     });
     const workItemId = await appApi<string>(page, '/api/WorkItems', {
       method: 'POST',
