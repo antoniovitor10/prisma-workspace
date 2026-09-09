@@ -256,7 +256,9 @@ function WikiEditor({ projectId, page }: { projectId: string; page: WikiPage }) 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit, Image.configure({ inline: false })],
+    // allowBase64: tip-tap descarta <img src="data:..."> no parseHTML quando false
+    // (default). Sem isso a API grava o HTML mas o editor some com a imagem no reload.
+    extensions: [StarterKit, Image.configure({ inline: false, allowBase64: true })],
     content: page.contentHtml || '',
     editable: !readOnly,
     onUpdate: ({ editor: instance }) => {
