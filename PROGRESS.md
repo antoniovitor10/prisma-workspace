@@ -5,6 +5,15 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-09] — Composer (Agente B Wiki/Solicitações) — TipTap imagem + portal pós-SLA
+- **Fiz:** Worktree `C:\Users\Vitor\Desktop\prisma-wt-wiki` na branch `fix/wiki-solicitacoes` @ `51d14a9`. Validei remoção de SLA no portal (settings + `/portal/demo` sem texto SLA). Isolamento TipTap no navegador: API guarda `<img data:...>` mas o editor sumia no reload porque `@tiptap/extension-image` tem `allowBase64: false` (parseHTML exclui `src^=data:`). Corrigi com `allowBase64: true`. Solicitações: **não reproduzi bug de código** — a fila é só leitura/triagem por desenho; sem portal habilitado+formulário a tela abre limpa. Documentei o caminho na empty state. E2E novos: `wiki-image.spec.ts`, `portal-requests.spec.ts`.
+- **Arquivos tocados:** `ProjectWiki.tsx`, `Requests.tsx`, `e2e/wiki-image.spec.ts`, `e2e/portal-requests.spec.ts`, este `PROGRESS.md`.
+- **Prova antes/depois:** `wiki-image` no front antigo falhou no reload (`element(s) not found` para `.ProseMirror img`); após o fix, **passed**. Portal: submit → fila → Aceitar → resposta pública **passed**.
+- **Testes:** `npx tsc -b` 0; `npx playwright test e2e/wiki-image.spec.ts e2e/portal-requests.spec.ts --project=chromium-desktop` **3 passed** (setup+2). Front E2E do worktree em `:5450`.
+- **Decisões novas:** nenhuma. D86 intocado.
+- **Próximo passo:** merge em `integration/all-specs-v2`. PO: criar solicitações exige Portal Externo em Configurações do projeto.
+- **Bloqueios:** nenhum no recorte. Não toquei Sprint/Kanban/Auth/Company/Teams/OrganizationSettings/Workflow.
+
 ## [2026-09-09] — Composer (coordenador) — Onda 0 integrada e E2E verde
 - **Fiz:** Mesclado `fix/onda0-workflow-guard` (`97a5adf`) e `fix/kanban-responsivo` (`216c877`) em `integration/all-specs-v2` (`ed6f675` / `5601b86`). Conflito só em `PROGRESS.md`. Reiniciei API+front com o código integrado e rodei a suíte completa.
 - **Testes:** `npx playwright test` **52 passed / 3 skipped / 0 failed** (`.artifacts/onda0-integration-e2e.txt`).
