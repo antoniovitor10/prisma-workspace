@@ -14,9 +14,9 @@ import {
   ListTree,
   LoaderCircle,
   Pencil,
-  Play,
   Plus,
   Target,
+  Trash2,
   Users,
   X,
 } from 'lucide-react';
@@ -448,6 +448,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [lifecycleStatus, setLifecycleStatus] = useState<3 | 4 | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [incompleteItemsAction, setIncompleteItemsAction] = useState(1);
   const [targetSprintId, setTargetSprintId] = useState('');
   const [editForm, setEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '' });
@@ -503,6 +504,22 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
       ]);
     },
     onError: (caught) => setError(caught instanceof Error ? caught.message : 'Não foi possível alterar a sprint.'),
+  });
+
+  // Excluir remove só o vínculo das tarefas: elas voltam ao Product Backlog no mesmo
+  // quadro, coluna e posição (SPEC-S-003 v3).
+  const deleteMutation = useMutation({
+    mutationFn: (sprintId: string) => previewMode ? Promise.resolve() : api.deleteSprint(sprintId),
+    onMutate: () => setError(''),
+    onSuccess: async () => {
+      setDeleteOpen(false);
+      setSelectedSprintId('');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['project-sprints', project.id] }),
+        queryClient.invalidateQueries({ queryKey: ['project-backlog', project.id] }),
+      ]);
+    },
+    onError: (caught) => setError(caught instanceof Error ? caught.message : 'Não foi possível excluir a sprint.'),
   });
 
   const saveCapacity = async (userId: string, availableHours: number, daysOffHours: number) => {
@@ -587,10 +604,11 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
             <GoalSide>
               <GoalProgress><small><span>Progresso da meta</span><b>{progress}%</b></small><ProgressTrack><ProgressFill $value={progress} /></ProgressTrack></GoalProgress>
               <div>
-                {selectedSprint.status === 1 && <Secondary disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ sprintId: selectedSprint.id, status: 2 })}><Play size={13} />Iniciar sprint</Secondary>}
+                {/* D84: não existe "Iniciar sprint". O estado Ativa vem das datas. */}
                 {selectedSprint.status < 3 && <Secondary onClick={openEdit}><Pencil size={13} />Editar</Secondary>}
                 {selectedSprint.status === 2 && <Secondary disabled={statusMutation.isPending} onClick={() => openLifecycle(3)}><CheckCircle2 size={13} />Concluir sprint</Secondary>}
                 {selectedSprint.status < 3 && <Secondary disabled={statusMutation.isPending} onClick={() => openLifecycle(4)}><Ban size={13} />Cancelar sprint</Secondary>}
+                <Secondary disabled={deleteMutation.isPending} onClick={() => setDeleteOpen(true)}><Trash2 size={13} />Excluir sprint</Secondary>
               </div>
             </GoalSide>
           </GoalCard>
@@ -765,6 +783,29 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
                 {incompleteItemsAction === 2 && <label>Sprint de destino<select required value={targetSprintId} onChange={(event) => setTargetSprintId(event.target.value)}><option value="">Selecione...</option>{(sprintQuery.data ?? []).filter((sprint) => sprint.id !== selectedSprint?.id && sprint.status < 3).map((sprint) => <option key={sprint.id} value={sprint.id}>{sprint.name}</option>)}</select></label>}
               </>}
               <footer><Secondary type="button" onClick={() => setLifecycleStatus(null)}>Voltar</Secondary><Primary type="submit" disabled={statusMutation.isPending || (unfinishedItemCount > 0 && incompleteItemsAction === 2 && !targetSprintId)}>{lifecycleStatus === 3 ? <CheckCircle2 size={13} /> : <Ban size={13} />}{lifecycleStatus === 3 ? 'Concluir' : 'Cancelar'}</Primary></footer>
+            </SprintForm>
+          </DialogContent>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <Dialog.Portal>
+          <Overlay />
+          <DialogContent aria-describedby={undefined}>
+            <DialogHeader><Dialog.Title asChild><h2>Excluir sprint</h2></Dialog.Title><Close aria-label="Fechar"><X size={17} /></Close></DialogHeader>
+            <SprintForm onSubmit={(event) => {
+              event.preventDefault();
+              if (selectedSprint) deleteMutation.mutate(selectedSprint.id);
+            }}>
+              <p>
+                A sprint <strong>{selectedSprint?.name}</strong> será excluída.
+                {(selectedSprint?.itemCount ?? 0) > 0
+                  ? ` As ${selectedSprint?.itemCount} tarefa(s) vinculadas voltam ao Product Backlog, no mesmo quadro e coluna. Nenhuma tarefa é excluída ou arquivada.`
+                  : ' Nenhuma tarefa está vinculada a ela.'}
+              </p>
+              <footer>
+                <Secondary type="button" onClick={() => setDeleteOpen(false)}>Voltar</Secondary>
+                <Primary type="submit" disabled={deleteMutation.isPending}><Trash2 size={13} />Excluir</Primary>
+              </footer>
             </SprintForm>
           </DialogContent>
         </Dialog.Portal>

@@ -37,30 +37,21 @@ public class ScrumDomainTests
         Assert.Equal("Meta", sprint.Goal);
     }
 
+    // D84: o ciclo manual Planejada -> Ativa -> Concluída e a exclusividade de sprint
+    // ativa foram revogados. O estado vem das datas; encerrar e cancelar continuam
+    // explícitos. A cobertura do novo comportamento está em SprintStatusByDatesTests.
     [Fact]
-    public void ChangeSprintStatus_RequiresTheScrumLifecycle()
+    public void EncerrarSprint_SoAceitaEncerramentoOuCancelamento()
     {
         var sprint = Sprint.Criar(Guid.NewGuid(), Guid.NewGuid(), "Sprint 1",
             new DateOnly(2026, 7, 15), new DateOnly(2026, 7, 28), "Meta");
+        var durante = new DateOnly(2026, 7, 20);
 
-        Assert.Throws<DomainException>(() => sprint.ChangeStatus(SprintStatus.Closed));
+        Assert.Throws<DomainException>(() => sprint.Encerrar(SprintStatus.Active, durante));
 
-        sprint.ChangeStatus(SprintStatus.Active);
-        sprint.ChangeStatus(SprintStatus.Closed);
-
-        Assert.Equal(SprintStatus.Closed, sprint.Status);
-        Assert.Throws<DomainException>(() => sprint.ChangeStatus(SprintStatus.Active));
-    }
-
-    [Fact]
-    public void ChangeSprintStatus_RejectsASecondActiveSprintForTheProject()
-    {
-        var sprint = Sprint.Criar(Guid.NewGuid(), Guid.NewGuid(), "Sprint 1",
-            new DateOnly(2026, 7, 15), new DateOnly(2026, 7, 28), null);
-
-        Assert.Throws<DomainException>(() => sprint.ChangeStatus(
-            SprintStatus.Active, projectHasAnotherActiveSprint: true));
-        Assert.Equal(SprintStatus.Planned, sprint.Status);
+        sprint.Encerrar(SprintStatus.Closed, durante);
+        Assert.Equal(SprintStatus.Closed, sprint.StatusEm(durante));
+        Assert.Throws<DomainException>(() => sprint.Encerrar(SprintStatus.Cancelled, durante));
     }
 
     [Fact]
@@ -75,7 +66,7 @@ public class ScrumDomainTests
         };
 
         sprint.CaptureHistory([item], SprintIncompleteItemsAction.ReturnToBacklog, null);
-        sprint.ChangeStatus(SprintStatus.Cancelled);
+        sprint.Encerrar(SprintStatus.Cancelled, new DateOnly(2026, 7, 25));
 
         Assert.True(sprint.IsTerminal);
         Assert.NotNull(sprint.CancelledAt);

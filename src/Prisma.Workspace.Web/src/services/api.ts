@@ -458,6 +458,10 @@ export const api = {
     });
   },
 
+  async deleteSprint(sprintId: string) {
+    return this.request(`/api/sprints/${sprintId}`, { method: 'DELETE' });
+  },
+
   async setSprintCapacity(sprintId: string, memberId: string, availableHours: number, daysOffHours: number) {
     return this.request(`/api/sprints/${sprintId}/capacity/${memberId}`, {
       method: 'PUT', body: JSON.stringify({ availableHours, daysOffHours })

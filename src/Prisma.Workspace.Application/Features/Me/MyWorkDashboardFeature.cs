@@ -30,12 +30,35 @@ public sealed record MyWorkNotificationDto(
 public sealed record MyWorkSummaryDto(
     int Assigned, int Today, int ThisWeek, int Overdue, int Blocked,
     int ExternalRequests, int PendingApprovals, int Mentions);
+/// <summary>Projeto ativo em que a pessoa participa, com o recorte de trabalho dela.</summary>
+public sealed record MyWorkProjectDto(
+    Guid Id, string Key, string Name,
+    int OpenTasks, int OverdueTasks, int CompletedTasks, int ProgressPercentage,
+    Guid? CurrentSprintId, string? CurrentSprintName, int? CurrentSprintDaysLeft);
+
+/// <summary>
+/// Sprint em curso. O progresso vem em dois recortes propositalmente: o da sprint
+/// inteira e o das tarefas da pessoa, para separar "a sprint vai bem" de "eu estou em dia".
+/// </summary>
+public sealed record MyWorkSprintDto(
+    Guid Id, string Name, Guid ProjectId, string ProjectKey, string ProjectName,
+    DateOnly StartDate, DateOnly EndDate, int DaysLeft, bool EndingSoon,
+    int TotalItems, int TotalCompleted, int TotalProgressPercentage,
+    int MyItems, int MyCompleted, int MyProgressPercentage);
+
+/// <summary>Apontamento da semana corrente, sem qualquer métrica financeira.</summary>
+public sealed record MyWorkHoursDto(
+    decimal WeekHours, decimal PlannedHours, int DaysWithoutEntry);
+
 public sealed record MyWorkDashboardDto(
     MyWorkSummaryDto Summary, IReadOnlyList<MyWorkTaskDto> Tasks,
     IReadOnlyList<MyWorkCommentDto> Comments, IReadOnlyList<MyWorkCommentDto> Mentions,
     IReadOnlyList<MyWorkApprovalDto> PendingApprovals,
     IReadOnlyList<MyWorkTaskDto> UpcomingDeadlines,
-    IReadOnlyList<MyWorkNotificationDto> ImportantNotifications);
+    IReadOnlyList<MyWorkNotificationDto> ImportantNotifications,
+    IReadOnlyList<MyWorkProjectDto> Projects,
+    IReadOnlyList<MyWorkSprintDto> Sprints,
+    MyWorkHoursDto Hours);
 
 public sealed record GetMyWorkDashboardQuery(string UserId) : IRequest<MyWorkDashboardDto>;
 public sealed class GetMyWorkDashboardQueryHandler
@@ -59,6 +82,9 @@ public sealed class GetMyWorkDashboardQueryHandler
         var weekEnd = today.AddDays(7);
         var upcomingEnd = today.AddDays(14);
 
+        var projetos = await _myWork.GetActiveProjectsAsync(request.UserId, ct);
+        var sprints = await _myWork.GetSprintsAsync(request.UserId, ct);
+
         var mappedTasks = tasks.Select(item => MapTask(item, request.UserId, today, weekEnd, upcomingEnd)).ToList();
         var mappedComments = comments.Select(x => new MyWorkCommentDto(
             x.Id, x.WorkItemId, x.WorkItem.Number, x.WorkItem.Title,
@@ -79,7 +105,100 @@ public sealed class GetMyWorkDashboardQueryHandler
                 mappedApprovals.Count, mentions.Count),
             mappedTasks, mappedComments, mentions, mappedApprovals,
             mappedTasks.Where(x => x.UpcomingDeadline).OrderBy(x => x.DueDate).ToList(),
-            BuildNotifications(mappedTasks, mentions, mappedApprovals, tasks));
+            BuildNotifications(mappedTasks, mentions, mappedApprovals, tasks),
+            BuildProjects(projetos, sprints, mappedTasks, today),
+            BuildSprints(sprints, request.UserId, today),
+            BuildHours(tasks, request.UserId, today));
+    }
+
+    /// <summary>
+    /// Projetos ativos da pessoa. Um projeto sem tarefa dela continua aparecendo, com
+    /// contagem zero: sumir da lista esconderia que ela participa dele.
+    /// </summary>
+    private static IReadOnlyList<MyWorkProjectDto> BuildProjects(
+        IReadOnlyList<Project> projetos,
+        IReadOnlyList<Sprint> sprints,
+        IReadOnlyList<MyWorkTaskDto> tarefas,
+        DateOnly hoje)
+        => projetos.Select(projeto =>
+        {
+            var minhas = tarefas.Where(x => x.ProjectId == projeto.Id).ToList();
+            var abertas = minhas.Count(x => x.CompletedAt is null);
+            var concluidas = minhas.Count(x => x.CompletedAt is not null);
+            var emCurso = sprints
+                .Where(x => x.ProjectId == projeto.Id && x.StatusEm(hoje) == SprintStatus.Active)
+                .OrderBy(x => x.EndDate)
+                .FirstOrDefault();
+            return new MyWorkProjectDto(
+                projeto.Id, projeto.Key, projeto.Name,
+                abertas, minhas.Count(x => x.Overdue), concluidas,
+                minhas.Count == 0 ? 0 : (int)Math.Round(concluidas * 100m / minhas.Count),
+                emCurso?.Id, emCurso?.Name,
+                emCurso is null ? null : Math.Max(0, emCurso.EndDate.DayNumber - hoje.DayNumber));
+        })
+        // Quem tem atraso primeiro, depois quem tem mais trabalho aberto.
+        .OrderByDescending(x => x.OverdueTasks)
+        .ThenByDescending(x => x.OpenTasks)
+        .ThenBy(x => x.Name)
+        .ToList();
+
+    /// <summary>
+    /// Sprints ativas, com progresso geral e progresso da pessoa lado a lado. Sprints
+    /// encerradas ficam no histórico do projeto e não aparecem aqui.
+    /// </summary>
+    private static IReadOnlyList<MyWorkSprintDto> BuildSprints(
+        IReadOnlyList<Sprint> sprints, string userId, DateOnly hoje)
+        => sprints
+            .Where(x => x.StatusEm(hoje) == SprintStatus.Active)
+            .Select(sprint =>
+            {
+                var itens = sprint.WorkItems.Where(x => !x.IsArchived).ToList();
+                var minhas = itens.Where(x => x.ResponsibleId == userId
+                    || x.Assignees.Any(a => a.UserId == userId)).ToList();
+                var totalConcluidos = itens.Count(x => x.CompletedAt is not null);
+                var minhasConcluidas = minhas.Count(x => x.CompletedAt is not null);
+                var diasRestantes = Math.Max(0, sprint.EndDate.DayNumber - hoje.DayNumber);
+                return new MyWorkSprintDto(
+                    sprint.Id, sprint.Name, sprint.ProjectId,
+                    sprint.Project.Key, sprint.Project.Name,
+                    sprint.StartDate, sprint.EndDate, diasRestantes, diasRestantes <= 2,
+                    itens.Count, totalConcluidos,
+                    itens.Count == 0 ? 0 : (int)Math.Round(totalConcluidos * 100m / itens.Count),
+                    minhas.Count, minhasConcluidas,
+                    minhas.Count == 0 ? 0 : (int)Math.Round(minhasConcluidas * 100m / minhas.Count));
+            })
+            .OrderBy(x => x.DaysLeft)
+            .ToList();
+
+    /// <summary>
+    /// Apontamento da semana corrente da pessoa. Nunca expõe custo, valor-hora ou
+    /// qualquer métrica financeira (D23 e catálogo de relatórios).
+    /// </summary>
+    private static MyWorkHoursDto BuildHours(
+        IReadOnlyList<WorkItem> tarefas, string userId, DateOnly hoje)
+    {
+        var inicioSemana = hoje.AddDays(-(int)hoje.DayOfWeek);
+        var lancamentos = tarefas
+            .SelectMany(x => x.TimeEntries)
+            .Where(x => x.UserId == userId && x.EndedAt.HasValue)
+            .Where(x => DateOnly.FromDateTime(x.StartedAt.UtcDateTime) >= inicioSemana
+                && DateOnly.FromDateTime(x.StartedAt.UtcDateTime) <= hoje)
+            .ToList();
+
+        var horas = lancamentos.Sum(x => (decimal)(x.EndedAt!.Value - x.StartedAt).TotalHours);
+        var previstas = tarefas
+            .Where(x => x.CompletedAt is null
+                && (x.ResponsibleId == userId || x.Assignees.Any(a => a.UserId == userId)))
+            .Sum(x => x.EstimatedHours ?? 0);
+
+        var diasComLancamento = lancamentos
+            .Select(x => DateOnly.FromDateTime(x.StartedAt.UtcDateTime))
+            .Distinct().Count();
+        var diasDecorridos = hoje.DayNumber - inicioSemana.DayNumber + 1;
+
+        return new MyWorkHoursDto(
+            Math.Round(horas, 2), Math.Round(previstas, 2),
+            Math.Max(0, diasDecorridos - diasComLancamento));
     }
 
     private static MyWorkTaskDto MapTask(
