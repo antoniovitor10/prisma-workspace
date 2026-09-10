@@ -677,6 +677,16 @@ export const api = {
     });
   },
 
+  async updateStage(
+    stageId: string,
+    data: { name: string; category?: number; color?: string }
+  ) {
+    return this.request(`/api/Stages/${stageId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
   async getProjectWorkflow(projectId: string) {
     return this.request(`/api/projects/${projectId}/workflow`);
   },

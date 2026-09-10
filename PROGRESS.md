@@ -5,6 +5,13 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-10] — Antigravity — edição de coluna no Kanban (nome e classificação)
+- **Fiz:** implementei a capacidade de editar etapas/colunas do fluxo do projeto, atendendo à demanda de que o nome da coluna não podia ser alterado.
+  - **Backend:** adicionados `UpdateStageCommand`, `UpdateStageCommandValidator` e `UpdateStageCommandHandler` em `Prisma.Workspace.Application.Features.Stages.Commands`, com sincronização do `WorkflowStatus` associado (quando existente). Exposto endpoint `PUT /api/Stages/{stageId}` em `StagesController`.
+  - **Frontend:** adicionado `updateStage` em `services/api.ts`. No `Kanban.tsx`, inserido botão de edição com ícone de lápis (`Pencil`) no `ColumnHeader` (ao lado de `CardCount` e dos botões de mover `< >`), abrindo o modal "Editar Coluna" para alteração do nome e da classificação funcional da etapa (`StageCategory`).
+- **Validação:** `dotnet test` com 2 novos testes unitários aprovados cobrindo o handler; `dotnet build` da solution 100% aprovado; `tsc -b` limpo sem erros; Vitest com 82/82 testes aprovados (incluindo novo teste em `ProjectKanbanDirect.test.tsx` cobrindo o fluxo completo de edição).
+- **Worktree:** `C:\Users\Vitor\Desktop\prisma-wt-edit-column`, branch `feat/edit-column`.
+
 ## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
 - **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
 - **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.

@@ -70,6 +70,24 @@ public class StagesController : ControllerBase
         var stageId = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetByProjectId), new { projectId = request.ProjectId }, stageId);
     }
+
+    /// <summary>
+    /// Atualiza uma coluna/etapa existente do fluxo do projeto.
+    /// </summary>
+    [HttpPut("{stageId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(
+        Guid stageId,
+        [FromBody] UpdateStageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateStageCommand(
+            stageId, request.Name, request.Category, request.Color, UserId);
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
 }
 
 /// <summary>
@@ -80,3 +98,11 @@ public record CreateStageRequest(
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B");
+
+/// <summary>
+/// Modelo de request para atualizar uma coluna.
+/// </summary>
+public record UpdateStageRequest(
+    string Name,
+    StageCategory? Category = null,
+    string? Color = null);
