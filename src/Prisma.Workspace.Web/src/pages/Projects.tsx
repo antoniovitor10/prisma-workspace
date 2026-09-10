@@ -53,6 +53,16 @@ const Empty = styled.div`grid-column:1/-1;padding:64px 24px;text-align:center;bo
 const Overlay = styled.div`position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(15,23,42,.35);`;
 const Dialog = styled.form`width: min(480px, 92vw); display: grid; gap: 14px; padding: 24px; border-radius: 10px; background: ${({ theme }) => theme.color.surface}; box-shadow: ${({ theme }) => theme.shadow.lg}; input, textarea, select { width: 100%; padding: 10px; border: 1px solid ${({ theme }) => theme.color.border}; border-radius: 6px; background: ${({ theme }) => theme.color.bg}; color: ${({ theme }) => theme.color.text}; } label { display:grid; gap:5px; color:${({ theme }) => theme.color.textMuted}; font-size:13.5px; font-weight:700; } textarea { min-height: 90px; resize: vertical; } footer { display: flex; justify-content: flex-end; gap: 8px; }`;
 const Secondary = styled.button`padding: 9px 14px; border: 1px solid ${({ theme }) => theme.color.border}; border-radius: 6px; color: ${({ theme }) => theme.color.text};`;
+const Opcional = styled.span`
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.color.neutral[100]};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: lowercase;
+`;
 const ErrorText = styled.div`color: ${({ theme }) => theme.color.danger}; font-size: 14px;`;
 const Filter = styled.label`display:inline-flex;min-height:40px;align-items:center;gap:7px;padding:0 8px;color:${({ theme }) => theme.color.textMuted};font-size:13px;white-space:nowrap;input{accent-color:${({ theme }) => theme.color.brand};}`;
 const FilterSelect = styled.select`min-height:36px;padding:0 28px 0 10px;border:1px solid ${({ theme }) => theme.color.border};border-radius:${({ theme }) => theme.radius.md};background:${({ theme }) => theme.color.surface};color:${({ theme }) => theme.color.text};font:inherit;font-size:12.5px;`;
@@ -187,8 +197,10 @@ export function Projects() {
             <textarea placeholder="Objetivo e contexto" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             <label>Natureza<select required aria-label="Natureza" value={form.nature} onChange={(e) => setForm({ ...form, nature: Number(e.target.value) })}><option value={0} disabled>Selecione a natureza</option>{workNatureOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
             <label>Tipo de Trabalho<select required aria-label="Tipo de Trabalho" value={form.workType} onChange={(e) => setForm({ ...form, workType: Number(e.target.value) })}><option value={0} disabled>Selecione o tipo</option>{workTypeOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-            <label>Data de início<input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label>
-            <label>Prazo<input type="date" min={form.startDate || undefined} value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></label>
+            {/* Datas sempre foram opcionais aqui, mas nada dizia isso: ao lado de dois
+                selects obrigatorios o campo de prazo parecia exigido tambem. */}
+            <label>Data de início <Opcional>opcional</Opcional><input type="date" aria-label="Data de início" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label>
+            <label>Prazo <Opcional>opcional</Opcional><input type="date" aria-label="Prazo" min={form.startDate || undefined} value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></label>
             {error && <ErrorText>{error}</ErrorText>}
             <footer>
               <Secondary type="button" onClick={() => setOpen(false)}>Cancelar</Secondary>
