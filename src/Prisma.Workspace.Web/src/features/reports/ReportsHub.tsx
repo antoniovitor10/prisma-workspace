@@ -188,7 +188,16 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
   });
   const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [priority, setPriority] = useState<number | ''>('');
+  /**
+   * Relatório por pessoa, pedido do PO: o gestor escolhe alguém e todo o relatório passa a
+   * falar daquela pessoa. O backend já filtrava por `userId` — considera responsável,
+   * participante e, nas horas, quem lançou — mas a tela nunca ofereceu a escolha.
+   */
+  const [userId, setUserId] = useState('');
   const projectId = fixedProjectId ?? (selectedProjectId || undefined);
+  const peopleQuery = useQuery<Array<{ userId: string; name: string; isActive: boolean }>>({
+    queryKey: ['organization', 'members'], queryFn: () => api.getOrganizationMembers(),
+  });
   const projectsQuery = useQuery<ProjectSummary[]>({
     queryKey: ['projects', false], queryFn: () => api.getProjects(false), enabled: !fixedProjectId,
   });
@@ -202,8 +211,11 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     : projectsQuery.data?.find(item => item.id === projectId);
   const showPoints = projectId ? Boolean(selectedProject) && selectedProject?.methodology !== 1 : true;
   const preparedQuery = useQuery<PreparedReports>({
-    queryKey: ['prepared-reports', projectId, priority, from, to],
-    queryFn: () => api.getPreparedReports({ projectId, priority: priority === '' ? undefined : priority, from, to }),
+    queryKey: ['prepared-reports', projectId, priority, from, to, userId],
+    queryFn: () => api.getPreparedReports({
+      projectId, priority: priority === '' ? undefined : priority, from, to,
+      userId: userId || undefined,
+    }),
   });
   const dashboardQuery = useQuery<Dashboard>({
     queryKey: ['project-dashboard', projectId, priority, from, to],
@@ -211,8 +223,8 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     enabled: !!projectId && tab === 'prepared',
   });
   const hoursQuery = useQuery<OrganizationHoursReport>({
-    queryKey: ['org-hours-report', from, to],
-    queryFn: () => api.getOrganizationHoursReport({ from, to }),
+    queryKey: ['org-hours-report', from, to, userId],
+    queryFn: () => api.getOrganizationHoursReport({ from, to, userId: userId || undefined }),
     enabled: tab === 'hours',
   });
   const customQuery = useQuery<CustomFieldReport>({
@@ -233,7 +245,12 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     ? (projectsQuery.data?.find(item => item.id === projectId)?.name ?? 'Projeto selecionado')
     : 'Todos os projetos';
   const priorityLabel = priority === '' ? 'Todas as prioridades' : ['Baixa', 'Média', 'Alta', 'Crítica'][priority as number];
-  const filterSummary = `${projectLabel} · ${priorityLabel} · ${fmtDate(from)} até ${fmtDate(to)}`;
+  const personLabel = userId
+    ? (peopleQuery.data?.find(person => person.userId === userId)?.name ?? 'Pessoa selecionada')
+    : 'Todas as pessoas';
+  // A pessoa entra no resumo porque ele vai no cabeçalho do PDF: um relatório de uma pessoa
+  // que não diz de quem é serve de pouco depois de impresso.
+  const filterSummary = `${projectLabel} · ${personLabel} · ${priorityLabel} · ${fmtDate(from)} até ${fmtDate(to)}`;
   const handlePdf = async () => {
     setExporting(true);
     try {
@@ -256,6 +273,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     <Filters>
       {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.key} · {project.name}</option>)}</select></label>}
       <label>Prioridade<select value={priority} onChange={event => setPriority(event.target.value === '' ? '' : Number(event.target.value))}><option value="">Todas</option><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></label>
+      <label>Pessoa<select aria-label="Pessoa" value={userId} onChange={event => setUserId(event.target.value)}><option value="">Todas as pessoas</option>{(peopleQuery.data ?? []).filter(person => person.isActive).map(person => <option key={person.userId} value={person.userId}>{person.name}</option>)}</select></label>
       <label>Período inicial<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
       <label>Período final<input type="date" min={from} value={to} onChange={event => setTo(event.target.value)} /></label>
     </Filters>
