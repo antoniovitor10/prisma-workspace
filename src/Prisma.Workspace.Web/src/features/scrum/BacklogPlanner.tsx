@@ -157,14 +157,46 @@ const FilterBar = styled.div`
   background: ${({ theme }) => theme.color.surface};
 `;
 
-const FilterTitle = styled.span`
+/**
+ * A faixa de filtros abre recolhida a pedido do PO: seis campos empilhados empurravam a
+ * lista para baixo mesmo quando ninguem estava filtrando. Recolhida, ela continua dizendo
+ * quantos filtros estao ativos e mantem o botao de limpar, para filtro ligado nunca ficar
+ * invisivel.
+ */
+const FilterToggle = styled.button<{ $aberto: boolean }>`
   display: inline-flex;
   height: 34px;
   align-items: center;
   gap: 6px;
   margin-right: 2px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: transparent;
   color: ${({ theme }) => theme.color.textMuted};
   font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+
+  > svg:last-child {
+    transition: transform .15s ease;
+    transform: rotate(${({ $aberto }) => ($aberto ? '180deg' : '0deg')});
+  }
+  @media (prefers-reduced-motion: reduce) { > svg:last-child { transition: none; } }
+`;
+
+const FiltroAtivoSelo = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 12%, transparent)`};
+  color: ${({ theme }) => theme.color.brand};
+  font-size: 11.5px;
   font-weight: 800;
 `;
 
@@ -217,6 +249,7 @@ const BulkBar = styled.div`
 `;
 
 const CHAVE_BACKLOG_AMPLO = 'prisma_workspace_backlog_amplo';
+const CHAVE_FILTROS_ABERTOS = 'prisma_workspace_backlog_filtros_abertos';
 
 const PlanningGrid = styled.div<{ $amplo: boolean }>`
   display: grid;
@@ -820,6 +853,9 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const [backlogAmplo, setBacklogAmplo] = useState(() => {
     try { return localStorage.getItem(CHAVE_BACKLOG_AMPLO) === 'true'; } catch { return false; }
   });
+  const [filtrosAbertos, setFiltrosAbertos] = useState(() => {
+    try { return localStorage.getItem(CHAVE_FILTROS_ABERTOS) === 'true'; } catch { return false; }
+  });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [error, setError] = useState('');
   const sensors = useSensors(
@@ -1062,6 +1098,10 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     try { localStorage.setItem(CHAVE_BACKLOG_AMPLO, String(backlogAmplo)); } catch { /* preferencia e conveniencia */ }
   }, [backlogAmplo]);
 
+  useEffect(() => {
+    try { localStorage.setItem(CHAVE_FILTROS_ABERTOS, String(filtrosAbertos)); } catch { /* idem */ }
+  }, [filtrosAbertos]);
+
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
 
 
@@ -1095,7 +1135,24 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       )}
 
       <FilterBar>
-        <FilterTitle><ListFilter size={13} />Filtros {activeFilterCount > 0 && `(${activeFilterCount})`}</FilterTitle>
+        <FilterToggle
+          type="button"
+          $aberto={filtrosAbertos}
+          aria-expanded={filtrosAbertos}
+          onClick={() => setFiltrosAbertos((atual) => !atual)}
+        >
+          <ListFilter size={13} />Filtros
+          <ChevronDown size={13} />
+        </FilterToggle>
+        {activeFilterCount > 0 && (
+          <FiltroAtivoSelo>{activeFilterCount} ativo{activeFilterCount > 1 ? 's' : ''}</FiltroAtivoSelo>
+        )}
+        {!filtrosAbertos && activeFilterCount > 0 && (
+          <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }}>
+            <RotateCcw size={13} />Limpar filtros
+          </Button>
+        )}
+        {filtrosAbertos && <>
         <SelectField>Tipo<select value={filters.kind} onChange={(event) => setFilters((current) => ({ ...current, kind: event.target.value }))}><option value="all">Todos</option>{Object.entries(kindNames).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
         <SelectField>Prioridade<select value={filters.priority} onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}><option value="all">Todas</option>{[0, 1, 2, 3].map((priority) => <option key={priority} value={priority}>{priorityNames[priority]}</option>)}</select></SelectField>
         <SelectField>Quadro<select value={filters.boardId} onChange={(event) => setFilters((current) => ({ ...current, boardId: event.target.value }))}><option value="all">Todos</option>{boards.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
@@ -1103,6 +1160,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         <SelectField>Relações<select value={filters.relation} onChange={(event) => setFilters((current) => ({ ...current, relation: event.target.value as BacklogFilterState['relation'] }))}><option value="all">Todas</option><option value="blocked">Bloqueados</option><option value="dependencies">Com dependências</option><option value="unparented">Sem épico</option></select></SelectField>
         <SelectField>Agrupar por<select value={groupBy} onChange={(event) => setGroupBy(event.target.value as BacklogGroupBy)}><option value="none">Sem agrupamento</option><option value="epic">Épico</option><option value="kind">Tipo</option><option value="priority">Prioridade</option><option value="board">Quadro</option></select></SelectField>
         <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }} disabled={activeFilterCount === 0 && groupBy === 'none'}><RotateCcw size={12} />Limpar</Button>
+        </>}
       </FilterBar>
 
       {selectedIds.size > 0 && (

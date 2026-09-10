@@ -120,3 +120,43 @@ describe('visão ampla do backlog', () => {
     expect(screen.getByRole('button', { name: 'Mover para sprint' })).toBeEnabled();
   });
 });
+
+describe('faixa de filtros recolhida', () => {
+  it('abre recolhida: nenhum campo de filtro visível', async () => {
+    renderPlanner();
+
+    const alternar = await screen.findByRole('button', { name: /Filtros/ });
+    expect(alternar).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('combobox', { name: /Agrupar por|Mostrar tarefas arquivadas/ })).not.toBeInTheDocument();
+  });
+
+  it('mostra os campos ao abrir e guarda a preferência', async () => {
+    renderPlanner();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Filtros/ }));
+
+    expect(await screen.findByRole('combobox', { name: 'Mostrar tarefas arquivadas' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(localStorage.getItem('prisma_workspace_backlog_filtros_abertos')).toBe('true'));
+
+    cleanup();
+    renderPlanner();
+    expect(await screen.findByRole('combobox', { name: 'Mostrar tarefas arquivadas' })).toBeInTheDocument();
+  });
+
+  it('recolhida, um filtro ativo continua visível e limpável', async () => {
+    localStorage.setItem('prisma_workspace_backlog_filtros_abertos', 'true');
+    renderPlanner();
+
+    // Liga um filtro com a faixa aberta e depois recolhe.
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Mostrar tarefas arquivadas' }),
+      { target: { value: 'yes' } });
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+
+    // Filtro ligado nunca pode ficar escondido: some o campo, fica o aviso e o limpar.
+    await waitFor(() =>
+      expect(screen.queryByRole('combobox', { name: 'Mostrar tarefas arquivadas' })).not.toBeInTheDocument());
+    expect(screen.getByText(/1 ativo/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Limpar filtros' })).toBeInTheDocument();
+  });
+});

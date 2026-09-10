@@ -537,21 +537,25 @@ export function Topbar() {
         </SearchButton>
 
         {/* org picker */}
-        <OrganizationPicker title="Organização ativa">
-          <Building2 size={14} />
-          <select
-            value={current.id}
-            aria-label="Selecionar organização"
-            onChange={(e) => {
-              switchOrganization(e.target.value);
-              navigate(current.role === 8 ? '/requests' : '/home');
-            }}
-          >
-            {organizations.map((org) => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
-        </OrganizationPicker>
+        {/* Com uma única organização o seletor não oferece escolha alguma: só ocupa
+            espaço na barra. Aparece a partir da segunda. */}
+        {organizations.length > 1 && (
+          <OrganizationPicker title="Organização ativa">
+            <Building2 size={14} />
+            <select
+              value={current.id}
+              aria-label="Selecionar organização"
+              onChange={(e) => {
+                switchOrganization(e.target.value);
+                navigate(current.role === 8 ? '/requests' : '/home');
+              }}
+            >
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          </OrganizationPicker>
+        )}
 
         {/* active timer */}
         {timer && (

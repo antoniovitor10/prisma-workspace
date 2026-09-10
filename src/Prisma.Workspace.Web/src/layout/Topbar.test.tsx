@@ -40,11 +40,12 @@ const organizations: OrganizationStateValue['organizations'] = [
 function renderTopbar(
   initialEntries: string[] = ['/projects'],
   current: OrganizationStateValue['organizations'][number] = organizations[0],
+  lista: OrganizationStateValue['organizations'] = organizations,
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const switchOrganization = vi.fn();
   const orgState: OrganizationStateValue = {
-    organizations,
+    organizations: lista,
     current,
     switchOrganization,
   };
