@@ -12,6 +12,12 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 - **Validação:** `dotnet test` com 2 novos testes unitários aprovados cobrindo o handler; `dotnet build` da solution 100% aprovado; `tsc -b` limpo sem erros; Vitest com 82/82 testes aprovados (incluindo novo teste em `ProjectKanbanDirect.test.tsx` cobrindo o fluxo completo de edição).
 - **Worktree:** `C:\Users\Vitor\Desktop\prisma-wt-edit-column`, branch `feat/edit-column`.
 
+## [2026-09-10] — Antigravity — redesign do grafo de estados no padrão Azure DevOps
+- **Fiz:** reformulação completa do `TaskStateGraph.tsx` para seguir o padrão visual de referência do Azure DevOps (solicitado via imagem). O grafo substitui o layout genérico do ReactFlow por uma timeline horizontal cronológica com scroll, onde cada estado possui uma transição de entrada à esquerda (com rótulo da ação, avatar com iniciais coloridas, nome do responsável e data formatada). O primeiro estado recebe a transição de criação ("Novo item de trabalho"). Cores dos indicadores de estado (dots) alinhadas semanticamente à categoria (Backlog=cinza, Ready=amarelo, Em andamento=azul, Revisão=violeta, Concluído=verde) com destaque azul e borda no estado ativo atual. Alinhamento geométrico milimétrico entre as setas horizontais e as bolhas de estado.
+- **Integração:** `TaskDetailDrawer.tsx` passa `createdAt` e `createdByName` da tarefa ao componente; mensagem de `VisibilityNote` atualizada.
+- **Validação:** `tsc -b` aprovado com exit code 0 (zero erros de tipagem); Vitest 81/81 testes aprovados (incluindo `TaskDetailDrawer.test.tsx`). Nenhuma migration, nenhum impacto em APIs existentes ou schema.
+- **Worktree:** `C:\Users\Vitor\Desktop\prisma-wt-state-graph`, branch `state-graph-redesign`, commits `43ccca1` e `5e71f32`.
+
 ## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
 - **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
 - **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.
