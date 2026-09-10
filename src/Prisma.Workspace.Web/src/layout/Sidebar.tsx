@@ -1,168 +1,160 @@
-import {
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  FolderKanban,
-  Inbox,
-  Settings,
-  Users,
-} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import { useQuery } from '@tanstack/react-query';
-import { BrandMark } from '../components/BrandMark';
 import { useOrganization } from '../features/organizations/OrganizationState';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
+import { visibleNavEntries } from './navigation';
 
-const Aside = styled.aside<{ $collapsed: boolean }>`
-  grid-area: sidebar;
-  z-index: 30;
+/**
+ * Trilho de navegação recolhível (D87).
+ *
+ * Recolhido mostra só ícones; expandido mostra os rótulos. O comportamento é o de trilho
+ * expansível pedido pelo PO; a identidade visual continua sendo a do Prisma, conforme a
+ * SPEC-PRISMA-VISUAL-SYSTEM — nada aqui imita cores, tipografia ou ícones de outro produto.
+ *
+ * Em telas estreitas o trilho não aparece: o hambúrguer da barra superior já é a navegação
+ * de mobile. Dois overlays de navegação na mesma tela seriam nav duplicada, e o trilho
+ * comeria a largura útil justamente onde ela é escassa.
+ */
+
+const CHAVE_PREFERENCIA = 'prisma_workspace_nav_expandido';
+const LARGURA_RECOLHIDO = '56px';
+const LARGURA_EXPANDIDO = '224px';
+
+const lerPreferencia = (): boolean => {
+  try {
+    return localStorage.getItem(CHAVE_PREFERENCIA) === 'true';
+  } catch {
+    // Janela privada ou armazenamento bloqueado: começa recolhido, sem quebrar a tela.
+    return false;
+  }
+};
+
+const Trilho = styled.nav<{ $expandido: boolean }>`
+  position: sticky;
+  top: 0;
+  z-index: 25;
   display: flex;
-  min-width: 0;
   flex-direction: column;
-  gap: 14px;
-  overflow: hidden;
-  padding: 12px 10px;
-  background: ${({ theme }) => theme.color.neutral[900]};
-  color: ${({ theme }) => theme.color.neutral[300]};
+  gap: 4px;
+  flex: 0 0 auto;
+  width: ${({ $expandido }) => ($expandido ? LARGURA_EXPANDIDO : LARGURA_RECOLHIDO)};
+  height: 100vh;
+  padding: 10px 8px;
+  border-right: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.surface};
+  transition: width .16s ease;
 
-  @media (max-width: 900px) { padding-inline: 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  /* Abaixo deste ponto quem navega é o hambúrguer da barra superior, que usa o
+     mesmo limite. */
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
-const Brand = styled.div<{ $collapsed: boolean }>`
+const Alternar = styled.button<{ $expandido: boolean }>`
   display: flex;
-  height: 42px;
-  min-width: 0;
   align-items: center;
-  gap: 10px;
-  padding: 0 8px;
-  color: ${({ theme }) => theme.color.onBrand};
-  font-family: ${({ theme }) => theme.font.display};
-
-  > svg {
-    flex: 0 0 auto;
-  }
-
-  > span {
-    display: ${({ $collapsed }) => $collapsed ? 'none' : 'block'};
-    min-width: 0;
-    overflow: hidden;
-    font-size: 14px;
-    font-weight: 800;
-    line-height: 1.1;
-    white-space: nowrap;
-    small { display: block; margin-top: 3px; color: ${({ theme }) => theme.color.neutral[400]}; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
-  }
-
-  @media (max-width: 900px) { > span { display: none; } }
-`;
-
-const Group = styled.div`
-  display: grid;
-  gap: 3px;
-`;
-
-const Label = styled.div<{ $collapsed: boolean }>`
-  display: ${({ $collapsed }) => $collapsed ? 'none' : 'block'};
-  padding: 8px 10px 4px;
-  color: ${({ theme }) => theme.color.neutral[500]};
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  @media (max-width: 900px) { display: none; }
-`;
-
-const Item = styled(NavLink)<{ $collapsed: boolean }>`
-  position: relative;
-  display: flex;
+  justify-content: ${({ $expandido }) => ($expandido ? 'flex-start' : 'center')};
+  gap: 9px;
   min-height: 38px;
-  align-items: center;
-  justify-content: ${({ $collapsed }) => $collapsed ? 'center' : 'flex-start'};
-  gap: 10px;
-  padding: 0 ${({ $collapsed }) => $collapsed ? '0' : '10px'};
+  padding: 0 9px;
+  margin-bottom: 6px;
+  border: 0;
   border-radius: ${({ theme }) => theme.radius.md};
-  color: ${({ theme }) => theme.color.neutral[400]};
-  font-size: 14px;
-  font-weight: 650;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+
+  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+`;
+
+const Item = styled(NavLink)<{ $expandido: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: ${({ $expandido }) => ($expandido ? 'flex-start' : 'center')};
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 9px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
   white-space: nowrap;
 
-  svg { flex: 0 0 auto; }
-  span { display: ${({ $collapsed }) => $collapsed ? 'none' : 'inline'}; }
-  &:hover { background: ${({ theme }) => `color-mix(in srgb, ${theme.color.surface} 7%, transparent)`}; color: ${({ theme }) => theme.color.onBrand}; }
+  > svg { flex: 0 0 auto; }
+
+  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; color: ${({ theme }) => theme.color.text}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+
   &.active {
-    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 22%, transparent)`};
-    color: ${({ theme }) => theme.color.onBrand};
-    box-shadow: inset 3px 0 ${({ theme }) => theme.color.accentBlue};
+    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, ${theme.color.surface})`};
+    color: ${({ theme }) => theme.color.brand};
   }
-
-  @media (max-width: 900px) { justify-content: center; padding: 0; span { display: none; } }
 `;
 
-const Bottom = styled(Group)`margin-top: auto;`;
-
-const Collapse = styled.button<{ $collapsed: boolean }>`
-  display: flex;
-  min-height: 36px;
-  align-items: center;
-  justify-content: ${({ $collapsed }) => $collapsed ? 'center' : 'flex-start'};
-  gap: 9px;
-  padding: 0 ${({ $collapsed }) => $collapsed ? '0' : '10px'};
-  border-top: 1px solid ${({ theme }) => theme.color.neutral[800]};
-  color: ${({ theme }) => theme.color.neutral[500]};
-  font-size: 13px;
-  font-weight: 700;
-
-  span { display: ${({ $collapsed }) => $collapsed ? 'none' : 'inline'}; }
-  &:hover { color: ${({ theme }) => theme.color.onBrand}; }
-  @media (max-width: 900px) { display: none; }
+const Rotulo = styled.span<{ $expandido: boolean }>`
+  overflow: hidden;
+  /* Recolhido, o rótulo sai da árvore de acessibilidade junto com a largura: o nome
+     acessível do item passa a vir do aria-label. */
+  display: ${({ $expandido }) => ($expandido ? 'inline' : 'none')};
 `;
 
-interface SidebarProps {
-  collapsed: boolean;
-  onToggle: () => void;
-}
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar() {
+  const [expandido, setExpandido] = useState(lerPreferencia);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_PREFERENCIA, String(expandido));
+    } catch {
+      // Preferência é conveniência: não poder guardar não impede usar.
+    }
+  }, [expandido]);
+
   const { current } = useOrganization();
-  const access = useQuery<{ role:number; allowedPermissions:number[] }>({
+  const access = useQuery<{ role: number; allowedPermissions: number[] }>({
     queryKey: ['organization', 'access'],
     queryFn: () => api.getOrganizationAccess(),
     enabled: !previewMode,
     initialData: previewMode ? { role: 1, allowedPermissions: [1, 10, 12, 13, 14] } : undefined,
   });
-  const role = access.data?.role ?? current.role;
-  const allowed = access.data?.allowedPermissions ?? [];
-  const canUseWorkspace = role !== 8;
-  const canSeeReports = allowed.includes(10) || role === 9 || role === 10;
-  const canSeeTeams = allowed.includes(1) && role !== 9;
-  const canConfigure = allowed.some(permission => [12, 13, 14].includes(permission));
+
+  const entries = visibleNavEntries({
+    role: access.data?.role ?? current.role,
+    allowed: access.data?.allowedPermissions ?? [],
+  });
 
   return (
-    <Aside $collapsed={collapsed}>
-      <Brand $collapsed={collapsed}>
-        <BrandMark size={26} />
-        <span>Prisma WorkSpace<small>Uma visão completa</small></span>
-      </Brand>
-      <Group>
-        <Label $collapsed={collapsed}>Principal</Label>
-        {canUseWorkspace && <Item $collapsed={collapsed} to="/me/tasks" title="Meu trabalho"><ClipboardList size={17} /><span>Meu trabalho</span></Item>}
-        {canUseWorkspace && <Item $collapsed={collapsed} to="/projects" end title="Projetos"><FolderKanban size={17} /><span>Projetos</span></Item>}
-        <Item $collapsed={collapsed} to="/requests" title="Solicitações"><Inbox size={17} /><span>Solicitações</span></Item>
-      </Group>
-      <Group>
-        <Label $collapsed={collapsed}>Gestão</Label>
-        {canSeeReports && <Item $collapsed={collapsed} to="/reports" title="Relatórios"><BarChart3 size={17} /><span>Relatórios</span></Item>}
-        {canSeeTeams && <Item $collapsed={collapsed} to="/teams" title="Equipes"><Users size={17} /><span>Equipes</span></Item>}
-      </Group>
-      <Bottom>
-        {canConfigure && <Item $collapsed={collapsed} to="/settings" title="Configurações"><Settings size={17} /><span>Configurações</span></Item>}
-        <Collapse $collapsed={collapsed} onClick={onToggle} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}>
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}<span>Recolher menu</span>
-        </Collapse>
-      </Bottom>
-    </Aside>
+    <Trilho $expandido={expandido} aria-label="Navegação lateral">
+      <Alternar
+        type="button"
+        $expandido={expandido}
+        aria-expanded={expandido}
+        aria-label={expandido ? 'Recolher navegação' : 'Expandir navegação'}
+        onClick={() => setExpandido((atual) => !atual)}
+      >
+        {expandido ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+        <Rotulo $expandido={expandido}>Recolher</Rotulo>
+      </Alternar>
+
+      {entries.map(({ to, label, icon: Icone, end }) => (
+        <Item key={to} to={to} end={end} $expandido={expandido} aria-label={label} title={label}>
+          <Icone size={16} />
+          <Rotulo $expandido={expandido}>{label}</Rotulo>
+        </Item>
+      ))}
+    </Trilho>
   );
 }

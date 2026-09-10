@@ -33,19 +33,22 @@ export interface ProjectSummary {
   }>;
 }
 
-const Grid = styled.div`display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px;`;
+/* Cartao compacto a pedido dos devs: cabem mais projetos na primeira tela sem precisar
+   rolar. O que sai e espaco vazio, nao informacao — nome, situacao, descricao,
+   classificacao e contagens continuam todos ali. */
+const Grid = styled.div`display: grid; grid-template-columns: repeat(auto-fill, minmax(234px, 1fr)); gap: 11px;`;
 const Card = styled.button`
-  position: relative; min-height: 154px; overflow: hidden; text-align: left; padding: 18px 18px 15px;
+  position: relative; min-height: 118px; overflow: hidden; text-align: left; padding: 13px 14px 11px;
   border: 1px solid ${({ theme }) => theme.color.border}; border-radius: ${({ theme }) => theme.radius.card};
   background: ${({ theme }) => theme.color.surface}; color: ${({ theme }) => theme.color.text};
   box-shadow: ${({ theme }) => theme.shadow.sm}; transition: .16s;
   &::before { content:''; position:absolute; inset:0 auto 0 0; width:3px; background:${({ theme }) => theme.color.gradient}; opacity:.75; }
   &:hover { border-color: ${({ theme }) => theme.color.borderStrong}; transform: translateY(-2px); box-shadow: ${({ theme }) => theme.shadow.md}; }
 `;
-const CardTitle = styled.div`display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:9px;h2{font-size:15px;line-height:1.35;letter-spacing:-.01em;}`;
-const Meta = styled.div`display:flex;gap:14px;margin-top:18px;padding-top:12px;border-top:1px solid ${({ theme }) => theme.color.border};color:${({ theme }) => theme.color.textMuted};font-size:12px;span{display:flex;align-items:center;gap:5px;}`;
-const Classifications = styled.div`display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px;`;
-const Classification = styled.span`padding:4px 8px;border:1px solid color-mix(in srgb, ${({ theme }) => theme.color.brand} 22%, ${({ theme }) => theme.color.border});border-radius:999px;background:color-mix(in srgb, ${({ theme }) => theme.color.brand} 7%, ${({ theme }) => theme.color.surface});color:${({ theme }) => theme.color.textMuted};font-size:11px;font-weight:750;`;
+const CardTitle = styled.div`display:flex;align-items:flex-start;justify-content:space-between;gap:7px;margin-bottom:6px;h2{font-size:14px;line-height:1.3;letter-spacing:-.01em;}`;
+const Meta = styled.div`display:flex;gap:12px;margin-top:11px;padding-top:8px;border-top:1px solid ${({ theme }) => theme.color.border};color:${({ theme }) => theme.color.textMuted};font-size:12px;span{display:flex;align-items:center;gap:5px;}`;
+const Classifications = styled.div`display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px;`;
+const Classification = styled.span`padding:3px 7px;border:1px solid color-mix(in srgb, ${({ theme }) => theme.color.brand} 22%, ${({ theme }) => theme.color.border});border-radius:999px;background:color-mix(in srgb, ${({ theme }) => theme.color.brand} 7%, ${({ theme }) => theme.color.surface});color:${({ theme }) => theme.color.textMuted};font-size:11px;font-weight:750;`;
 const Empty = styled.div`grid-column:1/-1;padding:64px 24px;text-align:center;border:1px dashed ${({ theme }) => theme.color.borderStrong};border-radius:${({ theme }) => theme.radius.card};background:${({ theme }) => theme.color.surface};color:${({ theme }) => theme.color.textMuted};`;
 const Overlay = styled.div`position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(15,23,42,.35);`;
 const Dialog = styled.form`width: min(480px, 92vw); display: grid; gap: 14px; padding: 24px; border-radius: 10px; background: ${({ theme }) => theme.color.surface}; box-shadow: ${({ theme }) => theme.shadow.lg}; input, textarea, select { width: 100%; padding: 10px; border: 1px solid ${({ theme }) => theme.color.border}; border-radius: 6px; background: ${({ theme }) => theme.color.bg}; color: ${({ theme }) => theme.color.text}; } label { display:grid; gap:5px; color:${({ theme }) => theme.color.textMuted}; font-size:13.5px; font-weight:700; } textarea { min-height: 90px; resize: vertical; } footer { display: flex; justify-content: flex-end; gap: 8px; }`;

@@ -9,7 +9,7 @@ test.describe('Smoke test', () => {
       await page.getByRole('button', { name: 'Abrir menu' }).click();
       await expect(page.getByRole('dialog', { name: 'Menu de navegação' }).getByRole('menuitem', { name: 'Início' })).toHaveAttribute('aria-current', 'page');
     } else {
-      await expect(page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page');
+      await expect(page.getByRole('navigation', { name: 'Navegação lateral' }).getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page');
     }
   });
 
