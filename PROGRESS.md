@@ -5,6 +5,16 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-10] — Antigravity — selecao de tipo de WorkItem nos 4 pontos de entrada
+- **Base:** worktree `prisma-wt-workitem-kind` na branch `feat/workitem-kind-selection`.
+- **Fiz:** implementada a seleção de tipo de WorkItem em todos os 4 pontos de entrada da UI:
+  1. Topbar / GlobalActions: adicionado menu dropdown no botão "Novo item" para pre-definir o Kind (Épico, Feature, História, Tarefa, Bug) e seletor `WorkItemKindSelector` editável no `QuickCreateDialog` enviando `kind` no payload.
+  2. Kanban: no botão "+ Novo Card" das colunas, o modal de criação exibe o `WorkItemKindSelector` (default: Tarefa = 5) e envia `kind` na API.
+  3. BacklogPlanner: o formulário inline QuickAdd agora contém o `WorkItemKindSelector` (default: Tarefa = 5) e envia `kind` na submissão.
+  4. TaskDetailDrawer: a aba de subtarefas inclui o `WorkItemKindSelector` no formulário inline de submissão (default: Subtarefa = 6) e envia `kind` na API.
+- **Componentes:** reutilizado e atualizado `WorkItemKindSelector` com tipagem e cores específicas.
+- **Verificação:** `npx tsc -b` aprovado sem erros; Vitest 81/81 testes unitários aprovados em 27 arquivos de teste.
+
 ## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
 - **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
 - **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.
