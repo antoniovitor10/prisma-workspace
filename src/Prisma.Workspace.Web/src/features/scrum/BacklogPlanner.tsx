@@ -24,11 +24,13 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  Columns2,
   ExternalLink,
   GripVertical,
   Layers3,
   Link2,
   ListFilter,
+  Maximize2,
   Plus,
   RotateCcw,
   Search,
@@ -214,9 +216,11 @@ const BulkBar = styled.div`
   }
 `;
 
-const PlanningGrid = styled.div`
+const CHAVE_BACKLOG_AMPLO = 'prisma_workspace_backlog_amplo';
+
+const PlanningGrid = styled.div<{ $amplo: boolean }>`
   display: grid;
-  grid-template-columns: minmax(620px, 1.45fr) minmax(450px, 1fr);
+  grid-template-columns: ${({ $amplo }) => $amplo ? 'minmax(0, 1fr)' : 'minmax(620px, 1.45fr) minmax(450px, 1fr)'};
   gap: 14px;
   align-items: start;
   @media (max-width: 1250px) { grid-template-columns: 1fr; }
@@ -810,6 +814,12 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  // Visao ampla do backlog, pedido dos devs: da a largura inteira a lista e esconde o
+  // painel da sprint. Planejar continua possivel sem arrastar — selecionar itens abre a
+  // barra em massa, que tem o proprio seletor de sprint e o "Mover para sprint".
+  const [backlogAmplo, setBacklogAmplo] = useState(() => {
+    try { return localStorage.getItem(CHAVE_BACKLOG_AMPLO) === 'true'; } catch { return false; }
+  });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [error, setError] = useState('');
   const sensors = useSensors(
@@ -1048,7 +1058,12 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     }
   };
 
+  useEffect(() => {
+    try { localStorage.setItem(CHAVE_BACKLOG_AMPLO, String(backlogAmplo)); } catch { /* preferencia e conveniencia */ }
+  }, [backlogAmplo]);
+
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
+
 
   return (
     <Page>
@@ -1056,6 +1071,17 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         <div><h2>Planejamento do backlog</h2><p>{backlogItems.length} itens visíveis{showPoints?` · ${backlogPoints} pontos não planejados`:''}</p></div>
         <ToolbarActions>
           <SearchBox><Search size={14} /><input aria-label="Pesquisar backlog" placeholder="Número, título, quadro ou solicitante" value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} /></SearchBox>
+          <Button
+            $secondary
+            aria-pressed={backlogAmplo}
+            onClick={() => setBacklogAmplo((atual) => !atual)}
+            title={backlogAmplo
+              ? 'Mostra o painel da sprint ao lado do backlog'
+              : 'Dá ao backlog a largura inteira e esconde o painel da sprint'}
+          >
+            {backlogAmplo ? <Columns2 size={14} /> : <Maximize2 size={14} />}
+            {backlogAmplo ? 'Ver sprint ao lado' : 'Ampliar backlog'}
+          </Button>
           <Button onClick={() => setShowQuickAdd((current) => !current)}><Plus size={14} />Novo item</Button>
         </ToolbarActions>
       </Toolbar>
@@ -1097,7 +1123,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <PlanningGrid>
+        <PlanningGrid $amplo={backlogAmplo}>
           <DroppablePanel
             id="backlog-drop"
             title="Product backlog"
@@ -1119,7 +1145,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
             matchedIds={matchedIds}
             showPoints={showPoints}
           />
-          <DroppablePanel
+          {!backlogAmplo && <DroppablePanel
             id="sprint-drop"
             title={selectedSprint?.name ?? 'Sprint'}
             subtitle={selectedSprint?.goal || 'Selecione uma sprint para planejar'}
@@ -1146,7 +1172,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
                 <ChevronDown size={12} />
               </SprintSelect>
             )}
-          />
+          />}
         </PlanningGrid>
       </DndContext>
 
