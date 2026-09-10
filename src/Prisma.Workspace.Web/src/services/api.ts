@@ -1,6 +1,24 @@
 import type { ExternalForm, ExternalRequestTriageInput } from '../types/portal';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5216';
+/**
+ * Base das chamadas à API.
+ *
+ * Em produção o padrão é a **própria origem**: a imagem Docker publica a SPA dentro do
+ * wwwroot da API, então SPA e API vivem no mesmo host e caminho relativo sempre acerta.
+ * O padrão anterior era `http://localhost:5216` para qualquer build, o que fazia toda
+ * instalação por Docker chamar um endereço da máquina de quem abriu a página: o Chrome
+ * pedia permissão de rede local e o login falhava com "Failed to fetch".
+ *
+ * `VITE_API_URL` continua tendo precedência, para quem serve SPA e API em hosts
+ * separados. Em desenvolvimento o padrão segue apontando para a API local, porque ali
+ * o Vite serve a SPA em outra porta e não há proxy.
+ */
+export function resolveApiBaseUrl(configured: string | undefined, isProduction: boolean): string {
+  if (configured !== undefined && configured !== null) return configured;
+  return isProduction ? '' : 'http://localhost:5216';
+}
+
+const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.PROD);
 const TOKEN_KEY = 'prisma_workspace_token';
 const ORGANIZATION_KEY = 'prisma_workspace_organization';
 const LEGACY_TOKEN_KEY = 'detran_kanban_token';
