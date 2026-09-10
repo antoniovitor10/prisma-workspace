@@ -258,7 +258,8 @@ test('kanban abre com cartões mais recentes no topo e restaura essa ordenação
 test('workflow alterna entre personalizado e herdado da organização', async ({ page, authenticatedGoto }) => {
   const organizationId = '11111111-1111-4111-8111-111111111111';
   const projectId = await resolveSeedProjectId(page);
-  await authenticatedGoto(`/projects/${projectId}/settings`);
+  // As configuracoes do projeto passaram a ser por categoria; o fluxo tem endereco proprio.
+  await authenticatedGoto(`/projects/${projectId}/settings?secao=fluxo`);
   type Template = { id: string; name: string; isActive: boolean };
   let templates = await appApi<Template[]>(page, `/api/organizations/${organizationId}/workflow-templates`);
   let createdTemplateId = '';

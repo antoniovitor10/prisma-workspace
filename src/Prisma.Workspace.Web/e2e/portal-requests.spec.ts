@@ -116,7 +116,7 @@ test.describe('portal externo e solicitações (pós-SLA)', () => {
     const project = projects.find((item) => item.key === 'DEMO') ?? await resolveSeedProject();
     const detail = await authenticatedApiGet<SeedProject>(page, `/api/projects/${project.id}`);
 
-    await authenticatedGoto(`/projects/${detail.id}/settings`);
+    await authenticatedGoto(`/projects/${detail.id}/settings?secao=portal`);
     await expect(page.getByRole('heading', { name: /Portal Externo/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/\bSLA\b/i)).toHaveCount(0);
     await expect(page.getByText(/prazo de primeira resposta/i)).toHaveCount(0);

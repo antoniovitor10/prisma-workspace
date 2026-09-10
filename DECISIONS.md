@@ -540,3 +540,19 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   container contra base populada quebrava a subida. A alteração entrou de carona na correção do
   `WorkflowMoveGuard` (`97a5adf`) sem registro; esta decisão a torna explícita e acrescenta o aviso, para que o
   pulo não passe despercebido por quem esperava um banco semeado. (2026-09-09)
+
+- **D87** — Navegação lateral recolhível volta, ao lado da barra superior. O dev Sergio pediu em 2026-09-07,
+  textualmente, *"ao invés de abas menu tipo sanduíche"*, e o PO decidiu em 2026-09-08: *"mantem o que o sergio
+  decidiu mas algo que abre de tamanho como o ClickUp"*. Isso **sucede parcialmente** a
+  `SPEC-TOP-NAVIGATION-SHELL`, que proibia sidebar: a navegação principal **sai das abas da barra superior** e
+  passa a ser um trilho de ícones à esquerda que expande para mostrar rótulos — era literalmente o pedido do
+  Sergio, *"ao invés de abas"*. A barra superior mantém busca, seletor de organização, criação rápida e conta.
+  O que continua proibido é **copiar a identidade visual do ClickUp**: a
+  `SPEC-PRISMA-VISUAL-SYSTEM` permanece intacta, e o que se adota é o *comportamento* de trilho expansível, não
+  cores, tipografia ou ícones de outro produto. O estado recolhido ou expandido é preferência por pessoa,
+  guardada no navegador. Em telas estreitas (até 768px) o trilho não aparece: quem navega ali é o menu
+  hambúrguer que a barra superior já tem. Isso corrige a intenção registrada antes da implementação, de abrir o
+  trilho sobreposto no mobile — seriam duas navegações sobrepostas concorrentes na mesma tela, e o hambúrguer já
+  resolvia o caso com foco e Escape testados.
+  Os itens e seus portões de permissão são definidos em um único lugar (`layout/navigation.ts`) e consumidos
+  pelo trilho e pelo hambúrguer, para que não exista navegação divergente entre as duas superfícies. (2026-09-08, implementada em 2026-09-09)

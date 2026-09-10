@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BarChart3,
   Building2,
   ChevronDown,
   Clock,
-  ClipboardList,
-  FolderKanban,
-  House,
-  Inbox,
   LogOut,
   Menu,
   Moon,
@@ -16,7 +11,6 @@ import {
   Settings,
   Square,
   Sun,
-  Users,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,6 +20,7 @@ import { BrandMark } from '../components/BrandMark';
 import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActions';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { useOrganization } from '../features/organizations/OrganizationState';
+import { visibleNavEntries } from './navigation';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import { useThemeMode } from '../styles/ThemeMode';
@@ -97,49 +92,7 @@ const ThemeButton = styled.button`
 
 /* ─── nav global (desktop) ─── */
 
-const NavArea = styled.nav`
-  display: flex;
-  align-items: center;
-  gap: 1px;
 
-  @media (max-width: 768px) { display: none; }
-`;
-
-const NavItem = styled(NavLink)`
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 38px;
-  padding: 0 10px;
-  border-radius: ${({ theme }) => theme.radius.md};
-  color: ${({ theme }) => theme.color.textMuted};
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  text-decoration: none;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.neutral[100]};
-    color: ${({ theme }) => theme.color.text};
-  }
-
-  &.active {
-    background: ${({ theme }) =>
-      `color-mix(in srgb, ${theme.color.brand} 9%, transparent)`};
-    color: ${({ theme }) => theme.color.brand};
-    font-weight: 800;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: auto 10px -13px;
-      height: 2px;
-      border-radius: 999px;
-      background: ${({ theme }) => theme.color.gradient};
-    }
-  }
-`;
 
 const Spacer = styled.div`flex: 1;`;
 
@@ -444,9 +397,9 @@ export function Topbar() {
   const role = access.data?.role ?? current.role;
   const allowed = access.data?.allowedPermissions ?? [];
   const canUseWorkspace = role !== 8;
-  const canSeeReports = allowed.includes(10) || role === 9 || role === 10;
-  const canSeeTeams = allowed.includes(1) && role !== 9;
   const canConfigure = allowed.some((p) => [12, 13, 14].includes(p));
+  // Mesma fonte do trilho lateral (D87): os dois nunca divergem.
+  const navItems = visibleNavEntries({ role, allowed });
 
   const currentProjectId = location.pathname.match(/^\/projects\/([^/]+)/)?.[1];
 
@@ -576,37 +529,6 @@ export function Topbar() {
         </BrandLink>
 
         {/* desktop nav */}
-        <NavArea aria-label="Navegação principal">
-          {canUseWorkspace && (
-            <NavItem to="/home" end>
-              <House size={15} />Início
-            </NavItem>
-          )}
-          {canUseWorkspace && (
-            <NavItem to="/me/tasks" aria-current={undefined}>
-              <ClipboardList size={15} />Meu trabalho
-            </NavItem>
-          )}
-          {canUseWorkspace && (
-            <NavItem to="/projects" end>
-              <FolderKanban size={15} />Projetos
-            </NavItem>
-          )}
-          <NavItem to="/requests">
-            <Inbox size={15} />Solicitações
-          </NavItem>
-          {canSeeReports && (
-            <NavItem to="/reports">
-              <BarChart3 size={15} />Relatórios
-            </NavItem>
-          )}
-          {canSeeTeams && (
-            <NavItem to="/teams">
-              <Users size={15} />Equipes
-            </NavItem>
-          )}
-        </NavArea>
-
         <Spacer />
 
         {/* search */}
@@ -695,42 +617,19 @@ export function Topbar() {
       {menuOpen && (
         <MobileOverlay role="dialog" aria-modal="true" aria-label="Menu de navegação" onClick={handleOverlayClick}>
           <MobileMenu ref={menuRef} role="menu">
-            {canUseWorkspace && (
-              <MobileNavItem ref={firstMenuLinkRef} to="/home" role="menuitem">
-                <House size={17} />Início
-              </MobileNavItem>
-            )}
-            {canUseWorkspace && (
-              <MobileNavItem to="/me/tasks" role="menuitem">
-                <ClipboardList size={17} />Meu trabalho
-              </MobileNavItem>
-            )}
-            {canUseWorkspace && (
+            {navItems.map(({ to, label, icon: Icone, end }, indice) => (
               <MobileNavItem
-                to="/projects"
-                end
+                key={to}
+                to={to}
+                end={end}
                 role="menuitem"
-                // if the first link is hidden (canUseWorkspace false), this needs focus
-                ref={!canUseWorkspace ? firstMenuLinkRef : undefined}
+                /* O primeiro item visível recebe o foco ao abrir o menu, qualquer que seja
+                   ele: para o solicitante externo a lista começa em "Solicitações". */
+                ref={indice === 0 ? firstMenuLinkRef : undefined}
               >
-                <FolderKanban size={17} />Projetos
+                <Icone size={17} />{label}
               </MobileNavItem>
-            )}
-            <MobileNavItem to="/requests" role="menuitem"
-              ref={!canUseWorkspace ? firstMenuLinkRef : undefined}
-            >
-              <Inbox size={17} />Solicitações
-            </MobileNavItem>
-            {canSeeReports && (
-              <MobileNavItem to="/reports" role="menuitem">
-                <BarChart3 size={17} />Relatórios
-              </MobileNavItem>
-            )}
-            {canSeeTeams && (
-              <MobileNavItem to="/teams" role="menuitem">
-                <Users size={17} />Equipes
-              </MobileNavItem>
-            )}
+            ))}
             {canConfigure && (
               <MobileNavItem to="/settings" role="menuitem">
                 <Settings size={17} />Configurações

@@ -34,12 +34,27 @@ test.describe('release shell e navegação', () => {
       await page.mouse.click(page.viewportSize()!.width - 2, page.viewportSize()!.height - 2);
       await expect(menu).toHaveCount(0);
     } else {
-      const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+      // D87: no desktop a navegação vive no trilho lateral recolhível, não em abas na barra.
+      const navigation = page.getByRole('navigation', { name: 'Navegação lateral' });
       await expect(navigation).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Navegação principal' })).toHaveCount(0);
       await expect(navigation.getByRole('link', { name: 'Projetos' })).toHaveAttribute('aria-current', 'page');
       await navigation.getByRole('link', { name: 'Solicitações' }).click();
       await expect(page).toHaveURL(/\/requests$/);
       await expect(navigation.getByRole('link', { name: 'Solicitações' })).toHaveAttribute('aria-current', 'page');
+
+      // Recolhido, o trilho é mais estreito que os rótulos que mostra expandido; expandir
+      // precisa alargá-lo de verdade e a escolha precisa sobreviver a uma nova visita.
+      const expandir = page.getByRole('button', { name: 'Expandir navegação' });
+      const larguraRecolhido = (await navigation.boundingBox())!.width;
+      await expandir.click();
+      const recolher = page.getByRole('button', { name: 'Recolher navegação' });
+      await expect(recolher).toBeVisible();
+      await expect.poll(async () => (await navigation.boundingBox())!.width)
+        .toBeGreaterThan(larguraRecolhido);
+
+      await authenticatedGoto('/projects');
+      await expect(page.getByRole('button', { name: 'Recolher navegação' })).toBeVisible();
     }
   });
 
