@@ -25,15 +25,23 @@ interface StateEdge {
   reason?: string;
 }
 
-interface StateGraph { nodes: StateNode[]; edges: StateEdge[]; }
+interface StateGraph {
+  nodes: StateNode[];
+  edges: StateEdge[];
+}
 
 // ── Tipos da timeline linearizada ─────────────────────────────────
 
 interface TimelineStep {
-  /** Nó da etapa destino desta transição (o estado em que a tarefa "chegou"). */
+  /** Nó da etapa em que a tarefa chegou neste passo. */
   node: StateNode;
-  /** A transição que trouxe a tarefa até aqui (null para o primeiro estado). */
-  edge: StateEdge | null;
+  /** Transição que levou a tarefa a este estado. */
+  edge: {
+    occurredAt: string;
+    actorId?: string;
+    actorName?: string;
+    label: string;
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -45,10 +53,17 @@ const durationLabel = (seconds: number) => {
   return `${(seconds / 86400).toFixed(1)}d`;
 };
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
+const formatDate = (iso: string) => {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return iso;
+  }
+};
 
-/** Gera iniciais (até 2 letras) a partir de um nome. */
+/** Iniciais (até 2 letras) a partir de um nome. */
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -56,42 +71,73 @@ const initials = (name: string) => {
 };
 
 /**
- * Determina a cor indicativa do estado.
- * Segue o espectro Prisma: azul para estados em andamento, verde para concluído/atual.
+ * Cores dos indicadores de estado (dots), alinhadas ao Azure DevOps / espectro Prisma.
  */
-const dotColor = (node: StateNode, theme: AppTheme) => {
-  if (node.isCurrent) return theme.color.primary;
-  return theme.color.neutral[400];
-};
+function getStateDotColor(name: string, theme: AppTheme): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('conclu') || lower.includes('done') || lower.includes('finaliz')) {
+    return theme.color.success; // '#10B981'
+  }
+  if (lower.includes('andamento') || lower.includes('progress') || lower.includes('fazendo') || lower.includes('desenvolv')) {
+    return theme.color.primary; // '#2563EB'
+  }
+  if (lower.includes('ready') || lower.includes('pront') || lower.includes('aguardando') || lower.includes('espera')) {
+    return '#EAB308'; // Amber / Yellow
+  }
+  if (lower.includes('revis') || lower.includes('review') || lower.includes('valid') || lower.includes('test') || lower.includes('qa') || lower.includes('homolog')) {
+    return theme.color.accentViolet; // '#7C3AED'
+  }
+  if (lower.includes('cancel') || lower.includes('imped') || lower.includes('bloque')) {
+    return theme.color.danger; // '#E11D48'
+  }
+  return theme.color.neutral[400]; // '#94A3B8'
+}
 
 /**
- * Lineariza o grafo (nós agregados + edges cronológicas) em uma sequência
- * temporal de passos, onde cada passo é um par (estado de chegada, transição).
- * 
- * O primeiro passo não possui transição (é a etapa inicial).
+ * Lineariza o grafo em passos cronológicos.
+ * Todo estado possui uma transição de entrada à esquerda (padrão Azure DevOps).
+ * O primeiro estado recebe a transição de criação ("Novo item de trabalho").
  */
-function buildTimeline(graph: StateGraph): TimelineStep[] {
-  if (!graph.edges.length) {
-    // Tarefa tem apenas um estado (nunca transitou)
-    const singleNode = graph.nodes.find(n => n.isCurrent) ?? graph.nodes[0];
-    return singleNode ? [{ node: singleNode, edge: null }] : [];
-  }
+function buildTimeline(
+  graph: StateGraph,
+  createdAt?: string,
+  createdByName?: string
+): TimelineStep[] {
+  if (!graph.nodes.length) return [];
 
   const nodeMap = new Map(graph.nodes.map(n => [n.id, n]));
   const steps: TimelineStep[] = [];
 
-  // Primeiro estado: source da primeira edge
-  const firstEdge = graph.edges[0];
-  const firstNode = nodeMap.get(firstEdge.source);
+  // Primeiro nó (estado inicial da tarefa)
+  const firstNode = graph.edges.length > 0
+    ? (nodeMap.get(graph.edges[0].source) ?? graph.nodes[0])
+    : (graph.nodes.find(n => n.isCurrent) ?? graph.nodes[0]);
+
   if (firstNode) {
-    steps.push({ node: firstNode, edge: null });
+    const creationTime = createdAt || (graph.edges.length > 0 ? graph.edges[0].occurredAt : new Date().toISOString());
+    steps.push({
+      node: firstNode,
+      edge: {
+        occurredAt: creationTime,
+        actorName: createdByName || (graph.edges.length > 0 ? graph.edges[0].actorName : undefined),
+        label: 'Novo item de trabalho',
+      },
+    });
   }
 
-  // Cada edge produz o passo seguinte
+  // Transições subsequentes entre estados
   for (const edge of graph.edges) {
     const target = nodeMap.get(edge.target);
     if (target) {
-      steps.push({ node: target, edge });
+      steps.push({
+        node: target,
+        edge: {
+          occurredAt: edge.occurredAt,
+          actorId: edge.actorId,
+          actorName: edge.actorName,
+          label: edge.reason?.trim() || `Movido para ${target.name}`,
+        },
+      });
     }
   }
 
@@ -103,11 +149,13 @@ function buildTimeline(graph: StateGraph): TimelineStep[] {
 const Track = styled.div`
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 8px 0 14px;
+  padding: 12px 4px 16px;
   scrollbar-width: thin;
   scrollbar-color: ${({ theme }) => theme.color.neutral[300]} transparent;
 
-  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) => theme.color.neutral[300]};
     border-radius: 3px;
@@ -117,9 +165,7 @@ const Track = styled.div`
 const Timeline = styled.div`
   display: inline-flex;
   align-items: flex-start;
-  gap: 0;
   min-width: 100%;
-  padding: 0 4px;
 `;
 
 const StepGroup = styled.div`
@@ -132,51 +178,54 @@ const ArrowSection = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 150px;
-  max-width: 210px;
-  padding: 0 4px;
+  width: 175px;
+  flex-shrink: 0;
+  padding: 0 2px;
 `;
 
 const ArrowLabel = styled.div`
   font-size: 11px;
+  font-weight: 500;
   color: ${({ theme }) => theme.color.textMuted};
   text-align: center;
-  line-height: 1.3;
-  margin-bottom: 4px;
+  height: 16px;
+  line-height: 16px;
+  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  width: 100%;
 `;
 
 const ArrowLine = styled.div`
   display: flex;
   align-items: center;
   width: 100%;
-  height: 32px;
+  height: 36px;
 `;
 
 const ArrowBar = styled.div`
   flex: 1;
-  height: 4px;
+  height: 3px;
   background: ${({ theme }) => theme.color.primary};
-  border-radius: 2px;
 `;
 
 const ArrowHead = styled.div`
   width: 0;
   height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-left: 12px solid ${({ theme }) => theme.color.primary};
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid ${({ theme }) => theme.color.primary};
   flex-shrink: 0;
 `;
 
 const ArrowMeta = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 3px;
+  gap: 7px;
+  margin-top: 6px;
+  width: 100%;
+  padding-left: 6px;
 `;
 
 const Avatar = styled.div<{ $color: string }>`
@@ -195,53 +244,79 @@ const Avatar = styled.div<{ $color: string }>`
 
 const ActorInfo = styled.div`
   font-size: 11px;
-  color: ${({ theme }) => theme.color.textMuted};
-  line-height: 1.3;
+  line-height: 1.25;
+  overflow: hidden;
 
-  .name { color: ${({ theme }) => theme.color.text}; font-weight: 500; }
-  .date { display: block; }
+  .name {
+    display: block;
+    color: ${({ theme }) => theme.color.text};
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .date {
+    display: block;
+    color: ${({ theme }) => theme.color.textMuted};
+    font-size: 10px;
+    white-space: nowrap;
+  }
 `;
 
-const StateNodeBubble = styled.div<{ $dotColor: string; $isCurrent: boolean }>`
+const NodeColumn = styled.div`
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+`;
+
+const NodeTopSpacer = styled.div`
+  height: 22px; /* Espaço para coincidir com a altura do ArrowLabel + margem */
+`;
+
+const StateNodeBubble = styled.div<{ $isCurrent: boolean }>`
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  height: 36px;
+  padding: 0 14px;
   background: ${({ theme, $isCurrent }) =>
-    $isCurrent ? theme.color.surface : theme.color.neutral[50]};
+    $isCurrent
+      ? theme.mode === 'dark' ? '#1e293b' : '#eff6ff'
+      : theme.color.surface};
   border: ${({ theme, $isCurrent }) =>
-    $isCurrent ? `2px solid ${theme.color.primary}` : `1px solid ${theme.color.border}`};
-  border-radius: ${({ theme }) => theme.radius.md};
+    $isCurrent
+      ? `2px solid ${theme.color.primary}`
+      : `1px solid ${theme.color.border}`};
+  border-radius: ${({ theme }) => theme.radius.sm};
+  box-shadow: ${({ theme }) => theme.shadow.sm};
   white-space: nowrap;
   flex-shrink: 0;
-  min-height: 40px;
-  position: relative;
-  top: 14px; /* alinha verticalmente com o centro da seta */
 `;
 
 const Dot = styled.div<{ $color: string }>`
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
   flex-shrink: 0;
 `;
 
 const StateName = styled.span<{ $isCurrent: boolean }>`
-  font-size: 14px;
-  font-weight: ${({ $isCurrent }) => $isCurrent ? 700 : 500};
+  font-size: 13px;
+  font-weight: ${({ $isCurrent }) => ($isCurrent ? 700 : 500)};
   color: ${({ theme }) => theme.color.text};
 `;
 
 const Empty = styled.div`
   display: grid;
-  min-height: 210px;
+  min-height: 200px;
   place-items: center;
   color: ${({ theme }) => theme.color.textMuted};
   text-align: center;
 `;
 
-// ── Paleta pseudo-aleatória para avatares ─────────────────────────
+// ── Paleta de cores para avatares ─────────────────────────────────
 
 const avatarColors = ['#7C3AED', '#2563EB', '#06B6D4', '#DB2777', '#F97316', '#10B981', '#E11D48'];
 
@@ -253,15 +328,18 @@ function avatarColor(name: string): string {
 
 // ── Componente de transição (seta) ────────────────────────────────
 
-function TransitionArrow({ edge, users }: { edge: StateEdge; users: DisplayUser[] }) {
+function TransitionArrow({
+  edge,
+  users,
+}: {
+  edge: TimelineStep['edge'];
+  users: DisplayUser[];
+}) {
   const actor = resolveUserDisplayLabel(users, edge.actorName, edge.actorId);
-  const description = edge.reason
-    ? edge.reason
-    : `Movido para etapa`;
 
   return (
     <ArrowSection>
-      <ArrowLabel title={description}>{description}</ArrowLabel>
+      <ArrowLabel title={edge.label}>{edge.label}</ArrowLabel>
       <ArrowLine>
         <ArrowBar />
         <ArrowHead />
@@ -269,7 +347,7 @@ function TransitionArrow({ edge, users }: { edge: StateEdge; users: DisplayUser[
       <ArrowMeta>
         <Avatar $color={avatarColor(actor)}>{initials(actor)}</Avatar>
         <ActorInfo>
-          <span className="name">{actor}</span>
+          <span className="name" title={actor}>{actor}</span>
           <span className="date">{formatDate(edge.occurredAt)}</span>
         </ActorInfo>
       </ArrowMeta>
@@ -279,7 +357,13 @@ function TransitionArrow({ edge, users }: { edge: StateEdge; users: DisplayUser[
 
 // ── Componente principal ──────────────────────────────────────────
 
-export function TaskStateGraph({ workItemId }: { workItemId: string }) {
+export interface TaskStateGraphProps {
+  workItemId: string;
+  createdAt?: string;
+  createdByName?: string;
+}
+
+export function TaskStateGraph({ workItemId, createdAt, createdByName }: TaskStateGraphProps) {
   const theme = useTheme() as AppTheme;
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -297,27 +381,29 @@ export function TaskStateGraph({ workItemId }: { workItemId: string }) {
   if (query.error) return <Empty>Não foi possível carregar o caminho da tarefa.</Empty>;
   if (!query.data?.nodes.length) return <Empty>A tarefa ainda não possui transições registradas.</Empty>;
 
-  const timeline = buildTimeline(query.data);
+  const timeline = buildTimeline(query.data, createdAt, createdByName);
 
   return (
     <Track ref={trackRef} aria-label="Grafo de estados da tarefa">
       <Timeline>
         {timeline.map((step, i) => (
           <StepGroup key={`${step.node.id}-${i}`}>
-            {/* Seta de transição (não existe no primeiro passo) */}
-            {step.edge && <TransitionArrow edge={step.edge} users={users} />}
+            {/* Seta de transição que entra neste estado */}
+            <TransitionArrow edge={step.edge} users={users} />
 
-            {/* Bolha do estado */}
-            <StateNodeBubble
-              $dotColor={dotColor(step.node, theme)}
-              $isCurrent={step.node.isCurrent}
-              title={`${step.node.visits} visita(s) · Permanência: ${durationLabel(step.node.totalSeconds)}`}
-            >
-              <Dot $color={dotColor(step.node, theme)} />
-              <StateName $isCurrent={step.node.isCurrent}>
-                {step.node.name}
-              </StateName>
-            </StateNodeBubble>
+            {/* Coluna do estado: espaçador superior + bolha do estado */}
+            <NodeColumn>
+              <NodeTopSpacer />
+              <StateNodeBubble
+                $isCurrent={step.node.isCurrent}
+                title={`${step.node.name} · ${step.node.visits} visita(s) · Permanência: ${durationLabel(step.node.totalSeconds)}${step.node.isCurrent ? ' (estado atual)' : ''}`}
+              >
+                <Dot $color={getStateDotColor(step.node.name, theme)} />
+                <StateName $isCurrent={step.node.isCurrent}>
+                  {step.node.name}
+                </StateName>
+              </StateNodeBubble>
+            </NodeColumn>
           </StepGroup>
         ))}
       </Timeline>
