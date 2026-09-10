@@ -31,6 +31,7 @@ import {
   CheckSquare,
   BarChart2,
   Trash2,
+  Pencil,
   ArrowRight as ArrowRightIcon
 } from 'lucide-react';
 import {
@@ -156,6 +157,7 @@ interface Stage {
   boardId: string;
   name: string;
   position: number;
+  category?: StageCategoryValue;
   workflowStatusId?: string | null;
   statusName?: string | null;
   statusColor?: string | null;
@@ -309,6 +311,12 @@ export const Kanban: React.FC = () => {
   // Modais
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
+  const [showEditStageModal, setShowEditStageModal] = useState(false);
+  const [editingStage, setEditingStage] = useState<Stage | null>(null);
+  const [editStageName, setEditStageName] = useState('');
+  const [editStageCategory, setEditStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
+  const [editStagePending, setEditStagePending] = useState(false);
+  const [editStageError, setEditStageError] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
   const [showLeadTimeModal, setShowLeadTimeModal] = useState(false);
   const [showTempoModal, setShowTempoModal] = useState(false);
@@ -708,6 +716,35 @@ export const Kanban: React.FC = () => {
       await loadBoardData(selectedBoardId);
     } catch {
       alert('Erro ao criar coluna');
+    }
+  };
+
+  const handleOpenEditStage = (stage: Stage) => {
+    setEditingStage(stage);
+    setEditStageName(stage.name);
+    setEditStageCategory(stage.category ?? StageCategory.InProgress);
+    setEditStageError('');
+    setShowEditStageModal(true);
+  };
+
+  const handleUpdateStage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStage || !editStageName.trim()) return;
+    setEditStagePending(true);
+    setEditStageError('');
+    try {
+      await api.updateStage(editingStage.id, {
+        name: editStageName.trim(),
+        category: editStageCategory,
+      });
+      setShowEditStageModal(false);
+      setEditingStage(null);
+      await loadBoardData(selectedBoardId);
+    } catch (err: unknown) {
+      console.error(err);
+      setEditStageError((err as Error)?.message || 'Erro ao atualizar coluna');
+    } finally {
+      setEditStagePending(false);
     }
   };
 
@@ -1278,6 +1315,15 @@ export const Kanban: React.FC = () => {
                       </CardCount>
                       <button
                         type="button"
+                        title={`Editar coluna ${stage.name}`}
+                        aria-label={`Editar coluna ${stage.name}`}
+                        onClick={() => handleOpenEditStage(stage)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        type="button"
                         title={`Mover coluna ${stage.name} para a esquerda`}
                         aria-label={`Mover coluna ${stage.name} para a esquerda`}
                         disabled={stages.indexOf(stage) === 0}
@@ -1646,6 +1692,50 @@ export const Kanban: React.FC = () => {
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowStageModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Adicionar</SubmitButton>
+              </ModalActions>
+            </ModalForm>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {showEditStageModal && editingStage && (
+        <ModalOverlay>
+          <Modal>
+            <ModalTitle>Editar Coluna</ModalTitle>
+            <ModalForm onSubmit={handleUpdateStage}>
+              <Input
+                type="text"
+                placeholder="Nome da Coluna"
+                value={editStageName}
+                onChange={e => setEditStageName(e.target.value)}
+                required
+                autoFocus
+              />
+              <Select
+                aria-label="Classificação da coluna"
+                value={editStageCategory}
+                onChange={e => setEditStageCategory(Number(e.target.value) as StageCategoryValue)}
+              >
+                {stageCategoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </Select>
+              {editStageError && (
+                <div style={{ color: '#EF4444', fontSize: '13px', marginTop: '4px' }}>
+                  {editStageError}
+                </div>
+              )}
+              <ModalActions>
+                <CancelButton
+                  type="button"
+                  onClick={() => { setShowEditStageModal(false); setEditingStage(null); }}
+                  disabled={editStagePending}
+                >
+                  Cancelar
+                </CancelButton>
+                <SubmitButton type="submit" disabled={editStagePending}>
+                  {editStagePending ? 'Salvando…' : 'Salvar'}
+                </SubmitButton>
               </ModalActions>
             </ModalForm>
           </Modal>

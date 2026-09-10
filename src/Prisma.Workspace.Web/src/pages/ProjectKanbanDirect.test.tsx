@@ -131,4 +131,25 @@ describe('Kanban do projeto abre direto', () => {
     await waitFor(() => expect(createBoard).toHaveBeenCalledWith(
       'Atendimento digital', PROJETO, 'team-1'));
   });
+
+  it('permite editar o nome e classificação da coluna pelo botão de editar no cabeçalho', async () => {
+    const updateStage = vi.spyOn(api, 'updateStage').mockResolvedValue(undefined);
+    renderRota(`/projects/${PROJETO}/boards`);
+
+    await screen.findByText('A fazer');
+    const editBtn = await screen.findByRole('button', { name: 'Editar coluna A fazer' });
+    fireEvent.click(editBtn);
+
+    expect(await screen.findByText('Editar Coluna')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Nome da Coluna');
+    expect(input).toHaveValue('A fazer');
+
+    fireEvent.change(input, { target: { value: 'Ideias Novas' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(updateStage).toHaveBeenCalledWith(
+      'stage-1',
+      expect.objectContaining({ name: 'Ideias Novas' })
+    ));
+  });
 });
