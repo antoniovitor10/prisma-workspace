@@ -17,9 +17,11 @@ test('criar item pela barra superior conclui e fecha o modal', async ({ page, au
 
   await authenticatedGoto('/home');
   await page.getByRole('button', { name: /novo item/i }).first().click();
+  await page.getByRole('menuitem', { name: 'Bug', exact: true }).click();
 
   const dialogo = page.getByRole('dialog');
   await expect(dialogo).toBeVisible();
+  await expect(dialogo.getByRole('combobox', { name: 'Tipo', exact: true })).toHaveValue('4');
 
   await dialogo.getByRole('textbox', { name: 'Título da tarefa' }).fill(titulo);
 

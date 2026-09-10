@@ -5,6 +5,12 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-10] — Codex — integração das três worktrees
+- **Integradas:** `feat/edit-column` (edição de coluna), `state-graph-redesign` (timeline de estados), `feat/workitem-kind-selection` (tipo nos pontos de criação). Conflitos apenas em PROGRESS, preservando as entradas de todos os autores; código compartilhado combinado pelo Git.
+- **Preservada:** `prisma-wt-nav-shell`/`feat/nav-project-sidebar` está com alterações não commitadas e não entrou neste lote.
+- **Validação:** build frontend aprovado; Vitest 82/82; .NET recompilado 143/143. E2E em execução após adaptar criação rápida ao menu de tipos e acrescentar edição de coluna com recarga/persistência. Endpoint de edição retorna 204, sem corpo.
+- **Deploy:** autorizado pelo pedido do PO para mergear e publicar as três worktrees; ainda não realizado nesta entrada. Nenhuma migration nova neste lote.
+
 ## [2026-09-10] — Antigravity — edição de coluna no Kanban (nome e classificação)
 - **Fiz:** implementei a capacidade de editar etapas/colunas do fluxo do projeto, atendendo à demanda de que o nome da coluna não podia ser alterado.
   - **Backend:** adicionados `UpdateStageCommand`, `UpdateStageCommandValidator` e `UpdateStageCommandHandler` em `Prisma.Workspace.Application.Features.Stages.Commands`, com sincronização do `WorkflowStatus` associado (quando existente). Exposto endpoint `PUT /api/Stages/{stageId}` em `StagesController`.

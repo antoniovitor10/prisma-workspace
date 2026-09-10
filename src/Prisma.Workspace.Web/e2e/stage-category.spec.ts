@@ -38,4 +38,17 @@ test('coluna criada pelo Kanban respeita a classificação escolhida',
     expect(criada, 'A coluna criada precisa existir no quadro.').toBeTruthy();
     // Antes da correção esta coluna nascia com category 3 (Em andamento).
     expect(criada!.category).toBe(DONE);
+    await page.getByRole('button', { name: `Editar coluna ${nome}`, exact: true }).click();
+    const renamed = `${nome} revisada`;
+    await page.getByPlaceholder('Nome da Coluna').fill(renamed);
+    const [updated] = await Promise.all([
+      page.waitForResponse(result => result.request().method() === 'PUT'
+        && result.url().includes(`/Stages/${criada!.id}`)),
+      page.getByRole('button', { name: 'Salvar', exact: true }).click(),
+    ]);
+    expect(updated.status()).toBe(204);
+    await page.reload();
+    await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toBeVisible();
+    const persisted = await authenticatedApiGet<Stage[]>(page, `/api/Stages/project/${project.id}`);
+    expect(persisted.find(stage => stage.id === criada!.id)).toMatchObject({ name: renamed, category: DONE });
   });

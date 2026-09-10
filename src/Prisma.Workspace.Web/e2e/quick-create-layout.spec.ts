@@ -7,6 +7,7 @@ test.describe('criação rápida', () => {
   test('TASK-020 mantém a seleção de quadro legível e sem overflow', async ({ page, authenticatedGoto }) => {
     await authenticatedGoto('/projects');
     await page.getByRole('button', { name: 'Novo item' }).click();
+    await page.getByRole('menuitem', { name: 'Tarefa', exact: true }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Criar item rapidamente' });
     await expect(dialog).toBeVisible();
