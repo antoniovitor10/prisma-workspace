@@ -10,6 +10,13 @@ public interface IWorkItemRepository
     Task<WorkItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<WorkItem?> GetForMoveAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tarefas do projeto inteiro, qualquer que seja o quadro de origem. O fluxo pertence
+    /// ao projeto desde a <c>SPEC-BOARD-AS-VIEW</c>, então o Kanban do projeto precisa
+    /// abrir sem depender de haver quadro escolhido.
+    /// </summary>
+    Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken cancellationToken = default);
     Task<WorkItem> AddAsync(WorkItem workItem, CancellationToken cancellationToken = default);

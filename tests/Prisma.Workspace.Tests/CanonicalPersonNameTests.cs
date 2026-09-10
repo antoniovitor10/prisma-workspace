@@ -168,6 +168,7 @@ public class CanonicalPersonNameTests
         public Task RemoveAssigneeAsync(Guid workItemId, string userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<WorkItem?> GetForMoveAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<WorkItem> AddAsync(WorkItem workItem, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task UpdateAsync(WorkItem workItem, CancellationToken cancellationToken = default) => throw new NotSupportedException();

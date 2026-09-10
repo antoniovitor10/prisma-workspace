@@ -23,12 +23,12 @@ public class StageRepository : IStageRepository
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
         return await _context.Stages
             .Include(s => s.WorkflowStatus)
             .AsNoTracking()
-            .Where(s => s.BoardId == boardId)
+            .Where(s => s.ProjectId == projectId)
             .OrderBy(s => s.Position)
             .ToListAsync(cancellationToken);
     }

@@ -4,7 +4,7 @@ using MediatR;
 namespace Prisma.Workspace.Application.Features.Stages.Queries;
 
 /// <summary>
-/// Query para buscar todas as etapas (Stages) de um Quadro (Board).
+/// Query para buscar todas as etapas (Stages) do fluxo de um projeto.
 /// </summary>
-public record GetStagesByBoardIdQuery(Guid BoardId, string ActorId)
+public record GetStagesByProjectIdQuery(Guid ProjectId, string ActorId)
     : IRequest<IReadOnlyList<StageDto>>;

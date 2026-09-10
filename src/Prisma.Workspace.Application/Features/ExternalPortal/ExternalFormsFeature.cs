@@ -210,7 +210,7 @@ public class SaveExternalFormCommandHandler : IRequestHandler<SaveExternalFormCo
     private async Task ValidateRoutingAsync(
         SaveExternalFormCommand request, Project project, ExternalPortalEntity portal, CancellationToken ct)
     {
-        var stageIds = portal.Board.Stages.Select(x => x.Id).ToHashSet();
+        var stageIds = portal.Project.Stages.Select(x => x.Id).ToHashSet();
         var teamIds = project.Teams.Select(x => x.TeamId).ToHashSet();
         var memberIds = project.Members.Select(x => x.UserId).Append(project.OwnerId).ToHashSet();
         DomainException.Garantir(!request.InitialStageId.HasValue || stageIds.Contains(request.InitialStageId.Value),
@@ -336,10 +336,10 @@ public class SubmitExternalFormCommandHandler
         var initialStatus = portal.Project.WorkflowStatuses.OrderBy(x => x.Position)
             .FirstOrDefault(x => x.IsInitial);
         var initialStage = stageId.HasValue
-            ? portal.Board.Stages.FirstOrDefault(x => x.Id == stageId)
-            : portal.Board.Stages.OrderBy(x => x.Position)
+            ? portal.Project.Stages.FirstOrDefault(x => x.Id == stageId)
+            : portal.Project.Stages.OrderBy(x => x.Position)
                 .FirstOrDefault(x => initialStatus == null || x.WorkflowStatusId == initialStatus.Id)
-                ?? portal.Board.Stages.OrderBy(x => x.Position).FirstOrDefault();
+                ?? portal.Project.Stages.OrderBy(x => x.Position).FirstOrDefault();
         DomainException.Garantir(!stageId.HasValue || initialStage is not null,
             "A fila configurada para este formulário não está disponível.");
 

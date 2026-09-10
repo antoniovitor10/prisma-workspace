@@ -25,13 +25,13 @@ public sealed class WorkItemAccessService : IWorkItemAccessService
         ProjectRole minimumRole = ProjectRole.Viewer,
         CancellationToken cancellationToken = default)
     {
-        var projectId = await _context.WorkItems.AsNoTracking()
+        var row = await _context.WorkItems.AsNoTracking()
             .Where(x => x.Id == workItemId)
-            .Select(x => x.Board.ProjectId)
+            .Select(x => new { x.Board.ProjectId })
             .FirstOrDefaultAsync(cancellationToken);
-        if (!projectId.HasValue) throw new NaoEncontradoException("Tarefa");
+        if (row is null) throw new NaoEncontradoException("Tarefa");
 
-        await _projectAccess.EnsureAtLeastAsync(projectId.Value, userId, minimumRole, cancellationToken);
+        await _projectAccess.EnsureAtLeastAsync(row.ProjectId, userId, minimumRole, cancellationToken);
         await _permissions.EnsureAsync(
             userId, permission, PermissionScope.WorkItem, workItemId, cancellationToken);
     }

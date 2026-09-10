@@ -33,10 +33,10 @@ public class GetAllBoardsQueryHandler : IRequestHandler<GetAllBoardsQuery, IRead
             PermissionScope.Organization, cancellationToken: cancellationToken);
         var boards = await _boardRepository.GetAllAsync(cancellationToken);
         var accessible = await _projectAccess.GetAccessibleProjectIdsAsync(
-            boards.Where(x => x.ProjectId.HasValue).Select(x => x.ProjectId!.Value),
+            boards.Select(x => x.ProjectId),
             request.ActorId, cancellationToken);
 
-        return boards.Where(x => x.ProjectId.HasValue && accessible.Contains(x.ProjectId.Value))
+        return boards.Where(x => accessible.Contains(x.ProjectId))
             .Select(b => new BoardDto
         {
             Id = b.Id,

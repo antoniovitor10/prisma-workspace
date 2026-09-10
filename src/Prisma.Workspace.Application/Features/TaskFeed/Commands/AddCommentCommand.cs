@@ -87,9 +87,7 @@ public class AddCommentCommandHandler : IRequestHandler<AddCommentCommand, Comme
                     mentionedIds.Add(user.Id);
             }
 
-            var link = item.Board.ProjectId.HasValue
-                ? $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}"
-                : $"/boards/{item.BoardId}?item={item.Id}";
+            var link = $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}";
             var collaborators = item.Assignees.Select(x => x.UserId)
                 .Concat(item.Followers.Select(x => x.UserId))
                 .Append(item.ResponsibleId ?? string.Empty)

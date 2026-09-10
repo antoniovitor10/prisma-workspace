@@ -57,33 +57,30 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
 
         if (_permissions is not null && request.CreatedBy is not null)
         {
-            var scope = homeBoard.ProjectId.HasValue
-                ? PermissionScope.Project
-                : homeBoard.TeamId.HasValue ? PermissionScope.Team : PermissionScope.Organization;
             await _permissions.EnsureAsync(
-                request.CreatedBy, PlatformPermission.Create, scope,
-                homeBoard.ProjectId ?? homeBoard.TeamId, cancellationToken);
+                request.CreatedBy, PlatformPermission.Create, PermissionScope.Project,
+                homeBoard.ProjectId, cancellationToken);
         }
 
-        // 2. Localizar a etapa Backlog (nome exato primeiro, depois Category Ready)
-        var boardStages = await _stageRepository.GetByBoardIdAsync(homeBoard.Id, cancellationToken);
-        var homeBacklog = boardStages.FirstOrDefault(s =>
+        // 2. Localizar a etapa Backlog no fluxo do projeto (nome exato primeiro, depois Category Ready)
+        var projectStages = await _stageRepository.GetByProjectIdAsync(homeBoard.ProjectId, cancellationToken);
+        var homeBacklog = projectStages.FirstOrDefault(s =>
                 string.Equals(s.Name.Trim(), "Backlog", StringComparison.OrdinalIgnoreCase))
-            ?? boardStages.FirstOrDefault(s =>
+            ?? projectStages.FirstOrDefault(s =>
                 s.Name.Contains("backlog", StringComparison.OrdinalIgnoreCase))
-            ?? boardStages.OrderBy(s => s.Position)
+            ?? projectStages.OrderBy(s => s.Position)
                 .FirstOrDefault(s => s.Category is StageCategory.Ready or StageCategory.Backlog)
             ?? throw new ArgumentException(
-                $"O quadro '{homeBoard.Name}' não possui uma etapa 'Backlog'. " +
+                $"O projeto do quadro '{homeBoard.Name}' não possui uma etapa 'Backlog'. " +
                 "Crie uma etapa com nome 'Backlog' e categoria Ready antes de adicionar itens.");
 
-        // 3. Coluna de destino explícita (se informada) — deve pertencer ao quadro
+        // 3. Coluna de destino explícita (se informada) — deve pertencer ao projeto da tarefa
         Stage? selectedStage = homeBacklog;
         if (request.StageId.HasValue)
         {
             selectedStage = await _stageRepository.GetByIdAsync(request.StageId.Value, cancellationToken);
-            if (selectedStage is null || selectedStage.BoardId != homeBoard.Id)
-                throw new ArgumentException("A etapa especificada não pertence ao quadro informado.");
+            if (selectedStage is null || selectedStage.ProjectId != homeBoard.ProjectId)
+                throw new ArgumentException("A etapa especificada não pertence ao projeto da tarefa.");
             // Limite de WIP removido do produto pela D83.
         }
 
@@ -188,9 +185,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
                     homeBoard.OrganizationId, userId, NotificationType.TaskAssigned,
                     "Nova tarefa atribuída",
                     $"#{workItem.Number} {workItem.Title} foi atribuída a você.",
-                    homeBoard.ProjectId.HasValue
-                        ? $"/projects/{homeBoard.ProjectId}/backlog?item={workItem.Id}"
-                        : $"/boards/{homeBoard.Id}?item={workItem.Id}",
+                    $"/projects/{homeBoard.ProjectId}/backlog?item={workItem.Id}",
                     WorkItemId: workItem.Id, ProjectId: homeBoard.ProjectId)), cancellationToken);
 
         if (_realtime is not null)

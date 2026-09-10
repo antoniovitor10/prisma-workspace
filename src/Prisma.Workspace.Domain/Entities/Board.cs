@@ -3,7 +3,7 @@ using Prisma.Workspace.Domain.Interfaces;
 namespace Prisma.Workspace.Domain.Entities;
 
 /// <summary>
-/// Quadro Kanban. Agrupa etapas e itens de trabalho.
+/// Quadro como visão salva do projeto (D83). Não possui colunas próprias — o fluxo fica em <see cref="Stage"/>.
 /// </summary>
 public class Board : IOrganizationOwned
 {
@@ -12,8 +12,8 @@ public class Board : IOrganizationOwned
 
     public Guid OrganizationId { get; set; }
 
-    /// <summary>Projeto ao qual o quadro pertence. Nulo apenas durante a transição de dados legados.</summary>
-    public Guid? ProjectId { get; set; }
+    /// <summary>Projeto ao qual o quadro pertence (obrigatório).</summary>
+    public Guid ProjectId { get; set; }
 
     /// <summary>Time proprietário do fluxo. Nulo em quadros legados até a configuração.</summary>
     public Guid? TeamId { get; set; }
@@ -36,7 +36,7 @@ public class Board : IOrganizationOwned
     /// <summary>Cliente vinculado (pode ser nulo).</summary>
     public Client? Client { get; set; }
 
-    public Project? Project { get; set; }
+    public Project Project { get; set; } = null!;
     public Team? Team { get; set; }
 
     /// <summary>Data/hora de criação.</summary>
@@ -44,19 +44,8 @@ public class Board : IOrganizationOwned
 
     // ── Navegação ──────────────────────────────────────────────
 
-    /// <summary>Etapas pertencentes a este quadro.</summary>
-    public ICollection<Stage> Stages { get; set; }
-
     /// <summary>Itens cujo quadro home ainda aponta para este quadro (compatibilidade).</summary>
-    public ICollection<WorkItem> WorkItems { get; set; }
-
-    /// <summary>Projeções de tarefas neste quadro.</summary>
-
-    public Board()
-    {
-        Stages = new List<Stage>();
-        WorkItems = new List<WorkItem>();
-    }
+    public ICollection<WorkItem> WorkItems { get; set; } = new List<WorkItem>();
 
     /// <summary>Vincula cliente e descrição ao projeto (nulos limpam o vínculo).</summary>
     public void VincularCliente(Guid? clientId, string? descricao)

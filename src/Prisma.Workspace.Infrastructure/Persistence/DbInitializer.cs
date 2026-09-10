@@ -114,11 +114,11 @@ public static class DbInitializer
         await context.Boards.AddAsync(board);
         await context.SaveChangesAsync();
 
-        // 4. Criar Colunas (Stages) no Board
-        var stage1 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id,             Name = "Ideias", Category = StageCategory.Backlog, Position = 100, CreatedAt = now.AddDays(-15) };
-        var stage2 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Em andamento", Category = StageCategory.InProgress, Position = 200, CreatedAt = now.AddDays(-15) };
-        var stage3 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Revisão", Category = StageCategory.Review, Position = 300, CreatedAt = now.AddDays(-15) };
-        var stage4 = new Stage { Id = Guid.NewGuid(), BoardId = board.Id, Name = "Concluído", Category = StageCategory.Done, Position = 400, CreatedAt = now.AddDays(-15) };
+        // 4. Criar Colunas (Stages) no fluxo do projeto
+        var stage1 = new Stage { Id = Guid.NewGuid(), ProjectId = project.Id, Name = "Ideias", Category = StageCategory.Backlog, Position = 100, CreatedAt = now.AddDays(-15) };
+        var stage2 = new Stage { Id = Guid.NewGuid(), ProjectId = project.Id, Name = "Em andamento", Category = StageCategory.InProgress, Position = 200, CreatedAt = now.AddDays(-15) };
+        var stage3 = new Stage { Id = Guid.NewGuid(), ProjectId = project.Id, Name = "Revisão", Category = StageCategory.Review, Position = 300, CreatedAt = now.AddDays(-15) };
+        var stage4 = new Stage { Id = Guid.NewGuid(), ProjectId = project.Id, Name = "Concluído", Category = StageCategory.Done, Position = 400, CreatedAt = now.AddDays(-15) };
 
         await context.Stages.AddRangeAsync(stage1, stage2, stage3, stage4);
 
@@ -357,13 +357,12 @@ public static class DbInitializer
     private static async Task EnsureProjectWorkflowsAsync(AppDbContext context)
     {
         var stages = await context.Stages.IgnoreQueryFilters()
-            .Include(x => x.Board)
-            .Where(x => x.Board.ProjectId != null)
+            .Include(x => x.Project)
             .OrderBy(x => x.Position)
             .ToListAsync();
         if (stages.Count == 0) return;
 
-        var projectIds = stages.Select(x => x.Board.ProjectId!.Value).Distinct().ToList();
+        var projectIds = stages.Select(x => x.ProjectId).Distinct().ToList();
         var statuses = await context.WorkflowStatuses.IgnoreQueryFilters()
             .Where(x => projectIds.Contains(x.ProjectId))
             .OrderBy(x => x.Position)
@@ -372,7 +371,7 @@ public static class DbInitializer
         foreach (var projectId in projectIds)
         {
             var projectStatuses = statuses.Where(x => x.ProjectId == projectId).ToList();
-            foreach (var stage in stages.Where(x => x.Board.ProjectId == projectId))
+            foreach (var stage in stages.Where(x => x.ProjectId == projectId))
             {
                 var status = projectStatuses.FirstOrDefault(x =>
                     x.Name == stage.Name && x.Category == stage.Category);

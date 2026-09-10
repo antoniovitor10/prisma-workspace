@@ -144,8 +144,7 @@ public sealed class GlobalSearchRepository : IGlobalSearchRepository
             hits.AddRange(projects);
 
             var tasks = await _db.WorkItems.AsNoTracking()
-                .Where(x => !x.IsArchived && x.Board.ProjectId.HasValue
-                    && !deniedProjects.Contains(x.Board.ProjectId.Value)
+                .Where(x => !x.IsArchived && !deniedProjects.Contains(x.Board.ProjectId)
                     && (x.Title.Contains(query) || x.Number.ToString().Contains(query)))
                 .OrderByDescending(x => x.UpdatedAt).Take(limitPerGroup)
                 .Select(x => new GlobalSearchHit("tasks", x.Id.ToString(), x.Title,

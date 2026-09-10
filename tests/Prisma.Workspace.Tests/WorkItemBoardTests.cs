@@ -14,13 +14,13 @@ public class WorkItemBoardTests
     // ── helpers ────────────────────────────────────────────────────────────
 
     private static Board CriarBoard(Guid? projectId = null)
-        => new() { Id = Guid.NewGuid(), ProjectId = projectId, Name = "Quadro", CreatedAt = DateTimeOffset.UtcNow };
+        => new() { Id = Guid.NewGuid(), ProjectId = projectId ?? Guid.NewGuid(), Name = "Quadro", CreatedAt = DateTimeOffset.UtcNow };
 
-    private static Stage CriarBacklog(Guid boardId)
-        => new() { Id = Guid.NewGuid(), BoardId = boardId, Name = "Backlog", Category = StageCategory.Ready, Position = 100, CreatedAt = DateTimeOffset.UtcNow };
+    private static Stage CriarBacklog(Guid projectId)
+        => new() { Id = Guid.NewGuid(), ProjectId = projectId, Name = "Backlog", Category = StageCategory.Ready, Position = 100, CreatedAt = DateTimeOffset.UtcNow };
 
-    private static Stage CriarStage(Guid boardId, string nome, StageCategory cat, Guid? statusId = null)
-        => new() { Id = Guid.NewGuid(), BoardId = boardId, Name = nome, Category = cat, WorkflowStatusId = statusId, Position = 200, CreatedAt = DateTimeOffset.UtcNow };
+    private static Stage CriarStage(Guid projectId, string nome, StageCategory cat, Guid? statusId = null)
+        => new() { Id = Guid.NewGuid(), ProjectId = projectId, Name = nome, Category = cat, WorkflowStatusId = statusId, Position = 200, CreatedAt = DateTimeOffset.UtcNow };
 
     // ── CreateWorkItemCommandHandler ────────────────────────────────────────
 
@@ -29,7 +29,7 @@ public class WorkItemBoardTests
     {
         var board = CriarBoard();
         // Nenhuma stage Backlog — só InProgress
-        var stage = CriarStage(board.Id, "Em andamento", StageCategory.InProgress);
+        var stage = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
 
         var repo = new FakeWorkItemRepo();
         var handler = new CreateWorkItemCommandHandler(
@@ -63,7 +63,7 @@ public class WorkItemBoardTests
         var handler = new CreateWorkItemCommandHandler(
             repo,
             new FakeBoardRepo(board),
-            new FakeStageRepo(CriarBacklog(board.Id)),
+            new FakeStageRepo(CriarBacklog(board.ProjectId)),
             new FakeProjectRepo(project),
             new FakeTeamRepo(),
             new FakeUserDirectory());
@@ -84,8 +84,8 @@ public class WorkItemBoardTests
     public async Task MoveWorkItem_AtualizaEtapaEPosicaoDoItem()
     {
         var board = CriarBoard();
-        var source = CriarStage(board.Id, "A fazer", StageCategory.Ready);
-        var destination = CriarStage(board.Id, "Em andamento", StageCategory.InProgress);
+        var source = CriarStage(board.ProjectId, "A fazer", StageCategory.Ready);
+        var destination = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
         var item = new WorkItem
         {
             Id = Guid.NewGuid(), BoardId = board.Id, Board = board, StageId = source.Id,
@@ -119,6 +119,8 @@ public class WorkItemBoardTests
         public Task<WorkItem?> GetForMoveAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult<WorkItem?>(null);
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
@@ -166,6 +168,7 @@ public class WorkItemBoardTests
         }
         public Task<WorkItem> AddAsync(WorkItem w, CancellationToken ct = default) => Task.FromResult(w);
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItemAssignee>>(new List<WorkItemAssignee>());
         public Task DeleteAsync(WorkItem w, CancellationToken ct = default) => Task.CompletedTask;
@@ -200,8 +203,8 @@ public class WorkItemBoardTests
 
         public Task<Stage?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(_stages.FirstOrDefault(s => s.Id == id));
-        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(s => s.BoardId == boardId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(s => s.ProjectId == projectId).ToList());
         public Task<Stage> AddAsync(Stage stage, CancellationToken ct = default) => Task.FromResult(stage);
         public Task UpdateAsync(Stage stage, CancellationToken ct = default) => Task.CompletedTask;
         public Task DeleteAsync(Stage stage, CancellationToken ct = default) => Task.CompletedTask;

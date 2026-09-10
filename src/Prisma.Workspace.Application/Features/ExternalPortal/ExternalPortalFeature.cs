@@ -424,9 +424,9 @@ public class CreateExternalRequestCommandHandler
 
         var initialStatus = portal.Project.WorkflowStatuses
             .OrderBy(x => x.Position).FirstOrDefault(x => x.IsInitial);
-        var initialStage = portal.Board.Stages.OrderBy(x => x.Position)
+        var initialStage = portal.Project.Stages.OrderBy(x => x.Position)
             .FirstOrDefault(x => initialStatus == null || x.WorkflowStatusId == initialStatus.Id)
-            ?? portal.Board.Stages.OrderBy(x => x.Position).FirstOrDefault();
+            ?? portal.Project.Stages.OrderBy(x => x.Position).FirstOrDefault();
         var now = DateTimeOffset.UtcNow;
         var backlogRank = await _portals.GetNextBacklogRankAsync(portal.BoardId, ct);
         var workItem = new WorkItem
@@ -495,12 +495,12 @@ public class GetInternalExternalRequestsQueryHandler
         foreach (var projectId in requests.SelectMany(x => new[]
                  {
                      x.ExternalPortal.ProjectId,
-                     x.WorkItem.Board.ProjectId ?? x.ExternalPortal.ProjectId
+                     x.WorkItem.Board.ProjectId
                  }).Distinct())
             if (await _access.GetRoleAsync(projectId, request.ActorId, ct) is not null)
                 allowedProjects.Add(projectId);
         return requests.Where(x => allowedProjects.Contains(x.ExternalPortal.ProjectId)
-                || allowedProjects.Contains(x.WorkItem.Board.ProjectId ?? x.ExternalPortal.ProjectId))
+                || allowedProjects.Contains(x.WorkItem.Board.ProjectId))
             .Select(ExternalPortalMapper.MapInternal).ToList();
     }
 }
@@ -596,7 +596,7 @@ public class AddInternalExternalRequestReplyCommandHandler
         var externalRequest = await _portals.GetRequestByProtocolAsync(request.Protocol.Trim(), ct)
             ?? throw new NaoEncontradoException("Solicitação");
         await _access.EnsureAtLeastAsync(
-            externalRequest.WorkItem.Board.ProjectId ?? externalRequest.ExternalPortal.ProjectId,
+            externalRequest.WorkItem.Board.ProjectId,
             request.ActorId, ProjectRole.Member, ct);
         var message = AddExternalRequestReplyCommandHandler.NewMessage(
             externalRequest, ExternalRequestMessageAuthor.Agent,

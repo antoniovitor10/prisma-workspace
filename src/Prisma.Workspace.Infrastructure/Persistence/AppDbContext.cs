@@ -186,7 +186,7 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<Team>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<TeamMember>().HasQueryFilter(x => x.Team.OrganizationId == CurrentOrganizationId);
         builder.Entity<Board>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
-        builder.Entity<Stage>().HasQueryFilter(x => x.Board.OrganizationId == CurrentOrganizationId);
+        builder.Entity<Stage>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkItem>().HasQueryFilter(x => x.Board.OrganizationId == CurrentOrganizationId);
         builder.Entity<WikiPage>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WikiPageRevision>().HasQueryFilter(x => x.Page.Project.OrganizationId == CurrentOrganizationId);

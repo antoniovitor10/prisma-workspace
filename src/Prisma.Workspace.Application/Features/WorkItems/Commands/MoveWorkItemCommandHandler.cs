@@ -63,22 +63,17 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
             if (displayNames.TryGetValue(request.ActorId, out var displayName)) actorName = displayName;
         }
 
-        // Etapa de destino — seu BoardId indica em qual quadro ocorre a movimentação
+        // Etapa de destino — deve pertencer ao projeto da tarefa (D83).
         Stage? destStage = null;
-        Guid destBoardId = workItem.BoardId;
         if (request.DestinationStageId.HasValue)
         {
             destStage = await _stageRepository.GetByIdAsync(request.DestinationStageId.Value, cancellationToken);
             if (destStage is null)
                 throw new ArgumentException("A etapa de destino não existe.");
-            destBoardId = destStage.BoardId;
+            if (destStage.ProjectId != workItem.Board.ProjectId)
+                throw new ArgumentException(
+                    "A etapa de destino não pertence ao projeto da tarefa.");
         }
-
-        // A etapa de destino precisa pertencer ao quadro do item: a tarefa ocupa uma
-        // única posição, sem projeção por quadro (D83).
-        if (workItem.BoardId != destBoardId)
-            throw new ArgumentException(
-                $"A etapa de destino pertence a outro quadro ({destBoardId}).");
 
         var stageChanged = workItem.StageId != request.DestinationStageId;
         var previousStageId = workItem.StageId;
@@ -161,9 +156,7 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
                     .Append(workItem.ResponsibleId ?? string.Empty)
                     .Where(x => !string.IsNullOrWhiteSpace(x) && x != request.ActorId)
                     .Distinct();
-                var link = workItem.Board.ProjectId.HasValue
-                    ? $"/projects/{workItem.Board.ProjectId}/backlog?item={workItem.Id}"
-                    : $"/boards/{workItem.BoardId}?item={workItem.Id}";
+                var link = $"/projects/{workItem.Board.ProjectId}/backlog?item={workItem.Id}";
                 await _notifications.PublishManyAsync(recipients.Select(userId => new NotificationEnvelope(
                     workItem.Board.OrganizationId, userId, NotificationType.StatusChanged,
                     "Status da tarefa alterado",

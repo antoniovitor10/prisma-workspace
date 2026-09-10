@@ -285,8 +285,8 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         {
             destinationStage = await _stages.GetByIdAsync(request.StageId.Value, ct)
                 ?? throw new NaoEncontradoException("Etapa");
-            DomainException.Garantir(destinationStage.BoardId == item.BoardId,
-                "A etapa nao pertence ao quadro da tarefa.");
+            DomainException.Garantir(destinationStage.ProjectId == item.Board.ProjectId,
+                "A etapa nao pertence ao projeto da tarefa.");
             if (item.StageId != request.StageId && _workflow is not null)
                 await WorkflowMoveGuard.EnsureAllowedAsync(item, destinationStage, _workflow, ct);
         }
@@ -406,9 +406,7 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         await _management.SaveWithEventAsync(taskEvent, ct);
         if (_notifications is not null)
         {
-            var link = item.Board.ProjectId.HasValue
-                ? $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}"
-                : $"/boards/{item.BoardId}?item={item.Id}";
+            var link = $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}";
             if (!string.IsNullOrWhiteSpace(item.ResponsibleId)
                 && item.ResponsibleId != previous.ResponsibleId
                 && item.ResponsibleId != request.ActorId)
@@ -497,8 +495,8 @@ public class DuplicateWorkItemCommandHandler : IRequestHandler<DuplicateWorkItem
         await WorkItemAccessGuard.EnsureAsync(
             source, request.ActorId, ProjectRole.Member, PlatformPermission.Create,
             _projectAccess, _permissions, ct,
-            source.Board.ProjectId.HasValue ? PermissionScope.Project : PermissionScope.WorkItem,
-            source.Board.ProjectId ?? source.Id);
+            PermissionScope.Project,
+            source.Board.ProjectId);
 
         var now = DateTimeOffset.UtcNow;
         var copy = new WorkItem
@@ -775,8 +773,7 @@ internal static class WorkItemAccessGuard
         PermissionScope scope = PermissionScope.WorkItem,
         Guid? scopeId = null)
     {
-        if (item.Board.ProjectId.HasValue)
-            await projectAccess.EnsureAtLeastAsync(item.Board.ProjectId.Value, actorId, minimumRole, ct);
+        await projectAccess.EnsureAtLeastAsync(item.Board.ProjectId, actorId, minimumRole, ct);
         await permissions.EnsureAsync(actorId, permission, scope, scopeId ?? item.Id, ct);
     }
 }

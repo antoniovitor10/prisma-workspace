@@ -189,8 +189,7 @@ public class WorkItemManagementRepository : IWorkItemManagementRepository, IWork
 
         return await _context.WorkItems.AsNoTracking()
             .Where(item => !item.IsArchived
-                && item.Board.ProjectId.HasValue
-                && !deniedProjects.Contains(item.Board.ProjectId.Value)
+                && !deniedProjects.Contains(item.Board.ProjectId)
                 && (item.Title.Contains(term)
                     || (keyTerm == null && item.Number.ToString().Contains(numberTerm))
                     || (keyTerm != null && item.Board.Project != null
@@ -200,7 +199,7 @@ public class WorkItemManagementRepository : IWorkItemManagementRepository, IWork
             .Take(limit)
             .Select(item => new WorkItemSearchEntry(
                 item.Id,
-                item.Board.ProjectId!.Value,
+                item.Board.ProjectId,
                 item.Board.Project!.Key,
                 item.Number,
                 item.Title,

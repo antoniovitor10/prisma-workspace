@@ -37,6 +37,19 @@ public class WorkItemsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Lista os itens de trabalho do projeto inteiro, sem depender de quadro escolhido.
+    /// </summary>
+    [HttpGet("project/{projectId:guid}")]
+    [ProducesResponseType(typeof(IReadOnlyList<WorkItemDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByProjectId(Guid projectId, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var result = await _mediator.Send(
+            new GetWorkItemsByProjectIdQuery(projectId, userId), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("search")]
     [ProducesResponseType(typeof(IReadOnlyList<WorkItemSummaryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

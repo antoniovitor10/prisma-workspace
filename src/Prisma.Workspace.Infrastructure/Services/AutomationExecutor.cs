@@ -137,7 +137,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         if (!Guid.TryParse(value, out var destinationId))
             return AutomationOutcome.Skip("invalid_stage");
         var destination = await _context.Stages.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == destinationId && x.BoardId == item.BoardId, ct);
+            .FirstOrDefaultAsync(x => x.Id == destinationId && x.ProjectId == item.Board.ProjectId, ct);
         if (destination is null) return AutomationOutcome.Skip("stage_not_found");
         if (destination.Id == item.StageId) return AutomationOutcome.Skip("no_change");
         if (!visitedStages.Add(destination.Id)) return AutomationOutcome.Skip("runtime_cycle");

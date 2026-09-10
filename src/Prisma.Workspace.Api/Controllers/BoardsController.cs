@@ -103,4 +103,4 @@ public class BoardsController : ControllerBase
 /// <summary>
 /// Request body para criação de Board (só o nome, o owner vem do JWT).
 /// </summary>
-public record CreateBoardRequest(string Name, Guid? ProjectId = null, Guid? TeamId = null);
+public record CreateBoardRequest(string Name, Guid ProjectId, Guid? TeamId = null);
