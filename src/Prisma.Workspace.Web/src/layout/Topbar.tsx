@@ -18,6 +18,8 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BrandMark } from '../components/BrandMark';
 import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActions';
+import { DEFAULT_CREATE_KINDS, KIND_COLORS, KIND_ICONS } from '../components/WorkItemKindSelector';
+import { WorkItemKind, kindMeta } from '../features/workItems/workItemKinds';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { useOrganization } from '../features/organizations/OrganizationState';
 import { visibleNavEntries } from './navigation';
@@ -276,6 +278,59 @@ const MobileNavItem = styled(NavLink)`
   }
 `;
 
+const CreateWrap = styled.div`
+  position: relative;
+`;
+
+const CreateKindDropdown = styled.div`
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+  box-shadow: ${({ theme }) => theme.shadow.lg};
+`;
+
+const KindDropItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.neutral[100]};
+    outline: none;
+  }
+
+  > span {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: ${({ theme }) => theme.radius.md};
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+  }
+`;
+
 /* ─── account dropdown ─── */
 
 const AccountWrap = styled.div`
@@ -374,6 +429,8 @@ export function Topbar() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [kindMenuOpen, setKindMenuOpen] = useState(false);
+  const [createKind, setCreateKind] = useState<number>(WorkItemKind.Task);
   const [elapsed, setElapsed] = useState(0);
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -381,6 +438,7 @@ export function Topbar() {
 
   const menuRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const createRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const firstMenuLinkRef = useRef<HTMLAnchorElement>(null);
@@ -415,6 +473,17 @@ export function Topbar() {
     mutationFn: (workItemId: string) => api.stopTimer(workItemId),
     onSuccess: () => queryClient.setQueryData(['active-timer'], null),
   });
+
+  useEffect(() => {
+    if (!kindMenuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (createRef.current && !createRef.current.contains(e.target as Node)) {
+        setKindMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [kindMenuOpen]);
 
   /* Ctrl/Cmd+K → search */
   useEffect(() => {
@@ -571,9 +640,42 @@ export function Topbar() {
         )}
 
         {/* novo item */}
-        <Primary aria-label="Novo item" onClick={() => setCreateOpen(true)}>
-          <Plus size={14} /><span>Novo item</span>
-        </Primary>
+        <CreateWrap ref={createRef}>
+          <Primary
+            aria-label="Novo item"
+            aria-expanded={kindMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => setKindMenuOpen((v) => !v)}
+          >
+            <Plus size={14} /><span>Novo item</span>
+          </Primary>
+          {kindMenuOpen && (
+            <CreateKindDropdown role="menu" aria-label="Selecione o tipo de item">
+              {DEFAULT_CREATE_KINDS.map((k) => {
+                const meta = kindMeta(k);
+                const IconComp = KIND_ICONS[k] ?? Plus;
+                const color = KIND_COLORS[k] ?? meta.color;
+                return (
+                  <KindDropItem
+                    key={k}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setCreateKind(k);
+                      setKindMenuOpen(false);
+                      setCreateOpen(true);
+                    }}
+                  >
+                    <span style={{ background: `${color}18`, color }}>
+                      <IconComp size={15} color={color} />
+                    </span>
+                    <strong>{meta.label}</strong>
+                  </KindDropItem>
+                );
+              })}
+            </CreateKindDropdown>
+          )}
+        </CreateWrap>
 
         {/* notifications */}
         <NotificationCenter />
@@ -653,6 +755,7 @@ export function Topbar() {
       <QuickCreateDialog
         open={createOpen}
         currentProjectId={currentProjectId}
+        initialKind={createKind}
         onOpenChange={setCreateOpen}
         onCreated={setToast}
       />

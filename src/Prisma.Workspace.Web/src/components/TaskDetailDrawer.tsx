@@ -41,7 +41,8 @@ import { previewMode } from '../preview';
 import { api } from '../services/api';
 import type { BacklogItem, WorkItemCustomField, WorkItemDetails } from '../types/scrum';
 import { linkTypeNames, originNames, priorityNames } from '../types/scrum';
-import { kindDisplayOrder, kindMeta, workItemKinds } from '../features/workItems/workItemKinds';
+import { WorkItemKind, kindDisplayOrder, kindMeta, workItemKinds } from '../features/workItems/workItemKinds';
+import { WorkItemKindSelector } from './WorkItemKindSelector';
 import { userDisplayLabel } from '../utils/userDisplayName';
 
 interface StageOption {
@@ -168,6 +169,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'|'error'>('idle');
   const [participantId,setParticipantId]=useState('');
   const [subtaskTitle,setSubtaskTitle]=useState('');
+  const [subtaskKind,setSubtaskKind]=useState<number>(WorkItemKind.Subtask);
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
   const [publicReply,setPublicReply]=useState('');
@@ -233,7 +235,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const change=<K extends keyof Draft>(key:K,value:Draft[K],immediate=false)=>{if(!draft)return;const next={...draft,[key]:value};setDraft(next);if(immediate)commit(next);};
 
   const participants=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onSuccess:async()=>{setParticipantId('');await invalidate();}});
-  const subtask=useMutation({mutationFn:()=>api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,priority:1,position:(details!.subtasks.length+1)*100}),onSuccess:async()=>{setSubtaskTitle('');await invalidate();}});
+  const subtask=useMutation({mutationFn:()=>api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),onSuccess:async()=>{setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();}});
   const link=useMutation({mutationFn:()=>api.addWorkItemLink(details!.id,linkForm.targetWorkItemId,linkForm.type),onSuccess:async()=>{setLinkForm({targetWorkItemId:'',type:1});await invalidate();}});
   const removeLink=useMutation({mutationFn:(linkId:string)=>api.removeWorkItemLink(details!.id,linkId),onSuccess:invalidate});
   const following=useMutation({mutationFn:()=>api.setWorkItemFollowing(details!.id,!details!.isFollowing),onMutate:()=>queryClient.setQueryData<WorkItemDetails>(['work-item',details!.id],current=>current?{...current,isFollowing:!current.isFollowing}:current),onSuccess:invalidate});
@@ -331,7 +333,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
       {realMode&&<Section><h2><TagsIcon/>Classificação</h2><TaskTaxonomyPanel workItemId={details.id} taskTypeId={details.taskTypeId} points={details.points} tagIds={details.tags.map(tag=>tag.id)} showPoints={showStoryPoints} onChanged={invalidate}/></Section>}
       </>}
-      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
+      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]} style={{ width: 140 }}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
 
       {activeTab==='attachments'&&<Section><h2><Paperclip size={14}/>Anexos</h2><List>{attachmentsQuery.data?.map(attachment=><Row key={attachment.id}><div><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)} · {attachment.mimeType||'arquivo'}</small></div><div style={{display:'flex',gap:4}}><IconButton aria-label={`Baixar ${attachment.fileName}`} onClick={()=>downloadAttachment(attachment)}><Download size={14}/></IconButton>{realMode&&<IconButton $danger aria-label={`Remover ${attachment.fileName}`} disabled={removeAttachment.isPending} onClick={()=>{if(window.confirm(`Remover o anexo "${attachment.fileName}"?`))removeAttachment.mutate(attachment.id);}}><Trash2 size={14}/></IconButton>}</div></Row>)}{!attachmentsQuery.data?.length&&<Empty>Nenhum anexo.</Empty>}</List>{realMode&&<label style={{display:'inline-flex',marginTop:9}}><input type="file" hidden onChange={onUpload}/><Button as="span"><FileUp size={12}/>{upload.isPending?'Enviando...':'Adicionar anexo'}</Button></label>}</Section>}
 

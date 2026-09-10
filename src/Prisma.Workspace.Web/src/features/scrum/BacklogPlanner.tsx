@@ -43,10 +43,11 @@ import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { z } from 'zod';
 import { TaskDetailDrawer } from '../../components/TaskDetailDrawer';
+import { WorkItemKindSelector } from '../../components/WorkItemKindSelector';
 import type { ProjectSummary } from '../../pages/Projects';
 import { previewBacklog, previewMode, previewSprints } from '../../preview';
 import { api } from '../../services/api';
-import { kindMeta } from '../workItems/workItemKinds';
+import { WorkItemKind, kindMeta } from '../workItems/workItemKinds';
 import type { BacklogItem, Sprint } from '../../types/scrum';
 import { getItemDepth, kindNames, priorityNames } from '../../types/scrum';
 import {
@@ -126,8 +127,9 @@ const Button = styled.button<{ $secondary?: boolean; $danger?: boolean }>`
 
 const QuickAdd = styled.form`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
   gap: 8px;
+  align-items: center;
   margin-bottom: 12px;
   padding: 10px;
   border: 1px solid ${({ theme }) => theme.color.accentBlue};
@@ -143,6 +145,9 @@ const QuickAdd = styled.form`
     &:focus { border-color: ${({ theme }) => theme.color.accentBlue}; }
   }
   p { grid-column: 1 / -1; color: ${({ theme }) => theme.color.danger}; font-size: 13px; }
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const FilterBar = styled.div`
@@ -831,7 +836,10 @@ function DroppablePanel({
   );
 }
 
-const quickSchema = z.object({ title: z.string().trim().min(1, 'Digite um título.').max(500) });
+const quickSchema = z.object({
+  title: z.string().trim().min(1, 'Digite um título.').max(500),
+  kind: z.number(),
+});
 type QuickForm = z.infer<typeof quickSchema>;
 
 interface BacklogPlannerProps { project: ProjectSummary; }
@@ -1059,11 +1067,12 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     }
   };
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<QuickForm>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<QuickForm>({
     resolver: zodResolver(quickSchema),
-    defaultValues: { title: '' },
+    defaultValues: { title: '', kind: WorkItemKind.Task },
   });
-  const createItem = async ({ title }: QuickForm) => {
+  const quickKind = watch('kind') ?? WorkItemKind.Task;
+  const createItem = async ({ title, kind }: QuickForm) => {
     const board = project.boards[0];
     if (!board) { setError('Crie um quadro antes de adicionar itens.'); return; }
     const nextRank = Math.max(0, ...items.map((item) => item.rank || 0)) + 1000;
@@ -1071,6 +1080,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       const id = previewMode ? `preview-${Date.now()}` : await api.createWorkItem({
         boardId: board.id,
         title,
+        kind: kind ?? WorkItemKind.Task,
         priority: 1,
         position: nextRank,
       });
@@ -1078,7 +1088,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         id,
         boardId: board.id,
         boardName: board.name,
-        kind: 5,
+        kind: kind ?? WorkItemKind.Task,
         title,
         priority: 1,
         rank: nextRank,
@@ -1087,7 +1097,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         isBlocked: false,
       }]);
       else await queryClient.invalidateQueries({ queryKey: ['project-backlog', project.id] });
-      reset();
+      reset({ title: '', kind: WorkItemKind.Task });
       setShowQuickAdd(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível criar o item.');
@@ -1128,6 +1138,11 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
 
       {showQuickAdd && (
         <QuickAdd onSubmit={handleSubmit(createItem)}>
+          <WorkItemKindSelector
+            ariaLabel="Tipo de item"
+            value={quickKind}
+            onChange={(nextKind) => setValue('kind', nextKind)}
+          />
           <input autoFocus aria-label="Título do novo item" placeholder="Digite somente o título e pressione Enter" {...register('title')} />
           <Button type="submit"><Sparkles size={14} />Adicionar</Button>
           {errors.title && <p>{errors.title.message}</p>}

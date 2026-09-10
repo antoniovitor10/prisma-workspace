@@ -784,6 +784,7 @@ export const api = {
     stageId?: string;
     parentId?: string;
     title: string;
+    kind?: number;
     subtitle?: string;
     description?: string;
     priority: number;

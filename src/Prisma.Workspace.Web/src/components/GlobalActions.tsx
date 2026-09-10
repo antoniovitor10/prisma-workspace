@@ -7,6 +7,8 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { z } from 'zod';
+import { WorkItemKind } from '../features/workItems/workItemKinds';
+import { WorkItemKindSelector } from './WorkItemKindSelector';
 import { previewMode, previewProject } from '../preview';
 import { api } from '../services/api';
 import type { ProjectSummary } from '../pages/Projects';
@@ -268,7 +270,7 @@ const QuickForm = styled.form`
 
 const ContextRow = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 140px minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   margin-top: 10px;
 
@@ -324,6 +326,7 @@ const quickItemSchema = z.object({
   title: z.string().trim().min(1, 'Digite um título.').max(500, 'Use no máximo 500 caracteres.'),
   projectId: z.string().min(1, 'Selecione um projeto.'),
   boardId: z.string().min(1, 'Selecione um quadro.'),
+  kind: z.number(),
 });
 
 type QuickItemForm = z.infer<typeof quickItemSchema>;
@@ -331,11 +334,12 @@ type QuickItemForm = z.infer<typeof quickItemSchema>;
 interface QuickCreateDialogProps {
   open: boolean;
   currentProjectId?: string;
+  initialKind?: number;
   onOpenChange: (open: boolean) => void;
   onCreated: (message: string) => void;
 }
 
-export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCreated }: QuickCreateDialogProps) {
+export function QuickCreateDialog({ open, currentProjectId, initialKind, onOpenChange, onCreated }: QuickCreateDialogProps) {
   const queryClient = useQueryClient();
   const { data: projects = [] } = useQuery<ProjectSummary[]>({
     queryKey: ['projects'],
@@ -355,23 +359,26 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
     formState: { errors },
   } = useForm<QuickItemForm>({
     resolver: zodResolver(quickItemSchema),
-    defaultValues: { title: '', projectId: currentProjectId ?? '', boardId: '' },
+    defaultValues: { title: '', projectId: currentProjectId ?? '', boardId: '', kind: initialKind ?? WorkItemKind.Task },
   });
   const projectId = watch('projectId');
   const title = watch('title') ?? '';
   const boardId = watch('boardId') ?? '';
+  const kind = watch('kind') ?? WorkItemKind.Task;
   const selectedProject = useMemo(() => projects.find((project) => project.id === projectId), [projectId, projects]);
 
   const getDefaultBoardId = (project: ProjectSummary | undefined) =>
     project?.defaultBoardId ?? project?.boards[0]?.id ?? '';
 
   useEffect(() => {
-    if (!open || projects.length === 0) return;
+    if (!open) return;
+    setValue('kind', initialKind ?? WorkItemKind.Task);
+    if (projects.length === 0) return;
     const nextProject = projects.find((project) => project.id === currentProjectId) ?? projects[0];
     setValue('projectId', nextProject.id);
     const defaultId = getDefaultBoardId(nextProject);
     setValue('boardId', defaultId ?? '');
-  }, [currentProjectId, open, projects, setValue]);
+  }, [currentProjectId, initialKind, open, projects, setValue]);
 
   const updateProject = (nextProjectId: string) => {
     const project = projects.find((candidate) => candidate.id === nextProjectId);
@@ -387,11 +394,8 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
         boardId: data.boardId,
         projectId: data.projectId,
         title: data.title,
+        kind: data.kind,
         priority: 1,
-        // Valor crescente para o item entrar no fim da lista. Em segundos, e não em
-        // milissegundos: CreateWorkItemCommandValidator recusa posição >= 999.999.999.999,
-        // teto que Date.now() ultrapassa desde 2001 — era o que fazia toda criação
-        // rápida falhar com 400.
         position: Math.floor(Date.now() / 1000),
       });
     },
@@ -421,6 +425,14 @@ export function QuickCreateDialog({ open, currentProjectId, onOpenChange, onCrea
           <QuickForm onSubmit={handleSubmit((data) => mutation.mutate(data))}>
             <input autoFocus aria-label="Título da tarefa" placeholder="O que precisa ser feito?" {...register('title')} />
             <ContextRow>
+              <div>
+                <FieldLabel>Tipo</FieldLabel>
+                <WorkItemKindSelector
+                  ariaLabel="Tipo"
+                  value={kind}
+                  onChange={(nextKind) => setValue('kind', nextKind, { shouldValidate: true })}
+                />
+              </div>
               <div>
                 <FieldLabel>Projeto</FieldLabel>
                 <select aria-label="Projeto" value={projectId} style={{ width: '100%', minHeight: 36, padding: '0 10px', fontSize: 13.5 }} onChange={(event) => updateProject(event.target.value)}>

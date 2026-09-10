@@ -6,6 +6,8 @@ import { BoardCalendar } from '../features/board/BoardCalendar';
 import { BoardGantt } from '../features/board/BoardGantt';
 import { BoardDashboard } from '../features/board/BoardDashboard';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
+import { WorkItemKind } from '../features/workItems/workItemKinds';
+import { WorkItemKindSelector } from '../components/WorkItemKindSelector';
 import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { KanbanFilterBar } from '../features/board/KanbanFilterBar';
@@ -409,6 +411,7 @@ export const Kanban: React.FC = () => {
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemPriority, setNewItemPriority] = useState<number>(0);
   const [newItemHours, setNewItemHours] = useState<number | undefined>(undefined);
+  const [newItemKind, setNewItemKind] = useState<number>(WorkItemKind.Task);
 
   // Timer persistido em TimeEntry.
   const [runningItemId, setRunningItemId] = useState<string | null>(null);
@@ -763,7 +766,8 @@ export const Kanban: React.FC = () => {
         description: newItemDesc || undefined,
         priority: newItemPriority,
         estimatedHours: newItemHours,
-        position: nextPos
+        position: nextPos,
+        kind: newItemKind,
       });
 
       // Reset
@@ -772,6 +776,7 @@ export const Kanban: React.FC = () => {
       setNewItemDesc('');
       setNewItemPriority(0);
       setNewItemHours(undefined);
+      setNewItemKind(WorkItemKind.Task);
       setShowItemModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
@@ -1766,6 +1771,13 @@ export const Kanban: React.FC = () => {
                 value={newItemDesc}
                 onChange={e => setNewItemDesc(e.target.value)}
               />
+              <div>
+                <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Tipo do Card</label>
+                <WorkItemKindSelector
+                  value={newItemKind}
+                  onChange={setNewItemKind}
+                />
+              </div>
               <FormRow>
                 <div>
                   <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Prioridade</label>
