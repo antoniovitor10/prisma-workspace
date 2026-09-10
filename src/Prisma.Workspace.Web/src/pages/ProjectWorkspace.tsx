@@ -3,6 +3,7 @@ import { ChevronRight, FolderKanban } from 'lucide-react';
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ContextBarInjector } from '../layout/ContextBar';
+import { projectNavEntries } from '../layout/navigation';
 import { Kanban } from './Kanban';
 import { BacklogPlanner } from '../features/scrum/BacklogPlanner';
 import { SprintDashboard } from '../features/scrum/SprintDashboard';
@@ -16,12 +17,51 @@ type WorkspaceContext = { project: ProjectSummary };
 
 const Page = styled.div`min-height: 100%;`;
 
-const Header = styled.header`
-  padding: 14px 28px 0;
+/* Em desktop o bloco nome/abas vive na lateral (D88). No mobile a lateral some —
+   esta faixa horizontal preserva as abas sem reabrir o hambúrguer a cada troca. */
+const MobileProjectNav = styled.header`
+  display: none;
+  padding: 12px 16px 0;
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.surface};
 
-  @media (max-width: 760px) { padding-inline: 16px; }
+  @media (max-width: 768px) {
+    display: block;
+  }
+`;
+
+const MobileTitle = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  h1 { font-size: 18px; line-height: 1.25; }
+  p { margin-top: 3px; color: ${({ theme }) => theme.color.textMuted}; font-size: 12.5px; }
+  b {
+    margin-top: 2px;
+    padding: 3px 6px;
+    border-radius: ${({ theme }) => theme.radius.sm};
+    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
+    color: ${({ theme }) => theme.color.accentBlue};
+    font-size: 11px;
+  }
+`;
+
+const MobileTabs = styled.nav`
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  overflow-x: auto;
+`;
+
+const MobileTab = styled(NavLink)`
+  padding: 10px 12px;
+  border-bottom: 2px solid transparent;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13.5px;
+  font-weight: 750;
+  white-space: nowrap;
+  &.active { border-color: ${({ theme }) => theme.color.brand}; color: ${({ theme }) => theme.color.brand}; }
 `;
 
 /* breadcrumb row rendered inside ContextBar via portal */
@@ -77,41 +117,6 @@ const ViewBtn = styled(NavLink)`
   }
 `;
 
-const Title = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 9px;
-
-  h1 { font-size: 21px; line-height: 1.2; }
-  p { margin-top: 4px; color: ${({ theme }) => theme.color.textMuted}; font-size: 13px; }
-  b {
-    margin-top: 2px;
-    padding: 3px 6px;
-    border-radius: ${({ theme }) => theme.radius.sm};
-    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
-    color: ${({ theme }) => theme.color.accentBlue};
-    font-size: 12px;
-  }
-`;
-
-const Tabs = styled.nav`
-  display: flex;
-  gap: 2px;
-  margin-top: 15px;
-  overflow-x: auto;
-`;
-
-const Tab = styled(NavLink)`
-  padding: 10px 12px;
-  border-bottom: 2px solid transparent;
-  color: ${({ theme }) => theme.color.textMuted};
-  font-size: 13.5px;
-  font-weight: 750;
-  white-space: nowrap;
-  &.active { border-color: ${({ theme }) => theme.color.brand}; color: ${({ theme }) => theme.color.brand}; }
-`;
-
 const Loading = styled.div`
   display: grid;
   min-height: 280px;
@@ -143,18 +148,21 @@ export function ProjectWorkspace() {
         <CrumbCurrent aria-current="page">{project.name}</CrumbCurrent>
       </ContextBarInjector>
 
-      <Header>
-        <Title><div><h1>{project.name}</h1><p>{project.description || 'Workspace integrado do projeto.'}</p></div><b>{project.key}</b></Title>
-        <Tabs>
-          <Tab to="items">Itens</Tab>
-          <Tab to="backlog">Backlog</Tab>
-          <Tab to="sprints">Sprints</Tab>
-          <Tab to="boards">Kanban</Tab>
-          <Tab to="reports">Relatórios</Tab>
-          <Tab to="wiki">Wiki</Tab>
-          <Tab to="settings">Configurações</Tab>
-        </Tabs>
-      </Header>
+      <MobileProjectNav>
+        <MobileTitle>
+          <div>
+            <h1>{project.name}</h1>
+            <p>{project.description || 'Workspace integrado do projeto.'}</p>
+          </div>
+          <b>{project.key}</b>
+        </MobileTitle>
+        <MobileTabs aria-label="Áreas do projeto">
+          {projectNavEntries.map(({ segment, label, end }) => (
+            <MobileTab key={segment} to={segment} end={end}>{label}</MobileTab>
+          ))}
+        </MobileTabs>
+      </MobileProjectNav>
+
       <Outlet context={{ project } satisfies WorkspaceContext} />
     </Page>
   );
@@ -224,10 +232,6 @@ const Toolbar = styled.div`
   p { margin-top: 4px; color: ${({ theme }) => theme.color.textMuted}; font-size: 13.5px; }
 `;
 
-
-
-
-
 const Card = styled.article`
   padding: 16px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -237,8 +241,6 @@ const Card = styled.article`
   h3 { margin-top: 9px; font-size: 15px; }
   p { min-height: 34px; margin: 7px 0 13px; color: ${({ theme }) => theme.color.textMuted}; font-size: 13px; line-height: 1.5; }
 `;
-
-
 
 export function ProjectReports() {
   const { project } = useOutletContext<WorkspaceContext>();

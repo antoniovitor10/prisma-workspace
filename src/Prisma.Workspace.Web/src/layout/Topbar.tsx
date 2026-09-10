@@ -90,9 +90,53 @@ const ThemeButton = styled.button`
   }
 `;
 
-/* ─── nav global (desktop) ─── */
+/* ─── nav global (desktop) — D88 ─── */
 
+const Nav = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
 
+  &::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 768px) { display: none; }
+`;
+
+const NavItem = styled(NavLink)`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 9px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+
+  > svg { flex: 0 0 auto; }
+
+  &:hover {
+    background: ${({ theme }) => theme.color.neutral[100]};
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &.active {
+    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, transparent)`};
+    color: ${({ theme }) => theme.color.brand};
+    font-weight: 800;
+  }
+
+  /* Em telas médias o ícone some para caber mais rótulos no cabeçalho. */
+  @media (max-width: 1180px) {
+    > svg { display: none; }
+  }
+`;
 
 const Spacer = styled.div`flex: 1;`;
 
@@ -398,7 +442,7 @@ export function Topbar() {
   const allowed = access.data?.allowedPermissions ?? [];
   const canUseWorkspace = role !== 8;
   const canConfigure = allowed.some((p) => [12, 13, 14].includes(p));
-  // Mesma fonte do trilho lateral (D87): os dois nunca divergem.
+  // Fonte única (D88): cabeçalho desktop e hambúrguer mobile nunca divergem.
   const navItems = visibleNavEntries({ role, allowed });
 
   const currentProjectId = location.pathname.match(/^\/projects\/([^/]+)/)?.[1];
@@ -528,7 +572,16 @@ export function Topbar() {
           <span className="label">Prisma<em> WorkSpace</em></span>
         </BrandLink>
 
-        {/* desktop nav */}
+        {/* desktop nav global (D88) */}
+        <Nav aria-label="Navegação principal">
+          {navItems.map(({ to, label, icon: Icone, end }) => (
+            <NavItem key={to} to={to} end={end}>
+              <Icone size={14} />
+              {label}
+            </NavItem>
+          ))}
+        </Nav>
+
         <Spacer />
 
         {/* search */}

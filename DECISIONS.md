@@ -556,3 +556,15 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   resolvia o caso com foco e Escape testados.
   Os itens e seus portões de permissão são definidos em um único lugar (`layout/navigation.ts`) e consumidos
   pelo trilho e pelo hambúrguer, para que não exista navegação divergente entre as duas superfícies. (2026-09-08, implementada em 2026-09-09)
+
+- **D88** — Navegação global volta ao cabeçalho; lateral vira contexto do projeto. O PO pediu em 2026-09-10
+  mover os itens do trilho (Início, Meu trabalho, Projetos, etc.) para o header e colocar no lugar o bloco do
+  projeto (nome, chave, descrição e abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações), visível
+  **somente** dentro de `/projects/:projectId`. Isso **sucede a D87** quanto ao destino da navegação global:
+  o trilho de ícones deixa de ser a casa da navegação principal. A barra superior recupera os links globais
+  (desktop) e o hambúrguer continua sendo a superfície mobile. A lateral deixa de ser navegação global
+  persistente e passa a ser **painel contextual do projeto**; fora do projeto ela não aparece. Em telas
+  estreitas (≤768px) o painel do projeto não aparece — as abas do projeto ficam em faixa horizontal no
+  workspace, para não competir com o hambúrguer. `layout/navigation.ts` permanece a fonte única dos itens
+  globais e dos destinos do projeto. Identidade visual Prisma (D68 / SPEC-PRISMA-VISUAL-SYSTEM) intacta;
+  não copiar visual de outro produto. (2026-09-10)

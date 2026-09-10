@@ -1,160 +1,179 @@
 import { useQuery } from '@tanstack/react-query';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { useOrganization } from '../features/organizations/OrganizationState';
-import { previewMode } from '../preview';
+import { previewMode, previewProject } from '../preview';
+import type { ProjectSummary } from '../pages/Projects';
 import { api } from '../services/api';
-import { visibleNavEntries } from './navigation';
+import { projectNavEntries } from './navigation';
+
+/** Extrai o id do projeto da URL. O Sidebar vive no AppShell (pai das rotas), então
+ *  não depende só de useParams da rota filha. */
+const projectIdFromPath = (pathname: string) =>
+  pathname.match(/^\/projects\/([^/]+)/)?.[1];
 
 /**
- * Trilho de navegação recolhível (D87).
+ * Painel contextual do projeto (D88).
  *
- * Recolhido mostra só ícones; expandido mostra os rótulos. O comportamento é o de trilho
- * expansível pedido pelo PO; a identidade visual continua sendo a do Prisma, conforme a
- * SPEC-PRISMA-VISUAL-SYSTEM — nada aqui imita cores, tipografia ou ícones de outro produto.
- *
- * Em telas estreitas o trilho não aparece: o hambúrguer da barra superior já é a navegação
- * de mobile. Dois overlays de navegação na mesma tela seriam nav duplicada, e o trilho
- * comeria a largura útil justamente onde ela é escassa.
+ * Só aparece dentro de `/projects/:projectId`. Fora do projeto a navegação global vive
+ * no cabeçalho — esta lateral não é trilho global. Em telas estreitas some: as abas do
+ * projeto ficam na faixa horizontal do workspace, e o hambúrguer cobre o restante.
  */
 
-const CHAVE_PREFERENCIA = 'prisma_workspace_nav_expandido';
-const LARGURA_RECOLHIDO = '56px';
-const LARGURA_EXPANDIDO = '224px';
+const LARGURA = '260px';
 
-const lerPreferencia = (): boolean => {
-  try {
-    return localStorage.getItem(CHAVE_PREFERENCIA) === 'true';
-  } catch {
-    // Janela privada ou armazenamento bloqueado: começa recolhido, sem quebrar a tela.
-    return false;
-  }
-};
-
-const Trilho = styled.nav<{ $expandido: boolean }>`
+const Painel = styled.nav`
   position: sticky;
   top: 0;
   z-index: 25;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   flex: 0 0 auto;
-  width: ${({ $expandido }) => ($expandido ? LARGURA_EXPANDIDO : LARGURA_RECOLHIDO)};
+  width: ${LARGURA};
   height: 100vh;
-  padding: 10px 8px;
+  padding: 16px 14px 18px;
   border-right: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.surface};
-  transition: width .16s ease;
+  overflow: auto;
 
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  /* Abaixo deste ponto quem navega é o hambúrguer da barra superior, que usa o
-     mesmo limite. */
   @media (max-width: 768px) {
     display: none;
   }
 `;
 
-const Alternar = styled.button<{ $expandido: boolean }>`
+const Cabecalho = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: ${({ $expandido }) => ($expandido ? 'flex-start' : 'center')};
-  gap: 9px;
-  min-height: 38px;
-  padding: 0 9px;
-  margin-bottom: 6px;
-  border: 0;
-  border-radius: ${({ theme }) => theme.radius.md};
-  background: transparent;
-  color: ${({ theme }) => theme.color.textMuted};
-  font-size: 13px;
-  font-weight: 750;
-  cursor: pointer;
-
-  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; }
-  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
 `;
 
-const Item = styled(NavLink)<{ $expandido: boolean }>`
+const TituloLinha = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+
+  h2 {
+    min-width: 0;
+    margin: 0;
+    color: ${({ theme }) => theme.color.text};
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+`;
+
+const Chave = styled.b`
+  flex: 0 0 auto;
+  margin-top: 2px;
+  padding: 3px 6px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
+  color: ${({ theme }) => theme.color.accentBlue};
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+`;
+
+const Descricao = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 12.5px;
+  line-height: 1.45;
+`;
+
+const Abas = styled.nav`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const Aba = styled(NavLink)`
   display: flex;
   align-items: center;
-  justify-content: ${({ $expandido }) => ($expandido ? 'flex-start' : 'center')};
-  gap: 10px;
-  min-height: 38px;
-  padding: 0 9px;
+  min-height: 36px;
+  padding: 0 10px;
   border-radius: ${({ theme }) => theme.radius.md};
   color: ${({ theme }) => theme.color.textMuted};
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 750;
   text-decoration: none;
-  white-space: nowrap;
 
-  > svg { flex: 0 0 auto; }
+  &:hover {
+    background: ${({ theme }) => theme.color.neutral[100]};
+    color: ${({ theme }) => theme.color.text};
+  }
 
-  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; color: ${({ theme }) => theme.color.text}; }
-  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.accentBlue};
+    outline-offset: 1px;
+  }
 
   &.active {
     background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, ${theme.color.surface})`};
     color: ${({ theme }) => theme.color.brand};
+    font-weight: 800;
   }
 `;
 
-const Rotulo = styled.span<{ $expandido: boolean }>`
-  overflow: hidden;
-  /* Recolhido, o rótulo sai da árvore de acessibilidade junto com a largura: o nome
-     acessível do item passa a vir do aria-label. */
-  display: ${({ $expandido }) => ($expandido ? 'inline' : 'none')};
+const Placeholder = styled.div`
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13px;
 `;
 
-
 export function Sidebar() {
-  const [expandido, setExpandido] = useState(lerPreferencia);
+  const { pathname } = useLocation();
+  const projectId = projectIdFromPath(pathname);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(CHAVE_PREFERENCIA, String(expandido));
-    } catch {
-      // Preferência é conveniência: não poder guardar não impede usar.
-    }
-  }, [expandido]);
-
-  const { current } = useOrganization();
-  const access = useQuery<{ role: number; allowedPermissions: number[] }>({
-    queryKey: ['organization', 'access'],
-    queryFn: () => api.getOrganizationAccess(),
-    enabled: !previewMode,
-    initialData: previewMode ? { role: 1, allowedPermissions: [1, 10, 12, 13, 14] } : undefined,
+  const { data: project, isLoading } = useQuery<ProjectSummary>({
+    queryKey: ['project', projectId],
+    enabled: Boolean(projectId),
+    retry: false,
+    queryFn: async () => {
+      try {
+        return await api.getProject(projectId!);
+      } catch {
+        if (previewMode) return previewProject as ProjectSummary;
+        throw new Error('Projeto não encontrado.');
+      }
+    },
   });
 
-  const entries = visibleNavEntries({
-    role: access.data?.role ?? current.role,
-    allowed: access.data?.allowedPermissions ?? [],
-  });
+  // Fora do projeto a lateral não existe — navegação global está no cabeçalho (D88).
+  if (!projectId) return null;
 
   return (
-    <Trilho $expandido={expandido} aria-label="Navegação lateral">
-      <Alternar
-        type="button"
-        $expandido={expandido}
-        aria-expanded={expandido}
-        aria-label={expandido ? 'Recolher navegação' : 'Expandir navegação'}
-        onClick={() => setExpandido((atual) => !atual)}
-      >
-        {expandido ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-        <Rotulo $expandido={expandido}>Recolher</Rotulo>
-      </Alternar>
+    <Painel aria-label="Navegação do projeto">
+      {isLoading && <Placeholder>Carregando projeto...</Placeholder>}
+      {!isLoading && !project && <Placeholder>Projeto indisponível.</Placeholder>}
+      {project && (
+        <>
+          <Cabecalho>
+            <TituloLinha>
+              <h2>{project.name}</h2>
+              <Chave>{project.key}</Chave>
+            </TituloLinha>
+            <Descricao>
+              {project.description || 'Workspace integrado do projeto.'}
+            </Descricao>
+          </Cabecalho>
 
-      {entries.map(({ to, label, icon: Icone, end }) => (
-        <Item key={to} to={to} end={end} $expandido={expandido} aria-label={label} title={label}>
-          <Icone size={16} />
-          <Rotulo $expandido={expandido}>{label}</Rotulo>
-        </Item>
-      ))}
-    </Trilho>
+          <Abas aria-label="Áreas do projeto">
+            {projectNavEntries.map(({ segment, label, end }) => (
+              <Aba
+                key={segment}
+                to={`/projects/${project.id}/${segment}`}
+                end={end}
+              >
+                {label}
+              </Aba>
+            ))}
+          </Abas>
+        </>
+      )}
+    </Painel>
   );
 }
