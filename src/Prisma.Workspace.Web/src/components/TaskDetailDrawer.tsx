@@ -351,7 +351,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </>}
       {activeTab==='comments'&&<Section><h2><MessageSquareText size={14}/>Comentários internos</h2><VisibilityNote>Visível somente para a equipe interna. Este conteúdo não é enviado nem exibido ao solicitante.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="comments"/>:<Empty>Entre com dados reais para comentar.</Empty>}</Section>}
       {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações e movimentações desta tarefa.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
-      {activeTab==='graph'&&<Section><h2><GitBranch size={14}/>Grafo de estados</h2><VisibilityNote>Caminho real percorrido pela tarefa. Clique em uma etapa ou seta para inspecionar.</VisibilityNote>{realMode?<TaskStateGraph workItemId={details.id}/>:<Empty>Grafo disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='graph'&&<Section><h2><GitBranch size={14}/>Grafo de estados</h2><VisibilityNote>Caminho real percorrido pela tarefa entre etapas, com responsáveis e datas de cada transição.</VisibilityNote>{realMode?<TaskStateGraph workItemId={details.id}/>:<Empty>Grafo disponível com dados reais.</Empty>}</Section>}
     </Body>}
   </Sheet>}</Dialog.Portal></Dialog.Root>;
 }
