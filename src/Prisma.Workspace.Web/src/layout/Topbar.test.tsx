@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -63,42 +63,16 @@ function renderTopbar(
 }
 
 describe('Topbar', () => {
-  it('exibe navegação e controles principais para papel comum sem permissões extras', async () => {
+  it('exibe os controles principais para papel comum sem permissões extras', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
     renderTopbar();
 
-    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    expect(nav).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Início/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Meu trabalho/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Projetos/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Solicitações/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Configurações/ })).not.toBeInTheDocument();
-
-    expect(screen.getByRole('button', { name: 'Novo item' })).toBeInTheDocument();
+    // A navegação principal saiu da barra para o trilho lateral (D87); o que resta aqui
+    // são os controles globais. As asserções de navegação vivem em Sidebar.test.tsx.
+    expect(await screen.findByRole('button', { name: 'Novo item' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Abrir pesquisa global (Ctrl K)' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Selecionar organização' })).toBeInTheDocument();
-  });
-
-  it('marca o link Projetos como página atual na rota /projects', async () => {
-    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
-    renderTopbar(['/projects']);
-
-    await screen.findAllByRole('navigation', { name: 'Navegação principal' });
-    const nav = screen.getAllByRole('navigation', { name: 'Navegação principal' })[0];
-    const projectsLink = within(nav).getByRole('link', { name: /Projetos/ });
-    await waitFor(() => expect(projectsLink).toHaveAttribute('aria-current', 'page'));
-  });
-
-  it('oculta Meu trabalho e Projetos da navegação para papel 8', async () => {
-    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 8, allowedPermissions: [] });
-    renderTopbar(['/requests'], { ...organizations[0], role: 8 });
-
-    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    expect(within(nav).queryByRole('link', { name: /^Meu trabalho$/ })).not.toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: /^Início$/ })).not.toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: /^Projetos$/ })).not.toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: /^Solicitações$/ })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navegação principal' })).not.toBeInTheDocument();
   });
 
   it('abre o menu mobile e fecha com Escape devolvendo o foco ao hambúrguer', async () => {
