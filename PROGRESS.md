@@ -8,7 +8,7 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 ## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
 - **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
 - **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.
-- **Publicação:** autorizada diretamente pelo PO nesta conversa; em preparação via `ssh vps`, com backup SQL verificado e imagem anterior preservada. Extensão Codex/Chrome indisponível nesta sessão; validação realizada com Chromium/Playwright, sem Orca.
+- **Publicação concluída:** commit `b1b8ad4` publicado via `ssh vps` em `https://prisma.nordevs.com.br`. Backup SQL com RESTORE VERIFYONLY aprovado: `/home/dev/backups/prisma/20260910T143234Z/PrismaWorkspace.bak`; imagem anterior preservada como `prisma-rollback:20260910T143234Z`. Verificação pública Chromium: HTTP 200, prisma carregado, desktop/mobile sem overflow, navegação à recuperação de senha funcional e zero pageerrors; `/health` healthy. Não foi enviado e-mail nem executada a suíte mutável em produção. Extensão Codex/Chrome indisponível nesta sessão; sem Orca.
 - **Escopo preservado:** alternativa `feat/trilho-projetos` não integrada; convite por projeto permanece pendente.
 
 ## [2026-09-10] — Codex — retomada da integração e regressões Stage→Project

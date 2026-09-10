@@ -2,6 +2,7 @@
 
 ## Retomada em 2026-09-10 — prevalece sobre o histórico abaixo
 
+- **Atualização final:** login de referência e correções desta retomada publicados no commit `b1b8ad4`. Produção conferida em desktop/mobile, recuperação (navegação) e health. Backup em `/home/dev/backups/prisma/20260910T143234Z`. As menções abaixo a publicação pendente são históricas; convite por projeto continua pendente.
 - Worktree de integração: `C:\Users\Vitor\Desktop\prisma-wt-release`, branch `integration/all-specs-v2`, base `1a21029`.
 - Já integrados: Kanban direto por projeto, datas opcionais visíveis, filtro de relatórios por pessoa, filtros recolhidos e seletor de organização condicional. A alternativa `feat/trilho-projetos` continua separada.
 - Produção recebeu versão anterior deste repositório em 10/09, conforme PROGRESS; a afirmação histórica "nenhum deploy" abaixo está superada. As correções locais desta retomada ainda não foram publicadas.
