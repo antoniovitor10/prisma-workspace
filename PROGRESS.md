@@ -5,6 +5,18 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-10] — Claude Opus 5 (coordenador) — G-DEPLOY: as três worktrees em produção
+- **Publicado** em `https://prisma.nordevs.com.br` o lote integrado pelo Codex: `feat/edit-column` (editar nome e classificação da coluna), `state-graph-redesign` (grafo de estados) e `feat/workitem-kind-selection` (escolha do tipo nos pontos de criação). Commit `bcb612a`.
+- **Retomada:** o agente que fez os merges parou por limite de uso no meio do E2E, deixando `PROGRESS.md` e três specs sem commit. Conferi os merges (código combinou sem conflito; os conflitos foram só de PROGRESS, com as entradas de todos preservadas), revisei as edições de spec e fechei a validação.
+- **A falha em tela de sprint não era regressão.** Não se reproduziu com a API recompilada e o banco E2E recriado: era estado velho. Vale a regra que já apareceu duas vezes nesta série — o Vite serve da fonte, a API não; validar sem reconstruir a API dá verde ou vermelho falso.
+- **Uma asserção conferida em vez de aceita:** o teste de criação rápida afirma que "Bug" chega ao formulário como `4`. O valor havia sido corrigido de `5` para `4` durante a depuração, então fui ao `WorkItemKind` confirmar: `Bug = 4`. A asserção descreve o produto, não foi ajustada para passar.
+- **Cobertura acrescentada pelo lote:** editar coluna agora tem cenário de ponta a ponta — renomeia, confirma `204` sem corpo, recarrega e verifica no banco que nome e classificação persistiram. Os dois cenários de criação rápida passaram a percorrer o menu de tipos, que virou etapa nova antes do formulário.
+- **Validação do conjunto:** `dotnet build` limpo, xUnit **143/143**, `tsc -b` limpo, Vitest **82/82**, E2E **67 passed / 4 skipped / 0 failed**.
+- **Verificação pós-deploy:** raiz 200 em 0,50s; `/health` saudável; `PUT /api/Stages/{id}` responde 401 sem token (rota nova no ar); e as três funções conferidas nos artefatos publicados — "Editar coluna" no chunk `Kanban-*.js`, a escolha de tipo em `ProjectWorkspace-*.js` e no bundle principal, o grafo de estados no principal. Procurar só no bundle principal daria falso negativo, porque o Kanban é chunk separado.
+- **Backup antes do deploy:** `/home/dev/backups/prisma/PrismaWorkspace_20260910T184604Z.bak`, SHA-256 `510a2b20afc1a9debc9fb5b5d208346682cc0d5c73c84ae9ebd640d57177ecaf`, `RESTORE VERIFYONLY` válido. Sem migration nova neste lote.
+- **Decisões novas:** nenhuma. `G-DEPLOY` pela autorização direta do PO ("criei 3 worktrees consegue mergear e publicar?").
+- **Fora do lote, de propósito:** `prisma-wt-nav-shell`/`feat/nav-project-sidebar` tem alterações não commitadas; e a `feat/trilho-projetos` (trilho como navegador de projetos + abas no topo) segue parada a pedido do PO.
+
 ## [2026-09-10] — Codex — integração das três worktrees
 - **Integradas:** `feat/edit-column` (edição de coluna), `state-graph-redesign` (timeline de estados), `feat/workitem-kind-selection` (tipo nos pontos de criação). Conflitos apenas em PROGRESS, preservando as entradas de todos os autores; código compartilhado combinado pelo Git.
 - **Preservada:** `prisma-wt-nav-shell`/`feat/nav-project-sidebar` está com alterações não commitadas e não entrou neste lote.
