@@ -5,6 +5,19 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
+- **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
+- **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.
+- **Publicação:** autorizada diretamente pelo PO nesta conversa; em preparação via `ssh vps`, com backup SQL verificado e imagem anterior preservada. Extensão Codex/Chrome indisponível nesta sessão; validação realizada com Chromium/Playwright, sem Orca.
+- **Escopo preservado:** alternativa `feat/trilho-projetos` não integrada; convite por projeto permanece pendente.
+
+## [2026-09-10] — Codex — retomada da integração e regressões Stage→Project
+- **Base correta:** `prisma-wt-release`, branch `integration/all-specs-v2`, HEAD `1a21029`. Preservadas as sete alterações não commitadas deixadas pelo Claude; a branch de trilho alternativo não foi integrada.
+- **Correções:** restaurado o carregamento de `ExternalPortal.Board` nas consultas do repositório: a submissão pública ainda usa `Board.TeamId` e falhava com NullReferenceException/500. E2E reproduziu em desktop e mobile antes da correção. O teste de resposta agora aguarda o POST e a limpeza do textarea antes de verificar persistência, em vez de aceitar o texto ainda digitado como resposta salva.
+- **Criação de projeto:** teste novo comprovou quatro colunas com apenas três nomes distintos. Removida a criação duplicada no controller; o handler mantém as colunas do template e cria Backlog/Em andamento/Concluído somente na ausência de template. Nenhuma migration nova.
+- **Verificação:** .NET recompilado e 141/141 testes aprovados; frontend 81/81 e `tsc -b` aprovados antes da correção final do backend. Suíte E2E completa final: **65 passed / 4 skipped / 0 failed** (2,9 min). Os skips são condicionais preexistentes (dois cenários específicos de mobile e setup SQL opt-in nos dois dispositivos). Criação de coluna passou a aguardar o POST antes de verificar fechamento do formulário.
+- **Pendências:** fechar E2E; integrar login real conforme HTML em Downloads; publicar com backup e validar produção. Convite por projeto com cadastro/permissões continua separado e não implementado nesta rodada. Nenhum deploy ou commit realizado por Codex até este registro.
+
 ## [2026-09-10] — Claude Opus 5 (coordenador) — hotfix: producao chamava endereco local
 - **Defeito, relatado pelo PO com print:** login em produção morria com "Failed to fetch" e o Chrome pedia permissão para *"acessar outros apps e serviços neste dispositivo"*. Esse segundo aviso é o pedido de **acesso à rede local**, e foi o que entregou a causa.
 - **Causa:** `api.ts` definia `API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5216'`. Não existe `.env` versionado nem menção a `VITE_API_URL` em documentação alguma, então **nenhuma** instalação por Docker define essa variável — o bundle publicado passava a chamar um endereço da máquina de quem abria a página. Não era erro só do nosso deploy: quebraria igual para qualquer pessoa que subisse o projeto pelo `Dockerfile` do repositório, o que num produto open source é pior.

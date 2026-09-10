@@ -19,14 +19,14 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { BrandGem, BrandMark } from '../components/BrandMark';
+import { BrandMark } from '../components/BrandMark';
 import { useThemeMode } from '../styles/ThemeMode';
 
 const Page = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 10px;
+  padding: 4px 9px;
   background:
     radial-gradient(circle at 8% 8%, rgba(124, 58, 237, 0.08), transparent 28%),
     radial-gradient(circle at 92% 82%, rgba(249, 115, 22, 0.06), transparent 24%),
@@ -42,7 +42,7 @@ const Shell = styled.div`
   grid-template-columns: minmax(0, 1.42fr) minmax(430px, 1fr);
   min-height: 0;
   width: 100%;
-  max-width: 1720px;
+  max-width: none;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -64,8 +64,8 @@ const BrandPanel = styled.section`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 22px;
-  padding: 38px clamp(30px, 4.4vw, 70px) 32px;
+  gap: 48px;
+  padding: 28px clamp(24px, 3vw, 50px) 76px;
   overflow: hidden;
   background:
     radial-gradient(ellipse 62% 48% at 50% 38%, rgba(79, 70, 229, 0.09), transparent 65%),
@@ -78,7 +78,7 @@ const BrandPanel = styled.section`
   }
 
   @media (min-width: 961px) and (min-height: 850px) {
-    padding-bottom: 158px;
+    padding-bottom: 112px;
   }
 
   &::before {
@@ -90,7 +90,7 @@ const BrandPanel = styled.section`
       linear-gradient(122deg, transparent 49.6%, rgba(124, 58, 237, 0.11) 50%, transparent 50.4%),
       linear-gradient(58deg, transparent 49.6%, rgba(37, 99, 235, 0.08) 50%, transparent 50.4%);
     background-size: 210px 210px;
-    opacity: 0.62;
+    opacity: 0.16;
     pointer-events: none;
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
   }
@@ -126,7 +126,7 @@ const Hero = styled.div`
   display: grid;
   justify-items: center;
   align-self: center;
-  gap: 12px;
+  gap: 8px;
   width: min(100%, 620px);
   text-align: center;
 `;
@@ -135,34 +135,34 @@ const GemWrap = styled.div`
   margin-bottom: -4px;
   transform: translateY(4px);
   filter: drop-shadow(0 22px 26px rgba(79, 70, 229, 0.23));
+  img { display: block; width: 194px; height: auto; }
 `;
 
 const ProductName = styled.h1`
   margin: 0;
   font-family: ${({ theme }) => theme.font.display};
-  font-size: clamp(42px, 4.5vw, 66px);
-  font-weight: 600;
-  letter-spacing: 0.25em;
+  font-size: clamp(52px, 5.05vw, 82px);
+  font-weight: 300;
+  letter-spacing: 0.21em;
+  padding-left: 0.21em;
   line-height: 1;
   color: ${({ theme }) => theme.color.text};
 
-  span {
+  > span {
     display: block;
     margin-top: 8px;
-    font-size: 0.55em;
-    font-weight: 500;
+    font-size: 0.64em;
+    font-weight: 400;
     letter-spacing: -0.035em;
-    background: ${({ theme }) => theme.color.gradient};
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: #5362f1;
   }
+  em { font-style: normal; background: linear-gradient(145deg,#ff9e29,#9650f0 48%,#255fff); background-clip: text; -webkit-background-clip: text; color: transparent; }
 `;
 
 const SpectrumRule = styled.span`
   width: min(78%, 350px);
   height: 2px;
-  margin: 10px 0 6px;
+  margin: 21px 0 18px;
   border-radius: 999px;
   background: ${({ theme }) => theme.color.gradient};
 `;
@@ -171,8 +171,8 @@ const Tagline = styled.p`
   margin: 0;
   max-width: 360px;
   font-family: ${({ theme }) => theme.font.body};
-  font-size: clamp(20px, 2vw, 27px);
-  font-weight: 500;
+  font-size: clamp(25px, 2.05vw, 35px);
+  font-weight: 400;
   line-height: 1.3;
   color: ${({ theme }) => theme.color.text};
 `;
@@ -209,17 +209,17 @@ const Feature = styled.li`
 
   svg {
     color: ${({ theme }) => theme.color.brand};
-    width: 25px;
-    height: 25px;
+    width: 40px;
+    height: 40px;
   }
 
   strong {
-    font-size: 12.5px;
+    font-size: 15px;
     font-weight: 800;
   }
 
   span {
-    font-size: 11.5px;
+    font-size: 13px;
     line-height: 1.45;
     color: ${({ theme }) => theme.color.textMuted};
   }
@@ -230,7 +230,7 @@ const FormPanel = styled.section`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 72px clamp(30px, 4.4vw, 72px) 50px;
+  padding: 110px clamp(28px, 3vw, 52px) 60px;
   background:
     linear-gradient(180deg, color-mix(in srgb, ${({ theme }) => theme.color.surfaceSubtle} 92%, transparent), ${({ theme }) => theme.color.surfaceSubtle});
 
@@ -249,7 +249,7 @@ const ThemeChip = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.pill};
@@ -323,7 +323,7 @@ const InputWrap = styled.div`
 
 const Input = styled.input`
   width: 100%;
-  min-height: 58px;
+  min-height: 64px;
   padding: 0 42px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.lg};
@@ -343,8 +343,8 @@ const EyeButton = styled.button`
   right: 10px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   color: ${({ theme }) => theme.color.textMuted};
   border-radius: ${({ theme }) => theme.radius.sm};
 
@@ -383,10 +383,10 @@ const PrimaryButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 58px;
+  min-height: 64px;
   border-radius: ${({ theme }) => theme.radius.lg};
-  background: ${({ theme }) => theme.color.gradient};
-  background-size: 130% 130%;
+  background: linear-gradient(100deg,#2c50f4 0%,#7040ea 43%,#c74bbb 68%,#ff8b22 100%);
+  background-size: 100% 100%;
   color: white;
   font-size: 15px;
   font-weight: 800;
@@ -478,7 +478,7 @@ const PageFooter = styled.footer`
   justify-content: center;
   gap: 10px 18px;
   width: 100%;
-  max-width: 1720px;
+  max-width: none;
   margin: 0 auto;
   padding: 13px 20px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -636,9 +636,9 @@ export const Auth: React.FC = () => {
           </BrandTop>
 
           <Hero>
-            <GemWrap><BrandGem size={172} /></GemWrap>
+            <GemWrap><img src="/prisma-login-prism.svg" alt="Prisma facetado" width="194" height="187" /></GemWrap>
             <ProductName>
-              PRISMA
+              PRISM<em>A</em>
               <span>WorkSpace</span>
             </ProductName>
             <SpectrumRule aria-hidden="true" />

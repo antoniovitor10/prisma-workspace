@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures/test';
+import { test, expect, authenticatedApiGet } from './fixtures/test';
 
 function isMobileProject(projectName: string) {
   return projectName === 'chromium-mobile';
@@ -14,7 +14,13 @@ test.describe('release shell e navegação', () => {
     await expect(page.locator('aside')).toHaveCount(0);
     await expect(page.getByRole('main')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Abrir pesquisa global (Ctrl K)' })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Selecionar organização' })).toBeVisible();
+    // O seletor de organização aparece a partir da segunda organização: com uma só ele
+    // não oferece escolha alguma e saiu da barra. Aqui a asserção acompanha a contagem
+    // real, em vez de exigir um controle que pode legitimamente não existir.
+    const organizacoes = await authenticatedApiGet<unknown[]>(page, '/api/organizations');
+    const seletorOrg = page.getByRole('combobox', { name: 'Selecionar organização' });
+    if (organizacoes.length > 1) await expect(seletorOrg).toBeVisible();
+    else await expect(seletorOrg).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Novo item' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Menu da conta' })).toBeVisible();
 

@@ -1,5 +1,16 @@
 # HANDOFF — programa Prisma WorkSpace v2
 
+## Retomada em 2026-09-10 — prevalece sobre o histórico abaixo
+
+- Worktree de integração: `C:\Users\Vitor\Desktop\prisma-wt-release`, branch `integration/all-specs-v2`, base `1a21029`.
+- Já integrados: Kanban direto por projeto, datas opcionais visíveis, filtro de relatórios por pessoa, filtros recolhidos e seletor de organização condicional. A alternativa `feat/trilho-projetos` continua separada.
+- Produção recebeu versão anterior deste repositório em 10/09, conforme PROGRESS; a afirmação histórica "nenhum deploy" abaixo está superada. As correções locais desta retomada ainda não foram publicadas.
+- Corrigidos localmente: navegação Board ausente nas consultas de portal (submissão dava 500); duplicação de colunas na criação de projetos (controller repetia o fluxo criado pelo handler). E2E passa a verificar nomes não duplicados no fluxo inicial e aguardar respostas HTTP ao criar coluna/responder solicitação.
+- Gates: .NET recompilado 141/141; Vitest 81/81; `tsc -b` limpo. **Suíte completa final: 65 aprovados/4 pulados/0 falhas**, 2,9 min. Criação de coluna aguarda POST antes de verificar fechamento do formulário. Os quatro skips são condicionais preexistentes, não falhas ignoradas.
+- Próximos: fechar suíte completa, integrar o visual do login real a partir de `Downloads/prisma-workspace-sem-desenho/prisma-workspace-sem-desenho/index.html`, publicar com backup e verificar produção. Convite por projeto/cadastro com permissões permanece pendente, não entregue nesta retomada.
+
+---
+
 Estado em 2026-09-09, ao fim da sessão. **Suíte E2E verde: 65 passed, 4 skipped, 0 failed.**
 xUnit 140/140, `tsc -b` limpo, Vitest 51/51. Leia `AGENTS.md`, `DECISIONS.md`, `ROADMAP.md`, as duas
 últimas entradas de `PROGRESS.md` e `context/index.yaml` antes de tocar em código.

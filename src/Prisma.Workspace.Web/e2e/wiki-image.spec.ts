@@ -30,8 +30,13 @@ test.describe('wiki imagem TipTap', () => {
   test('insere data URI e a imagem sobrevive ao reload do editor', async ({ page, authenticatedGoto }) => {
     test.setTimeout(90_000);
     await authenticatedGoto('/projects');
-    await page.getByLabel('Selecionar organização').selectOption({ label: 'Prisma Demo' }).catch(() => undefined);
-    await page.waitForTimeout(500);
+    // O seletor de organização só aparece a partir da segunda organização; sem checar a
+    // presença, a espera do selectOption consome o timeout do cenário inteiro.
+    const seletorOrg = page.getByLabel('Selecionar organização');
+    if (await seletorOrg.count() > 0) {
+      await seletorOrg.selectOption({ label: 'Prisma Demo' }).catch(() => undefined);
+      await page.waitForTimeout(500);
+    }
 
     const project = await resolveDemoProject(page);
     const tree = await authenticatedApiGet<Array<{ id: string; title: string }>>(

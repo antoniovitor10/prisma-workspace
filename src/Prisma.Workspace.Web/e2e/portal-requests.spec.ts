@@ -109,8 +109,14 @@ test.describe('portal externo e solicitações (pós-SLA)', () => {
   }) => {
     test.setTimeout(120_000);
     await authenticatedGoto('/projects');
-    await page.getByLabel('Selecionar organização').selectOption({ label: 'Prisma Demo' }).catch(() => undefined);
-    await page.waitForTimeout(400);
+    // O seletor de organização só existe a partir da segunda organização. Sem checar a
+    // presença, o `selectOption` espera pelo elemento até o timeout do teste inteiro — o
+    // `.catch` só corre depois, e o cenário travava em 120s.
+    const seletorOrg = page.getByLabel('Selecionar organização');
+    if (await seletorOrg.count() > 0) {
+      await seletorOrg.selectOption({ label: 'Prisma Demo' }).catch(() => undefined);
+      await page.waitForTimeout(400);
+    }
 
     const projects = await authenticatedApiGet<SeedProject[]>(page, '/api/projects');
     const project = projects.find((item) => item.key === 'DEMO') ?? await resolveSeedProject();
@@ -162,7 +168,15 @@ test.describe('portal externo e solicitações (pós-SLA)', () => {
 
     const replyText = `Resposta interna E2E ${Date.now()}`;
     await page.getByPlaceholder(/resposta ficará visível/i).fill(replyText);
-    await page.getByRole('button', { name: /Enviar resposta/i }).click();
+    // O texto também existe no textarea antes de salvar; aguardar só sua presença
+    // permite consultar a fila antes de o POST persistir a resposta.
+    const [replyResponse] = await Promise.all([
+      page.waitForResponse(response => response.request().method() === 'POST'
+        && response.url().includes(`/external-requests/${protocol}/replies`)),
+      page.getByRole('button', { name: /Enviar resposta/i }).click(),
+    ]);
+    expect(replyResponse.ok()).toBeTruthy();
+    await expect(page.getByPlaceholder(/resposta ficará visível/i)).toHaveValue('');
     await expect(page.getByText(replyText)).toBeVisible({ timeout: 10_000 });
 
     const queue = await authenticatedApiGet<ExternalRequest[]>(page, '/api/external-requests');

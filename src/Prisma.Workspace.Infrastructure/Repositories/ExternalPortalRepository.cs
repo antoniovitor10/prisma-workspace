@@ -12,11 +12,13 @@ public class ExternalPortalRepository : IExternalPortalRepository
 
     public Task<ExternalPortal?> GetByProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
         => _context.ExternalPortals.Include(x => x.Project)
+            .Include(x => x.Board)
             .Include(x => x.Project).ThenInclude(x => x.Stages).Include(x => x.Forms)
             .FirstOrDefaultAsync(x => x.ProjectId == projectId, cancellationToken);
 
     public Task<ExternalPortal?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
         => _context.ExternalPortals.IgnoreQueryFilters().AsSplitQuery()
+            .Include(x => x.Board)
             .Include(x => x.Project).ThenInclude(x => x.WorkflowStatuses)
             .Include(x => x.Project).ThenInclude(x => x.Stages)
             .Include(x => x.Forms)
@@ -34,6 +36,7 @@ public class ExternalPortalRepository : IExternalPortalRepository
     public Task<ExternalForm?> GetFormAsync(
         Guid projectId, Guid formId, CancellationToken cancellationToken = default)
         => _context.ExternalForms.AsSplitQuery()
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Stages)
             .FirstOrDefaultAsync(x => x.Id == formId && x.ExternalPortal.ProjectId == projectId,
@@ -42,6 +45,7 @@ public class ExternalPortalRepository : IExternalPortalRepository
     public Task<ExternalForm?> GetPublicFormAsync(
         string portalSlug, string formSlug, CancellationToken cancellationToken = default)
         => _context.ExternalForms.IgnoreQueryFilters().AsSplitQuery()
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.WorkflowStatuses)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Teams)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Members)

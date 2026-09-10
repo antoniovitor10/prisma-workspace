@@ -23,12 +23,17 @@ test('coluna criada pelo Kanban respeita a classificação escolhida',
     await page.getByPlaceholder('Nome da Coluna').fill(nome);
     await page.getByRole('combobox', { name: 'Classificação da coluna' })
       .selectOption({ label: 'Concluída' });
-    await page.getByRole('button', { name: 'Adicionar' }).click();
+    const [response] = await Promise.all([
+      page.waitForResponse(result => result.request().method() === 'POST'
+        && /\/api\/Stages(?:\?|$)/i.test(result.url())),
+      page.getByRole('button', { name: 'Adicionar' }).click(),
+    ]);
+    expect(response.ok(), await response.text()).toBeTruthy();
 
     await expect(page.getByPlaceholder('Nome da Coluna')).toHaveCount(0);
     await expect(page.getByText(nome).first()).toBeVisible();
 
-    const stages = await authenticatedApiGet<Stage[]>(page, `/api/Stages/board/${board.id}`);
+    const stages = await authenticatedApiGet<Stage[]>(page, `/api/Stages/project/${project.id}`);
     const criada = stages.find((stage) => stage.name === nome);
     expect(criada, 'A coluna criada precisa existir no quadro.').toBeTruthy();
     // Antes da correção esta coluna nascia com category 3 (Em andamento).

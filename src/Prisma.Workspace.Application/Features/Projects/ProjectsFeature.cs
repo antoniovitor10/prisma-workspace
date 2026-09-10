@@ -244,6 +244,18 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
             Category = StageCategory.Ready,
             CreatedAt = DateTimeOffset.UtcNow
         });
+        project.Stages.Add(new Stage
+        {
+            Id = Guid.NewGuid(), ProjectId = project.Id,
+            Name = "Em andamento", Position = 200,
+            Category = StageCategory.InProgress, CreatedAt = DateTimeOffset.UtcNow
+        });
+        project.Stages.Add(new Stage
+        {
+            Id = Guid.NewGuid(), ProjectId = project.Id,
+            Name = "Concluído", Position = 300,
+            Category = StageCategory.Done, CreatedAt = DateTimeOffset.UtcNow
+        });
     }
 }
 

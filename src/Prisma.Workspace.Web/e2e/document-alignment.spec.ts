@@ -224,6 +224,9 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
     expect(project.nature).toBe(2);
     expect(project.workType).toBe(6);
     expect(sprints).toEqual([]);
+    const stages = await appApi<Array<{ name: string }>>(page, `/api/Stages/project/${createdProjectId}`);
+    expect(stages.length).toBeGreaterThan(0);
+    expect(new Set(stages.map(stage => stage.name.toLowerCase())).size).toBe(stages.length);
 
     await page.getByRole('link', { name: 'Sprints' }).click();
     await expect(page.getByText('Nenhuma sprint planejada para este projeto.')).toBeVisible();
@@ -314,7 +317,7 @@ test('quadro da sprint move item por drag-and-drop e persiste a etapa', async ({
     type Stage = { id: string; name: string };
     const project = await appApi<Project>(page, `/api/projects/${scrumProjectId}`);
     const boardId = project.boards[0].id;
-    const stages = await appApi<Stage[]>(page, `/api/Stages/board/${boardId}`);
+    const stages = await appApi<Stage[]>(page, `/api/Stages/project/${scrumProjectId}`);
     expect(stages.length).toBeGreaterThanOrEqual(2);
     const sprintId = await appApi<string>(page, `/api/projects/${scrumProjectId}/sprints`, {
       method: 'POST',
