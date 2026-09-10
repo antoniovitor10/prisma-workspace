@@ -263,7 +263,18 @@ interface StageLeadTime {
 }
 
 export const Kanban: React.FC = () => {
-  const { boardId: urlBoardId } = useParams();
+  /**
+   * Duas entradas para a mesma tela:
+   *   /boards/:boardId            — um quadro específico
+   *   /projects/:projectId/boards — o Kanban do projeto, que abre direto
+   *
+   * No modo projeto ninguém escolhe quadro antes: o fluxo é do projeto (D83) e os cartões
+   * vêm do projeto inteiro, então nenhuma tarefa fica escondida por estar em outro quadro.
+   * O quadro continua sendo resolvido em segundo plano porque criar tarefa, salvar filtro
+   * e as configurações de cartão ainda são por quadro.
+   */
+  const { boardId: urlBoardId, projectId: urlProjectId } = useParams();
+  const modoProjeto = Boolean(urlProjectId);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [boards, setBoards] = useState<Board[]>([]);
@@ -377,6 +388,10 @@ export const Kanban: React.FC = () => {
 
   // Form values
   const [newBoardName, setNewBoardName] = useState('');
+  // Equipe do quadro: existia na tela que apenas listava quadros e foi trazida para cá
+  // junto com a criação, para a capacidade não se perder ao remover aquela tela.
+  const [newBoardTeamId, setNewBoardTeamId] = useState('');
+  const [projectTeams, setProjectTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [newStageName, setNewStageName] = useState('');
   // Sem escolha explícita, toda coluna nascia como "em andamento" — inclusive uma
   // chamada "Concluído" — e as tarefas nela nunca eram contadas como concluídas.
@@ -396,6 +411,13 @@ export const Kanban: React.FC = () => {
     try {
       const data = await api.getBoards();
       setBoards(data);
+      if (modoProjeto) {
+        // Escolhe sozinho um quadro do projeto, em vez de pedir que a pessoa escolha.
+        const doProjeto = (data as Board[]).filter((b) => b.projectId === urlProjectId);
+        const aindaVale = selectedBoardId && doProjeto.some((b) => b.id === selectedBoardId);
+        if (!aindaVale) setSelectedBoardId(doProjeto[0]?.id ?? '');
+        return;
+      }
       if (data.length > 0) {
         const stillValid = selectedBoardId && data.some((b: Board) => b.id === selectedBoardId);
         if (!stillValid) {
@@ -407,20 +429,20 @@ export const Kanban: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
-  }, [selectedBoardId]);
+  }, [selectedBoardId, modoProjeto, urlProjectId]);
 
   const loadBoardData = useCallback(async (boardId: string) => {
-    if (!boardId) return;
+    if (!boardId && !modoProjeto) return;
     try {
       const board = boards.find(b => b.id === boardId);
-      const projectId = board?.projectId;
+      const projectId = urlProjectId ?? board?.projectId;
       if (!projectId) {
-        console.error('Quadro sem projectId — não é possível carregar o fluxo do projeto.');
+        console.error('Sem projeto resolvido — não é possível carregar o fluxo.');
         return;
       }
       const [stageData, itemData] = await Promise.all([
         api.getStages(projectId),
-        api.getWorkItems(boardId)
+        modoProjeto ? api.getWorkItemsByProject(projectId) : api.getWorkItems(boardId)
       ]);
       setStages(stageData);
       setWorkItems(itemData);
@@ -429,11 +451,11 @@ export const Kanban: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
-  }, [boards]);
+  }, [boards, modoProjeto, urlProjectId]);
 
   const refreshRealtimeBoard = useCallback(() => {
-    if (selectedBoardId) loadBoardData(selectedBoardId);
-  }, [selectedBoardId, loadBoardData]);
+    if (selectedBoardId || modoProjeto) loadBoardData(selectedBoardId);
+  }, [selectedBoardId, modoProjeto, loadBoardData]);
   useBoardRealtime(selectedBoardId, refreshRealtimeBoard);
 
   useEffect(() => {
@@ -454,28 +476,29 @@ export const Kanban: React.FC = () => {
   useEffect(() => {
     setSelectedItemIds(new Set());
     setBulkFeedback(null);
-    if (!selectedBoardId) {
+    if (!selectedBoardId && !modoProjeto) {
       setCatalogTags([]);
       setBoardSprints([]);
       return;
     }
     api.getTags().then(setCatalogTags).catch(() => setCatalogTags([]));
-    const projectId = boards.find(board => board.id === selectedBoardId)?.projectId;
+    const projectId = urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId;
     if (!projectId) {
       setBoardSprints([]);
       setProjectMethodology(null);
       return;
     }
     api.getProject(projectId)
-      .then((project: {methodology?:number;key?:string}) => {
+      .then((project: {methodology?:number;key?:string;teams?:Array<{id:string;name:string}>}) => {
         setProjectMethodology(project.methodology ?? 1);
         setProjectKey(project.key ?? 'ITEM');
+        setProjectTeams(project.teams ?? []);
       })
-      .catch(() => { setProjectMethodology(null); setProjectKey('ITEM'); });
+      .catch(() => { setProjectMethodology(null); setProjectKey('ITEM'); setProjectTeams([]); });
     api.getProjectSprints(projectId)
       .then((items: SprintOptionDto[]) => setBoardSprints(items.filter(item => item.status === 1 || item.status === 2)))
       .catch(() => setBoardSprints([]));
-  }, [selectedBoardId, boards]);
+  }, [selectedBoardId, boards, modoProjeto, urlProjectId]);
 
   const loadLeadTime = useCallback(async () => {
     if (!selectedBoardId) return;
@@ -591,10 +614,10 @@ export const Kanban: React.FC = () => {
   }, [fetchBoards, loadRunningTimer]);
 
   useEffect(() => {
-    if (selectedBoardId) {
+    if (selectedBoardId || modoProjeto) {
       loadBoardData(selectedBoardId);
     }
-  }, [selectedBoardId, loadBoardData]);
+  }, [selectedBoardId, modoProjeto, loadBoardData]);
 
   // Contagem visual baseada no timer persistido.
   useEffect(() => {
@@ -620,7 +643,8 @@ export const Kanban: React.FC = () => {
     setCreateBoardPending(true);
     setCreateBoardError('');
     try {
-      const result = await api.createBoard(newBoardName.trim(), currentProjectId ?? undefined);
+      const result = await api.createBoard(
+        newBoardName.trim(), currentProjectId ?? undefined, newBoardTeamId || undefined);
       const newBoardId: string = typeof result === 'string' ? result : (result as { id?: string })?.id ?? String(result);
       setCreateBoardSuccessId(newBoardId);
       await fetchBoards();
@@ -1523,7 +1547,21 @@ export const Kanban: React.FC = () => {
                   required
                   autoFocus
                   disabled={createBoardPending}
+                  aria-label="Nome do quadro"
                 />
+                {projectTeams.length > 0 && (
+                  <Select
+                    aria-label="Equipe do quadro"
+                    value={newBoardTeamId}
+                    onChange={e => setNewBoardTeamId(e.target.value)}
+                    disabled={createBoardPending}
+                  >
+                    <option value="">Sem equipe específica</option>
+                    {projectTeams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </Select>
+                )}
                 {createBoardError && (
                   <p style={{ color: '#D92D20', fontSize: 13.5, marginTop: 4 }}>{createBoardError}</p>
                 )}

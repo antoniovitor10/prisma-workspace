@@ -94,6 +94,11 @@ public class MoveWorkItemCommandHandlerTests
             throw new NotImplementedException();
         }
 
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();

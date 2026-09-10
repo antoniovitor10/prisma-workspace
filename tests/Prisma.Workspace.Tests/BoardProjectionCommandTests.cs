@@ -183,6 +183,7 @@ public class BoardProjectionCommandTests
         public Task<WorkItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<WorkItem?>(null);
         public Task<WorkItem?> GetForMoveAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<WorkItem?>(null);
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<WorkItem>>([]);
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<WorkItem>>([]);
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<WorkItem>>([]);
         public Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<WorkItemAssignee>>([]);
         public Task<WorkItem> AddAsync(WorkItem workItem, CancellationToken cancellationToken = default) => Task.FromResult(workItem);

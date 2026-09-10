@@ -742,6 +742,14 @@ export const api = {
     return this.request(`/api/WorkItems/board/${boardId}`);
   },
 
+  /**
+   * Cartões do projeto inteiro. O Kanban do projeto usa esta rota para abrir direto,
+   * sem exigir que alguém escolha um quadro antes.
+   */
+  async getWorkItemsByProject(projectId: string) {
+    return this.request(`/api/WorkItems/project/${projectId}`);
+  },
+
   async createWorkItem(data: {
     boardId: string;
     projectId?: string;

@@ -21,10 +21,10 @@ const Home = lazy(() => import('./pages/Home').then((module) => ({ default: modu
 const Requests = lazy(() => import('./pages/Requests').then((module) => ({ default: module.Requests })));
 const Reports = lazy(() => import('./pages/Reports').then((module) => ({ default: module.Reports })));
 const ProjectWorkspace = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectWorkspace })));
+const ProjectBoardView = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectBoardView })));
 const ProjectBacklog = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectBacklog })));
 const ProjectItems = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectItems })));
 const ProjectSprints = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectSprints })));
-const ProjectBoards = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectBoards })));
 const ProjectReports = lazy(() => import('./pages/ProjectWorkspace').then((module) => ({ default: module.ProjectReports })));
 const ProjectSettings = lazy(() => import('./pages/ProjectSettings').then((module) => ({ default: module.ProjectSettings })));
 const ProjectWiki = lazy(() => import('./pages/ProjectWiki').then((module) => ({ default: module.ProjectWiki })));
@@ -105,7 +105,10 @@ function App() {
                     <Route path="items" element={<ProjectItems />} />
                     <Route path="backlog" element={<ProjectBacklog />} />
                     <Route path="sprints" element={<ProjectSprints />} />
-                    <Route path="boards" element={<ProjectBoards />} />
+                    {/* A aba Kanban do projeto abre o quadro direto. A tela que apenas
+                        listava quadros para escolher deixou de existir: o fluxo é do
+                        projeto (D83) e criar ou excluir quadro já vive dentro do Kanban. */}
+                    <Route path="boards" element={<ProjectBoardView />} />
                     <Route path="reports" element={<ProjectReports />} />
                     <Route path="wiki" element={<ProjectWiki />} />
                     <Route path="wiki/:pageId" element={<ProjectWiki />} />

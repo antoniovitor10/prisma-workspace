@@ -61,6 +61,27 @@ public class WorkItemRepository : IWorkItemRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorkItems
+            .AsNoTracking()
+            .Include(w => w.Assignees)
+            .Include(w => w.Attachments)
+            .Include(w => w.SubItems)
+            .Include(w => w.TimeEntries)
+            .Include(w => w.TaskType)
+            .Include(w => w.WorkflowStatus)
+            .Include(w => w.Team)
+            .Include(w => w.WorkItemTags).ThenInclude(wt => wt.Tag)
+            .Include(w => w.ChecklistItems)
+            .Include(w => w.CustomFieldValues)
+            .Include(w => w.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
+            .Include(w => w.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
+            .Where(w => w.Board.ProjectId == projectId && w.ParentId == null && !w.IsArchived)
+            .OrderBy(w => w.Position)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken cancellationToken = default)
     {
         return await _context.WorkItems

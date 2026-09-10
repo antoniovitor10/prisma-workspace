@@ -120,6 +120,8 @@ public class WorkItemBoardTests
             => Task.FromResult<WorkItem?>(null);
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken ct = default)
@@ -166,6 +168,7 @@ public class WorkItemBoardTests
         }
         public Task<WorkItem> AddAsync(WorkItem w, CancellationToken ct = default) => Task.FromResult(w);
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
+        public Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItem>> GetSubItemsAsync(Guid parentId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
         public Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<WorkItemAssignee>>(new List<WorkItemAssignee>());
         public Task DeleteAsync(WorkItem w, CancellationToken ct = default) => Task.CompletedTask;
