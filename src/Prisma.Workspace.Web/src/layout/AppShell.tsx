@@ -4,8 +4,7 @@ import { ContextBarProvider, ContextBarSlot } from './ContextBar';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-/* O trilho lateral e a coluna de conteúdo são irmãos: o trilho é sticky e mantém a
-   própria altura enquanto a coluna rola. */
+/* Lateral contextual (só no projeto) e coluna de conteúdo são irmãos (D88). */
 const Shell = styled.div`
   display: flex;
   align-items: flex-start;

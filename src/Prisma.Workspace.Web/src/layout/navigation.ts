@@ -6,9 +6,8 @@ import {
 /**
  * Itens da navegação principal e seus portões de permissão.
  *
- * Fonte única para as duas superfícies (D87): a barra superior e o trilho lateral
- * recolhível. Duplicar esta lista faria as duas divergirem — alguém acrescentaria um item
- * em uma e esqueceria a outra, e o portão de permissão ficaria diferente em cada lugar.
+ * Fonte única para as superfícies do shell (D88): cabeçalho desktop, menu mobile e
+ * (quando aplicável) links espelhados. Duplicar esta lista faria as superfícies divergirem.
  */
 export interface NavAccess {
   /** Papel na organização. 8 é solicitante externo; 9 e 10, perfis de leitura. */
@@ -45,3 +44,20 @@ export const navEntries: NavEntry[] = [
 
 export const visibleNavEntries = (access: NavAccess): NavEntry[] =>
   navEntries.filter((entry) => entry.isVisible(access));
+
+/** Abas do workspace do projeto — mesma ordem da antiga faixa horizontal. */
+export interface ProjectNavEntry {
+  segment: string;
+  label: string;
+  end?: boolean;
+}
+
+export const projectNavEntries: ProjectNavEntry[] = [
+  { segment: 'items', label: 'Itens' },
+  { segment: 'backlog', label: 'Backlog' },
+  { segment: 'sprints', label: 'Sprints' },
+  { segment: 'boards', label: 'Kanban' },
+  { segment: 'reports', label: 'Relatórios' },
+  { segment: 'wiki', label: 'Wiki' },
+  { segment: 'settings', label: 'Configurações' },
+];
