@@ -7,6 +7,17 @@
 - **Bloqueios:** nenhum no recorte. Não toquei na API nem em produção. Front E2E desta worktree em `:5450`; API compartilhada em `:5400`.
 
 ---
+## [2026-09-11] — Claude Opus 5 (coordenador) — G-DEPLOY: D88, navegação global no cabeçalho
+- **Publicado** em `https://prisma.nordevs.com.br` o merge da `feat/nav-project-sidebar` (D88): a navegação global volta ao cabeçalho e a lateral passa a ser **painel contextual do projeto**, visível somente dentro de `/projects/:projectId`. Commit `7aa547b`.
+- **Duas implementações da mesma coisa, e a escolha foi consciente.** Existiam a `feat/nav-project-sidebar` (pronta, com decisão registrada e testes) e a minha `feat/trilho-projetos` (WIP, parada pelo PO, com trilho de projetos sempre visível). Ficou a primeira: além de estar completa, a regra "a lateral não aparece fora do projeto" é melhor que a minha, que mantinha um trilho sem nada a dizer fora de um projeto. A `feat/trilho-projetos` fica como histórico; seu único conteúdo exclusivo era essa implementação, já que o filtro recolhido do backlog foi entregue em separado.
+- **Duas coberturas de permissão voltaram, por não serem redundantes.** A reescrita do `Sidebar.test.tsx` levou embora o teste do **papel 8** (solicitante externo não deve ver Início, Meu trabalho nem Projetos) e o do **seletor de organização escondido com uma só**. O portão do papel 8 continua em `navigation.ts`, mas nada mais o afirmava — quebrá-lo passaria em silêncio e o solicitante externo veria o espaço interno. Ambas voltaram para `Topbar.test.tsx`, onde a navegação agora vive.
+- **Correção de diagnóstico meu:** eu já havia chamado a falha do `wiki-image` de "instabilidade do poll" e depois descobri que era espera pelo seletor de organização removido. Desta vez a causa **é** de tempo, e confirmada: passa em ~4s isolado e estourava os 20s sob a suíte inteira, porque o salvamento é por debounce com data URI grande competindo pela máquina. Poll ampliado para 60s com intervalos progressivos; o que a asserção prova é o mesmo.
+- **Validação:** `tsc -b` limpo, Vitest **82/82**, xUnit **143/143**, E2E **69 passed / 4 skipped / 0 failed**.
+- **Verificação pós-deploy, navegando autenticado:** fora do projeto, navegação principal no cabeçalho presente e **lateral ausente**; dentro do projeto, cabeçalho mantido e o painel do projeto exibindo nome, chave, descrição e as abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações. Zero chamadas a endereço local.
+- **Backup:** `/home/dev/backups/prisma/PrismaWorkspace_20260911T150113Z.bak`, SHA-256 `e7d6bd1a5beb5f447551781d089c81f16f2f156809c6e9271e70cee12650726a`, `RESTORE VERIFYONLY` válido. Sem migration neste lote.
+- **Decisões novas:** nenhuma minha; D88 é do agente que implementou, e sucede a D87 quanto ao destino da navegação global.
+- **Pendências:** convite por projeto com permissões antes do link e criação de conta na hora ao aceitar — não implementado; hoje o convite é por organização e aceitar exige usuário autenticado. Página inicial no desenho que o PO enviou. Cláusula 10 da `SPEC-BOARD-AS-VIEW` (`WorkItem.ProjectId`) segue aberta.
+
 # PROGRESS — log de handoff (append-only)
 
 Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
