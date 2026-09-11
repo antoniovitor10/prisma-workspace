@@ -74,13 +74,17 @@ test.describe('wiki imagem TipTap', () => {
     await expect.poll(async () => page.locator('.ProseMirror img').count(), { timeout: 10_000 }).toBeGreaterThan(0);
     await expect(page.locator('.ProseMirror img').first()).toHaveAttribute('src', /^data:image\//);
 
+    // O salvamento do editor é por debounce, e a imagem vai embutida como data URI —
+    // carga útil grande. Isolado isto conclui em ~4s; com a suíte inteira concorrendo pela
+    // máquina, 20s não bastavam e o cenário falhava sem que nada estivesse errado no
+    // produto. O que a asserção prova continua igual: a imagem persistiu no servidor.
     await expect.poll(async () => {
       const saved = await authenticatedApiGet<{ contentHtml: string }>(
         page,
         `/api/projects/${project.id}/wiki/pages/${pageId}`,
       );
       return /data:image/.test(saved.contentHtml) ? 'ok' : 'pending';
-    }, { timeout: 20_000 }).toBe('ok');
+    }, { timeout: 60_000, intervals: [500, 1_000, 2_000] }).toBe('ok');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('button', { name: 'Inserir imagem' })).toBeVisible({ timeout: 15_000 });

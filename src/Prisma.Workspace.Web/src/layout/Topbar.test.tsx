@@ -88,6 +88,29 @@ describe('Topbar', () => {
       expect(within(nav).getByRole('link', { name: 'Relatórios' })).toBeInTheDocument());
   });
 
+  it('oculta o espaço de trabalho do solicitante externo (papel 8)', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 8, allowedPermissions: [] });
+    renderTopbar(['/requests'], { ...organizations[0], role: 8 });
+
+    // Portão real de permissão: quem só abre solicitação não deve ver o espaço interno.
+    // A cobertura disto se perdeu quando a navegação migrou do trilho para o cabeçalho.
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await waitFor(() =>
+      expect(within(nav).queryByRole('link', { name: 'Início' })).not.toBeInTheDocument());
+    expect(within(nav).queryByRole('link', { name: 'Meu trabalho' })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Projetos' })).not.toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Solicitações' })).toBeInTheDocument();
+  });
+
+  it('esconde o seletor de organização quando existe apenas uma', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+    renderTopbar(['/home'], organizations[0], [organizations[0]]);
+
+    expect(await screen.findByRole('button', { name: 'Novo item' })).toBeInTheDocument();
+    // Com uma organização o seletor não oferece escolha alguma: só ocupava espaço.
+    expect(screen.queryByRole('combobox', { name: 'Selecionar organização' })).not.toBeInTheDocument();
+  });
+
   it('abre o menu mobile e fecha com Escape devolvendo o foco ao hambúrguer', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
     renderTopbar();
