@@ -57,6 +57,7 @@ try
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         })
         .AddSignInManager()
+        .AddErrorDescriber<Prisma.Workspace.Api.Services.PortugueseIdentityErrorDescriber>()
         .AddDefaultTokenProviders()
         .AddEntityFrameworkStores<Prisma.Workspace.Infrastructure.Persistence.AppDbContext>();
 

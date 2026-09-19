@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using MediatR;
+using Prisma.Workspace.Application.Features.Organizations;
 
 namespace Prisma.Workspace.Api.Controllers;
 
@@ -58,6 +60,28 @@ public sealed class AuthController : ControllerBase
             _logger.LogInformation("Cadastro criado para o usuário {UserId}; confirmação pendente.", user.Id);
         return Accepted(new RegisterResponse(true, user.Id,
             _emailSender.CanExposeLocalToken ? token : null));
+    }
+
+    [HttpPost("invitation/preview")]
+    public async Task<IActionResult> PreviewInvitation([FromBody] InvitationTokenRequest request,
+        [FromServices] IMediator mediator, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Ok(await mediator.Send(new PreviewInvitationQuery(request.Token), ct));
+    }
+
+    [HttpPost("invitation/complete")]
+    public async Task<IActionResult> CompleteInvitation([FromBody] InvitationAccountRequest request,
+        [FromServices] IMediator mediator, CancellationToken ct)
+    {
+        var completed = await mediator.Send(new CompleteInvitationCommand(request.Token,
+            request.Password, request.CreateAccount, request.FullName, request.ConfirmPassword), ct);
+        var user = (await _userManager.FindByIdAsync(completed.UserId))!;
+        var refresh = await _refreshTokens.IssueAsync(user.Id, ClientIp(), ct);
+        SetRefreshCookie(refresh);
+        Response.Headers.CacheControl = "no-store";
+        var auth = CreateAccessResponse(user);
+        return Ok(new { auth.AccessToken, completed.OrganizationId });
     }
 
     [HttpPost("confirm-email")]
@@ -242,6 +266,13 @@ public sealed class AuthController : ControllerBase
 public sealed record RegisterRequest(
     [Required, EmailAddress, StringLength(320)] string Email,
     [Required, StringLength(128, MinimumLength = 10)] string Password);
+public sealed record InvitationTokenRequest([Required, StringLength(512)] string Token);
+public sealed record InvitationAccountRequest(
+    [Required, StringLength(512)] string Token,
+    [Required, StringLength(128)] string Password,
+    bool CreateAccount,
+    [StringLength(200)] string? FullName,
+    [StringLength(128)] string? ConfirmPassword);
 public sealed record LoginRequest(
     [Required, EmailAddress, StringLength(320)] string Email,
     [Required, StringLength(128)] string Password);

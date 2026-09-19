@@ -7,6 +7,18 @@
 - **Bloqueios:** nenhum no recorte. Não toquei na API nem em produção. Front E2E desta worktree em `:5450`; API compartilhada em `:5400`.
 
 ---
+## [2026-09-19] — Codex — onboarding direto por convite
+- **Aprovações:** PO autorizou implementar o fluxo proposto, excluir somente a conta de teste e publicar. Contrato em `specs/invitation-onboarding.md`, história em `stories/invitation-onboarding.md`. Sem migration.
+- **Implementação:** preview pelo token com e-mail fixo; nome completo/senha/confirmação para novo cadastro; conta existente exige senha atual. Transação serializável com lock do convite preserva atomicidade e uso único. Confirmação por posse do convite, seleção da organização e sessão automática. Associação existente mantém papel; acesso desativado e associação a outro tenant são recusados.
+- **Validação:** build .NET/frontend, 153 testes .NET e 82 Vitest aprovados. E2E completo: **74 passed, 5 skipped, 0 failed**. Inclui UI desktop/mobile e HTTP de concorrência/conta existente. Execução final com API recém-iniciada para limpar cota consumida por execuções anteriores, sem relaxar limite de produção.
+- **Operação:** backup SQL COPY_ONLY/CHECKSUM verificado em `/home/dev/backups/prisma/invitation-20260919/PrismaWorkspace.bak`; imagem anterior etiquetada para rollback. Preflight da conta de teste não encontrou referências funcionais; um convite válido preservado. Publicação e exclusão ainda pendentes nesta entrada.
+
+## [2026-09-19] — Codex — cadastro duplicado em português (validação pendente)
+- **Pedido e contrato:** tradução do erro de conta existente, história `US-AUTH-001-004` e `SPEC-AUTH-001` aprovada (requisito 2).
+- **Implementado localmente:** `PortugueseIdentityErrorDescriber` registrado no Identity traduz `DuplicateUserName` e `DuplicateEmail` para “Este e-mail já está cadastrado. Entre na sua conta.”, preservando códigos e regras. Sem migration.
+- **Validação:** build e 2 testes unitários específicos aprovados. Adicionado E2E pela tela com conta de teste existente e API real. `npm run e2e` falhou no setup por API indisponível; 74 testes não executaram. `run-api-e2e.ps1` confirmou SQL Server inacessível (10061); Docker local desligado.
+- **Pendente:** restabelecer ambiente E2E e executar a suíte. Não publicado nem homologado. A falha de confirmação de e-mail é separada e não foi corrigida por esta tradução.
+
 ## [2026-09-11] — Claude Opus 5 (coordenador) — G-DEPLOY: D88, navegação global no cabeçalho
 - **Publicado** em `https://prisma.nordevs.com.br` o merge da `feat/nav-project-sidebar` (D88): a navegação global volta ao cabeçalho e a lateral passa a ser **painel contextual do projeto**, visível somente dentro de `/projects/:projectId`. Commit `7aa547b`.
 - **Duas implementações da mesma coisa, e a escolha foi consciente.** Existiam a `feat/nav-project-sidebar` (pronta, com decisão registrada e testes) e a minha `feat/trilho-projetos` (WIP, parada pelo PO, com trilho de projetos sempre visível). Ficou a primeira: além de estar completa, a regra "a lateral não aparece fora do projeto" é melhor que a minha, que mantinha um trilho sem nada a dizer fora de um projeto. A `feat/trilho-projetos` fica como histórico; seu único conteúdo exclusivo era essa implementação, já que o filtro recolhido do backlog foi entregue em separado.

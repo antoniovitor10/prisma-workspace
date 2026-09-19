@@ -233,6 +233,19 @@ export const api = {
     });
   },
 
+  async previewInvitation(token: string): Promise<{ email: string; organizationName: string; accountExists: boolean }> {
+    return this.request('/api/auth/invitation/preview', { method: 'POST', body: JSON.stringify({ token }) });
+  },
+
+  async completeInvitation(input: { token: string; password: string; createAccount: boolean; fullName?: string; confirmPassword?: string }) {
+    const data = await this.request('/api/auth/invitation/complete', { method: 'POST', body: JSON.stringify(input) });
+    api.setOrganizationId(data.organizationId);
+    api.setToken(data.accessToken);
+    localStorage.removeItem('pendingInvite');
+    window.history.replaceState({}, '', '/home');
+    window.location.replace('/home');
+  },
+
   async resetPassword(userId: string, token: string, newPassword: string) {
     return this.request('/api/auth/reset-password', {
       method: 'POST', body: JSON.stringify({ userId, token, newPassword })

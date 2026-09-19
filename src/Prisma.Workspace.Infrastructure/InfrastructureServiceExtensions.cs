@@ -84,6 +84,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IWorkItemAccessService, Identity.WorkItemAccessService>();
         services.AddScoped<IAutomationExecutor, Services.AutomationExecutor>();
         services.AddScoped<IInstallationSetupService, Services.InstallationSetupService>();
+        services.AddScoped<Prisma.Workspace.Application.Features.Organizations.IInvitationOnboardingService, Services.InvitationOnboardingService>();
 
         return services;
     }

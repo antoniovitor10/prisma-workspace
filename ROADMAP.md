@@ -374,6 +374,8 @@ setup foi validada contra SQL Server real. `G-SPEC` e `G-MIGRATION` foram aprova
 
 ## [~] Fase 14 - Programa Prisma WorkSpace v2
 
+Recorte aprovado em 2026-09-19: onboarding direto pelo convite (`specs/invitation-onboarding.md`), nome completo, senha com confirmação, aceite e sessão automáticos; conta existente autentica sem redefinir senha. G-SPEC e G-DEPLOY autorizados diretamente pelo PO. Sem migration.
+
 Fase autorizada pelo PO em 2026-09-08 e registrada na D80. O PO determinou que todo o trabalho passa a ocorrer
 no repositorio `prisma-workspace`, autorizou o deploy em producao sem restricao para
 `https://prisma.nordevs.com.br` e aprovou em bloco as specs ativas **exceto** a `SPEC-S-003`, que voltou para

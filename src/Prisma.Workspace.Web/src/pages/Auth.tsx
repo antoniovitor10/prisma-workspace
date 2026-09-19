@@ -526,7 +526,11 @@ export const Auth: React.FC = () => {
   const { mode, toggleMode } = useThemeMode();
   const initialParams = new URLSearchParams(window.location.search);
   const initialMode = initialParams.get('mode');
-  const hasInvite = Boolean(initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
+  const [inviteToken] = useState(() => initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
+  const hasInvite = Boolean(inviteToken);
+  const [invite, setInvite] = useState<{ email: string; organizationName: string; accountExists: boolean } | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isRegister, setIsRegister] = useState(hasInvite);
   const [flow, setFlow] = useState<'login' | 'forgot' | 'reset' | 'confirm'>(
     initialMode === 'forgot-password' ? 'forgot'
@@ -546,6 +550,18 @@ export const Auth: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [ssoNotice, setSsoNotice] = useState<string | null>(null);
   const [setupAvailable, setSetupAvailable] = useState(false);
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    let active = true;
+    api.previewInvitation(inviteToken).then(data => {
+      if (!active) return;
+      setInvite(data);
+      setEmail(data.email);
+      setIsRegister(!data.accountExists);
+    }).catch(err => { if (active) setError(err instanceof Error ? err.message : 'Convite indisponível.'); });
+    return () => { active = false; };
+  }, [inviteToken]);
 
   useEffect(() => {
     let active = true;
@@ -574,7 +590,12 @@ export const Auth: React.FC = () => {
     setSsoNotice(null);
 
     try {
-      if (flow === 'forgot') {
+      if (hasInvite && flow === 'login') {
+        if (!invite || !inviteToken) throw new Error('Convite indisponível. Peça um novo link ao administrador.');
+        if (isRegister && password !== confirmPassword) throw new Error('As senhas não coincidem.');
+        await api.completeInvitation({ token: inviteToken, password, createAccount: isRegister,
+          fullName: isRegister ? fullName : undefined, confirmPassword: isRegister ? confirmPassword : undefined });
+      } else if (flow === 'forgot') {
         const result = await api.forgotPassword(email);
         if (result?.developmentToken && result?.developmentUserId) {
           setRecovery({ userId: result.developmentUserId, token: result.developmentToken });
@@ -692,8 +713,8 @@ export const Auth: React.FC = () => {
               <Alert $tone="info">
                 <Info size={16} />
                 <span>
-                  <strong>Você recebeu um convite para entrar em uma organização.</strong><br />
-                  Use o mesmo e-mail do convite — ele será aceito automaticamente.
+                  <strong>{invite ? `Convite para ${invite.organizationName}.` : 'Verificando convite...'}</strong><br />
+                  {invite?.accountExists ? 'Sua conta já existe. Entre com sua senha para aceitar.' : 'Crie sua conta para entrar direto na organização, sem outro e-mail de confirmação.'}
                 </span>
               </Alert>
             )}
@@ -702,6 +723,10 @@ export const Auth: React.FC = () => {
             {ssoNotice && <Alert $tone="info"><Shield size={16} /><span>{ssoNotice}</span></Alert>}
 
             <Form onSubmit={handleSubmit}>
+              {hasInvite && isRegister && flow === 'login' && (
+                <Field>Nome completo<InputWrap><Input value={fullName} onChange={e => setFullName(e.target.value)}
+                  autoComplete="name" maxLength={200} required placeholder="Seu nome e sobrenome" /></InputWrap></Field>
+              )}
               <Field>
                 {flow === 'forgot' ? 'E-mail para recuperação' : 'E-mail corporativo'}
                 <InputWrap>
@@ -711,6 +736,7 @@ export const Auth: React.FC = () => {
                     type="email"
                     placeholder="seu.nome@empresa.com"
                     value={email}
+                    readOnly={hasInvite && flow === 'login'}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="username"
                     required
@@ -744,6 +770,12 @@ export const Auth: React.FC = () => {
                 </Field>
               )}
 
+              {hasInvite && isRegister && flow === 'login' && (
+                <Field>Confirmar senha<InputWrap><Lock size={16} /><Input type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password"
+                  required placeholder="Digite a senha novamente" /></InputWrap></Field>
+              )}
+
               {(isRegister || flow === 'reset') && (
                 <Alert $tone="info">
                   <Info size={16} />
@@ -767,11 +799,11 @@ export const Auth: React.FC = () => {
                 </Row>
               )}
 
-              <PrimaryButton type="submit" disabled={loading}>
+              <PrimaryButton type="submit" disabled={loading || (hasInvite && flow === 'login' && !invite)}>
                 {loading ? 'Processando...' : flow === 'forgot' ? 'Enviar instruções' : flow === 'reset' ? 'Redefinir senha' : isRegister ? (
-                  <><UserPlus size={18} /><span>Criar conta</span></>
+                  <><UserPlus size={18} /><span>{hasInvite ? 'Criar conta e entrar' : 'Criar conta'}</span></>
                 ) : (
-                  <><LogIn size={18} /><span>Entrar →</span></>
+                  <><LogIn size={18} /><span>{hasInvite ? 'Entrar e aceitar convite' : 'Entrar →'}</span></>
                 )}
               </PrimaryButton>
             </Form>
