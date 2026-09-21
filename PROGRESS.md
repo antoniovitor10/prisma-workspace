@@ -30,6 +30,14 @@
 - **Decisões novas:** nenhuma minha; D88 é do agente que implementou, e sucede a D87 quanto ao destino da navegação global.
 - **Pendências:** convite por projeto com permissões antes do link e criação de conta na hora ao aceitar — não implementado; hoje o convite é por organização e aceitar exige usuário autenticado. Página inicial no desenho que o PO enviou. Cláusula 10 da `SPEC-BOARD-AS-VIEW` (`WorkItem.ProjectId`) segue aberta.
 
+## [2026-09-21] — Codex — G-DEPLOY do editor rico de descrição
+- **Autorização:** PO autorizou explicitamente publicar a descrição. O lote contém somente o editor rico do commit `010096e`; o relato posterior sobre múltiplos responsáveis ficou separado.
+- **Proteção:** backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY` aprovado em `/home/dev/backups/prisma/20260921T130836Z/PrismaWorkspace_20260921T130836Z.bak`, SHA-256 `bfea09374810f2604475db5617fd8f5ea7a1dd519dd46e21138a314e641c11e0`. Imagem anterior preservada como `prisma-rollback:20260921T130836Z`.
+- **Publicação:** branch `integration/all-specs-v2` atualizada na VPS para `010096e`; imagem reconstruída pelo `docker-compose.prod.yml`, preservando volumes de Data Protection e logs. Container `prisma-workspace-api` recriado e saudável.
+- **Verificação pós-deploy:** `https://prisma.nordevs.com.br/` e `/health` responderam 200; chunk público `TaskDetailDrawer-CTs73cMx.js` contém os controles do editor (`Salvamento`, `Expandir editor`, `Inserir imagem`, `Abrir anexos`) e não contém referência a `localhost`. Logs de inicialização sem erro, apenas warnings EF já conhecidos.
+
+---
+
 ## [2026-09-21] — Codex — editor rico e amplo para descrição da tarefa
 - **Contrato:** história `stories/rich-task-description.md` e spec aprovada `specs/rich-task-description.md`, conforme pedido direto do PO. Sem migration e sem alteração de schema.
 - **Implementação:** substituí o textarea da gaveta por um editor TipTap responsivo, com área ampla, salvamento automático, desfazer/refazer, títulos, negrito, itálico, sublinhado, tachado, realce, link, listas, alinhamento, checklist, citação, bloco de código, imagem por endereço, atalho para anexos e tela cheia fechável por Escape. Mantidas as seis abas atuais da tarefa. Ações de IA ficaram fora por não existir contrato funcional aprovado.
