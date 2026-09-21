@@ -374,6 +374,8 @@ setup foi validada contra SQL Server real. `G-SPEC` e `G-MIGRATION` foram aprova
 
 ## [~] Fase 14 - Programa Prisma WorkSpace v2
 
+Recorte aprovado em 2026-09-21: múltiplos responsáveis por tarefa, preservando o responsável principal, conforme `specs/multiple-task-assignees.md`. Sem migration.
+
 Recorte aprovado em 2026-09-21: descrição rica e ampla da tarefa, conforme `specs/rich-task-description.md`, sem edição com IA e sem migration.
 
 Recorte aprovado em 2026-09-19: onboarding direto pelo convite (`specs/invitation-onboarding.md`), nome completo, senha com confirmação, aceite e sessão automáticos; conta existente autentica sem redefinir senha. G-SPEC e G-DEPLOY autorizados diretamente pelo PO. Sem migration.
