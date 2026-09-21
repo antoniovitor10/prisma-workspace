@@ -1,4 +1,13 @@
-﻿## [2026-09-10] — Composer — D88: nav global no cabeçalho, lateral só no projeto
+## [2026-09-21] — Antigravity — múltiplos responsáveis por tarefa (SPEC-WORK-ITEM-ASSIGNEES)
+- **Fiz:** Implementação de múltiplos responsáveis por tarefa, corrigindo o comportamento que impedia alocar mais de uma pessoa. A seção "Participantes" foi renomeada para "Responsáveis da tarefa" com texto explicativo. O responsável principal recebe badge "Principal" e não pode ser removido pelo botão ×; os demais são removíveis individualmente. O seletor filtra quem já está alocado (sem duplicatas). O campo "Responsável" no formulário foi renomeado para "Responsável principal". O header do drawer exibe contagem de responsáveis alocados.
+- **Arquivos:** `TaskDetailDrawer.tsx` (styled components `PrimaryLabel`, `SectionHelp`; renomeação de estado `participantId` → `assigneeId` e mutation `participants` → `assignees`; seção "Responsáveis da tarefa" com badge e filtragem), `TaskDetailDrawer.test.tsx` (novo teste: adiciona vários responsáveis sem substituir os já alocados), `specs/multiple-task-assignees.md` (approved), `stories/multiple-task-assignees.md`, `ROADMAP.md` (recorte Fase 14).
+- **Testes:** `tsc -b` 0 erros; Vitest `TaskDetailDrawer.test.tsx` **4/4 passed**; build `vite` limpo.
+- **Decisões:** Nenhuma nova. Spec aprovada diretamente pelo PO (pedido explícito em 2026-09-21). Sem migration, sem alteração de schema. Backend (`WorkItemAssigneesController` + `AssigneesFeature`) já suportava múltiplos assignees — a mudança foi somente frontend.
+- **Deploy:** commit `f351249` em `integration/all-specs-v2` no `prisma-workspace`; patch equivalente aplicado no repo `runrun` do VPS via script Python (adaptação de namespace `Prisma.Workspace` → `Detran.Kanban`); rebuild Docker em andamento.
+- **Bloqueios:** Nenhum.
+
+---
+## [2026-09-10] — Composer — D88: nav global no cabeçalho, lateral só no projeto
 - **Fiz:** Na worktree `prisma-wt-nav-shell` (`feat/nav-project-sidebar` @ `b1b8ad4`), movi Início/Meu trabalho/Projetos/Solicitações/Relatórios/Equipes do trilho para o cabeçalho. A lateral passou a ser painel contextual do projeto (nome, chave, descrição e abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações), visível só em `/projects/:id`. Fora do projeto a lateral some. No mobile (≤768px) a lateral some e as abas ficam na faixa horizontal do workspace; o hambúrguer segue com a nav global. Registrada **D88** (sucede D87 quanto ao destino da nav global).
 - **Arquivos:** `layout/navigation.ts`, `Sidebar.tsx` (+test), `Topbar.tsx` (+test), `AppShell.tsx`, `ProjectWorkspace.tsx`, `e2e/smoke.spec.ts`, `e2e/release-shell-navigation.spec.ts`, `DECISIONS.md`, `PROGRESS.md`.
 - **Testes:** `tsc -b` 0; Vitest **79/79**. E2E limpa: **68 passed / 4 skipped / 1 failed** — a falha (`document-alignment` dependência) passou isolada e não é do shell; smoke + release-shell (desktop/mobile) verdes, incluindo o caso novo D88.
