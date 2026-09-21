@@ -16,8 +16,14 @@ public class HtmlSanitizerService : Application.Interfaces.IHtmlSanitizer
         _sanitizer.AllowedAttributes.Add("class");
         _sanitizer.AllowedAttributes.Add("data-work-item-id");
         _sanitizer.AllowedAttributes.Add("target");
+        _sanitizer.AllowedAttributes.Add("data-type");
+        _sanitizer.AllowedAttributes.Add("data-checked");
+        _sanitizer.AllowedAttributes.Add("type");
+        _sanitizer.AllowedAttributes.Add("checked");
         _sanitizer.AllowedTags.Add("figure");
         _sanitizer.AllowedTags.Add("figcaption");
+        _sanitizer.AllowedTags.Add("input");
+        _sanitizer.AllowedTags.Add("label");
     }
 
     public string Sanitize(string? html)

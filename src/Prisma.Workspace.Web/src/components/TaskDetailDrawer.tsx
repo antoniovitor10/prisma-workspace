@@ -28,7 +28,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
 import { DependencyAutocomplete } from '../features/task/DependencyAutocomplete';
@@ -44,6 +44,7 @@ import { linkTypeNames, originNames, priorityNames } from '../types/scrum';
 import { WorkItemKind, kindDisplayOrder, kindMeta, workItemKinds } from '../features/workItems/workItemKinds';
 import { WorkItemKindSelector } from './WorkItemKindSelector';
 import { userDisplayLabel } from '../utils/userDisplayName';
+import { RichTaskDescriptionEditor } from './RichTaskDescriptionEditor';
 
 interface StageOption {
   id: string;
@@ -233,6 +234,12 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   });
   const commit=(next:Draft)=>{setDraft(next);update.mutate(next);};
   const change=<K extends keyof Draft>(key:K,value:Draft[K],immediate=false)=>{if(!draft)return;const next={...draft,[key]:value};setDraft(next);if(immediate)commit(next);};
+  const saveDescription=useCallback(async(description:string)=>{
+    if(!draft)return;
+    const next={...draft,description};
+    setDraft(next);
+    await update.mutateAsync(next);
+  },[draft,update]);
 
   const participants=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onSuccess:async()=>{setParticipantId('');await invalidate();}});
   const subtask=useMutation({mutationFn:()=>api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),onSuccess:async()=>{setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();}});
@@ -302,9 +309,9 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </Tabs>
 
       {activeTab==='description'&&<>
+      <Section><h2><Save size={14}/>Descrição</h2><RichTaskDescriptionEditor value={draft.description} onSave={saveDescription} onOpenAttachments={()=>setActiveTab('attachments')}/></Section>
       <Section><h2><Save size={14}/>Dados principais</h2><FormGrid>
         <Field $wide>Título<input value={draft.title} maxLength={500} onChange={e=>change('title',e.target.value)} onBlur={()=>draft.title.trim()&&commit({...draft,title:draft.title.trim()})}/></Field>
-        <Field $wide>Descrição<textarea value={draft.description} onChange={e=>change('description',e.target.value)} onBlur={()=>commit(draft)} placeholder="Contexto, escopo e resultado esperado"/></Field>
         <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)} title={kindMeta(draft.kind).description}>{kindDisplayOrder.map(id=><option key={id} value={id} title={workItemKinds[id].description}>{workItemKinds[id].label} — {workItemKinds[id].description}</option>)}</select></Field>
         <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="">Backlog / sem etapa</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.statusName&&stage.statusName!==stage.name?`${stage.statusName} — ${stage.name}`:stage.statusName||stage.name}</option>)}</select></Field>
         <Field>Prioridade<select value={draft.priority} onChange={e=>change('priority',Number(e.target.value),true)}><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></Field>
@@ -371,4 +378,3 @@ function CustomFieldInput({field,value,users,teams,onChange}:{field:WorkItemCust
   const inputType=field.type===2||field.type===8?'number':field.type===3?'date':field.type===9?'datetime-local':field.type===12?'url':'text';
   return <Field>{field.name}{field.isRequired?' *':''}<input type={inputType} min={field.type===8?'0':undefined} max={field.type===8?'100':undefined} step={field.type===2||field.type===8?'any':undefined} value={field.type===9&&value?value.slice(0,16):value} onChange={event=>onChange(event.target.value)}/></Field>;
 }
-

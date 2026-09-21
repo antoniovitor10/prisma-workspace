@@ -252,6 +252,7 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
     private readonly IWorkflowRepository? _workflow;
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IPlatformNotificationPublisher? _notifications;
+    private readonly IHtmlSanitizer? _htmlSanitizer;
 
     public UpdateWorkItemCommandHandler(
         IWorkItemManagementRepository management,
@@ -264,9 +265,10 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         IAutomationExecutor? automations = null,
         IWorkflowRepository? workflow = null,
         IBoardRealtimeNotifier? realtime = null,
-        IPlatformNotificationPublisher? notifications = null)
-        => (_management, _projectAccess, _permissions, _stages, _teams, _users, _feed, _automations, _workflow, _realtime, _notifications)
-            = (management, projectAccess, permissions, stages, teams, users, feed, automations, workflow, realtime, notifications);
+        IPlatformNotificationPublisher? notifications = null,
+        IHtmlSanitizer? htmlSanitizer = null)
+        => (_management, _projectAccess, _permissions, _stages, _teams, _users, _feed, _automations, _workflow, _realtime, _notifications, _htmlSanitizer)
+            = (management, projectAccess, permissions, stages, teams, users, feed, automations, workflow, realtime, notifications, htmlSanitizer);
 
     public async Task Handle(UpdateWorkItemCommand request, CancellationToken ct)
     {
@@ -353,7 +355,8 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         }
 
         item.Title = request.Title.Trim();
-        item.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        var description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        item.Description = description is null ? null : (_htmlSanitizer?.Sanitize(description) ?? description);
         item.Kind = item.ParentId.HasValue && request.Kind == WorkItemKind.Task
             ? WorkItemKind.Subtask : request.Kind;
         item.Priority = request.Priority;

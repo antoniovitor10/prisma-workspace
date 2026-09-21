@@ -30,6 +30,15 @@
 - **Decisões novas:** nenhuma minha; D88 é do agente que implementou, e sucede a D87 quanto ao destino da navegação global.
 - **Pendências:** convite por projeto com permissões antes do link e criação de conta na hora ao aceitar — não implementado; hoje o convite é por organização e aceitar exige usuário autenticado. Página inicial no desenho que o PO enviou. Cláusula 10 da `SPEC-BOARD-AS-VIEW` (`WorkItem.ProjectId`) segue aberta.
 
+## [2026-09-21] — Codex — editor rico e amplo para descrição da tarefa
+- **Contrato:** história `stories/rich-task-description.md` e spec aprovada `specs/rich-task-description.md`, conforme pedido direto do PO. Sem migration e sem alteração de schema.
+- **Implementação:** substituí o textarea da gaveta por um editor TipTap responsivo, com área ampla, salvamento automático, desfazer/refazer, títulos, negrito, itálico, sublinhado, tachado, realce, link, listas, alinhamento, checklist, citação, bloco de código, imagem por endereço, atalho para anexos e tela cheia fechável por Escape. Mantidas as seis abas atuais da tarefa. Ações de IA ficaram fora por não existir contrato funcional aprovado.
+- **Segurança:** descrições passam pelo sanitizador HTML no backend; atributos necessários ao checklist são preservados e conteúdo executável continua removido. O campo atual e o limite de 4.000 caracteres foram preservados.
+- **Validação:** build frontend aprovado; lint sem novos erros (somente avisos preexistentes); Vitest **84/84**; xUnit **154/154**; E2E Playwright completo **74 passed / 5 skipped / 0 failed**, com cobertura do editor em Chromium desktop e mobile.
+- **Operação:** não publicado. Exige autorização G-DEPLOY específica para promover a mudança.
+
+---
+
 # PROGRESS — log de handoff (append-only)
 
 Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
