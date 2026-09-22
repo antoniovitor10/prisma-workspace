@@ -1,0 +1,75 @@
+- generic [ref=f2e109]:
+  - generic [ref=f2e110]:
+    - banner [ref=f2e111]:
+      - link "Prisma WorkSpace — página inicial" [ref=f2e112] [cursor=pointer]:
+        - /url: /home
+        - generic [ref=f2e119]:
+          - text: Prisma
+          - emphasis [ref=f2e120]: WorkSpace
+      - navigation "Navegação principal" [ref=f2e121]:
+        - link "Início" [ref=f2e122] [cursor=pointer]:
+          - /url: /home
+        - link "Meu trabalho" [ref=f2e126] [cursor=pointer]:
+          - /url: /me/tasks
+        - link "Projetos" [ref=f2e130] [cursor=pointer]:
+          - /url: /projects
+        - link "Solicitações" [ref=f2e133] [cursor=pointer]:
+          - /url: /requests
+        - link "Relatórios" [ref=f2e275] [cursor=pointer]:
+          - /url: /reports
+        - link "Equipes" [ref=f2e278] [cursor=pointer]:
+          - /url: /teams
+      - button "Abrir pesquisa global (Ctrl K)" [ref=f2e137] [cursor=pointer]:
+        - generic [ref=f2e141]: Buscar...
+        - generic [ref=f2e142]: Ctrl K
+      - generic "Organização ativa" [ref=f2e143]:
+        - combobox "Selecionar organização" [ref=f2e147]:
+          - option "Prisma Demo" [selected]
+      - button "Novo item" [ref=f2e148] [cursor=pointer]
+      - button "Notificações" [ref=f2e152] [cursor=pointer]
+      - button "Ativar modo escuro" [ref=f2e156] [cursor=pointer]
+      - button "Menu da conta" [ref=f2e160] [cursor=pointer]: EU
+    - generic [ref=f2e397]:
+      - link "Projetos" [ref=f2e398] [cursor=pointer]:
+        - /url: /projects
+      - generic [ref=f2e403]: Produto Demo
+      - navigation "Alternar visão do projeto" [ref=f2e638]:
+        - link "Backlog" [ref=f2e639] [cursor=pointer]:
+          - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/backlog
+        - link "Quadro" [ref=f2e640] [cursor=pointer]:
+          - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/boards
+  - main [ref=f2e163]:
+    - generic [ref=f2e407]:
+      - generic [ref=f2e408]:
+        - generic [ref=f2e409]:
+          - generic [ref=f2e410]:
+            - heading "Produto Demo" [level=1] [ref=f2e411]
+            - paragraph [ref=f2e412]: Exemplo genérico para explorar planejamento e execução de trabalho.
+          - generic [ref=f2e413]: DEMO
+        - navigation [ref=f2e414]:
+          - link "Itens" [ref=f2e415] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/items
+          - link "Backlog" [ref=f2e416] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/backlog
+          - link "Sprints" [ref=f2e417] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/sprints
+          - link "Kanban" [active] [ref=f2e418] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/boards
+          - link "Relatórios" [ref=f2e419] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/reports
+          - link "Wiki" [ref=f2e420] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/wiki
+          - link "Configurações" [ref=f2e421] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/settings
+      - generic [ref=f2e641]:
+        - generic [ref=f2e642]:
+          - generic [ref=f2e643]:
+            - heading "Quadros Kanban" [level=2] [ref=f2e644]
+            - paragraph [ref=f2e645]: Fluxos, limites de trabalho em andamento e itens do projeto.
+          - button "Novo quadro" [ref=f2e646] [cursor=pointer]
+        - button [ref=f2e649] [cursor=pointer]:
+          - heading "Planejamento do Produto Demo" [level=3] [ref=f2e652]
+          - paragraph [ref=f2e653]: Visualize as etapas e mova o trabalho de forma fluida.
+          - generic [ref=f2e654]:
+            - generic [ref=f2e655]: Fluxo Kanban
+            - generic [ref=f2e659]: Lead time e limites WIP

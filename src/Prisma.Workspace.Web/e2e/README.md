@@ -23,7 +23,7 @@ Testes end-to-end do frontend com Playwright.
 3. Inicie o frontend:
    ```bash
    cd src/Prisma.Workspace.Web
-   npm run dev
+   npm run dev -- --mode e2e --host 127.0.0.1 --port 5450
    ```
 
 ## Protecao contra banco incorreto
@@ -42,7 +42,7 @@ O setup padrão usa `DetranKanban_E2E`. Embora o guard reconheça o prefixo de m
 
 2. Edite .env.e2e.local e preencha as credenciais de teste:
 
-   E2E_TEST_USER_EMAIL=seu-email@detran.se.gov.br
+   E2E_TEST_USER_EMAIL=admin@prisma.example.invalid
    E2E_TEST_USER_PASSWORD=sua-senha-aqui
 
    NUNCA commite .env.e2e.local.

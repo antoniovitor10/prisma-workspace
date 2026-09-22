@@ -46,11 +46,6 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
 
         // --- Relacionamentos ---
 
-        builder.HasMany(b => b.Stages)
-            .WithOne(s => s.Board)
-            .HasForeignKey(s => s.BoardId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         builder.HasMany(b => b.WorkItems)
             .WithOne(w => w.Board)
             .HasForeignKey(w => w.BoardId)
@@ -65,6 +60,9 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(b => b.ClientId);
+
+        builder.Property(b => b.ProjectId)
+            .IsRequired();
 
         builder.HasOne(b => b.Project)
             .WithMany(p => p.Boards)

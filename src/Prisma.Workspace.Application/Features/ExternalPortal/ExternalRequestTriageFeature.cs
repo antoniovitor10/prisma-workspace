@@ -1,6 +1,5 @@
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
@@ -64,7 +63,7 @@ public class ApplyExternalRequestTriageCommandHandler
         var externalRequest = await _portals.GetRequestByProtocolAsync(request.Protocol.Trim(), ct)
             ?? throw new NaoEncontradoException("Solicitação");
         var item = externalRequest.WorkItem;
-        var currentProjectId = item.Board.ProjectId!.Value;
+        var currentProjectId = item.Board.ProjectId;
         await _access.EnsureAtLeastAsync(currentProjectId, request.ActorId, ProjectRole.Member, ct);
         var currentProject = await _projects.GetByIdWithMembersAsync(currentProjectId, ct)
             ?? throw new NaoEncontradoException("Projeto");
@@ -148,8 +147,6 @@ public class ApplyExternalRequestTriageCommandHandler
                     externalRequest, ExternalRequestMessageAuthor.Agent,
                     request.ActorName, request.ActorId, request.Message!);
                 _portals.AddMessage(publicMessage);
-                SlaCalculator.MarkFirstResponse(externalRequest, publicMessage.CreatedAt);
-                SlaCalculator.Pause(externalRequest, publicMessage.CreatedAt);
                 return "Mais informações foram solicitadas ao solicitante.";
 
             case ExternalRequestTriageAction.CategoryChanged:
@@ -166,8 +163,8 @@ public class ApplyExternalRequestTriageCommandHandler
             case ExternalRequestTriageAction.ResponsibleChanged:
                 if (!string.IsNullOrWhiteSpace(request.ResponsibleId))
                 {
-                    DomainException.Garantir(currentProject.Members.Any(x => x.UserId == request.ResponsibleId)
-                        || currentProject.OwnerId == request.ResponsibleId,
+                    var responsibleRole = await _access.GetRoleAsync(currentProject.Id, request.ResponsibleId, ct);
+                    DomainException.Garantir(responsibleRole is not null,
                         "O responsável precisa ser membro do projeto.");
                     DomainException.Garantir(await _users.GetByIdAsync(request.ResponsibleId, ct) is not null,
                         "Responsável não encontrado.");
@@ -188,21 +185,15 @@ public class ApplyExternalRequestTriageCommandHandler
                 return await MoveToProjectAsync(request, externalRequest, item, ct);
 
             case ExternalRequestTriageAction.SentToBacklog:
-                item.StageId = null;
-                item.Stage = null;
                 item.SprintId = null;
                 item.Sprint = null;
-                var initial = currentProject.WorkflowStatuses.OrderBy(x => x.Position)
-                    .FirstOrDefault(x => x.IsInitial);
-                item.WorkflowStatusId = initial?.Id;
-                item.WorkflowStatus = initial;
                 externalRequest.TriageStatus = ExternalRequestTriageStatus.Routed;
                 return "Solicitação enviada ao Product Backlog.";
 
             case ExternalRequestTriageAction.SentToKanban:
                 var stage = request.StageId.HasValue
-                    ? item.Board.Stages.FirstOrDefault(x => x.Id == request.StageId)
-                    : item.Board.Stages.OrderBy(x => x.Position).FirstOrDefault();
+                    ? currentProject.Stages.FirstOrDefault(x => x.Id == request.StageId && x.BoardId == item.BoardId)
+                    : currentProject.Stages.Where(x => x.BoardId == item.BoardId).OrderBy(x => x.Position).FirstOrDefault();
                 DomainException.Garantir(stage is not null, "Selecione uma coluna válida do Kanban.");
                 item.StageId = stage!.Id;
                 item.Stage = stage;
@@ -239,18 +230,20 @@ public class ApplyExternalRequestTriageCommandHandler
         DomainException.Garantir(!project.IsArchived, "O projeto de destino está arquivado.");
         var board = project.Boards.FirstOrDefault(x => x.Id == request.BoardId)
             ?? throw new DomainException("O quadro de destino não pertence ao projeto.");
-        var initialStatus = project.WorkflowStatuses.OrderBy(x => x.Position)
-            .FirstOrDefault(x => x.IsInitial);
+        DomainException.Garantir(request.StageId.HasValue, "Escolha a coluna do quadro de destino.");
+        var destination = project.Stages.FirstOrDefault(x => x.Id == request.StageId && x.BoardId == board.Id)
+            ?? throw new DomainException("A coluna de destino não pertence ao quadro.");
 
         item.BoardId = board.Id;
         item.Board = board;
-        item.StageId = null;
-        item.Stage = null;
+        item.StageId = destination.Id;
+        item.Stage = destination;
         item.SprintId = null;
         item.Sprint = null;
         item.TeamId = board.TeamId;
-        item.WorkflowStatusId = initialStatus?.Id;
-        item.WorkflowStatus = initialStatus;
+        item.WorkflowStatusId = destination.WorkflowStatusId;
+        item.WorkflowStatus = destination.WorkflowStatus;
+        item.CompletedAt = destination.Category == StageCategory.Done ? DateTimeOffset.UtcNow : null;
         item.ResponsibleId = null;
         externalRequest.TriageStatus = ExternalRequestTriageStatus.Routed;
         return $"Solicitação relacionada ao projeto {project.Key} — {project.Name}.";
@@ -269,7 +262,7 @@ public class ApplyExternalRequestTriageCommandHandler
             : await _portals.GetWorkItemByNumberAsync(request.RelatedWorkItemNumber!.Value, ct);
         target = target
             ?? throw new NaoEncontradoException("Tarefa relacionada");
-        await _access.EnsureAtLeastAsync(target.Board.ProjectId!.Value,
+        await _access.EnsureAtLeastAsync(target.Board.ProjectId,
             request.ActorId, ProjectRole.Viewer, ct);
         DomainException.Garantir(!await _portals.WorkItemLinkExistsAsync(
                 source.Id, target.Id, type, ct),

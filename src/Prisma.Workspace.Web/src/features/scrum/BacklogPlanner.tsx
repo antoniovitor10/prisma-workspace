@@ -24,11 +24,13 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  Columns2,
   ExternalLink,
   GripVertical,
   Layers3,
   Link2,
   ListFilter,
+  Maximize2,
   Plus,
   RotateCcw,
   Search,
@@ -41,9 +43,11 @@ import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { z } from 'zod';
 import { TaskDetailDrawer } from '../../components/TaskDetailDrawer';
+import { WorkItemKindSelector } from '../../components/WorkItemKindSelector';
 import type { ProjectSummary } from '../../pages/Projects';
 import { previewBacklog, previewMode, previewSprints } from '../../preview';
 import { api } from '../../services/api';
+import { WorkItemKind, kindMeta } from '../workItems/workItemKinds';
 import type { BacklogItem, Sprint } from '../../types/scrum';
 import { getItemDepth, kindNames, priorityNames } from '../../types/scrum';
 import {
@@ -123,8 +127,9 @@ const Button = styled.button<{ $secondary?: boolean; $danger?: boolean }>`
 
 const QuickAdd = styled.form`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
   gap: 8px;
+  align-items: center;
   margin-bottom: 12px;
   padding: 10px;
   border: 1px solid ${({ theme }) => theme.color.accentBlue};
@@ -140,6 +145,9 @@ const QuickAdd = styled.form`
     &:focus { border-color: ${({ theme }) => theme.color.accentBlue}; }
   }
   p { grid-column: 1 / -1; color: ${({ theme }) => theme.color.danger}; font-size: 13px; }
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const FilterBar = styled.div`
@@ -154,14 +162,46 @@ const FilterBar = styled.div`
   background: ${({ theme }) => theme.color.surface};
 `;
 
-const FilterTitle = styled.span`
+/**
+ * A faixa de filtros abre recolhida a pedido do PO: seis campos empilhados empurravam a
+ * lista para baixo mesmo quando ninguem estava filtrando. Recolhida, ela continua dizendo
+ * quantos filtros estao ativos e mantem o botao de limpar, para filtro ligado nunca ficar
+ * invisivel.
+ */
+const FilterToggle = styled.button<{ $aberto: boolean }>`
   display: inline-flex;
   height: 34px;
   align-items: center;
   gap: 6px;
   margin-right: 2px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: transparent;
   color: ${({ theme }) => theme.color.textMuted};
   font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover { background: ${({ theme }) => theme.color.neutral[100]}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlue}; outline-offset: 1px; }
+
+  > svg:last-child {
+    transition: transform .15s ease;
+    transform: rotate(${({ $aberto }) => ($aberto ? '180deg' : '0deg')});
+  }
+  @media (prefers-reduced-motion: reduce) { > svg:last-child { transition: none; } }
+`;
+
+const FiltroAtivoSelo = styled.span`
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 12%, transparent)`};
+  color: ${({ theme }) => theme.color.brand};
+  font-size: 11.5px;
   font-weight: 800;
 `;
 
@@ -213,9 +253,12 @@ const BulkBar = styled.div`
   }
 `;
 
-const PlanningGrid = styled.div`
+const CHAVE_BACKLOG_AMPLO = 'prisma_workspace_backlog_amplo';
+const CHAVE_FILTROS_ABERTOS = 'prisma_workspace_backlog_filtros_abertos';
+
+const PlanningGrid = styled.div<{ $amplo: boolean }>`
   display: grid;
-  grid-template-columns: minmax(620px, 1.45fr) minmax(450px, 1fr);
+  grid-template-columns: ${({ $amplo }) => $amplo ? 'minmax(0, 1fr)' : 'minmax(620px, 1.45fr) minmax(450px, 1fr)'};
   gap: 14px;
   align-items: start;
   @media (max-width: 1250px) { grid-template-columns: 1fr; }
@@ -392,10 +435,23 @@ const Selection = styled.label`
   input { width: 14px; height: 14px; accent-color: ${({ theme }) => theme.color.brand}; }
 `;
 
+// Cor vem da taxonomia (workItemKinds.ts): cada tipo tem a sua, nao tres para dez.
 const Kind = styled.span<{ $kind: number }>`
-  color: ${({ $kind, theme }) => $kind === 4 ? theme.color.danger : $kind <= 2 ? theme.color.brand : theme.color.accentBlue};
+  color: ${({ $kind }) => kindMeta($kind).color};
   font-size: 11px;
   font-weight: 850;
+  text-transform: uppercase;
+`;
+
+const ArchivedTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: ${({ theme }) => theme.radius.pill};
+  background: ${({ theme }) => theme.color.neutral[200]};
+  color: ${({ theme }) => theme.color.neutral[700]};
+  font-size: 10.5px;
+  font-weight: 800;
   text-transform: uppercase;
 `;
 
@@ -589,7 +645,10 @@ function SortableWorkItem({
       <Selection title="Selecionar item">
         <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} aria-label={`Selecionar ${item.title}`} />
       </Selection>
-      <Kind className="item-kind" $kind={item.kind}>{kindNames[item.kind] ?? 'Item'}</Kind>
+      <Kind className="item-kind" $kind={item.kind} title={kindMeta(item.kind).description}>
+        {kindMeta(item.kind).label}
+        {item.isArchived && <> <ArchivedTag>Arquivada</ArchivedTag></>}
+      </Kind>
       <InlineTitle className="item-title">
         <small>#{item.number ?? '—'} · {saving ? 'Salvando...' : item.boardName}</small>
         <input
@@ -777,7 +836,10 @@ function DroppablePanel({
   );
 }
 
-const quickSchema = z.object({ title: z.string().trim().min(1, 'Digite um título.').max(500) });
+const quickSchema = z.object({
+  title: z.string().trim().min(1, 'Digite um título.').max(500),
+  kind: z.number(),
+});
 type QuickForm = z.infer<typeof quickSchema>;
 
 interface BacklogPlannerProps { project: ProjectSummary; }
@@ -793,17 +855,28 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  // Visao ampla do backlog, pedido dos devs: da a largura inteira a lista e esconde o
+  // painel da sprint. Planejar continua possivel sem arrastar — selecionar itens abre a
+  // barra em massa, que tem o proprio seletor de sprint e o "Mover para sprint".
+  const [backlogAmplo, setBacklogAmplo] = useState(() => {
+    try { return localStorage.getItem(CHAVE_BACKLOG_AMPLO) === 'true'; } catch { return false; }
+  });
+  const [filtrosAbertos, setFiltrosAbertos] = useState(() => {
+    try { return localStorage.getItem(CHAVE_FILTROS_ABERTOS) === 'true'; } catch { return false; }
+  });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [error, setError] = useState('');
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  // A chave inclui includeArchived: arquivadas vêm em outra consulta, e sem isso o
+  // cache devolveria a lista sem elas ao ligar o filtro.
   const backlogQuery = useQuery<BacklogItem[]>({
-    queryKey: ['project-backlog', project.id],
+    queryKey: ['project-backlog', project.id, filters.includeArchived],
     retry: false,
     queryFn: async () => {
-      try { return await api.getProjectBacklog(project.id); }
+      try { return await api.getProjectBacklog(project.id, filters.includeArchived); }
       catch { return previewMode ? previewBacklog : []; }
     },
   });
@@ -835,7 +908,8 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     || filters.kind !== 'all'
     || filters.priority !== 'all'
     || filters.boardId !== 'all'
-    || filters.relation !== 'all';
+    || filters.relation !== 'all'
+    || filters.includeArchived;
   const contextualBacklogItems = useMemo(
     () => contextualItems.filter(item => !item.sprintId),
     [contextualItems],
@@ -865,7 +939,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const selectedItems = items.filter((item) => selectedIds.has(item.id));
   const selectedItem = items.find((item) => item.id === searchParams.get('item')) ?? null;
   const activeFilterCount = [filters.kind, filters.priority, filters.boardId]
-    .filter((value) => value !== 'all').length + (filters.relation === 'all' ? 0 : 1) + (filters.search ? 1 : 0);
+    .filter((value) => value !== 'all').length + (filters.relation === 'all' ? 0 : 1) + (filters.search ? 1 : 0) + (filters.includeArchived ? 1 : 0);
 
   const openItem = (item: BacklogItem) => {
     const next = new URLSearchParams(searchParams);
@@ -993,11 +1067,12 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     }
   };
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<QuickForm>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<QuickForm>({
     resolver: zodResolver(quickSchema),
-    defaultValues: { title: '' },
+    defaultValues: { title: '', kind: WorkItemKind.Task },
   });
-  const createItem = async ({ title }: QuickForm) => {
+  const quickKind = watch('kind') ?? WorkItemKind.Task;
+  const createItem = async ({ title, kind }: QuickForm) => {
     const board = project.boards[0];
     if (!board) { setError('Crie um quadro antes de adicionar itens.'); return; }
     const nextRank = Math.max(0, ...items.map((item) => item.rank || 0)) + 1000;
@@ -1005,6 +1080,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       const id = previewMode ? `preview-${Date.now()}` : await api.createWorkItem({
         boardId: board.id,
         title,
+        kind: kind ?? WorkItemKind.Task,
         priority: 1,
         position: nextRank,
       });
@@ -1012,7 +1088,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         id,
         boardId: board.id,
         boardName: board.name,
-        kind: 5,
+        kind: kind ?? WorkItemKind.Task,
         title,
         priority: 1,
         rank: nextRank,
@@ -1021,14 +1097,23 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         isBlocked: false,
       }]);
       else await queryClient.invalidateQueries({ queryKey: ['project-backlog', project.id] });
-      reset();
+      reset({ title: '', kind: WorkItemKind.Task });
       setShowQuickAdd(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível criar o item.');
     }
   };
 
+  useEffect(() => {
+    try { localStorage.setItem(CHAVE_BACKLOG_AMPLO, String(backlogAmplo)); } catch { /* preferencia e conveniencia */ }
+  }, [backlogAmplo]);
+
+  useEffect(() => {
+    try { localStorage.setItem(CHAVE_FILTROS_ABERTOS, String(filtrosAbertos)); } catch { /* idem */ }
+  }, [filtrosAbertos]);
+
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
+
 
   return (
     <Page>
@@ -1036,12 +1121,28 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         <div><h2>Planejamento do backlog</h2><p>{backlogItems.length} itens visíveis{showPoints?` · ${backlogPoints} pontos não planejados`:''}</p></div>
         <ToolbarActions>
           <SearchBox><Search size={14} /><input aria-label="Pesquisar backlog" placeholder="Número, título, quadro ou solicitante" value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} /></SearchBox>
+          <Button
+            $secondary
+            aria-pressed={backlogAmplo}
+            onClick={() => setBacklogAmplo((atual) => !atual)}
+            title={backlogAmplo
+              ? 'Mostra o painel da sprint ao lado do backlog'
+              : 'Dá ao backlog a largura inteira e esconde o painel da sprint'}
+          >
+            {backlogAmplo ? <Columns2 size={14} /> : <Maximize2 size={14} />}
+            {backlogAmplo ? 'Ver sprint ao lado' : 'Ampliar backlog'}
+          </Button>
           <Button onClick={() => setShowQuickAdd((current) => !current)}><Plus size={14} />Novo item</Button>
         </ToolbarActions>
       </Toolbar>
 
       {showQuickAdd && (
         <QuickAdd onSubmit={handleSubmit(createItem)}>
+          <WorkItemKindSelector
+            ariaLabel="Tipo de item"
+            value={quickKind}
+            onChange={(nextKind) => setValue('kind', nextKind)}
+          />
           <input autoFocus aria-label="Título do novo item" placeholder="Digite somente o título e pressione Enter" {...register('title')} />
           <Button type="submit"><Sparkles size={14} />Adicionar</Button>
           {errors.title && <p>{errors.title.message}</p>}
@@ -1049,13 +1150,32 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       )}
 
       <FilterBar>
-        <FilterTitle><ListFilter size={13} />Filtros {activeFilterCount > 0 && `(${activeFilterCount})`}</FilterTitle>
+        <FilterToggle
+          type="button"
+          $aberto={filtrosAbertos}
+          aria-expanded={filtrosAbertos}
+          onClick={() => setFiltrosAbertos((atual) => !atual)}
+        >
+          <ListFilter size={13} />Filtros
+          <ChevronDown size={13} />
+        </FilterToggle>
+        {activeFilterCount > 0 && (
+          <FiltroAtivoSelo>{activeFilterCount} ativo{activeFilterCount > 1 ? 's' : ''}</FiltroAtivoSelo>
+        )}
+        {!filtrosAbertos && activeFilterCount > 0 && (
+          <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }}>
+            <RotateCcw size={13} />Limpar filtros
+          </Button>
+        )}
+        {filtrosAbertos && <>
         <SelectField>Tipo<select value={filters.kind} onChange={(event) => setFilters((current) => ({ ...current, kind: event.target.value }))}><option value="all">Todos</option>{Object.entries(kindNames).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
         <SelectField>Prioridade<select value={filters.priority} onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}><option value="all">Todas</option>{[0, 1, 2, 3].map((priority) => <option key={priority} value={priority}>{priorityNames[priority]}</option>)}</select></SelectField>
         <SelectField>Quadro<select value={filters.boardId} onChange={(event) => setFilters((current) => ({ ...current, boardId: event.target.value }))}><option value="all">Todos</option>{boards.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></SelectField>
+        <SelectField>Arquivadas<select aria-label="Mostrar tarefas arquivadas" value={filters.includeArchived ? 'yes' : 'no'} onChange={(event) => setFilters((current) => ({ ...current, includeArchived: event.target.value === 'yes' }))}><option value="no">Ocultar</option><option value="yes">Mostrar</option></select></SelectField>
         <SelectField>Relações<select value={filters.relation} onChange={(event) => setFilters((current) => ({ ...current, relation: event.target.value as BacklogFilterState['relation'] }))}><option value="all">Todas</option><option value="blocked">Bloqueados</option><option value="dependencies">Com dependências</option><option value="unparented">Sem épico</option></select></SelectField>
         <SelectField>Agrupar por<select value={groupBy} onChange={(event) => setGroupBy(event.target.value as BacklogGroupBy)}><option value="none">Sem agrupamento</option><option value="epic">Épico</option><option value="kind">Tipo</option><option value="priority">Prioridade</option><option value="board">Quadro</option></select></SelectField>
         <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }} disabled={activeFilterCount === 0 && groupBy === 'none'}><RotateCcw size={12} />Limpar</Button>
+        </>}
       </FilterBar>
 
       {selectedIds.size > 0 && (
@@ -1076,7 +1196,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       )}
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <PlanningGrid>
+        <PlanningGrid $amplo={backlogAmplo}>
           <DroppablePanel
             id="backlog-drop"
             title="Product backlog"
@@ -1098,7 +1218,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
             matchedIds={matchedIds}
             showPoints={showPoints}
           />
-          <DroppablePanel
+          {!backlogAmplo && <DroppablePanel
             id="sprint-drop"
             title={selectedSprint?.name ?? 'Sprint'}
             subtitle={selectedSprint?.goal || 'Selecione uma sprint para planejar'}
@@ -1125,7 +1245,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
                 <ChevronDown size={12} />
               </SprintSelect>
             )}
-          />
+          />}
         </PlanningGrid>
       </DndContext>
 
@@ -1135,6 +1255,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         projectKey={project.key}
         sprintName={sprintQuery.data?.find((sprint) => sprint.id === selectedItem?.sprintId)?.name}
         onOpenChange={(open) => { if (!open) closeItem(); }}
+        onOpenSubtask={(workItemId) => { void api.getWorkItemDetails(workItemId).then((details) => { const child = details as unknown as BacklogItem; setItems((current) => current.some((item) => item.id === child.id) ? current : [...current, child]); openItem(child); }); }}
       />
     </Page>
   );

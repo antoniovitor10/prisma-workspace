@@ -21,7 +21,7 @@ export function ContextBarProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const Bar = styled.div`
+const Bar = styled.nav`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -45,7 +45,7 @@ export function ContextBarSlot() {
     (el: HTMLDivElement | null) => setTarget(el),
     [setTarget],
   );
-  return <Bar ref={refCb} />;
+  return <Bar ref={refCb} aria-label="Navegação estrutural" />;
 }
 
 /**

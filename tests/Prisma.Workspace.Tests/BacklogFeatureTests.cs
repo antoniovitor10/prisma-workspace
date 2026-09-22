@@ -98,7 +98,9 @@ public class BacklogFeatureTests
     {
         var projectId = Guid.NewGuid();
         var sprint = Sprint.Criar(projectId, Guid.NewGuid(), "Sprint 1",
-            new DateOnly(2026, 7, 16), new DateOnly(2026, 7, 30), "Validar backlog");
+            // Datas relativas: com o estado derivado das datas (D84), uma sprint fixa no
+            // passado passaria a estar encerrada e recusaria escopo novo.
+            HojeMais(-1), HojeMais(13), "Validar backlog");
         var first = NewItem(WorkItemKind.UserStory, "Primeira");
         var second = NewItem(WorkItemKind.Bug, "Segunda");
         var repository = new BacklogRepositoryFake([first, second]);
@@ -123,8 +125,7 @@ public class BacklogFeatureTests
         var projectId = Guid.NewGuid();
         var sprint = Sprint.Criar(projectId, Guid.NewGuid(), "Sprint encerrada",
             new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 14), "Meta entregue");
-        sprint.ChangeStatus(SprintStatus.Active);
-        sprint.ChangeStatus(SprintStatus.Closed);
+        sprint.Encerrar(SprintStatus.Closed, new DateOnly(2026, 7, 10));
         var story = NewItem(WorkItemKind.UserStory, "História entregue");
         story.SprintId = sprint.Id;
         var handler = new PlanSprintCommandHandler(
@@ -135,6 +136,30 @@ public class BacklogFeatureTests
 
         Assert.Equal(sprint.Id, story.SprintId);
     }
+
+    [Fact]
+    public async Task PlanSprint_RecusaSprintVencidaPorData()
+    {
+        // Defeito relatado pelo PO: sprint de 1 a 30 de janeiro aceitava tarefas em
+        // setembro, porque o estado era coluna persistida e ninguém a encerrara.
+        var projectId = Guid.NewGuid();
+        var vencida = Sprint.Criar(projectId, Guid.NewGuid(), "Sprint de janeiro",
+            HojeMais(-250), HojeMais(-220), null);
+        var item = NewItem(WorkItemKind.UserStory, "Tarefa nova");
+        var handler = new PlanSprintCommandHandler(
+            new BacklogRepositoryFake([item]), new SprintRepositoryFake(vencida), new ProjectAccessFake());
+
+        var erro = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new PlanSprintCommand(projectId, vencida.Id, [item.Id], "scrum-master"), default));
+
+        Assert.Contains("encerrada", erro.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(item.SprintId);
+        // E sem que ninguém tenha encerrado a sprint explicitamente.
+        Assert.Null(vencida.CompletedAt);
+    }
+
+    private static DateOnly HojeMais(int dias)
+        => DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime).AddDays(dias);
 
     private static WorkItem NewItem(WorkItemKind kind, string title) => new()
     {
@@ -151,8 +176,9 @@ public class BacklogFeatureTests
         public bool Saved { get; private set; }
 
         public Task<IReadOnlyList<WorkItem>> GetProjectBacklogAsync(
-            Guid projectId, CancellationToken cancellationToken = default)
-            => Task.FromResult(items);
+            Guid projectId, bool includeArchived = false, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<WorkItem>>(
+                includeArchived ? items : items.Where(x => !x.IsArchived).ToList());
 
         public Task<IReadOnlyList<WorkItem>> GetTrackedByIdsAsync(
             Guid projectId,
@@ -190,9 +216,8 @@ public class BacklogFeatureTests
         public Task<Sprint?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult<Sprint?>(id == sprint.Id ? sprint : null);
 
-        public Task<bool> HasActiveAsync(
-            Guid projectId, Guid? excludingId = null, CancellationToken cancellationToken = default)
-            => Task.FromResult(false);
+        public Task RemoveWithUnlinkAsync(Sprint value, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
 
         public Task AddAsync(Sprint value, CancellationToken cancellationToken = default)
             => Task.CompletedTask;

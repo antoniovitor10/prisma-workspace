@@ -35,17 +35,19 @@ function renderDialog() {
 }
 
 describe('QuickCreateDialog', () => {
-  it('exibe quadros como checkboxes compactos e mantém o envio desabilitado sem título', async () => {
+  // A tarefa pertence a um único quadro (D83): a escolha é exclusiva, não múltipla.
+  it('escolhe um único quadro, já no padrão do projeto, e exige título para enviar', async () => {
     renderDialog();
 
-    const defaultBoard = await screen.findByRole('checkbox', { name: 'Backlog Mobile' });
-    const longBoard = screen.getByRole('checkbox', { name: 'Operação e sustentação do aplicativo' });
+    const boardSelect = await screen.findByRole('combobox', { name: 'Quadro' });
     const submit = screen.getByRole('button', { name: 'Criar item' });
 
-    expect(defaultBoard).toBeChecked();
-    expect(longBoard).not.toBeChecked();
-    expect(defaultBoard).toHaveStyle({ width: '16px', height: '16px', minHeight: '16px' });
+    expect(boardSelect).toHaveValue('board-1');
+    expect(screen.queryByRole('checkbox', { name: 'Backlog Mobile' })).toBeNull();
     expect(submit).toBeDisabled();
+
+    fireEvent.change(boardSelect, { target: { value: 'board-2' } });
+    expect(boardSelect).toHaveValue('board-2');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Título da tarefa' }), { target: { value: 'Revisar login mobile' } });
     expect(submit).toBeEnabled();

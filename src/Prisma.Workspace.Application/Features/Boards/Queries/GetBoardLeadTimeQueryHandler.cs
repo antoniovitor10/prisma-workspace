@@ -6,19 +6,22 @@ using MediatR;
 namespace Prisma.Workspace.Application.Features.Boards.Queries;
 
 /// <summary>
-/// Handler do cálculo de Lead Time por etapa.
+/// Handler do cálculo de Lead Time por etapa do fluxo do projeto (visão filtrada pelo quadro).
 /// </summary>
 public class GetBoardLeadTimeQueryHandler : IRequestHandler<GetBoardLeadTimeQuery, IReadOnlyList<StageLeadTimeDto>>
 {
+    private readonly IBoardRepository _boardRepository;
     private readonly IStageRepository _stageRepository;
     private readonly IStageHistoryRepository _stageHistoryRepository;
     private readonly IBoardAccessService _access;
 
     public GetBoardLeadTimeQueryHandler(
+        IBoardRepository boardRepository,
         IStageRepository stageRepository,
         IStageHistoryRepository stageHistoryRepository,
         IBoardAccessService access)
     {
+        _boardRepository = boardRepository;
         _stageRepository = stageRepository;
         _stageHistoryRepository = stageHistoryRepository;
         _access = access;
@@ -30,16 +33,19 @@ public class GetBoardLeadTimeQueryHandler : IRequestHandler<GetBoardLeadTimeQuer
     {
         await _access.EnsureAsync(request.BoardId, request.ActorId,
             PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
-        var stages = await _stageRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
+
+        var board = await _boardRepository.GetByIdAsync(request.BoardId, cancellationToken)
+            ?? throw new ArgumentException("O quadro especificado não existe.");
+
+        var stages = await _stageRepository.GetByBoardIdAsync(board.Id, cancellationToken);
         var histories = await _stageHistoryRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
 
         var leadTimes = new List<StageLeadTimeDto>();
 
         foreach (var stage in stages)
         {
-            // Filtra os históricos desta coluna específica e que já foram finalizados (LeftAt não nulo)
             var stageHistories = histories
-                .Where(h => h.StageId == stage.Id && h.LeftAt.HasValue)
+                .Where(h => (h.StageId == stage.Id || h.StageId == stage.LegacyStageId) && h.LeftAt.HasValue)
                 .ToList();
 
             double avgSecs = 0;

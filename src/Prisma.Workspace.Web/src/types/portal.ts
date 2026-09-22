@@ -91,22 +91,6 @@ export interface ExternalRequestAttachment {
   createdAt: string;
 }
 
-export interface SlaMilestone {
-  status: number;
-  dueAt?: string;
-  metAt?: string;
-}
-
-export interface ExternalRequestSla {
-  firstResponse: SlaMilestone;
-  resolution: SlaMilestone;
-  isPaused: boolean;
-  pausedAt?: string;
-  pausedBusinessMinutes: number;
-  alertsEnabled: boolean;
-  nearDueMinutes: number;
-}
-
 export interface ExternalRequestTriageEvent {
   id: string;
   action: number;
@@ -148,7 +132,6 @@ export interface ExternalRequest {
   completionConfirmedAt?: string;
   submittedValues: Record<string, string | undefined>;
   triageEvents: ExternalRequestTriageEvent[];
-  sla: ExternalRequestSla;
   messages: ExternalRequestMessage[];
   attachments: ExternalRequestAttachment[];
 }

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.29" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -22,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Prisma.Workspace.Api\Prisma.Workspace.Api.csproj" />
     <ProjectReference Include="..\..\src\Prisma.Workspace.Application\Prisma.Workspace.Application.csproj" />
     <ProjectReference Include="..\..\src\Prisma.Workspace.Infrastructure\Prisma.Workspace.Infrastructure.csproj" />
   </ItemGroup>

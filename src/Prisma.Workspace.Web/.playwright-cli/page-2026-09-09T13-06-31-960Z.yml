@@ -1,0 +1,57 @@
+- generic [ref=f6e3]:
+  - generic [ref=f6e4]:
+    - region "Prisma WorkSpace" [ref=f6e5]:
+      - generic [ref=f6e13]:
+        - heading "PRISMA WorkSpace" [level=1] [ref=f6e28]:
+          - text: PRISMA
+          - generic [ref=f6e29]: WorkSpace
+        - paragraph [ref=f6e31]: Uma visão completa do seu trabalho
+      - list [ref=f6e32]:
+        - listitem [ref=f6e33]:
+          - strong [ref=f6e38]: Planeje
+          - generic [ref=f6e39]: Organize demandas e defina prioridades.
+        - listitem [ref=f6e40]:
+          - strong [ref=f6e46]: Colabore
+          - generic [ref=f6e47]: Trabalhe em equipe em tempo real.
+        - listitem [ref=f6e48]:
+          - strong [ref=f6e52]: Acompanhe
+          - generic [ref=f6e53]: Tenha total visibilidade do progresso.
+        - listitem [ref=f6e54]:
+          - strong [ref=f6e57]: Decida
+          - generic [ref=f6e58]: Relatórios e dados para decisões assertivas.
+        - listitem [ref=f6e59]:
+          - strong [ref=f6e62]: Entregue
+          - generic [ref=f6e63]: Mais eficiência, menos retrabalho e melhores resultados.
+    - generic [ref=f6e64]:
+      - button "Alternar tema" [ref=f6e65] [cursor=pointer]: Modo claro
+      - generic [ref=f6e72]:
+        - heading "Acesse sua conta" [level=2] [ref=f6e73]
+        - paragraph [ref=f6e74]: Entre para continuar no Prisma WorkSpace.
+        - generic [ref=f6e75]:
+          - generic [ref=f6e76]:
+            - text: E-mail corporativo
+            - textbox "E-mail corporativo" [ref=f6e78]:
+              - /placeholder: seu.nome@empresa.com
+          - generic [ref=f6e79]:
+            - text: Senha
+            - generic [ref=f6e80]:
+              - textbox "Senha Mostrar senha" [ref=f6e81]:
+                - /placeholder: Digite sua senha
+              - button "Mostrar senha" [ref=f6e82] [cursor=pointer]
+          - generic [ref=f6e86]:
+            - generic [ref=f6e87] [cursor=pointer]:
+              - checkbox "Manter conectado" [checked] [ref=f6e88]
+              - text: Manter conectado
+            - button "Esqueceu sua senha?" [ref=f6e89] [cursor=pointer]
+          - button "Entrar →" [ref=f6e90] [cursor=pointer]
+        - generic [ref=f6e95]: ou
+        - button "Entrar com SSO (Conta corporativa)" [ref=f6e96] [cursor=pointer]
+        - paragraph [ref=f6e99]:
+          - text: Ainda não tem conta?
+          - button "Fale com o administrador" [ref=f6e100] [cursor=pointer]
+          - text: ou
+          - button "registre-se" [ref=f6e101] [cursor=pointer]
+          - text: .
+  - contentinfo [ref=f6e102]:
+    - generic [ref=f6e103]: Ambiente seguro e monitorado
+    - generic [ref=f6e108]: Seus dados estão protegidos conforme a LGPD

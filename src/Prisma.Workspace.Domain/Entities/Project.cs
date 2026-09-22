@@ -35,6 +35,8 @@ public class Project : IOrganizationOwned
     public Board? DefaultBoard { get; set; }
     public OrganizationWorkflowTemplate? WorkflowTemplate { get; set; }
     public ICollection<Board> Boards { get; set; } = new List<Board>();
+    /// <summary>Colunas do fluxo do projeto (Kanban sem quadro obrigatório).</summary>
+    public ICollection<Stage> Stages { get; set; } = new List<Stage>();
     public ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
     public ICollection<ProjectTeam> Teams { get; set; } = new List<ProjectTeam>();
     public ICollection<Sprint> Sprints { get; set; } = new List<Sprint>();
@@ -42,7 +44,6 @@ public class Project : IOrganizationOwned
     public ICollection<ProjectCustomFieldDefinition> CustomFields { get; set; } = new List<ProjectCustomFieldDefinition>();
     public ICollection<ProjectEvent> Events { get; set; } = new List<ProjectEvent>();
     public ICollection<WorkflowStatus> WorkflowStatuses { get; set; } = new List<WorkflowStatus>();
-    public ProjectSlaPolicy? SlaPolicy { get; set; }
 
     public static Project Criar(
         string chave,

@@ -15,9 +15,10 @@ public sealed class AutomationExecutor : IAutomationExecutor
     private const int MaxActions = 5;
     private readonly AppDbContext _context;
     private readonly IWorkflowRepository _workflow;
+    private readonly IProjectAccessService _projectAccess;
 
-    public AutomationExecutor(AppDbContext context, IWorkflowRepository workflow)
-        => (_context, _workflow) = (context, workflow);
+    public AutomationExecutor(AppDbContext context, IWorkflowRepository workflow, IProjectAccessService projectAccess)
+        => (_context, _workflow, _projectAccess) = (context, workflow, projectAccess);
 
     public async Task ExecuteStageEnteredAsync(
         Guid workItemId,
@@ -97,8 +98,15 @@ public sealed class AutomationExecutor : IAutomationExecutor
             case AutomationActionType.AssignUser:
                 if (item.Assignees.Any(x => x.UserId == rule.ActionValue))
                     return AutomationOutcome.Skip("already_assigned");
-                var userExists = await _context.Users.AsNoTracking().AnyAsync(x => x.Id == rule.ActionValue, ct);
-                if (!userExists) return AutomationOutcome.Skip("user_not_found");
+                var board = await _context.Boards.AsNoTracking()
+                    .Where(x => x.Id == item.BoardId)
+                    .Select(x => new { x.ProjectId, x.OrganizationId })
+                    .SingleAsync(ct);
+                var activeMember = await _context.OrganizationMembers.AsNoTracking().AnyAsync(
+                    x => x.UserId == rule.ActionValue && x.OrganizationId == board.OrganizationId && x.IsActive, ct);
+                if (!activeMember) return AutomationOutcome.Skip("user_not_found");
+                if (await _projectAccess.GetRoleAsync(board.ProjectId, rule.ActionValue, ct) is null)
+                    return AutomationOutcome.Skip("target_without_project_access");
                 item.Assignees.Add(new WorkItemAssignee
                 {
                     WorkItemId = item.Id,
@@ -137,7 +145,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         if (!Guid.TryParse(value, out var destinationId))
             return AutomationOutcome.Skip("invalid_stage");
         var destination = await _context.Stages.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == destinationId && x.BoardId == item.BoardId, ct);
+            .FirstOrDefaultAsync(x => x.Id == destinationId && x.ProjectId == item.Board.ProjectId && x.BoardId == item.BoardId, ct);
         if (destination is null) return AutomationOutcome.Skip("stage_not_found");
         if (destination.Id == item.StageId) return AutomationOutcome.Skip("no_change");
         if (!visitedStages.Add(destination.Id)) return AutomationOutcome.Skip("runtime_cycle");

@@ -46,6 +46,9 @@ public sealed class OrganizationWorkflowRepository : IOrganizationWorkflowReposi
             .Include(x => x.WorkflowTemplate).ThenInclude(x => x!.Statuses)
             .Include(x => x.WorkflowTemplate).ThenInclude(x => x!.Transitions)
             .Include(x => x.WorkflowStatuses).ThenInclude(x => x.OutgoingTransitions)
+            .Include(x => x.WorkflowStatuses).ThenInclude(x => x.Stages)
+            .Include(x => x.WorkflowStatuses).ThenInclude(x => x.WorkItems)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == projectId, ct);
 
     public async Task<IReadOnlyList<OrganizationWorkflowTemplate>> GetOtherDefaultsAsync(

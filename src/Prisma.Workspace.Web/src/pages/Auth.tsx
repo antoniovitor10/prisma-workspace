@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   Info,
+  KeyRound,
   Lock,
   LogIn,
   Mail,
@@ -18,14 +19,14 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { BrandGem, BrandMark } from '../components/BrandMark';
+import { BrandMark } from '../components/BrandMark';
 import { useThemeMode } from '../styles/ThemeMode';
 
 const Page = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 10px;
+  padding: 4px 9px;
   background:
     radial-gradient(circle at 8% 8%, rgba(124, 58, 237, 0.08), transparent 28%),
     radial-gradient(circle at 92% 82%, rgba(249, 115, 22, 0.06), transparent 24%),
@@ -41,7 +42,7 @@ const Shell = styled.div`
   grid-template-columns: minmax(0, 1.42fr) minmax(430px, 1fr);
   min-height: 0;
   width: 100%;
-  max-width: 1720px;
+  max-width: none;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -63,8 +64,8 @@ const BrandPanel = styled.section`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 22px;
-  padding: 38px clamp(30px, 4.4vw, 70px) 32px;
+  gap: 48px;
+  padding: 28px clamp(24px, 3vw, 50px) 76px;
   overflow: hidden;
   background:
     radial-gradient(ellipse 62% 48% at 50% 38%, rgba(79, 70, 229, 0.09), transparent 65%),
@@ -77,7 +78,7 @@ const BrandPanel = styled.section`
   }
 
   @media (min-width: 961px) and (min-height: 850px) {
-    padding-bottom: 158px;
+    padding-bottom: 112px;
   }
 
   &::before {
@@ -89,7 +90,7 @@ const BrandPanel = styled.section`
       linear-gradient(122deg, transparent 49.6%, rgba(124, 58, 237, 0.11) 50%, transparent 50.4%),
       linear-gradient(58deg, transparent 49.6%, rgba(37, 99, 235, 0.08) 50%, transparent 50.4%);
     background-size: 210px 210px;
-    opacity: 0.62;
+    opacity: 0.16;
     pointer-events: none;
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
   }
@@ -125,7 +126,7 @@ const Hero = styled.div`
   display: grid;
   justify-items: center;
   align-self: center;
-  gap: 12px;
+  gap: 8px;
   width: min(100%, 620px);
   text-align: center;
 `;
@@ -134,34 +135,34 @@ const GemWrap = styled.div`
   margin-bottom: -4px;
   transform: translateY(4px);
   filter: drop-shadow(0 22px 26px rgba(79, 70, 229, 0.23));
+  img { display: block; width: 194px; height: auto; }
 `;
 
 const ProductName = styled.h1`
   margin: 0;
   font-family: ${({ theme }) => theme.font.display};
-  font-size: clamp(42px, 4.5vw, 66px);
-  font-weight: 600;
-  letter-spacing: 0.25em;
+  font-size: clamp(52px, 5.05vw, 82px);
+  font-weight: 300;
+  letter-spacing: 0.21em;
+  padding-left: 0.21em;
   line-height: 1;
   color: ${({ theme }) => theme.color.text};
 
-  span {
+  > span {
     display: block;
     margin-top: 8px;
-    font-size: 0.55em;
-    font-weight: 500;
+    font-size: 0.64em;
+    font-weight: 400;
     letter-spacing: -0.035em;
-    background: ${({ theme }) => theme.color.gradient};
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: #5362f1;
   }
+  em { font-style: normal; background: linear-gradient(145deg,#ff9e29,#9650f0 48%,#255fff); background-clip: text; -webkit-background-clip: text; color: transparent; }
 `;
 
 const SpectrumRule = styled.span`
   width: min(78%, 350px);
   height: 2px;
-  margin: 10px 0 6px;
+  margin: 21px 0 18px;
   border-radius: 999px;
   background: ${({ theme }) => theme.color.gradient};
 `;
@@ -170,8 +171,8 @@ const Tagline = styled.p`
   margin: 0;
   max-width: 360px;
   font-family: ${({ theme }) => theme.font.body};
-  font-size: clamp(20px, 2vw, 27px);
-  font-weight: 500;
+  font-size: clamp(25px, 2.05vw, 35px);
+  font-weight: 400;
   line-height: 1.3;
   color: ${({ theme }) => theme.color.text};
 `;
@@ -208,17 +209,17 @@ const Feature = styled.li`
 
   svg {
     color: ${({ theme }) => theme.color.brand};
-    width: 25px;
-    height: 25px;
+    width: 40px;
+    height: 40px;
   }
 
   strong {
-    font-size: 12.5px;
+    font-size: 15px;
     font-weight: 800;
   }
 
   span {
-    font-size: 11.5px;
+    font-size: 13px;
     line-height: 1.45;
     color: ${({ theme }) => theme.color.textMuted};
   }
@@ -229,7 +230,7 @@ const FormPanel = styled.section`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 72px clamp(30px, 4.4vw, 72px) 50px;
+  padding: 110px clamp(28px, 3vw, 52px) 60px;
   background:
     linear-gradient(180deg, color-mix(in srgb, ${({ theme }) => theme.color.surfaceSubtle} 92%, transparent), ${({ theme }) => theme.color.surfaceSubtle});
 
@@ -248,7 +249,7 @@ const ThemeChip = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.pill};
@@ -322,7 +323,7 @@ const InputWrap = styled.div`
 
 const Input = styled.input`
   width: 100%;
-  min-height: 58px;
+  min-height: 64px;
   padding: 0 42px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.radius.lg};
@@ -342,8 +343,8 @@ const EyeButton = styled.button`
   right: 10px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   color: ${({ theme }) => theme.color.textMuted};
   border-radius: ${({ theme }) => theme.radius.sm};
 
@@ -382,10 +383,10 @@ const PrimaryButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 58px;
+  min-height: 64px;
   border-radius: ${({ theme }) => theme.radius.lg};
-  background: ${({ theme }) => theme.color.gradient};
-  background-size: 130% 130%;
+  background: linear-gradient(100deg,#2c50f4 0%,#7040ea 43%,#c74bbb 68%,#ff8b22 100%);
+  background-size: 100% 100%;
   color: white;
   font-size: 15px;
   font-weight: 800;
@@ -449,6 +450,27 @@ const FooterNote = styled.p`
   }
 `;
 
+const SetupLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 14px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 13px;
+  font-weight: 700;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.accentViolet};
+    color: ${({ theme }) => theme.color.accentViolet};
+  }
+`;
+
 const PageFooter = styled.footer`
   display: flex;
   flex-wrap: wrap;
@@ -456,7 +478,7 @@ const PageFooter = styled.footer`
   justify-content: center;
   gap: 10px 18px;
   width: 100%;
-  max-width: 1720px;
+  max-width: none;
   margin: 0 auto;
   padding: 13px 20px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -485,9 +507,9 @@ const Alert = styled.div<{ $tone?: 'error' | 'info' }>`
   border: 1px solid ${({ theme, $tone }) => ($tone === 'error' ? theme.color.danger : theme.color.accentBlue)};
   background: ${({ theme, $tone }) =>
     $tone === 'error'
-      ? `color-mix(in srgb, ${theme.color.danger} 8%, white)`
-      : `color-mix(in srgb, ${theme.color.accentBlue} 8%, white)`};
-  color: ${({ theme, $tone }) => ($tone === 'error' ? theme.color.danger : theme.color.text)};
+      ? `color-mix(in srgb, ${theme.color.danger} 8%, ${theme.color.surface})`
+      : `color-mix(in srgb, ${theme.color.accentBlue} 8%, ${theme.color.surface})`};
+  color: ${({ theme }) => theme.color.text};
   font-size: 13.5px;
   line-height: 1.45;
 `;
@@ -504,7 +526,12 @@ export const Auth: React.FC = () => {
   const { mode, toggleMode } = useThemeMode();
   const initialParams = new URLSearchParams(window.location.search);
   const initialMode = initialParams.get('mode');
-  const hasInvite = Boolean(initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
+  const [inviteToken, setInviteToken] = useState(() => initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
+  const hasInvite = Boolean(inviteToken);
+  const [inviteFailed, setInviteFailed] = useState(false);
+  const [invite, setInvite] = useState<{ email: string; organizationName: string; accountExists: boolean } | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isRegister, setIsRegister] = useState(hasInvite);
   const [flow, setFlow] = useState<'login' | 'forgot' | 'reset' | 'confirm'>(
     initialMode === 'forgot-password' ? 'forgot'
@@ -523,6 +550,44 @@ export const Auth: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ssoNotice, setSsoNotice] = useState<string | null>(null);
+  const [setupAvailable, setSetupAvailable] = useState(false);
+
+  const continueWithoutInvitation = () => {
+    localStorage.removeItem('pendingInvite');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('invite');
+    url.searchParams.delete('mode');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    setInviteToken(null);
+    setInvite(null);
+    setInviteFailed(false);
+    setIsRegister(false);
+    setFlow('login');
+    setError(null);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    setInviteFailed(false);
+    let active = true;
+    api.previewInvitation(inviteToken).then(data => {
+      if (!active) return;
+      setInvite(data);
+      setEmail(data.email);
+      setIsRegister(!data.accountExists);
+    }).catch(err => { if (active) { setInviteFailed(true); setError(err instanceof Error ? err.message : 'Convite indisponível.'); } });
+    return () => { active = false; };
+  }, [inviteToken]);
+
+  useEffect(() => {
+    let active = true;
+    api.getSetupStatus()
+      .then((status) => { if (active) setSetupAvailable(status.setupAvailable && !status.initialized); })
+      .catch(() => { /* O login continua funcional quando o status não está acessível. */ });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (flow !== 'confirm' || !recovery.userId || !recovery.token) return;
@@ -543,7 +608,12 @@ export const Auth: React.FC = () => {
     setSsoNotice(null);
 
     try {
-      if (flow === 'forgot') {
+      if (hasInvite && flow === 'login') {
+        if (!invite || !inviteToken) throw new Error('Convite indisponível. Peça um novo link ao administrador.');
+        if (isRegister && password !== confirmPassword) throw new Error('As senhas não coincidem.');
+        await api.completeInvitation({ token: inviteToken, password, createAccount: isRegister,
+          fullName: isRegister ? fullName : undefined, confirmPassword: isRegister ? confirmPassword : undefined });
+      } else if (flow === 'forgot') {
         const result = await api.forgotPassword(email);
         if (result?.developmentToken && result?.developmentUserId) {
           setRecovery({ userId: result.developmentUserId, token: result.developmentToken });
@@ -605,9 +675,9 @@ export const Auth: React.FC = () => {
           </BrandTop>
 
           <Hero>
-            <GemWrap><BrandGem size={172} /></GemWrap>
+            <GemWrap><img src="/prisma-login-prism.svg" alt="Prisma facetado" width="194" height="187" /></GemWrap>
             <ProductName>
-              PRISMA
+              PRISM<em>A</em>
               <span>WorkSpace</span>
             </ProductName>
             <SpectrumRule aria-hidden="true" />
@@ -657,20 +727,28 @@ export const Auth: React.FC = () => {
             <FormTitle>{heading}</FormTitle>
             <FormSubtitle>{subtitle}</FormSubtitle>
 
-            {hasInvite && (
+            {hasInvite && !inviteFailed && (
               <Alert $tone="info">
                 <Info size={16} />
                 <span>
-                  <strong>Você recebeu um convite para entrar em uma organização.</strong><br />
-                  Use o mesmo e-mail do convite — ele será aceito automaticamente.
+                  <strong>{invite ? `Convite para ${invite.organizationName}.` : 'Verificando convite...'}</strong><br />
+                  {invite?.accountExists ? 'Sua conta já existe. Entre com sua senha para aceitar.' : 'Crie sua conta para entrar direto na organização, sem outro e-mail de confirmação.'}
                 </span>
               </Alert>
             )}
             {error && <Alert $tone="error"><Info size={16} /><span>{error}</span></Alert>}
+            {hasInvite && inviteFailed && <div>
+              <p>Se você já tem conta, entre normalmente. Para aceitar um convite indisponível, peça um novo link ao administrador.</p>
+              <SecondaryButton type="button" onClick={continueWithoutInvitation}>Ir para o login</SecondaryButton>
+            </div>}
             {notice && <Alert $tone="info"><Info size={16} /><span>{notice}</span></Alert>}
             {ssoNotice && <Alert $tone="info"><Shield size={16} /><span>{ssoNotice}</span></Alert>}
 
             <Form onSubmit={handleSubmit}>
+              {hasInvite && isRegister && flow === 'login' && (
+                <Field>Nome completo<InputWrap><Input value={fullName} onChange={e => setFullName(e.target.value)}
+                  autoComplete="name" maxLength={200} required placeholder="Seu nome e sobrenome" /></InputWrap></Field>
+              )}
               <Field>
                 {flow === 'forgot' ? 'E-mail para recuperação' : 'E-mail corporativo'}
                 <InputWrap>
@@ -680,6 +758,7 @@ export const Auth: React.FC = () => {
                     type="email"
                     placeholder="seu.nome@empresa.com"
                     value={email}
+                    readOnly={hasInvite && flow === 'login'}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="username"
                     required
@@ -713,6 +792,12 @@ export const Auth: React.FC = () => {
                 </Field>
               )}
 
+              {hasInvite && isRegister && flow === 'login' && (
+                <Field>Confirmar senha<InputWrap><Lock size={16} /><Input type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password"
+                  required placeholder="Digite a senha novamente" /></InputWrap></Field>
+              )}
+
               {(isRegister || flow === 'reset') && (
                 <Alert $tone="info">
                   <Info size={16} />
@@ -736,11 +821,11 @@ export const Auth: React.FC = () => {
                 </Row>
               )}
 
-              <PrimaryButton type="submit" disabled={loading}>
+              <PrimaryButton type="submit" disabled={loading || (hasInvite && flow === 'login' && !invite)}>
                 {loading ? 'Processando...' : flow === 'forgot' ? 'Enviar instruções' : flow === 'reset' ? 'Redefinir senha' : isRegister ? (
-                  <><UserPlus size={18} /><span>Criar conta</span></>
+                  <><UserPlus size={18} /><span>{hasInvite ? 'Criar conta e entrar' : 'Criar conta'}</span></>
                 ) : (
-                  <><LogIn size={18} /><span>Entrar →</span></>
+                  <><LogIn size={18} /><span>{hasInvite ? 'Entrar e aceitar convite' : 'Entrar →'}</span></>
                 )}
               </PrimaryButton>
             </Form>
@@ -767,6 +852,10 @@ export const Auth: React.FC = () => {
                 <>Ainda não tem conta? <button type="button" onClick={() => setIsRegister(true)}>Fale com o administrador</button> ou <button type="button" onClick={() => setIsRegister(true)}>registre-se</button>.</>
               )}
             </FooterNote>
+
+            {flow === 'login' && !isRegister && setupAvailable && (
+              <SetupLink href="/setup"><KeyRound size={15} /> Configurar esta instalação</SetupLink>
+            )}
           </FormCard>
         </FormPanel>
       </Shell>

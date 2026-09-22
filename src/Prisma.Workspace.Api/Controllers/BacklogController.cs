@@ -15,9 +15,14 @@ public class BacklogController : ControllerBase
     public BacklogController(IMediator mediator) => _mediator = mediator;
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
+    /// <summary>
+    /// Backlog do projeto. <c>includeArchived=true</c> traz também as tarefas arquivadas,
+    /// que de outro modo ficam inalcançáveis para restaurar.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Get(Guid projectId, CancellationToken ct)
-        => Ok(await _mediator.Send(new GetProjectBacklogQuery(projectId, UserId), ct));
+    public async Task<IActionResult> Get(
+        Guid projectId, [FromQuery] bool includeArchived = false, CancellationToken ct = default)
+        => Ok(await _mediator.Send(new GetProjectBacklogQuery(projectId, UserId, includeArchived), ct));
 
     [HttpPut("order")]
     public async Task<IActionResult> Reorder(Guid projectId, [FromBody] ReorderBacklogRequest request, CancellationToken ct)

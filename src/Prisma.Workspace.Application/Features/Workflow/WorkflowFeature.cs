@@ -13,8 +13,8 @@ public sealed record WorkflowStatusDto(
     bool IsInitial, bool IsFinal);
 public sealed record WorkflowTransitionDto(Guid SourceStatusId, Guid TargetStatusId);
 public sealed record WorkflowStageDto(
-    Guid Id, Guid BoardId, string BoardName, string Name, double Position,
-    int? WipLimit, Guid? WorkflowStatusId);
+    Guid Id, Guid ProjectId, string ProjectName, string Name, double Position,
+    Guid? WorkflowStatusId);
 public sealed record WorkflowBoardDto(Guid Id, string Name, string? CardSettingsJson);
 public sealed record ProjectWorkflowDto(
     WorkflowInheritanceMode InheritanceMode, Guid? WorkflowTemplateId, string? WorkflowTemplateName,
@@ -51,10 +51,10 @@ public sealed class GetProjectWorkflowQueryHandler : IRequestHandler<GetProjectW
             var board = await _workflow.GetBoardAsync(projectBoard.Id, ct);
             if (board is null) continue;
             boards.Add(new WorkflowBoardDto(board.Id, board.Name, board.CardSettingsJson));
-            stages.AddRange(board.Stages.OrderBy(x => x.Position).Select(x =>
-                new WorkflowStageDto(x.Id, board.Id, board.Name, x.Name, x.Position,
-                    x.WipLimit, x.WorkflowStatusId)));
         }
+
+        stages.AddRange(project.Stages.OrderBy(x => x.Position).Select(x =>
+            new WorkflowStageDto(x.Id, project.Id, project.Name, x.Name, x.Position, x.WorkflowStatusId)));
 
         return new ProjectWorkflowDto(
             project.WorkflowInheritanceMode, project.WorkflowTemplateId, project.WorkflowTemplate?.Name,
@@ -211,7 +211,7 @@ public sealed class ReplaceWorkflowTransitionsCommandHandler : IRequestHandler<R
 }
 
 public sealed record UpdateWorkflowStageCommand(
-    Guid ProjectId, Guid StageId, string Name, double Position, int? WipLimit,
+    Guid ProjectId, Guid StageId, string Name, double Position,
     Guid WorkflowStatusId, string ActorId) : IRequest;
 public sealed class UpdateWorkflowStageCommandHandler : IRequestHandler<UpdateWorkflowStageCommand>
 {
@@ -227,16 +227,15 @@ public sealed class UpdateWorkflowStageCommandHandler : IRequestHandler<UpdateWo
             ?? throw new NaoEncontradoException("Coluna");
         var status = await _workflow.GetStatusAsync(request.WorkflowStatusId, ct)
             ?? throw new NaoEncontradoException("Status");
-        DomainException.Garantir(stage.Board.ProjectId == request.ProjectId && status.ProjectId == request.ProjectId,
+        DomainException.Garantir(stage.ProjectId == request.ProjectId && status.ProjectId == request.ProjectId,
             "A coluna e o status precisam pertencer ao projeto.");
         DomainException.Garantir(!string.IsNullOrWhiteSpace(request.Name), "Nome da coluna obrigatorio.");
         DomainException.Garantir(request.Position >= 0, "Posicao da coluna invalida.");
-        DomainException.Garantir(request.WipLimit is null or > 0, "O limite de WIP deve ser maior que zero.");
 
+        DomainException.Garantir(false, "Configure as colunas independentes no próprio quadro; colunas históricas são somente leitura.");
         var changedStatus = stage.WorkflowStatusId != status.Id;
         stage.Name = request.Name.Trim();
         stage.Position = request.Position;
-        stage.WipLimit = request.WipLimit;
         stage.WorkflowStatusId = status.Id;
         stage.Category = status.Category;
         await _workflow.SaveAsync(ct);
@@ -257,9 +256,10 @@ public sealed class DeleteWorkflowStageCommandHandler : IRequestHandler<DeleteWo
         await _access.EnsureAtLeastAsync(request.ProjectId, request.ActorId, ProjectRole.ProjectAdmin, ct);
         var stage = await _workflow.GetStageAsync(request.StageId, ct)
             ?? throw new NaoEncontradoException("Coluna");
-        DomainException.Garantir(stage.Board.ProjectId == request.ProjectId, "A coluna nao pertence ao projeto.");
+        DomainException.Garantir(stage.ProjectId == request.ProjectId, "A coluna nao pertence ao projeto.");
         DomainException.Garantir(await _workflow.CountActiveItemsInStageAsync(stage.Id, ct: ct) == 0,
             "Mova ou arquive as tarefas antes de excluir a coluna.");
+        DomainException.Garantir(false, "Exclua a coluna pelo quadro, informando destino quando ocupada.");
         _workflow.DeleteStage(stage);
         await _workflow.SaveAsync(ct);
     }

@@ -1,20 +1,22 @@
 import { expect, test } from './fixtures/test';
 
 test.describe('criação rápida', () => {
-  test('TASK-020 mantém a seleção de quadros legível e sem overflow', async ({ page, authenticatedGoto }) => {
+  // D83: a tarefa pertence a um único quadro, então a escolha é um seletor e não mais
+  // uma lista de checkboxes. O que continua valendo é a legibilidade e a ausência de
+  // overflow no diálogo, que era o objeto original da TASK-020.
+  test('TASK-020 mantém a seleção de quadro legível e sem overflow', async ({ page, authenticatedGoto }) => {
     await authenticatedGoto('/projects');
     await page.getByRole('button', { name: 'Novo item' }).click();
+    await page.getByRole('menuitem', { name: 'Tarefa', exact: true }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Criar item rapidamente' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('combobox', { name: 'Projeto' })).toBeVisible();
 
-    const checkboxes = dialog.getByRole('checkbox');
-    await expect(checkboxes.first()).toBeVisible();
-    const checkboxBox = await checkboxes.first().boundingBox();
-    expect(checkboxBox).not.toBeNull();
-    expect(checkboxBox!.width).toBeLessThanOrEqual(20);
-    expect(checkboxBox!.height).toBeLessThanOrEqual(20);
+    const boardSelect = dialog.getByRole('combobox', { name: 'Quadro' });
+    await expect(boardSelect).toBeVisible();
+    await expect(boardSelect).not.toHaveValue('');
+    await expect(dialog.getByRole('checkbox')).toHaveCount(0);
 
     const hasHorizontalOverflow = await dialog.evaluate(element => element.scrollWidth > element.clientWidth);
     expect(hasHorizontalOverflow).toBe(false);

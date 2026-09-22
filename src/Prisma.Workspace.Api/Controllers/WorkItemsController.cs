@@ -37,6 +37,19 @@ public class WorkItemsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Lista os itens de trabalho do projeto inteiro, sem depender de quadro escolhido.
+    /// </summary>
+    [HttpGet("project/{projectId:guid}")]
+    [ProducesResponseType(typeof(IReadOnlyList<WorkItemDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByProjectId(Guid projectId, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var result = await _mediator.Send(
+            new GetWorkItemsByProjectIdQuery(projectId, userId), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("search")]
     [ProducesResponseType(typeof(IReadOnlyList<WorkItemSummaryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -107,7 +120,6 @@ public class WorkItemsController : ControllerBase
             request.RequesterEmail,
             request.StartDate,
             request.AcceptanceCriteria,
-            BoardIds: request.BoardIds,
             ProjectId: request.ProjectId
         );
 
@@ -251,9 +263,7 @@ public record CreateWorkItemRequest(
     string? RequesterEmail = null,
     DateOnly? StartDate = null,
     string? AcceptanceCriteria = null,
-    /// <summary>Lista de quadros para posicionar o item (multi-board). Quando presente, sobrepõe BoardId.</summary>
-    IReadOnlyList<Guid>? BoardIds = null,
-    /// <summary>Quando BoardId e BoardIds são omitidos, resolve o quadro padrão deste projeto.</summary>
+    /// <summary>Quando BoardId é omitido, resolve o quadro padrão deste projeto.</summary>
     Guid? ProjectId = null
 );
 

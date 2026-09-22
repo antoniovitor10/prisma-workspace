@@ -35,6 +35,8 @@ Esta revisão humana não autoriza alteração imediata de código. Os itens div
 
 ## Contrato aprovado por PO
 
+**Exceção aprovada em 2026-09-19:** no onboarding por convite, a posse do token válido confirma o e-mail como parte do cadastro/aceite atômico, sem segundo e-mail; conta existente exige senha atual. Ver `SPEC-INVITATION-ONBOARDING`. Cadastro público sem convite mantém confirmação separada.
+
 1. Desativar um membro remove o acesso ao seu único tenant sem apagar ou bloquear globalmente a identidade. O usuário comum não pode possuir outra associação organizacional; após a desativação, a sessão pode continuar autenticada, mas não acessa APIs funcionais de organização.
 2. Registros de sessões encerradas, revogadas ou expiradas permanecem armazenados indefinidamente. Não há limpeza automática por prazo.
 3. Quando o mesmo refresh token é apresentado quase simultaneamente, apenas a primeira renovação é aceita. A segunda é recusada, sem emitir outro token e sem revogar toda a sessão ou família.

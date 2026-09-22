@@ -15,5 +15,8 @@ public class CreateBoardCommandValidator : AbstractValidator<CreateBoardCommand>
 
         RuleFor(x => x.OwnerId)
             .NotEmpty().WithMessage("O proprietário do quadro é obrigatório.");
+
+        RuleFor(x => x.ProjectId)
+            .NotEmpty().WithMessage("O projeto do quadro é obrigatório.");
     }
 }

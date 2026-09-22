@@ -4,14 +4,14 @@ using Prisma.Workspace.Domain.Enums;
 namespace Prisma.Workspace.Application.Features.Stages.Commands;
 
 /// <summary>
-/// Comando para criar uma nova etapa (Stage) em um Quadro.
+/// Comando para criar uma nova etapa (Stage) no fluxo do projeto.
 /// </summary>
 public record CreateStageCommand(
-    Guid BoardId,
+    Guid ProjectId,
     string Name,
     double Position,
-    int? WipLimit,
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B",
-    string? ActorId = null) : IRequest<Guid>;
+    string? ActorId = null,
+    Guid? BoardId = null) : IRequest<Guid>;

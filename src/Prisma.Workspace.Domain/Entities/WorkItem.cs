@@ -102,17 +102,11 @@ public class WorkItem
 
     // ── Navegação ──────────────────────────────────────────────
 
-    /// <summary>
-    /// Quadro "home" legado/compatível. A projeção canônica multi-quadro vive em
-    /// <see cref="BoardPlacements"/>; este campo espelha a colocação principal.
-    /// </summary>
+    /// <summary>Quadro ao qual o item pertence.</summary>
     public Board Board { get; set; } = null!;
 
     /// <summary>Etapa atual do item (pode ser nula).</summary>
     public Stage? Stage { get; set; }
-
-    /// <summary>Projeções do item em um ou mais quadros do projeto.</summary>
-    public ICollection<WorkItemBoardPlacement> BoardPlacements { get; set; } = new List<WorkItemBoardPlacement>();
 
     public WorkflowStatus? WorkflowStatus { get; set; }
 

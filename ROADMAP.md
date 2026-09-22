@@ -255,6 +255,11 @@ como evolução futura fora do MVP, conforme D37; não são pendências desta en
 
 ## [~] Fase 8 - Aderência ao documento operacional do Detran
 
+> **Reconciliação 2026-09-08:** os itens ainda abertos desta fase foram auditados contra o código e
+> redistribuídos nos lotes da **Fase 14**, com id de tarefa, dependências, gates e testes em `backlog.md`.
+> Nada foi descartado: D52, D55, D56, D57, D58, D59, D61, D62, D63 e D65 continuam vigentes e cada uma tem
+> tarefa correspondente. Esta fase permanece `[~]` como registro histórico e deixa de ser a fila de execução.
+
 Fase autorizada por PO em 2026-08-20 para concluir os requisitos auditados em
 `docs/ProjetoRunrun-Detran.docx.pdf`, preservando o comportamento atual quando o documento não define
 uma mudança.
@@ -343,6 +348,12 @@ Escopo aprovado pelo PO em 2026-09-04 na `SPEC-WORK-NATURE`, implementado e publ
 Escopo e plano aprovados pelo PO em 2026-09-05 na `SPEC-OPEN-SOURCE-DISTRIBUTION`. A preparação privada pode
 prosseguir; tornar o repositório público permanece bloqueado até escolha de licença, auditoria final e `G-DEPLOY`.
 
+> **Reconciliação 2026-09-08:** o escopo remanescente desta fase (licença, SBOM, proveniência, SemVer,
+> backup/restauração, passivo npm/NuGet e ensaio de instalação limpa) passa a ser executado pelo lote
+> `productization` da **Fase 14**, como `TASK-500` a `TASK-508`. A consolidação de migrations sai desta fase e
+> vira o lote final `migrations-consolidation` (`TASK-600` a `TASK-603`), porque a base real de produção exige
+> cadeia incremental durante todo o programa (D80).
+
 - Preservar o repositório atual como arquivo privado e criar checkpoint recuperável.
 - Criar `antoniovitor10/prisma-workspace` privado com histórico novo e snapshot por allowlist.
 - Remover conteúdo institucional, dados reais, artefatos gerados e configuração específica de infraestrutura.
@@ -352,11 +363,59 @@ prosseguir; tornar o repositório público permanece bloqueado até escolha de l
 - Criar documentação comunitária, CI de segurança, SBOM, proveniência e releases SemVer.
 - Ensaiar instalação e upgrade em ambiente limpo antes de `v0.1.0` público.
 
-### 13.1 Setup inicial seguro da Community (planejado — G-SPEC pendente)
+### 13.1 Setup inicial seguro da Community (concluído em 2026-09-08)
 
-Derivado da `SPEC-OPEN-SOURCE-DISTRIBUTION` em `SPEC-INSTALLATION-SETUP` (draft). Uma instalação normal deve
+Derivado da `SPEC-OPEN-SOURCE-DISTRIBUTION` em `SPEC-INSTALLATION-SETUP` (`approved`). Uma instalação normal
 começar sem usuários ou dados demo e permitir criar, uma única vez, a primeira organização e seu Administrator com
 token externo e transação atômica. `Setup:Enabled` precisa ser explícito; um singleton persistido impede reabertura após
 a primeira conclusão. O seed demo será Development-only, opt-in e neutro, separado do setup real e sem mutar instalações
-existentes. UI guiada de primeiro acesso e E2E pertencem ao lote futuro. Nenhuma implementação pode começar até
-`G-SPEC` e `G-MIGRATION` humanos.
+existentes. UI guiada de primeiro acesso, testes unitários e E2E desktop/mobile foram entregues. A concorrência do
+setup foi validada contra SQL Server real. `G-SPEC` e `G-MIGRATION` foram aprovados diretamente pelo PO em 2026-09-05.
+
+## [~] Fase 14 - Programa Prisma WorkSpace v2
+
+Recorte aprovado em 2026-09-22: colunas independentes por quadro (D89), contrato em `specs/independent-board-columns.md` (`approved`). G-SPEC/G-MIGRATION/G-WORKFLOW aprovados pelo PO; implementação, ensaio com backup restaurado e validação completa ainda pendentes. Não reintroduzir Sprint/Projeto N:N.
+
+Recorte de acesso aprovado em 2026-09-22 (D90): exigir acesso ao projeto antes de atribuir responsável principal ou adicional, sem concessão automática. Implementar seleção elegível, validação da API e filtragem de Meu Trabalho conforme `specs/project-assignment-access.md`.
+
+Recorte aprovado em 2026-09-21: múltiplos responsáveis por tarefa, preservando o responsável principal, conforme `specs/multiple-task-assignees.md`. Sem migration.
+
+Recorte aprovado em 2026-09-21: descrição rica e ampla da tarefa, conforme `specs/rich-task-description.md`, sem edição com IA e sem migration.
+
+Recorte aprovado em 2026-09-19: onboarding direto pelo convite (`specs/invitation-onboarding.md`), nome completo, senha com confirmação, aceite e sessão automáticos; conta existente autentica sem redefinir senha. G-SPEC e G-DEPLOY autorizados diretamente pelo PO. Sem migration.
+
+Fase autorizada pelo PO em 2026-09-08 e registrada na D80. O PO determinou que todo o trabalho passa a ocorrer
+no repositorio `prisma-workspace`, autorizou o deploy em producao sem restricao para
+`https://prisma.nordevs.com.br` e aprovou em bloco as specs ativas **exceto** a `SPEC-S-003`, que voltou para
+`draft` e recebeu o contrato novo de Sprint x Project N:N.
+
+A auditoria de 2026-09-08 comparou as 40 specs de `specs/` com o codigo real e classificou cada uma com
+evidencia de arquivo e linha. Resultado: 13 `implemented`, 15 `partially_implemented`, 4 `not_implemented`,
+1 `blocked_by_gate` e 6 `superseded`. A tabela completa, as tarefas por lote, os arquivos centrais disputados e
+as perguntas de gate estao em `backlog.md`.
+
+Regra estrutural da fase: **a cadeia de migrations permanece incremental do inicio ao fim**. A hipotese de
+migration inicial unica (fresh-install-only) e incompativel com a base real de producao, que possui dados e
+historico de migrations aplicadas. A consolidacao acontece somente no lote final.
+
+Lotes, na ordem recomendada de execucao:
+
+- `TASK-BUG-001` isolado — corrigir o defeito relatado pelo PO: concluir no Kanban nao atualiza a tarefa.
+  A causa principal auditada e a coluna nascer com `Stage.Category = InProgress`, somada as tres fontes de
+  verdade concorrentes entre `Stage`, `WorkflowStatus` e `CompletedAt`.
+- `core-domain-v2` — organizacoes, permissoes, quadros/colunas/WIP, status canonico, gestao de projetos,
+  gestao de tarefas, criacao rapida, chave tecnica e metodologia oculta.
+- `sprint-planning-v2` — sprints N:N, backlog, ordem visual do Kanban e filtros salvos.
+  **Bloqueado pelo `G-SPEC` da `SPEC-S-003 v2`.**
+- `identity-time-history-v2` — autenticacao, nome canonico, horas, historico, lead time, dependencias ocultas,
+  notificacoes e anexos.
+- `community-modules-v2` — equipes, wiki, portal externo, dashboards, SLA, acoes em massa, Gantt oculto,
+  sistema visual, home autenticada, consultas por projeto e shell superior.
+- `productization` — neutralizacao de residuos, vulnerabilidades npm/NuGet, documentacao de instalacao,
+  backup e restauracao, SBOM, SemVer, licenca e o deploy da D80.
+- `migrations-consolidation` — **por ultimo**, com ensaio em copia restaurada da base de producao.
+
+Human Gates pendentes desta fase: `G-SPEC` da `SPEC-S-003 v2`; estrategia de backfill de `Stage.Category`;
+mapeamento dos dez perfis para cinco; mapeamento de `ProjectStatus`; `G-SCOPE` da identidade do Administrador
+da plataforma; escolha da licenca; apontamento em tarefa concluida; visibilidade da capacidade da sprint; e
+`G-HISTORY` do `SprintItemSnapshot`. Nenhum deles pode ser aprovado por agente.

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 270" role="img" aria-label="Símbolo Prisma">
+          <defs>
+            <linearGradient id="pfTopLeft" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#005dff"/>
+              <stop offset=".52" stop-color="#154bff"/>
+              <stop offset="1" stop-color="#4338ff"/>
+            </linearGradient>
+            <linearGradient id="pfTopRight" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#7deaff"/>
+              <stop offset=".30" stop-color="#59c7ff"/>
+              <stop offset=".63" stop-color="#4771ff"/>
+              <stop offset="1" stop-color="#7f49ff"/>
+            </linearGradient>
+            <linearGradient id="pfLowerLeft" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffb128"/>
+              <stop offset=".18" stop-color="#ff8a1e"/>
+              <stop offset=".36" stop-color="#ff6d20"/>
+              <stop offset=".70" stop-color="#9036f0"/>
+              <stop offset="1" stop-color="#2f41ff"/>
+            </linearGradient>
+            <linearGradient id="pfLowerRight" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#315cff"/>
+              <stop offset=".28" stop-color="#2b40ff"/>
+              <stop offset=".70" stop-color="#7139ff"/>
+              <stop offset="1" stop-color="#b45dff"/>
+            </linearGradient>
+            <linearGradient id="pfBeamWarm" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffdb8c"/>
+              <stop offset=".48" stop-color="#ffffff"/>
+              <stop offset="1" stop-color="#9bc8ff"/>
+            </linearGradient>
+            <linearGradient id="pfBeamCool" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset=".42" stop-color="#c7f7ff"/>
+              <stop offset="1" stop-color="#7aa0ff"/>
+            </linearGradient>
+            <radialGradient id="pfShadowViolet">
+              <stop offset="0" stop-color="#6f40ff" stop-opacity=".28"/>
+              <stop offset=".55" stop-color="#6f40ff" stop-opacity=".09"/>
+              <stop offset="1" stop-color="#6f40ff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="pfShadowOrange">
+              <stop offset="0" stop-color="#ff8a20" stop-opacity=".24"/>
+              <stop offset="1" stop-color="#ff8a20" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="pfBlur" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="10"/>
+            </filter>
+            <filter id="pfSoftShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#4652ff" flood-opacity=".16"/>
+            </filter>
+          </defs>
+
+          <ellipse cx="140" cy="226" rx="82" ry="20" fill="url(#pfShadowViolet)" filter="url(#pfBlur)"/>
+          <ellipse cx="103" cy="209" rx="42" ry="14" fill="url(#pfShadowOrange)" filter="url(#pfBlur)"/>
+
+          <g filter="url(#pfSoftShadow)">
+            <!-- pontos de base: topo 140,18 | esq 52,160 | dir 226,156 | base 138,220 | centro 139,106 -->
+            <polygon points="140,18 52,160 139,106" fill="url(#pfTopLeft)"/>
+            <polygon points="140,18 139,106 226,156" fill="url(#pfTopRight)"/>
+            <polygon points="52,160 139,106 138,220" fill="url(#pfLowerLeft)"/>
+            <polygon points="139,106 226,156 138,220" fill="url(#pfLowerRight)"/>
+
+            <!-- facetas internas -->
+            <polygon points="140,18 111,98 139,106" fill="#1034b3" opacity=".60"/>
+            <polygon points="140,18 168,84 139,106" fill="#cbfbff" opacity=".26"/>
+            <polygon points="52,160 88,126 139,106" fill="url(#pfBeamWarm)" opacity=".88"/>
+            <polygon points="139,106 189,129 226,156" fill="url(#pfBeamCool)" opacity=".62"/>
+            <polygon points="88,126 139,106 138,220" fill="#8c4fff" opacity=".25"/>
+            <polygon points="139,106 189,129 138,220" fill="#ffffff" opacity=".08"/>
+            <polygon points="94,194 138,220 52,160" fill="#ff7b1f" opacity=".12"/>
+
+            <!-- arestas e brilho -->
+            <line x1="140" y1="18" x2="138" y2="220" stroke="#edfaff" stroke-width="1.8" opacity=".90"/>
+            <line x1="52" y1="160" x2="226" y2="156" stroke="#ffffff" stroke-width=".85" opacity=".16"/>
+            <line x1="52" y1="160" x2="138" y2="220" stroke="#ffffff" stroke-width=".95" opacity=".18"/>
+            <line x1="226" y1="156" x2="138" y2="220" stroke="#ffffff" stroke-width=".95" opacity=".18"/>
+            <line x1="52" y1="160" x2="140" y2="18" stroke="#d6fbff" stroke-width=".8" opacity=".14"/>
+            <line x1="226" y1="156" x2="140" y2="18" stroke="#d6fbff" stroke-width=".8" opacity=".14"/>
+            <circle cx="139" cy="106" r="4" fill="#ffffff" opacity=".96"/>
+          </g>
+        </svg>

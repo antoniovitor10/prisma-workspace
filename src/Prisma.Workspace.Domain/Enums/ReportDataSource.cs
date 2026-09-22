@@ -9,7 +9,7 @@ public enum ReportDataSource
     Users = 5,
     Sprints = 6,
     TimeEntries = 7,
-    Slas = 8
+    // 8 pertencia a Slas, removido pela D83.
 }
 
 public enum ReportVisualization

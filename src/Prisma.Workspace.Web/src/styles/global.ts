@@ -87,4 +87,38 @@ export const GlobalStyle = createGlobalStyle`
   ::-webkit-scrollbar-thumb:hover {
     background: ${props => props.theme.color.neutral[300]};
   }
+
+  /* Impressão: sai só o conteúdo marcado com data-print-root. Sem isto,
+     window.print() manda a página inteira, com cabeçalho, menu e filtros. */
+  @page {
+    margin: 14mm;
+  }
+
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    [data-print-root],
+    [data-print-root] * {
+      visibility: visible;
+    }
+
+    [data-print-root] {
+      position: absolute;
+      inset-inline-start: 0;
+      inset-block-start: 0;
+      width: 100%;
+      background: #fff;
+      color: #000;
+    }
+
+    /* Quebra de página não deve cortar cartão, tabela ou gráfico ao meio. */
+    [data-print-root] table,
+    [data-print-root] figure,
+    [data-print-root] canvas,
+    [data-print-root] svg {
+      break-inside: avoid;
+    }
+  }
 `;

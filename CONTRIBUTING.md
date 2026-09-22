@@ -1,7 +1,7 @@
 # Como contribuir
 
-Obrigado por ajudar a construir o Prisma WorkSpace. O projeto ainda está em preparação privada; estas regras já
-definem o fluxo que será usado pela Community Edition.
+Obrigado por ajudar a construir o Prisma WorkSpace. O repositório está público e em preparação para a primeira
+release da Community Edition; a licença de distribuição permanece pendente.
 
 ## Antes de começar
 

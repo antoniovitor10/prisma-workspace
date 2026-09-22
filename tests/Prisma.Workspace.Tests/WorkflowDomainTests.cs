@@ -53,16 +53,14 @@ public class WorkflowDomainTests
     }
 
     [Fact]
-    public async Task MoveGuard_RejectsColumnAtWipLimit()
+    public async Task MoveGuard_NaoBloqueiaPorQuantidadeDeCartoes()
     {
+        // D83 removeu o limite de WIP: nenhuma quantidade de cartoes impede a movimentacao.
         var item = new WorkItem { Id = Guid.NewGuid() };
-        var stage = new Stage { Id = Guid.NewGuid(), Name = "Em andamento", WipLimit = 2 };
-        var repository = new WorkflowRepositoryStub { ActiveItems = 2 };
+        var stage = new Stage { Id = Guid.NewGuid(), Name = "Em andamento" };
+        var repository = new WorkflowRepositoryStub { ActiveItems = 999 };
 
-        var error = await Assert.ThrowsAsync<DomainException>(() =>
-            WorkflowMoveGuard.EnsureAllowedAsync(item, stage, repository, default));
-
-        Assert.Contains("WIP", error.Message);
+        await WorkflowMoveGuard.EnsureAllowedAsync(item, stage, repository, default);
     }
 
     private sealed class WorkflowRepositoryStub : IWorkflowRepository

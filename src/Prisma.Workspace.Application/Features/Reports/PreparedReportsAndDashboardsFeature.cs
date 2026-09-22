@@ -1,4 +1,3 @@
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -13,9 +12,6 @@ public record PreparedTaskSummaryDto(int Open, int Completed, int Overdue, int B
 public record PreparedExternalSummaryDto(
     int Total, IReadOnlyList<ReportBreakdownDto> ByCategory,
     IReadOnlyList<ReportBreakdownDto> ByRequester);
-public record PreparedSlaSummaryDto(
-    int Applicable, int Met, int Overdue, int Paused, decimal CompliancePercentage,
-    decimal? AverageFirstResponseMinutes, decimal? AverageResolutionMinutes);
 public record PreparedHoursSummaryDto(decimal Planned, decimal Realized, decimal Variance);
 public record PreparedSprintMetricDto(
     Guid Id, string Name, string Status, decimal PlannedPoints,
@@ -31,7 +27,6 @@ public record PreparedReportsDto(
     IReadOnlyList<ReportBreakdownDto> TasksByPriority,
     IReadOnlyList<ReportBreakdownDto> TasksByOrigin,
     PreparedExternalSummaryDto ExternalRequests,
-    PreparedSlaSummaryDto Sla,
     PreparedHoursSummaryDto Hours,
     IReadOnlyList<PreparedSprintMetricDto> SprintVelocity,
     IReadOnlyList<ReportPeriodPointDto> Burndown,
@@ -108,16 +103,6 @@ public class GetPreparedReportsQueryHandler
         var planned = periodItems.Sum(x => x.EstimatedHours ?? 0);
         var realized = Math.Round(entries.Sum(x => ClippedHours(x.Entry, from, to)), 2);
 
-        var slaStates = requests.Select(x => SlaCalculator.MapRequest(x)).ToList();
-        var applicable = slaStates.Count(x => x.FirstResponse.Status != SlaStatus.NotApplicable
-            || x.Resolution.Status != SlaStatus.NotApplicable);
-        var met = slaStates.Count(x => x.Resolution.Status == SlaStatus.Met);
-        var resolutionBreached = slaStates.Count(x => x.Resolution.Status == SlaStatus.Overdue);
-        var slaOverdue = slaStates.Count(x => x.FirstResponse.Status == SlaStatus.Overdue
-            || x.Resolution.Status == SlaStatus.Overdue);
-        var paused = slaStates.Count(x => x.IsPaused);
-        var firstTimes = requests.Select(x => MilestoneMinutes(x, true)).Where(x => x.HasValue).Select(x => x!.Value).ToList();
-        var resolutionTimes = requests.Select(x => MilestoneMinutes(x, false)).Where(x => x.HasValue).Select(x => x!.Value).ToList();
         var velocity = sprints.Where(x => x.Status is SprintStatus.Closed or SprintStatus.Active)
             .OrderBy(x => x.StartDate).TakeLast(12).Select(SprintMetric).ToList();
         var active = sprints.OrderByDescending(x => x.StartDate).FirstOrDefault(x => x.Status == SprintStatus.Active);
@@ -129,8 +114,8 @@ public class GetPreparedReportsQueryHandler
             Breakdown(periodItems, x => (x.TeamId ?? x.Board.TeamId)?.ToString() ?? "unassigned",
                 key => periodItems.FirstOrDefault(x => (x.TeamId ?? x.Board.TeamId)?.ToString() == key)?.Team?.Name
                     ?? periodItems.FirstOrDefault(x => x.Board.TeamId?.ToString() == key)?.Board.Team?.Name ?? "Sem equipe"),
-            Breakdown(periodItems, x => x.Board.ProjectId?.ToString() ?? "legacy",
-                key => periodItems.FirstOrDefault(x => x.Board.ProjectId?.ToString() == key)?.Board.Project?.Name ?? "Sem projeto"),
+            Breakdown(periodItems, x => x.Board.ProjectId.ToString(),
+                key => periodItems.FirstOrDefault(x => x.Board.ProjectId.ToString() == key)?.Board.Project?.Name ?? "Sem projeto"),
             Breakdown(periodItems, x => x.CompletedAt.HasValue ? "completed" : x.WorkflowStatus?.Name ?? x.Stage?.Name ?? "backlog",
                 key => key == "completed" ? "Concluída" : key),
             Breakdown(periodItems, x => x.Priority.ToString(), key => PriorityLabel(key)),
@@ -138,11 +123,6 @@ public class GetPreparedReportsQueryHandler
             new PreparedExternalSummaryDto(requests.Count,
                 Breakdown(requests, x => x.Category ?? "uncategorized", key => key == "uncategorized" ? "Sem categoria" : key),
                 Breakdown(requests, x => x.RequesterEmail, key => requests.First(x => x.RequesterEmail == key).WorkItem.RequesterName ?? key)),
-            new PreparedSlaSummaryDto(applicable, met, slaOverdue, paused,
-                met + resolutionBreached == 0 ? 0
-                    : Math.Round(met * 100m / (met + resolutionBreached), 2),
-                firstTimes.Count == 0 ? null : Math.Round(firstTimes.Average(), 2),
-                resolutionTimes.Count == 0 ? null : Math.Round(resolutionTimes.Average(), 2)),
             new PreparedHoursSummaryDto(Math.Round(planned, 2), realized, Math.Round(realized - planned, 2)),
             velocity, active is null ? [] : Burndown(active, from, to),
             Workload(periodItems, from, to));
@@ -228,8 +208,6 @@ public class GetPreparedReportsQueryHandler
     { var start=new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var end=new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);return entry.StartedAt<end&&(entry.EndedAt??DateTimeOffset.UtcNow)>start; }
     private static decimal ClippedHours(TimeEntry entry,DateOnly from,DateOnly to)
     { var start=new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var end=new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var actualStart=entry.StartedAt<start?start:entry.StartedAt;var naturalEnd=entry.EndedAt??DateTimeOffset.UtcNow;var actualEnd=naturalEnd>end?end:naturalEnd;return (decimal)Math.Max(0,(actualEnd-actualStart).TotalHours); }
-    private static decimal? MilestoneMinutes(ExternalRequest request,bool first)
-    { var end=first?request.FirstRespondedAt:request.WorkItem.CompletedAt;if(!end.HasValue)return null;var snapshot=SlaCalculator.Snapshot(request);var minutes=snapshot is null?Math.Round((decimal)(end.Value-request.CreatedAt).TotalMinutes,2):SlaCalculator.BusinessMinutesBetween(request.CreatedAt,end.Value,snapshot);return first?minutes:Math.Max(0,minutes-request.SlaPausedBusinessMinutes); }
     private static string PriorityLabel(string value)=>value switch{"Low"=>"Baixa","Medium"=>"Média","High"=>"Alta","Critical"=>"Crítica",_=>value};
     private static string OriginLabel(string value)=>value switch{"Internal"=>"Interna","ExternalPortal"=>"Portal externo","Form"=>"Formulário","Integration"=>"Integração","Import"=>"Importação",_=>value};
 }

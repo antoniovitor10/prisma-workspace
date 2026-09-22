@@ -40,11 +40,12 @@ const organizations: OrganizationStateValue['organizations'] = [
 function renderTopbar(
   initialEntries: string[] = ['/projects'],
   current: OrganizationStateValue['organizations'][number] = organizations[0],
+  lista: OrganizationStateValue['organizations'] = organizations,
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const switchOrganization = vi.fn();
   const orgState: OrganizationStateValue = {
-    organizations,
+    organizations: lista,
     current,
     switchOrganization,
   };
@@ -63,42 +64,51 @@ function renderTopbar(
 }
 
 describe('Topbar', () => {
-  it('exibe navegação e controles principais para papel comum sem permissões extras', async () => {
+  it('exibe a navegação principal e os controles globais no cabeçalho', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
     renderTopbar();
 
+    // D88: a navegação global voltou ao cabeçalho; a lateral é só contexto de projeto.
     const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    expect(nav).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Início/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Meu trabalho/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Projetos/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Solicitações/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Configurações/ })).not.toBeInTheDocument();
-
-    expect(screen.getByRole('button', { name: 'Novo item' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Início' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Projetos' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Solicitações' })).toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Relatórios' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Novo item' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Abrir pesquisa global (Ctrl K)' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Selecionar organização' })).toBeInTheDocument();
   });
 
-  it('marca o link Projetos como página atual na rota /projects', async () => {
-    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
-    renderTopbar(['/projects']);
+  it('mostra Relatórios no cabeçalho com a permissão de visualizar relatório', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [10] });
+    renderTopbar();
 
-    await screen.findAllByRole('navigation', { name: 'Navegação principal' });
-    const nav = screen.getAllByRole('navigation', { name: 'Navegação principal' })[0];
-    const projectsLink = within(nav).getByRole('link', { name: /Projetos/ });
-    await waitFor(() => expect(projectsLink).toHaveAttribute('aria-current', 'page'));
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    await waitFor(() =>
+      expect(within(nav).getByRole('link', { name: 'Relatórios' })).toBeInTheDocument());
   });
 
-  it('oculta Meu trabalho e Projetos da navegação para papel 8', async () => {
+  it('oculta o espaço de trabalho do solicitante externo (papel 8)', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 8, allowedPermissions: [] });
     renderTopbar(['/requests'], { ...organizations[0], role: 8 });
 
+    // Portão real de permissão: quem só abre solicitação não deve ver o espaço interno.
+    // A cobertura disto se perdeu quando a navegação migrou do trilho para o cabeçalho.
     const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
-    expect(within(nav).queryByRole('link', { name: /^Meu trabalho$/ })).not.toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: /^Início$/ })).not.toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: /^Projetos$/ })).not.toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: /^Solicitações$/ })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(nav).queryByRole('link', { name: 'Início' })).not.toBeInTheDocument());
+    expect(within(nav).queryByRole('link', { name: 'Meu trabalho' })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Projetos' })).not.toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Solicitações' })).toBeInTheDocument();
+  });
+
+  it('esconde o seletor de organização quando existe apenas uma', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+    renderTopbar(['/home'], organizations[0], [organizations[0]]);
+
+    expect(await screen.findByRole('button', { name: 'Novo item' })).toBeInTheDocument();
+    // Com uma organização o seletor não oferece escolha alguma: só ocupava espaço.
+    expect(screen.queryByRole('combobox', { name: 'Selecionar organização' })).not.toBeInTheDocument();
   });
 
   it('abre o menu mobile e fecha com Escape devolvendo o foco ao hambúrguer', async () => {

@@ -12,13 +12,15 @@ public class ExternalPortalRepository : IExternalPortalRepository
 
     public Task<ExternalPortal?> GetByProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
         => _context.ExternalPortals.Include(x => x.Project)
-            .Include(x => x.Board).ThenInclude(x => x.Stages).Include(x => x.Forms)
+            .Include(x => x.Board)
+            .Include(x => x.Project).ThenInclude(x => x.Stages).Include(x => x.Forms)
             .FirstOrDefaultAsync(x => x.ProjectId == projectId, cancellationToken);
 
     public Task<ExternalPortal?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
         => _context.ExternalPortals.IgnoreQueryFilters().AsSplitQuery()
+            .Include(x => x.Board)
             .Include(x => x.Project).ThenInclude(x => x.WorkflowStatuses)
-            .Include(x => x.Board).ThenInclude(x => x.Stages)
+            .Include(x => x.Project).ThenInclude(x => x.Stages)
             .Include(x => x.Forms)
             .FirstOrDefaultAsync(x => x.PublicSlug == slug && x.IsEnabled
                 && !x.Project.IsArchived
@@ -34,19 +36,21 @@ public class ExternalPortalRepository : IExternalPortalRepository
     public Task<ExternalForm?> GetFormAsync(
         Guid projectId, Guid formId, CancellationToken cancellationToken = default)
         => _context.ExternalForms.AsSplitQuery()
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project)
-            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board).ThenInclude(x => x.Stages)
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Stages)
             .FirstOrDefaultAsync(x => x.Id == formId && x.ExternalPortal.ProjectId == projectId,
                 cancellationToken);
 
     public Task<ExternalForm?> GetPublicFormAsync(
         string portalSlug, string formSlug, CancellationToken cancellationToken = default)
         => _context.ExternalForms.IgnoreQueryFilters().AsSplitQuery()
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.WorkflowStatuses)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Teams)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Members)
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.CustomFields)
-            .Include(x => x.ExternalPortal).ThenInclude(x => x.Board).ThenInclude(x => x.Stages)
+            .Include(x => x.ExternalPortal).ThenInclude(x => x.Project).ThenInclude(x => x.Stages)
             .FirstOrDefaultAsync(x => x.PublicSlug == formSlug && x.IsEnabled
                 && x.ExternalPortal.PublicSlug == portalSlug && x.ExternalPortal.IsEnabled
                 && !x.ExternalPortal.Project.IsArchived
@@ -130,7 +134,7 @@ public class ExternalPortalRepository : IExternalPortalRepository
     public Task<WorkItem?> GetWorkItemAsync(Guid workItemId, CancellationToken cancellationToken = default)
         => _context.WorkItems.AsSplitQuery()
             .Include(x => x.Board).ThenInclude(x => x.Project).ThenInclude(x => x!.WorkflowStatuses)
-            .Include(x => x.Board).ThenInclude(x => x.Stages)
+            .Include(x => x.Board).ThenInclude(x => x.Project).ThenInclude(x => x!.Stages)
             .FirstOrDefaultAsync(x => x.Id == workItemId, cancellationToken);
 
     public Task<WorkItem?> GetWorkItemByNumberAsync(long number, CancellationToken cancellationToken = default)
@@ -166,7 +170,7 @@ public class ExternalPortalRepository : IExternalPortalRepository
             .Include(x => x.ExternalPortal).ThenInclude(x => x.Project)
             .Include(x => x.ExternalForm)
             .Include(x => x.WorkItem).ThenInclude(x => x.Board).ThenInclude(x => x.Project).ThenInclude(x => x!.WorkflowStatuses)
-            .Include(x => x.WorkItem).ThenInclude(x => x.Board).ThenInclude(x => x.Stages)
+            .Include(x => x.WorkItem).ThenInclude(x => x.Board).ThenInclude(x => x.Project).ThenInclude(x => x!.Stages)
             .Include(x => x.WorkItem).ThenInclude(x => x.Stage)
             .Include(x => x.WorkItem).ThenInclude(x => x.WorkflowStatus)
             .Include(x => x.WorkItem).ThenInclude(x => x.Attachments)

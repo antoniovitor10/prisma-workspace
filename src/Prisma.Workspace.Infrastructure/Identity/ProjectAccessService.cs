@@ -9,7 +9,9 @@ namespace Prisma.Workspace.Infrastructure.Identity;
 public class ProjectAccessService : IProjectAccessService
 {
     private readonly AppDbContext _context;
-    public ProjectAccessService(AppDbContext context) => _context = context;
+    private readonly IPermissionService _permissions;
+    public ProjectAccessService(AppDbContext context, IPermissionService permissions)
+        => (_context, _permissions) = (context, permissions);
 
     public async Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
     {
@@ -21,24 +23,38 @@ public class ProjectAccessService : IProjectAccessService
         if (globalAdmin)
             return ProjectRole.ProjectAdmin;
 
-        var organizationRole = await _context.OrganizationMembers.AsNoTracking()
-            .Where(x => x.UserId == userId && x.IsActive)
+        var project = await _context.Projects.AsNoTracking()
+            .Where(x => x.Id == projectId)
+            .Select(x => new { x.OrganizationId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (project is null) return null;
+        var activeOrganizationMember = await _context.OrganizationMembers.AsNoTracking()
+            .Where(x => x.OrganizationId == project.OrganizationId && x.UserId == userId && x.IsActive)
             .Select(x => (OrganizationRole?)x.Role)
             .FirstOrDefaultAsync(cancellationToken);
-        if (organizationRole is OrganizationRole.Administrator
+        if (activeOrganizationMember is null) return null;
+        if (!await _permissions.HasAsync(userId, PlatformPermission.View,
+            PermissionScope.Project, projectId, cancellationToken))
+            return null;
+
+        if (activeOrganizationMember is OrganizationRole.Administrator
             or OrganizationRole.Manager
             or OrganizationRole.ProjectManager)
             return ProjectRole.ProjectAdmin;
 
-        var project = await _context.Projects.AsNoTracking()
+        var projectMembership = await _context.Projects.AsNoTracking()
             .Where(x => x.Id == projectId)
             .Select(x => new
             {
                 x.OwnerId,
-                Role = x.Members.Where(m => m.UserId == userId).Select(m => (ProjectRole?)m.Role).FirstOrDefault()
+                Role = x.Members.Where(m => m.UserId == userId).Select(m => (ProjectRole?)m.Role).FirstOrDefault(),
+                HasTeamAccess = x.Teams.Any(link => link.Team.IsActive
+                    && link.Team.Members.Any(member => member.UserId == userId))
             }).FirstOrDefaultAsync(cancellationToken);
-        if (project is null) return null;
-        return project.OwnerId == userId ? ProjectRole.ProjectAdmin : project.Role;
+        if (projectMembership is null) return null;
+        if (projectMembership.OwnerId == userId) return ProjectRole.ProjectAdmin;
+        if (projectMembership.Role is not null) return projectMembership.Role;
+        return projectMembership.HasTeamAccess ? ProjectRole.Member : null;
     }
 
     public async Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
@@ -55,21 +71,12 @@ public class ProjectAccessService : IProjectAccessService
         var ids = projectIds.Where(x => x != Guid.Empty).Distinct().ToArray();
         if (ids.Length == 0) return new HashSet<Guid>();
 
-        var globalAdmin = await (from userRole in _context.UserRoles
-                                 join role in _context.Roles on userRole.RoleId equals role.Id
-                                 where userRole.UserId == userId
-                                     && (role.Name == "GlobalAdmin" || role.Name == "Administrator")
-                                 select userRole.UserId).AnyAsync(cancellationToken);
-        var organizationRole = await _context.OrganizationMembers.AsNoTracking()
-            .Where(x => x.UserId == userId && x.IsActive)
-            .Select(x => (OrganizationRole?)x.Role)
-            .FirstOrDefaultAsync(cancellationToken);
-        var canSeeAll = globalAdmin || organizationRole is OrganizationRole.Administrator
-            or OrganizationRole.Manager or OrganizationRole.ProjectManager;
-
-        var query = _context.Projects.AsNoTracking().Where(x => ids.Contains(x.Id));
-        if (!canSeeAll)
-            query = query.Where(x => x.OwnerId == userId || x.Members.Any(m => m.UserId == userId));
-        return (await query.Select(x => x.Id).ToListAsync(cancellationToken)).ToHashSet();
+        var accessible = new HashSet<Guid>();
+        foreach (var projectId in ids)
+        {
+            if (await GetRoleAsync(projectId, userId, cancellationToken) is not null)
+                accessible.Add(projectId);
+        }
+        return accessible;
     }
 }

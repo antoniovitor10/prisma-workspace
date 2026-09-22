@@ -63,25 +63,21 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
             if (displayNames.TryGetValue(request.ActorId, out var displayName)) actorName = displayName;
         }
 
-        // Etapa de destino — seu BoardId indica em qual quadro ocorre a movimentação
+        // Etapa de destino — deve pertencer ao projeto da tarefa (D83).
         Stage? destStage = null;
-        Guid destBoardId = workItem.BoardId;
         if (request.DestinationStageId.HasValue)
         {
             destStage = await _stageRepository.GetByIdAsync(request.DestinationStageId.Value, cancellationToken);
             if (destStage is null)
                 throw new ArgumentException("A etapa de destino não existe.");
-            destBoardId = destStage.BoardId;
+            if (destStage.ProjectId != workItem.Board.ProjectId || destStage.BoardId != workItem.BoardId)
+                throw new DomainException(
+                    "A coluna de destino pertence a outro quadro. Use a transferência com quadro e coluna explícitos.");
         }
 
-        // O item deve ter placement no quadro de destino ou ser o quadro home
-        bool temPlacementNoDestino = workItem.BoardPlacements.Any(p => p.BoardId == destBoardId);
-        bool ehQuadroHome = workItem.BoardId == destBoardId;
-        if (!temPlacementNoDestino && !ehQuadroHome)
-            throw new ArgumentException(
-                $"O item não está posicionado no quadro de destino ({destBoardId}).");
+        DomainException.Garantir(destStage is not null, "Escolha uma coluna de destino do quadro.");
 
-        var stageChanged = workItem.StageId != request.DestinationStageId || !ehQuadroHome;
+        var stageChanged = workItem.StageId != request.DestinationStageId;
         var previousStageId = workItem.StageId;
         var previousStatusId = workItem.WorkflowStatusId;
         var now = DateTimeOffset.UtcNow;
@@ -89,34 +85,6 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
         if (destStage is not null && _workflow is not null)
             await WorkflowMoveGuard.EnsureAllowedAsync(workItem, destStage, _workflow, cancellationToken);
 
-        // Resolve toda a sincronização antes de alterar o agregado. Se algum quadro for
-        // incompatível, a falha precisa deixar o item exatamente como estava.
-        var compatibleStages = new Dictionary<Guid, Stage>();
-        if (destStage?.WorkflowStatusId is not null)
-        {
-            foreach (var placement in workItem.BoardPlacements.Where(p => p.BoardId != destBoardId))
-            {
-                var stages = await _stageRepository.GetByBoardIdAsync(placement.BoardId, cancellationToken);
-                var compatibleStage = stages.FirstOrDefault(s => s.WorkflowStatusId == destStage.WorkflowStatusId);
-                if (compatibleStage is null)
-                    throw new DomainException(
-                        $"O quadro {placement.BoardId} não possui uma etapa com o status " +
-                        $"'{destStage.WorkflowStatusId}'. Ajuste o mapeamento antes de mover o item.");
-                compatibleStages[placement.BoardId] = compatibleStage;
-            }
-        }
-
-        // Atualiza placement no quadro de destino
-        var placementDestino = workItem.BoardPlacements.FirstOrDefault(p => p.BoardId == destBoardId);
-        if (placementDestino is not null)
-        {
-            placementDestino.StageId = request.DestinationStageId;
-            placementDestino.Position = request.Position;
-            placementDestino.UpdatedAt = now;
-        }
-
-        // Sincroniza quadro home se destino == home
-        if (ehQuadroHome)
         {
             if (stageChanged)
             {
@@ -146,35 +114,6 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
                 : null;
             if (destStage?.Category == StageCategory.InProgress && workItem.StartDate is null)
                 workItem.StartDate = DateOnly.FromDateTime(now.UtcDateTime);
-        }
-        else
-        {
-            // Movimento em quadro secundário → atualiza status canônico do item
-            workItem.WorkflowStatusId = destStage?.WorkflowStatusId;
-            workItem.CompletedAt = destStage?.Category == StageCategory.Done
-                ? workItem.CompletedAt ?? now
-                : null;
-        }
-
-        // Sincroniza placements dos demais quadros pelo WorkflowStatusId do destino
-        if (destStage is not null)
-        {
-            foreach (var outroPl in workItem.BoardPlacements.Where(p => p.BoardId != destBoardId))
-            {
-                if (destStage.WorkflowStatusId is null)
-                {
-                    // Sem status canônico — não sincroniza outros quadros
-                    continue;
-                }
-                var stageCompativel = compatibleStages[outroPl.BoardId];
-                outroPl.StageId = stageCompativel.Id;
-                outroPl.UpdatedAt = now;
-                // Se for o quadro home, sincroniza também StageId do item
-                if (outroPl.BoardId == workItem.BoardId)
-                {
-                    workItem.StageId = stageCompativel.Id;
-                }
-            }
         }
 
         workItem.Position = request.Position;
@@ -219,9 +158,7 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
                     .Append(workItem.ResponsibleId ?? string.Empty)
                     .Where(x => !string.IsNullOrWhiteSpace(x) && x != request.ActorId)
                     .Distinct();
-                var link = workItem.Board.ProjectId.HasValue
-                    ? $"/projects/{workItem.Board.ProjectId}/backlog?item={workItem.Id}"
-                    : $"/boards/{workItem.BoardId}?item={workItem.Id}";
+                var link = $"/projects/{workItem.Board.ProjectId}/backlog?item={workItem.Id}";
                 await _notifications.PublishManyAsync(recipients.Select(userId => new NotificationEnvelope(
                     workItem.Board.OrganizationId, userId, NotificationType.StatusChanged,
                     "Status da tarefa alterado",
@@ -240,13 +177,8 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
 
         if (_realtime is not null)
         {
-            // Notifica todos os quadros afetados
-            var boardsAfetados = workItem.BoardPlacements.Select(p => p.BoardId)
-                .Append(workItem.BoardId)
-                .Distinct();
-            foreach (var bid in boardsAfetados)
-                await _realtime.BoardChangedAsync(bid,
-                    stageChanged ? "workItemMoved" : "workItemReordered", workItem.Id, cancellationToken);
+            await _realtime.BoardChangedAsync(workItem.BoardId,
+                stageChanged ? "workItemMoved" : "workItemReordered", workItem.Id, cancellationToken);
         }
     }
 }

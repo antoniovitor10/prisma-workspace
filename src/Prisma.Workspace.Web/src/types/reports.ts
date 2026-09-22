@@ -127,15 +127,6 @@ export interface PreparedReports {
     byCategory: ReportBreakdown[];
     byRequester: ReportBreakdown[];
   };
-  sla: {
-    applicable: number;
-    met: number;
-    overdue: number;
-    paused: number;
-    compliancePercentage: number;
-    averageFirstResponseMinutes?: number;
-    averageResolutionMinutes?: number;
-  };
   hours: { planned: number; realized: number; variance: number };
   sprintVelocity: Array<{
     id: string;

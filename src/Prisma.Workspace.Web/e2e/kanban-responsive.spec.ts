@@ -1,0 +1,99 @@
+import { test, expect } from './fixtures/test';
+
+/**
+ * Regressão: no Pixel 5 a barra de ações do quadro estourava (~803px em 393px),
+ * a página rolava na horizontal e o botão de visão "Gantt" interceptava o clique
+ * em "Nova Coluna".
+ */
+test.describe('Kanban responsivo e acessível', () => {
+  test('barra de ações: Nova Coluna clicável sem overflow horizontal da página',
+    async ({ page, authenticatedGoto, resolveSeedProject }, testInfo) => {
+      test.skip(testInfo.project.name !== 'chromium-mobile', 'Viewport Pixel 5 (mobile)');
+
+      const project = await resolveSeedProject();
+      const board = project.boards[0];
+
+      await authenticatedGoto(`/boards/${board.id}`);
+      await expect(page.getByRole('button', { name: 'Nova Coluna' })).toBeVisible();
+      await expect(page.locator('[data-stage-id]').first()).toBeVisible({ timeout: 15000 });
+
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      expect(
+        overflow.scrollWidth,
+        `Página não deve rolar na horizontal (scrollWidth=${overflow.scrollWidth}, clientWidth=${overflow.clientWidth})`,
+      ).toBeLessThanOrEqual(overflow.clientWidth);
+
+      await page.getByRole('button', { name: 'Nova Coluna' }).click();
+      await expect(page.getByPlaceholder('Nome da Coluna')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Criar Nova Coluna' })).toBeVisible();
+    });
+
+  test('botões só de ícone do quadro têm nome acessível',
+    async ({ page, authenticatedGoto, resolveSeedProject }) => {
+      const project = await resolveSeedProject();
+      const board = project.boards[0];
+
+      await authenticatedGoto(`/boards/${board.id}`);
+      await expect(page.getByRole('button', { name: 'Nova Coluna' })).toBeVisible();
+      await expect(page.locator('[data-stage-id]').first()).toBeVisible({ timeout: 15000 });
+
+      // Colunas: setas de reordenar (antes só tinham title, sem accessible name).
+      const moveLeft = page.getByRole('button', { name: /Mover coluna .+ para a esquerda/ });
+      const moveRight = page.getByRole('button', { name: /Mover coluna .+ para a direita/ });
+      await expect(moveLeft.first()).toBeVisible();
+      await expect(moveRight.first()).toBeVisible();
+
+      // Cartões: mover e cronômetro (antes ActionIcon sem aria-label).
+      const cardMovePrev = page.getByRole('button', { name: 'Mover tarefa para a coluna anterior' });
+      if (await cardMovePrev.count() > 0) {
+        await expect(cardMovePrev.first()).toBeAttached();
+        await expect(page.getByRole('button', { name: 'Mover tarefa para a próxima coluna' }).first()).toBeAttached();
+        await expect(page.getByRole('button', { name: /^(Iniciar|Parar) cronômetro da tarefa/ }).first()).toBeAttached();
+      }
+
+      // Nenhum botão só-ícone sem nome dentro do quadro (main do AppShell).
+      const unnamed = await page.evaluate(() => {
+        const main = document.querySelector('main');
+        if (!main) return -1;
+        return [...main.querySelectorAll('button')].filter((btn) => {
+          const name = (btn.getAttribute('aria-label') || btn.textContent || '').replace(/\s+/g, ' ').trim();
+          return name.length === 0;
+        }).length;
+      });
+      expect(unnamed, 'Botões sem nome acessível no quadro').toBe(0);
+    });
+});
+
+test('column card sorting stays local to each board column', async ({
+  page, authenticatedGoto, resolveSeedProject,
+}) => {
+  const project = await resolveSeedProject();
+  const board = project.boards[0];
+
+  await authenticatedGoto("/boards/" + board.id);
+  await expect(page.locator("[data-stage-id]").first()).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/ordenar somente aquela coluna/)).toBeVisible();
+
+  const selectors = page.getByRole("combobox", { name: /Ordenar cartões da coluna/ });
+  await expect(selectors.first()).toBeVisible();
+  await selectors.first().selectOption("priority");
+  await expect(selectors.first()).toHaveValue("priority");
+
+  if (await selectors.count() > 1) {
+    await expect(selectors.nth(1)).toHaveValue("position");
+    await selectors.nth(1).selectOption("title");
+    await expect(selectors.first()).toHaveValue("priority");
+  }
+});
+
+test('criação de tarefa escolhe responsáveis elegíveis no projeto', async ({ page, authenticatedGoto, resolveSeedProject }) => {
+  const project = await resolveSeedProject();
+  await authenticatedGoto('/boards/' + project.boards[0].id);
+  await page.getByRole('button', { name: 'Novo Card' }).first().click();
+  await expect(page.getByRole('combobox', { name: 'Responsável principal da nova tarefa' })).toBeVisible();
+  await expect(page.getByRole('listbox', { name: 'Responsáveis adicionais da nova tarefa' })).toBeVisible();
+  await expect(page.getByText('Somente pessoas com acesso ao projeto aparecem nesta lista.')).toBeVisible();
+});

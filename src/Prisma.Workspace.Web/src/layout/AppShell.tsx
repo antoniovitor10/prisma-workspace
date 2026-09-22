@@ -1,11 +1,21 @@
 import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
 import { ContextBarProvider, ContextBarSlot } from './ContextBar';
+import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
+/* Lateral contextual (só no projeto) e coluna de conteúdo são irmãos (D88). */
 const Shell = styled.div`
   display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+`;
+
+const Coluna = styled.div`
+  display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   min-height: 100vh;
 `;
 
@@ -28,13 +38,16 @@ export function AppShell() {
   return (
     <ContextBarProvider>
       <Shell>
-        <StickyTop>
-          <Topbar />
-          <ContextBarSlot />
-        </StickyTop>
-        <Content>
-          <Outlet />
-        </Content>
+        <Sidebar />
+        <Coluna>
+          <StickyTop>
+            <Topbar />
+            <ContextBarSlot />
+          </StickyTop>
+          <Content>
+            <Outlet />
+          </Content>
+        </Coluna>
       </Shell>
     </ContextBarProvider>
   );

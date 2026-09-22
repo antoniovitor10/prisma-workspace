@@ -3,7 +3,13 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const e2eEnvFile = resolve('.env.e2e.local');
-if (existsSync(e2eEnvFile)) process.loadEnvFile(e2eEnvFile);
+if (existsSync(e2eEnvFile)) {
+  // O arquivo local é a fonte explícita do ambiente E2E. Evita que valores
+  // herdados de outro terminal façam o browser apontar para portas diferentes.
+  for (const key of ['E2E_BASE_URL', 'E2E_API_URL', 'E2E_TEST_USER_EMAIL', 'E2E_TEST_USER_PASSWORD'])
+    delete process.env[key];
+  process.loadEnvFile(e2eEnvFile);
+}
 
 /**
  * Configuracao de testes E2E com Playwright.
@@ -26,7 +32,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5450',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5450',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

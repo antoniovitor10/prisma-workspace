@@ -1,11 +1,79 @@
 import type { ExternalForm, ExternalRequestTriageInput } from '../types/portal';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5216';
+/**
+ * Base das chamadas à API.
+ *
+ * Em produção o padrão é a **própria origem**: a imagem Docker publica a SPA dentro do
+ * wwwroot da API, então SPA e API vivem no mesmo host e caminho relativo sempre acerta.
+ * O padrão anterior era `http://localhost:5216` para qualquer build, o que fazia toda
+ * instalação por Docker chamar um endereço da máquina de quem abriu a página: o Chrome
+ * pedia permissão de rede local e o login falhava com "Failed to fetch".
+ *
+ * `VITE_API_URL` continua tendo precedência, para quem serve SPA e API em hosts
+ * separados. Em desenvolvimento o padrão segue apontando para a API local, porque ali
+ * o Vite serve a SPA em outra porta e não há proxy.
+ */
+export function resolveApiBaseUrl(configured: string | undefined, isProduction: boolean): string {
+  if (configured !== undefined && configured !== null) return configured;
+  return isProduction ? '' : 'http://localhost:5216';
+}
+
+const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.PROD);
 const TOKEN_KEY = 'prisma_workspace_token';
 const ORGANIZATION_KEY = 'prisma_workspace_organization';
 const LEGACY_TOKEN_KEY = 'detran_kanban_token';
 const LEGACY_ORGANIZATION_KEY = 'detran_kanban_organization';
 let refreshRequest: Promise<string | null> | null = null;
+
+export type SetupStatus = {
+  initialized: boolean;
+  setupAvailable: boolean;
+};
+
+export type SetupInput = {
+  administratorName: string;
+  administratorEmail: string;
+  administratorPassword: string;
+  organizationName: string;
+  organizationSlug: string;
+};
+
+export class SetupApiError extends Error {
+  public readonly status: number;
+  public readonly code: string | null;
+
+  constructor(
+    status: number,
+    code: string | null,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'SetupApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function readSetupResponse<T>(response: Response): Promise<T> {
+  if (response.ok) return response.json() as Promise<T>;
+
+  const error = await response.json().catch(() => null) as {
+    type?: string;
+    code?: string;
+    title?: string;
+    detail?: string;
+    errors?: Record<string, string[]>;
+  } | null;
+  const validationMessage = error?.errors
+    ? Object.values(error.errors).flat().find((value) => typeof value === 'string')
+    : undefined;
+
+  throw new SetupApiError(
+    response.status,
+    error?.type ?? error?.code ?? null,
+    error?.detail ?? validationMessage ?? error?.title ?? 'Não foi possível concluir a configuração.',
+  );
+}
 
 const isJwt = (token: string) => token.split('.').length === 3;
 
@@ -124,6 +192,28 @@ export const api = {
     return response.json();
   },
 
+  async getSetupStatus(): Promise<SetupStatus> {
+    const response = await fetch(`${API_BASE_URL}/api/setup/status`, {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+    return readSetupResponse<SetupStatus>(response);
+  },
+
+  async completeSetup(token: string, input: SetupInput): Promise<{ initialized: true }> {
+    const response = await fetch(`${API_BASE_URL}/api/setup`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Prisma-Setup-Token': token,
+      },
+      body: JSON.stringify(input),
+    });
+    return readSetupResponse<{ initialized: true }>(response);
+  },
+
   // Auth endpoints (Identity API)
   async register(email: string, passwordHash: string) {
     return this.request('/api/auth/register', {
@@ -141,6 +231,19 @@ export const api = {
     return this.request('/api/auth/forgot-password', {
       method: 'POST', body: JSON.stringify({ email })
     });
+  },
+
+  async previewInvitation(token: string): Promise<{ email: string; organizationName: string; accountExists: boolean }> {
+    return this.request('/api/auth/invitation/preview', { method: 'POST', body: JSON.stringify({ token }) });
+  },
+
+  async completeInvitation(input: { token: string; password: string; createAccount: boolean; fullName?: string; confirmPassword?: string }) {
+    const data = await this.request('/api/auth/invitation/complete', { method: 'POST', body: JSON.stringify(input) });
+    api.setOrganizationId(data.organizationId);
+    api.setToken(data.accessToken);
+    localStorage.removeItem('pendingInvite');
+    window.history.replaceState({}, '', '/home');
+    window.location.replace('/home');
   },
 
   async resetPassword(userId: string, token: string, newPassword: string) {
@@ -263,10 +366,10 @@ export const api = {
     return this.request(`/api/Boards/${id}`);
   },
 
-  async createBoard(name: string, projectId?: string, teamId?: string) {
+  async createBoard(name: string, projectId?: string, teamId?: string, copyStagesFromBoardId?: string) {
     return this.request('/api/Boards', {
       method: 'POST',
-      body: JSON.stringify({ name, projectId, teamId })
+      body: JSON.stringify({ name, projectId, teamId, copyStagesFromBoardId })
     });
   },
 
@@ -328,8 +431,9 @@ export const api = {
     return this.request(`/api/projects/${projectId}/custom-fields/${fieldId}`, { method: 'DELETE' });
   },
 
-  async getProjectBacklog(projectId: string) {
-    return this.request(`/api/projects/${projectId}/backlog`);
+  async getProjectBacklog(projectId: string, includeArchived = false) {
+    const query = includeArchived ? '?includeArchived=true' : '';
+    return this.request(`/api/projects/${projectId}/backlog${query}`);
   },
 
   async reorderBacklog(projectId: string, orderedIds: string[]) {
@@ -384,6 +488,10 @@ export const api = {
     return this.request(`/api/sprints/${sprintId}/status`, {
       method: 'PUT', body: JSON.stringify({ status, incompleteItemsAction, targetSprintId })
     });
+  },
+
+  async deleteSprint(sprintId: string) {
+    return this.request(`/api/sprints/${sprintId}`, { method: 'DELETE' });
   },
 
   async setSprintCapacity(sprintId: string, memberId: string, availableHours: number, daysOffHours: number) {
@@ -567,18 +675,36 @@ export const api = {
     return this.request(`/api/Boards/${boardId}/lead-time`);
   },
 
-  // Stages
-  async getStages(boardId: string) {
+  // Stages (fluxo do projeto — D83)
+  async getBoardStages(boardId: string) {
     return this.request(`/api/Stages/board/${boardId}`);
   },
 
+  async getStages(projectId: string) {
+    return this.request(`/api/Stages/project/${projectId}`);
+  },
+
   async createStage(
-    boardId: string, name: string, position: number, wipLimit?: number,
-    options?: { workflowStatusId?: string; category?: number; color?: string }
+    projectId: string, name: string, position: number,
+    options?: { boardId?: string; workflowStatusId?: string; category?: number; color?: string }
   ) {
-    return this.request('/api/Stages', {
+    return this.request(options?.boardId ? `/api/Stages/board/${options.boardId}` : '/api/Stages', {
       method: 'POST',
-      body: JSON.stringify({ boardId, name, position, wipLimit, ...options })
+      body: JSON.stringify({ projectId, name, position, ...options })
+    });
+  },
+
+  async getStageImpact(stageId: string, category: number): Promise<{stageId:string; name:string; totalItems:number; changedItems:number; openDescendants:number; snapshotToken:string}> {
+    return this.request(`/api/Stages/${stageId}/impact?category=${category}`);
+  },
+
+  async updateStage(
+    stageId: string,
+    data: { name: string; category?: number; color?: string; confirmCategoryChange?: boolean; confirmDescendants?: boolean; impactToken?: string }
+  ) {
+    return this.request(`/api/Stages/${stageId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     });
   },
 
@@ -643,7 +769,7 @@ export const api = {
   },
 
   async updateWorkflowStage(projectId: string, stageId: string, data: {
-    name: string; position: number; wipLimit?: number | null; workflowStatusId: string;
+    name: string; position: number; workflowStatusId: string;
   }) {
     return this.request(`/api/projects/${projectId}/workflow/stages/${stageId}`, {
       method: 'PUT', body: JSON.stringify(data)
@@ -665,19 +791,38 @@ export const api = {
     return this.request(`/api/WorkItems/board/${boardId}`);
   },
 
+  /**
+   * Cartões do projeto inteiro. O Kanban do projeto usa esta rota para abrir direto,
+   * sem exigir que alguém escolha um quadro antes.
+   */
+  async getWorkItemsByProject(projectId: string) {
+    return this.request(`/api/WorkItems/project/${projectId}`);
+  },
+
   async createWorkItem(data: {
     boardId: string;
-    boardIds?: string[];
     projectId?: string;
     stageId?: string;
     parentId?: string;
     title: string;
+    kind?: number;
     subtitle?: string;
     description?: string;
     priority: number;
     estimatedHours?: number;
     dueDate?: string;
     position: number;
+    sprintId?: string | null;
+    remainingHours?: number;
+    teamId?: string | null;
+    responsibleId?: string | null;
+    participantIds?: string[];
+    origin?: number;
+    requesterId?: string | null;
+    requesterName?: string | null;
+    requesterEmail?: string | null;
+    startDate?: string;
+    acceptanceCriteria?: string | null;
   }) {
     return this.request('/api/WorkItems', {
       method: 'POST',
@@ -685,13 +830,21 @@ export const api = {
     });
   },
 
-  async deleteBoard(id: string, destinationBoardId?: string) {
-    const query = destinationBoardId ? `?destinationBoardId=${encodeURIComponent(destinationBoardId)}` : '';
+  async deleteBoard(id: string, destinationBoardId?: string, destinationStageId?: string) {
+    const query = destinationBoardId ? `?destinationBoardId=${encodeURIComponent(destinationBoardId)}&destinationStageId=${encodeURIComponent(destinationStageId ?? '')}` : '';
     return this.request(`/api/Boards/${id}${query}`, { method: 'DELETE' });
   },
 
-  async reorderStages(boardId: string, orderedStageIds: string[]) {
-    return this.request(`/api/Stages/board/${boardId}/order`, {
+  async transferWorkItem(workItemId: string, destinationBoardId: string, destinationStageId: string) {
+    return this.request(`/api/workitems/${workItemId}/transfer`, { method: 'POST', body: JSON.stringify({ destinationBoardId, destinationStageId }) });
+  },
+
+  async deleteStage(stageId: string, destinationStageId?: string) {
+    return this.request(`/api/Stages/${stageId}${destinationStageId ? `?destinationStageId=${destinationStageId}` : ''}`, { method: 'DELETE' });
+  },
+
+  async reorderStages(projectId: string, orderedStageIds: string[]) {
+    return this.request(`/api/Stages/board/${projectId}/order`, {
       method: 'PUT',
       body: JSON.stringify(orderedStageIds)
     });
@@ -708,8 +861,9 @@ export const api = {
     return this.request(`/api/WorkItems/${parentId}/subitems`);
   },
 
-  async getAssignableUsers() {
-    return this.request('/api/Users/assignable');
+  async getAssignableUsers(projectId?: string) {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.request(`/api/Users/assignable${query}`);
   },
 
   async getAssignees(workItemId: string) {
@@ -828,17 +982,6 @@ export const api = {
   async getMyWeeklyTime(weekStart?: string) {
     const query = weekStart ? `?weekStart=${weekStart}` : '';
     return this.request(`/api/TimeEntries/my/weekly${query}`);
-  },
-
-  async getProjectSla(projectId: string) {
-    return this.request(`/api/projects/${projectId}/sla`);
-  },
-
-  async saveProjectSla(projectId: string, data: unknown) {
-    return this.request(`/api/projects/${projectId}/sla`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
   },
 
   async getProjectTimeReport(projectId: string, filters: {from?:string;to?:string;teamId?:string;userId?:string} = {}) {

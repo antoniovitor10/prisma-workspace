@@ -18,9 +18,11 @@ public record BacklogItemDto(Guid Id, Guid BoardId, string BoardName, Guid? Stag
     DateTimeOffset CreatedAt, DateTimeOffset? CompletedAt, IReadOnlyList<string> AssigneeIds, string Version,
     long Number, Guid? TeamId, string? ResponsibleId, WorkItemOrigin Origin,
     string? RequesterId, string? RequesterName, string? RequesterEmail,
-    DateOnly? StartDate, string? AcceptanceCriteria, IReadOnlyList<BacklogLinkDto> Links, bool IsBlocked);
+    DateOnly? StartDate, string? AcceptanceCriteria, IReadOnlyList<BacklogLinkDto> Links, bool IsBlocked,
+    bool IsArchived);
 
-public record GetProjectBacklogQuery(Guid ProjectId, string UserId) : IRequest<IReadOnlyList<BacklogItemDto>>;
+public record GetProjectBacklogQuery(Guid ProjectId, string UserId, bool IncludeArchived = false)
+    : IRequest<IReadOnlyList<BacklogItemDto>>;
 public class GetProjectBacklogQueryHandler : IRequestHandler<GetProjectBacklogQuery, IReadOnlyList<BacklogItemDto>>
 {
     private readonly IBacklogRepository _backlog;
@@ -30,7 +32,8 @@ public class GetProjectBacklogQueryHandler : IRequestHandler<GetProjectBacklogQu
     public async Task<IReadOnlyList<BacklogItemDto>> Handle(GetProjectBacklogQuery request, CancellationToken ct)
     {
         await _access.EnsureAtLeastAsync(request.ProjectId, request.UserId, ProjectRole.Viewer, ct);
-        return (await _backlog.GetProjectBacklogAsync(request.ProjectId, ct)).Select(Map).ToList();
+        return (await _backlog.GetProjectBacklogAsync(request.ProjectId, request.IncludeArchived, ct))
+            .Select(Map).ToList();
     }
 
     private static BacklogItemDto Map(Prisma.Workspace.Domain.Entities.WorkItem item)
@@ -58,7 +61,7 @@ public class GetProjectBacklogQueryHandler : IRequestHandler<GetProjectBacklogQu
             item.RowVersion.Length == 0 ? string.Empty : Convert.ToBase64String(item.RowVersion),
             item.Number, item.TeamId, item.ResponsibleId, item.Origin,
             item.RequesterId, item.RequesterName, item.RequesterEmail,
-            item.StartDate, item.AcceptanceCriteria, links, blocked);
+            item.StartDate, item.AcceptanceCriteria, links, blocked, item.IsArchived);
     }
 }
 
@@ -138,12 +141,16 @@ public class PlanSprintCommandHandler : IRequestHandler<PlanSprintCommand>
     public async Task Handle(PlanSprintCommand request, CancellationToken ct)
     {
         await _access.EnsureAtLeastAsync(request.ProjectId, request.ActorId, ProjectRole.ScrumMaster, ct);
+        // O estado da sprint vem das datas (D84): uma sprint cuja data final já passou está
+        // encerrada mesmo sem encerramento explícito, e não aceita escopo novo.
+        var hoje = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
         var loadedSprints = new Dictionary<Guid, Sprint>();
         if (request.SprintId.HasValue)
         {
             var sprint = await _sprints.GetByIdAsync(request.SprintId.Value, ct) ?? throw new NaoEncontradoException("Sprint");
             DomainException.Garantir(sprint.ProjectId == request.ProjectId, "Sprint não pertence ao projeto.");
-            DomainException.Garantir(!sprint.IsTerminal, "Sprint concluída ou cancelada não aceita alteração de escopo.");
+            DomainException.Garantir(!sprint.EstaEncerradaEm(hoje),
+                "Sprint encerrada ou cancelada não aceita alteração de escopo.");
             loadedSprints[sprint.Id] = sprint;
         }
         var items = await _backlog.GetTrackedByIdsAsync(request.ProjectId, request.WorkItemIds, ct);
@@ -164,8 +171,8 @@ public class PlanSprintCommandHandler : IRequestHandler<PlanSprintCommand>
 
             DomainException.Garantir(sourceSprint.ProjectId == request.ProjectId,
                 "Sprint de origem não pertence ao projeto.");
-            DomainException.Garantir(!sourceSprint.IsTerminal,
-                "Itens de sprint concluída ou cancelada não podem ter o planejamento alterado.");
+            DomainException.Garantir(!sourceSprint.EstaEncerradaEm(hoje),
+                "Itens de sprint encerrada ou cancelada não podem ter o planejamento alterado.");
         }
 
         foreach (var item in items) item.SprintId = request.SprintId;

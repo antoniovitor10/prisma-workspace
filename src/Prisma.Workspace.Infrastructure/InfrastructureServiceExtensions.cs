@@ -32,6 +32,7 @@ public static class InfrastructureServiceExtensions
 
         // ─── Repositórios ─────────────────────────────────────────────────
         services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<IBoardStructureRepository, BoardStructureRepository>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();
         services.AddScoped<IWorkItemManagementRepository, WorkItemManagementRepository>();
         services.AddScoped<IWorkItemSearchRepository, WorkItemManagementRepository>();
@@ -58,7 +59,6 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IMyWorkRepository, MyWorkRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IExternalPortalRepository, ExternalPortalRepository>();
-        services.AddScoped<ISlaRepository, SlaRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -84,6 +84,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBoardAccessService, Identity.BoardAccessService>();
         services.AddScoped<IWorkItemAccessService, Identity.WorkItemAccessService>();
         services.AddScoped<IAutomationExecutor, Services.AutomationExecutor>();
+        services.AddScoped<IInstallationSetupService, Services.InstallationSetupService>();
+        services.AddScoped<Prisma.Workspace.Application.Features.Organizations.IInvitationOnboardingService, Services.InvitationOnboardingService>();
 
         return services;
     }

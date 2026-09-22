@@ -77,8 +77,8 @@ const Btn = styled.button<{ $active?: boolean; $primary?: boolean }>`
     $primary
       ? theme.color.onBrand
       : $active
-      ? theme.color.accentBlue
-      : theme.color.textMuted};
+      ? theme.color.accentBlueAccessible
+      : theme.color.textMutedAccessible};
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -92,7 +92,7 @@ const Select = styled.select`
   border-radius: 7px;
   background: ${({ theme }) => theme.color.surface};
   font-size: 12px;
-  color: ${({ theme }) => theme.color.text};
+  color: ${({ theme }) => theme.color.textMutedAccessible};
   flex: 0 0 auto;
 `;
 
@@ -138,7 +138,7 @@ const PanelSelect = styled.select`
   border-radius: 7px;
   background: ${({ theme }) => theme.color.surface};
   font-size: 12px;
-  color: ${({ theme }) => theme.color.text};
+  color: ${({ theme }) => theme.color.textMutedAccessible};
 `;
 
 const PanelInput = styled.input`

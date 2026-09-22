@@ -9,8 +9,10 @@ public class CreateStageCommandValidator : AbstractValidator<CreateStageCommand>
 {
     public CreateStageCommandValidator()
     {
-        RuleFor(s => s.BoardId)
-            .NotEmpty().WithMessage("O identificador do Quadro é obrigatório.");
+        RuleFor(s => s.BoardId).NotEmpty().WithMessage("O quadro da coluna é obrigatório.");
+        RuleFor(s => s.Category).IsInEnum();
+        RuleFor(s => s.ProjectId)
+            .NotEmpty().WithMessage("O identificador do projeto é obrigatório.");
 
         RuleFor(s => s.Name)
             .NotEmpty().WithMessage("O nome da etapa é obrigatório.")
@@ -18,9 +20,5 @@ public class CreateStageCommandValidator : AbstractValidator<CreateStageCommand>
 
         RuleFor(s => s.Position)
             .GreaterThanOrEqualTo(0).WithMessage("A posição da etapa deve ser um valor maior ou igual a zero.");
-
-        RuleFor(s => s.WipLimit)
-            .GreaterThan(0).When(s => s.WipLimit.HasValue)
-            .WithMessage("O limite de WIP deve ser maior que zero, se especificado.");
     }
 }

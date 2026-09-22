@@ -20,10 +20,13 @@ fi
 
 sql_password="Pr1!$(openssl rand -hex 24)"
 jwt_key=$(openssl rand -hex 48)
+setup_token=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
 umask 077
 {
   printf '%s\n' "MSSQL_SA_PASSWORD=$sql_password"
   printf '%s\n' "PRISMA_JWT_KEY=$jwt_key"
+  printf '%s\n' 'PRISMA_SETUP_ENABLED=true'
+  printf '%s\n' "PRISMA_SETUP_TOKEN=$setup_token"
   printf '%s\n' 'MSSQL_PID=Developer'
   printf '%s\n' 'PRISMA_DB_NAME=PrismaWorkspace'
   printf '%s\n' 'PRISMA_HTTP_PORT=8080'

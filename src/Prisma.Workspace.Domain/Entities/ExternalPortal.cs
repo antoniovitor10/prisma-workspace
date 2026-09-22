@@ -112,12 +112,6 @@ public class ExternalRequest
     public string? RatingComment { get; set; }
     public DateTimeOffset? RatedAt { get; set; }
     public DateTimeOffset? CompletionConfirmedAt { get; set; }
-    public string? SlaPolicySnapshotJson { get; set; }
-    public DateTimeOffset? FirstResponseDueAt { get; set; }
-    public DateTimeOffset? ResolutionDueAt { get; set; }
-    public DateTimeOffset? FirstRespondedAt { get; set; }
-    public DateTimeOffset? SlaPausedAt { get; set; }
-    public int SlaPausedBusinessMinutes { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

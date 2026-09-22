@@ -84,7 +84,7 @@ public sealed class NotificationReminderWorker : BackgroundService
         {
             try { await GenerateAsync(stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-            catch (Exception ex) { _logger.LogError(ex, "Falha ao gerar lembretes de prazo e SLA."); }
+            catch (Exception ex) { _logger.LogError(ex, "Falha ao gerar lembretes de prazo."); }
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
@@ -117,41 +117,11 @@ public sealed class NotificationReminderWorker : BackgroundService
                 item.Board.OrganizationId, userId, type,
                 isOverdue ? "Tarefa atrasada" : "Prazo próximo",
                 $"#{item.Number} {item.Title} vence em {item.DueDate:dd/MM/yyyy}.",
-                projectId.HasValue ? $"/projects/{projectId}/backlog?item={item.Id}" : "/my-work",
+                projectId != Guid.Empty ? $"/projects/{projectId}/backlog?item={item.Id}" : "/my-work",
                 WorkItemId: item.Id, ProjectId: projectId,
                 DeduplicationKey: $"task-due:{item.Id}:{item.DueDate:yyyyMMdd}:{type}"));
         });
         await publisher.PublishManyAsync(taskMessages, cancellationToken);
 
-        var requests = await db.ExternalRequests.IgnoreQueryFilters().AsNoTracking()
-            .Include(x => x.WorkItem).ThenInclude(x => x.Assignees)
-            .Include(x => x.WorkItem).ThenInclude(x => x.Board).ThenInclude(x => x.Project)
-            .Where(x => x.SlaPausedAt == null && x.SlaPolicySnapshotJson != null
-                && ((!x.FirstRespondedAt.HasValue && x.FirstResponseDueAt.HasValue
-                        && x.FirstResponseDueAt <= now.AddHours(2))
-                    || (!x.WorkItem.CompletedAt.HasValue && x.ResolutionDueAt.HasValue
-                        && x.ResolutionDueAt <= now.AddHours(2))))
-            .OrderBy(x => x.ResolutionDueAt).Take(300).ToListAsync(cancellationToken);
-        var slaMessages = new List<NotificationEnvelope>();
-        foreach (var request in requests)
-        {
-            var recipients = request.WorkItem.Assignees.Select(x => x.UserId)
-                .Append(request.WorkItem.ResponsibleId ?? string.Empty)
-                .Append(request.WorkItem.Board.Project?.OwnerId ?? string.Empty)
-                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
-            var dueAt = !request.FirstRespondedAt.HasValue ? request.FirstResponseDueAt : request.ResolutionDueAt;
-            if (!dueAt.HasValue) continue;
-            var overdue = dueAt <= now;
-            var type = overdue ? NotificationType.SlaOverdue : NotificationType.SlaNearDue;
-            foreach (var userId in recipients)
-                slaMessages.Add(new NotificationEnvelope(
-                    request.WorkItem.Board.OrganizationId, userId, type,
-                    overdue ? "SLA vencido" : "SLA próximo do vencimento",
-                    $"A solicitação {request.Protocol} exige atenção da equipe.",
-                    $"/requests?request={request.Id}", request.WorkItemId, request.Id,
-                    request.WorkItem.Board.ProjectId,
-                    DeduplicationKey: $"sla:{request.Id}:{dueAt:yyyyMMddHHmm}:{type}"));
-        }
-        await publisher.PublishManyAsync(slaMessages, cancellationToken);
     }
 }

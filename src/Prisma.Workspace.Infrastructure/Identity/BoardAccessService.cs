@@ -1,4 +1,4 @@
-using Prisma.Workspace.Application.Common.Exceptions;
+﻿using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -29,11 +29,10 @@ public sealed class BoardAccessService : IBoardAccessService
         var board = await _context.Boards.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == boardId, cancellationToken)
             ?? throw new NaoEncontradoException("Quadro");
-        if (!board.ProjectId.HasValue) throw new NaoEncontradoException("Projeto");
         await _projectAccess.EnsureAtLeastAsync(
-            board.ProjectId.Value, userId, minimumRole, cancellationToken);
+            board.ProjectId, userId, minimumRole, cancellationToken);
         await _permissions.EnsureAsync(
-            userId, permission, PermissionScope.Project, board.ProjectId.Value, cancellationToken);
+            userId, permission, PermissionScope.Project, board.ProjectId, cancellationToken);
         return board;
     }
 }

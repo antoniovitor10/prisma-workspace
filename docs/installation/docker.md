@@ -1,13 +1,29 @@
 # Instalação local com Docker
 
-Este quickstart cria a aplicação, o SQL Server e dois volumes persistentes sem depender da infraestrutura da Nordevs.
+Este quickstart cria a aplicação, o SQL Server e três volumes persistentes (banco, anexos e chaves de proteção)
+sem depender da infraestrutura da Nordevs. Não é necessário instalar .NET ou Node.js no host para este caminho.
 
 ## Pré-requisitos
 
-- Docker Desktop ou Docker Engine com Docker Compose v2;
+- Git e Docker Desktop ou Docker Engine com Docker Compose v2, com o daemon iniciado;
+- host Linux x86-64/AMD64, ou Windows x86-64 com Docker Desktop em containers Linux;
 - pelo menos 4 GB de memória disponíveis para os containers;
 - PowerShell 7/Windows PowerShell ou shell POSIX com OpenSSL;
 - porta 8080 livre, ou outra porta definida em `.env`.
+
+O SQL Server usado neste Compose requer x86-64. Macs com Apple Silicon/ARM não são um ambiente validado
+para este conjunto; use uma máquina/VM x86-64 para o banco e valide a configuração antes de começar.
+
+## Baixar o projeto
+
+```bash
+git clone https://github.com/antoniovitor10/prisma-workspace.git
+cd prisma-workspace
+docker info
+docker compose version
+```
+
+Execute os próximos comandos na raiz clonada. Uma cópia nova usa dados locais vazios, sem contas ou dados de produção.
 
 ## Licença do banco
 
@@ -38,6 +54,29 @@ docker compose ps
 docker compose logs -f app
 ```
 
+## Configurar a primeira conta
+
+Uma instalação nova não cria usuário, organização ou dados de demonstração. O script grava em
+`PRISMA_SETUP_TOKEN`, dentro do `.env` local, um token aleatório de uso administrativo. Não envie esse valor para
+issues, chats, logs ou commits.
+
+1. Abra <http://localhost:8080/setup>.
+2. Consulte `PRISMA_SETUP_TOKEN` diretamente no `.env` local e informe-o somente no campo protegido da tela.
+3. Informe nome e e-mail do primeiro administrador e nome/identificador da organização.
+4. Conclua a configuração e entre com a conta criada.
+5. Altere `PRISMA_SETUP_ENABLED=false` no `.env` e reaplique o serviço:
+
+```bash
+docker compose up -d app
+```
+
+O servidor também mantém um marcador persistente e irreversível: repetir a chamada, restaurar a flag ou perder a
+resposta original não cria outro administrador inicial. Recuperação de acesso deve usar um procedimento
+administrativo próprio; não remova dados do banco para tentar reabrir o setup.
+
+O dataset demonstrativo é separado desse fluxo, permanece desabilitado por padrão e só pode ser habilitado
+explicitamente em `Development` sobre um banco vazio.
+
 ## Parar e reiniciar
 
 ```bash
@@ -48,9 +87,20 @@ docker compose start
 `docker compose down` remove os containers e a rede, mas preserva os volumes. Não use `down --volumes` se quiser
 manter o banco e os anexos.
 
+## Aplicar alterações locais no código
+
+O Compose empacota o código na imagem e não oferece hot reload. Depois de editar ou atualizar o código:
+
+```bash
+docker compose up -d --build --wait app
+```
+
+Não execute novamente o script de setup quando `.env` já existir. Ele recusa sobrescrever as credenciais.
+Atualizações podem aplicar migrations; faça backup do seu banco local antes de experimentar mudanças de schema.
+Para conferir a aplicação, abra `/health` no mesmo endereço e entre com a conta criada no setup.
+
 ## Limitações desta etapa
 
-- O fluxo seguro de criação do primeiro administrador ainda será entregue em um lote próprio, com contrato e testes.
 - O endpoint `/health` valida o processo HTTP; o Compose também exige que o SQL Server esteja saudável antes de
   iniciar a aplicação.
 - Backup, restauração, atualização e rollback serão documentados após ensaio automatizado.

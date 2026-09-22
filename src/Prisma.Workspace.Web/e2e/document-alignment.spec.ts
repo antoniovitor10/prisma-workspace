@@ -130,7 +130,8 @@ test('participantes e histórico usam nome funcional e nunca e-mail como rótulo
   await page.waitForLoadState('domcontentloaded');
   await page.locator(`[data-work-item-id="${workItemId}"]`).getByRole('button', { name: /^Abrir detalhes de / }).click();
   const dialog = page.getByRole('dialog');
-  const participants = dialog.getByRole('heading', { name: 'Participantes' }).locator('..');
+  // Seção renomeada de "Participantes" para "Responsáveis da tarefa" (SPEC-WORK-ITEM-ASSIGNEES).
+  const participants = dialog.getByRole('heading', { name: 'Responsáveis da tarefa' }).locator('..');
   await expect(participants).toContainText('Gabriel Tavares E2E');
   if (target.email) await expect(participants.getByText(target.email, { exact: true })).toHaveCount(0);
 
@@ -148,30 +149,38 @@ test('dependência é encontrada por título, persistida e removida pela gaveta'
   const workItemId = await source.getAttribute('data-work-item-id');
   expect(workItemId).toBeTruthy();
 
+  const targetButton = page.getByTestId('backlog-item').nth(1)
+    .getByRole('button', { name: /^Abrir detalhes de / });
+  await expect(targetButton).toBeVisible();
+  const targetLabel = await targetButton.getAttribute('aria-label');
+  const targetTitle = targetLabel?.replace(/^Abrir detalhes de /, '').trim();
+  expect(targetTitle).toBeTruthy();
+
   const existing = await appApi<{ links: Array<{ id: string; relatedTitle: string }> }>(page, `/api/WorkItems/${workItemId}`);
-  for (const relation of existing.links.filter(link => link.relatedTitle.includes('Homologar Lote de Placas Mercosul'))) {
+  for (const relation of existing.links.filter(link => link.relatedTitle === targetTitle)) {
     await appApi(page, `/api/WorkItems/${workItemId}/links/${relation.id}`, { method: 'DELETE' });
   }
 
   await source.getByRole('button', { name: /^Abrir detalhes de / }).click();
   let dialog = page.getByRole('dialog');
   const search = dialog.getByRole('combobox', { name: 'Buscar tarefa relacionada' });
-  await search.fill('Homologar Lote');
+  await search.fill(targetTitle!.slice(0, Math.min(targetTitle!.length, 24)));
   const result = dialog.getByRole('listbox', { name: 'Tarefas encontradas' })
-    .getByRole('button', { name: /Homologar Lote de Placas Mercosul/ });
+    .getByRole('button', { name: targetTitle!, exact: false });
   await expect(result).toBeVisible();
   await result.click();
   await dialog.getByRole('button', { name: 'Vincular' }).click();
-  await expect(dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/)).toBeVisible();
+  const linkedText = new RegExp(`Depende de.*${targetTitle}`);
+  await expect(dialog.getByText(linkedText)).toBeVisible();
 
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
   dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  const relation = dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/).locator('..').locator('..');
+  const relation = dialog.getByText(linkedText).locator('..').locator('..');
   await expect(relation).toBeVisible();
   await relation.getByRole('button', { name: 'Remover relacionamento' }).click();
-  await expect(dialog.getByText(/Depende de.*Homologar Lote de Placas Mercosul/)).toHaveCount(0);
+  await expect(dialog.getByText(linkedText)).toHaveCount(0);
 });
 
 test('comentário interno não se mistura ao histórico automático', async ({ page, authenticatedGoto }) => {
@@ -216,6 +225,8 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
     expect(project.nature).toBe(2);
     expect(project.workType).toBe(6);
     expect(sprints).toEqual([]);
+    const stages = await appApi<Array<{ name: string }>>(page, `/api/Stages/project/${createdProjectId}`);
+    expect(stages.map(stage => stage.name)).toEqual(['A fazer', 'Em andamento', 'Concluído']);
 
     await page.getByRole('link', { name: 'Sprints' }).click();
     await expect(page.getByText('Nenhuma sprint planejada para este projeto.')).toBeVisible();
@@ -224,7 +235,7 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
   }
 });
 
-test('kanban abre com cartões mais recentes no topo e restaura essa ordenação', async ({ page, authenticatedGoto }) => {
+test('kanban abre na ordem manual e restaura a ordenação global escolhida', async ({ page, authenticatedGoto }) => {
   test.setTimeout(60_000);
   await authenticatedGoto('/projects');
   const createdProjectId = await createProjectThroughUi(page);
@@ -233,9 +244,9 @@ test('kanban abre com cartões mais recentes no topo e restaura essa ordenação
     await page.goto(`/boards/${project.boards[0].id}`);
     await page.waitForLoadState('domcontentloaded');
 
-    const sort = page.getByRole('combobox', { name: 'Ordenar cartões' });
+    const sort = page.getByRole('combobox', { name: 'Ordenar cartões', exact: true });
     await expect(sort).toBeVisible({ timeout: 15_000 });
-    await expect(sort).toHaveValue('created');
+    await expect(sort).toHaveValue('position');
     await sort.selectOption('title');
     await expect(sort).toHaveValue('title');
     await sort.selectOption('created');
@@ -247,49 +258,21 @@ test('kanban abre com cartões mais recentes no topo e restaura essa ordenação
   }
 });
 
-test('workflow alterna entre personalizado e herdado da organização', async ({ page, authenticatedGoto }) => {
-  const organizationId = '11111111-1111-4111-8111-111111111111';
+test('configuração de fluxo direciona as colunas independentes para o Kanban', async ({ page, authenticatedGoto }) => {
   const projectId = await resolveSeedProjectId(page);
-  await authenticatedGoto(`/projects/${projectId}/settings`);
-  type Template = { id: string; name: string; isActive: boolean };
-  let templates = await appApi<Template[]>(page, `/api/organizations/${organizationId}/workflow-templates`);
-  let createdTemplateId = '';
-  if (!templates.some(template => template.isActive)) {
-    const created = await appApi<Template>(page, `/api/organizations/${organizationId}/workflow-templates`, {
-      method: 'POST',
-      body: {
-        name: 'Fluxo E2E', isDefault: false,
-        statuses: [
-          { key: 'todo', name: 'A fazer', color: '#64748B', position: 1000, category: 1, isInitial: true, isFinal: false },
-          { key: 'doing', name: 'Em andamento', color: '#1671B9', position: 2000, category: 2, isInitial: false, isFinal: false },
-          { key: 'done', name: 'Concluído', color: '#16834F', position: 3000, category: 4, isInitial: false, isFinal: true },
-        ],
-        transitions: [{ sourceKey: 'todo', targetKey: 'doing' }, { sourceKey: 'doing', targetKey: 'done' }],
-      },
-    });
-    createdTemplateId = created.id;
-    templates = [created];
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded');
-  }
-
-  const activeTemplate = templates.find(template => template.isActive)!;
-  const modePanel = page.getByRole('heading', { name: 'Status e fluxo' }).locator('..').locator('..');
-  if (await modePanel.getByText('Herdado da organização', { exact: true }).count()) {
-    await modePanel.getByRole('button', { name: 'Personalizar fluxo' }).click();
-    await expect(modePanel.getByText('Personalizado no projeto', { exact: true })).toBeVisible();
-  }
-  await modePanel.getByRole('combobox', { name: 'Template de workflow' }).selectOption(activeTemplate.id);
-  await modePanel.getByRole('button', { name: 'Herdar template' }).click();
-  await expect(modePanel.getByText('Herdado da organização', { exact: true })).toBeVisible();
-  await expect(modePanel.getByText(/sincronizado/)).toBeVisible();
-
-  await modePanel.getByRole('button', { name: 'Personalizar fluxo' }).click();
-  await expect(modePanel.getByText('Personalizado no projeto', { exact: true })).toBeVisible();
-  if (createdTemplateId) {
-    await appApi(page, `/api/organizations/${organizationId}/workflow-templates/${createdTemplateId}`, { method: 'DELETE' });
-  }
+  await authenticatedGoto(`/projects/${projectId}/settings?secao=fluxo`);
+  await expect(page.getByRole('heading', { name: 'Colunas dos quadros' })).toBeVisible();
+  await expect(page.getByText('Cada quadro possui suas próprias colunas.')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Template de workflow' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Configurar colunas no Kanban' }))
+    .toHaveAttribute('href', `/projects/${projectId}/boards`);
 });
+
+const isoHojeMais = (dias: number) => {
+  const data = new Date();
+  data.setUTCDate(data.getUTCDate() + dias);
+  return data.toISOString().slice(0, 10);
+};
 
 test('quadro da sprint move item por drag-and-drop e persiste a etapa', async ({ page, authenticatedGoto }, testInfo) => {
   await authenticatedGoto('/projects');
@@ -299,11 +282,17 @@ test('quadro da sprint move item por drag-and-drop e persiste a etapa', async ({
     type Stage = { id: string; name: string };
     const project = await appApi<Project>(page, `/api/projects/${scrumProjectId}`);
     const boardId = project.boards[0].id;
-    const stages = await appApi<Stage[]>(page, `/api/Stages/board/${boardId}`);
+    const stages = await appApi<Stage[]>(page, `/api/Stages/project/${scrumProjectId}`);
     expect(stages.length).toBeGreaterThanOrEqual(2);
     const sprintId = await appApi<string>(page, `/api/projects/${scrumProjectId}/sprints`, {
       method: 'POST',
-      body: { teamId: null, name: 'Sprint E2E', goal: 'Validar DnD', startDate: '2026-08-20', endDate: '2026-08-27' },
+      // Datas relativas: com o estado da sprint derivado das datas (D84), um período fixo
+      // no passado passa a estar encerrado, e o quadro de sprint encerrada é somente
+      // leitura — o arraste ficaria desativado e o teste falharia por envelhecimento.
+      body: {
+        teamId: null, name: 'Sprint E2E', goal: 'Validar DnD',
+        startDate: isoHojeMais(-1), endDate: isoHojeMais(13),
+      },
     });
     const workItemId = await appApi<string>(page, '/api/WorkItems', {
       method: 'POST',

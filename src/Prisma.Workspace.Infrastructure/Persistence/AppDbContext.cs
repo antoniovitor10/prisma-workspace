@@ -33,7 +33,6 @@ public class AppDbContext : IdentityDbContext
     public DbSet<Board> Boards => Set<Board>();
     public DbSet<Stage> Stages => Set<Stage>();
     public DbSet<WorkItem> WorkItems => Set<WorkItem>();
-    public DbSet<WorkItemBoardPlacement> WorkItemBoardPlacements => Set<WorkItemBoardPlacement>();
     public DbSet<WorkItemAssignee> WorkItemAssignees => Set<WorkItemAssignee>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<TimeEntry> TimeEntries => Set<TimeEntry>();
@@ -57,7 +56,6 @@ public class AppDbContext : IdentityDbContext
     public DbSet<ProjectTag> ProjectTags => Set<ProjectTag>();
     public DbSet<ProjectCustomFieldDefinition> ProjectCustomFields => Set<ProjectCustomFieldDefinition>();
     public DbSet<ProjectEvent> ProjectEvents => Set<ProjectEvent>();
-    public DbSet<ProjectSlaPolicy> ProjectSlaPolicies => Set<ProjectSlaPolicy>();
     public DbSet<Sprint> Sprints => Set<Sprint>();
     public DbSet<SprintCapacity> SprintCapacities => Set<SprintCapacity>();
     public DbSet<SprintItemSnapshot> SprintItemSnapshots => Set<SprintItemSnapshot>();
@@ -89,6 +87,7 @@ public class AppDbContext : IdentityDbContext
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<InstallationState> InstallationStates => Set<InstallationState>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -124,6 +123,15 @@ public class AppDbContext : IdentityDbContext
 
     private void EnforceOrganizationOwnership()
     {
+        foreach (var entry in ChangeTracker.Entries<InstallationState>()
+                     .Where(x => x.State == EntityState.Modified))
+        {
+            var wasInitialized = (bool)entry.OriginalValues[nameof(InstallationState.IsInitialized)]!;
+            var isInitialized = (bool)entry.CurrentValues[nameof(InstallationState.IsInitialized)]!;
+            DomainException.Garantir(!wasInitialized || isInitialized,
+                "O estado de instalação não pode ser reaberto.");
+        }
+
         var organizationId = CurrentOrganizationId;
         foreach (var entry in ChangeTracker.Entries()
                      .Where(x => x.Entity is IOrganizationOwned
@@ -158,7 +166,6 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<ProjectTag>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<ProjectCustomFieldDefinition>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<ProjectEvent>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
-        builder.Entity<ProjectSlaPolicy>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkflowStatus>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkflowTransition>().HasQueryFilter(x => x.SourceStatus.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<Sprint>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
@@ -179,7 +186,7 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<Team>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<TeamMember>().HasQueryFilter(x => x.Team.OrganizationId == CurrentOrganizationId);
         builder.Entity<Board>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
-        builder.Entity<Stage>().HasQueryFilter(x => x.Board.OrganizationId == CurrentOrganizationId);
+        builder.Entity<Stage>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WorkItem>().HasQueryFilter(x => x.Board.OrganizationId == CurrentOrganizationId);
         builder.Entity<WikiPage>().HasQueryFilter(x => x.Project.OrganizationId == CurrentOrganizationId);
         builder.Entity<WikiPageRevision>().HasQueryFilter(x => x.Page.Project.OrganizationId == CurrentOrganizationId);
@@ -209,7 +216,7 @@ public class AppDbContext : IdentityDbContext
     private static readonly HashSet<string> AuditedEntityTypes = new(StringComparer.Ordinal)
     {
         nameof(WorkItem), nameof(ExternalRequest), nameof(Project), nameof(ProjectMember),
-        nameof(ProjectTeam), nameof(ProjectCustomFieldDefinition), nameof(ProjectSlaPolicy),
+        nameof(ProjectTeam), nameof(ProjectCustomFieldDefinition),
         nameof(OrganizationMember), nameof(PermissionGrant), nameof(Sprint), nameof(SprintCapacity),
         nameof(WorkflowStatus), nameof(WorkflowTransition), nameof(Stage), nameof(TimeEntry),
         nameof(OrganizationWorkflowTemplate), nameof(OrganizationWorkflowStatus), nameof(OrganizationWorkflowTransition),

@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BarChart3,
   Building2,
   ChevronDown,
   Clock,
-  ClipboardList,
-  FolderKanban,
-  House,
-  Inbox,
   LogOut,
   Menu,
   Moon,
@@ -16,7 +11,6 @@ import {
   Settings,
   Square,
   Sun,
-  Users,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,8 +18,11 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BrandMark } from '../components/BrandMark';
 import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActions';
+import { DEFAULT_CREATE_KINDS, KIND_COLORS, KIND_ICONS } from '../components/WorkItemKindSelector';
+import { WorkItemKind, kindMeta } from '../features/workItems/workItemKinds';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { useOrganization } from '../features/organizations/OrganizationState';
+import { visibleNavEntries } from './navigation';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import { useThemeMode } from '../styles/ThemeMode';
@@ -95,29 +92,36 @@ const ThemeButton = styled.button`
   }
 `;
 
-/* ─── nav global (desktop) ─── */
+/* ─── nav global (desktop) — D88 ─── */
 
-const NavArea = styled.nav`
+const Nav = styled.nav`
   display: flex;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
 
   @media (max-width: 768px) { display: none; }
 `;
 
 const NavItem = styled(NavLink)`
-  position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 38px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 9px;
   border-radius: ${({ theme }) => theme.radius.md};
   color: ${({ theme }) => theme.color.textMuted};
   font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
+  font-weight: 750;
   text-decoration: none;
+  white-space: nowrap;
+
+  > svg { flex: 0 0 auto; }
 
   &:hover {
     background: ${({ theme }) => theme.color.neutral[100]};
@@ -125,19 +129,14 @@ const NavItem = styled(NavLink)`
   }
 
   &.active {
-    background: ${({ theme }) =>
-      `color-mix(in srgb, ${theme.color.brand} 9%, transparent)`};
+    background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, transparent)`};
     color: ${({ theme }) => theme.color.brand};
     font-weight: 800;
+  }
 
-    &::after {
-      content: '';
-      position: absolute;
-      inset: auto 10px -13px;
-      height: 2px;
-      border-radius: 999px;
-      background: ${({ theme }) => theme.color.gradient};
-    }
+  /* Em telas médias o ícone some para caber mais rótulos no cabeçalho. */
+  @media (max-width: 1180px) {
+    > svg { display: none; }
   }
 `;
 
@@ -323,6 +322,59 @@ const MobileNavItem = styled(NavLink)`
   }
 `;
 
+const CreateWrap = styled.div`
+  position: relative;
+`;
+
+const CreateKindDropdown = styled.div`
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  background: ${({ theme }) => theme.color.surface};
+  box-shadow: ${({ theme }) => theme.shadow.lg};
+`;
+
+const KindDropItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.neutral[100]};
+    outline: none;
+  }
+
+  > span {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: ${({ theme }) => theme.radius.md};
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+  }
+`;
+
 /* ─── account dropdown ─── */
 
 const AccountWrap = styled.div`
@@ -421,6 +473,8 @@ export function Topbar() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [kindMenuOpen, setKindMenuOpen] = useState(false);
+  const [createKind, setCreateKind] = useState<number>(WorkItemKind.Task);
   const [elapsed, setElapsed] = useState(0);
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -428,6 +482,7 @@ export function Topbar() {
 
   const menuRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const createRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const firstMenuLinkRef = useRef<HTMLAnchorElement>(null);
@@ -444,9 +499,9 @@ export function Topbar() {
   const role = access.data?.role ?? current.role;
   const allowed = access.data?.allowedPermissions ?? [];
   const canUseWorkspace = role !== 8;
-  const canSeeReports = allowed.includes(10) || role === 9 || role === 10;
-  const canSeeTeams = allowed.includes(1) && role !== 9;
   const canConfigure = allowed.some((p) => [12, 13, 14].includes(p));
+  // Fonte única (D88): cabeçalho desktop e hambúrguer mobile nunca divergem.
+  const navItems = visibleNavEntries({ role, allowed });
 
   const currentProjectId = location.pathname.match(/^\/projects\/([^/]+)/)?.[1];
 
@@ -462,6 +517,17 @@ export function Topbar() {
     mutationFn: (workItemId: string) => api.stopTimer(workItemId),
     onSuccess: () => queryClient.setQueryData(['active-timer'], null),
   });
+
+  useEffect(() => {
+    if (!kindMenuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (createRef.current && !createRef.current.contains(e.target as Node)) {
+        setKindMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [kindMenuOpen]);
 
   /* Ctrl/Cmd+K → search */
   useEffect(() => {
@@ -575,37 +641,15 @@ export function Topbar() {
           <span className="label">Prisma<em> WorkSpace</em></span>
         </BrandLink>
 
-        {/* desktop nav */}
-        <NavArea aria-label="Navegação principal">
-          {canUseWorkspace && (
-            <NavItem to="/home" end>
-              <House size={15} />Início
+        {/* desktop nav global (D88) */}
+        <Nav aria-label="Navegação principal">
+          {navItems.map(({ to, label, icon: Icone, end }) => (
+            <NavItem key={to} to={to} end={end}>
+              <Icone size={14} />
+              {label}
             </NavItem>
-          )}
-          {canUseWorkspace && (
-            <NavItem to="/me/tasks" aria-current={undefined}>
-              <ClipboardList size={15} />Meu trabalho
-            </NavItem>
-          )}
-          {canUseWorkspace && (
-            <NavItem to="/projects" end>
-              <FolderKanban size={15} />Projetos
-            </NavItem>
-          )}
-          <NavItem to="/requests">
-            <Inbox size={15} />Solicitações
-          </NavItem>
-          {canSeeReports && (
-            <NavItem to="/reports">
-              <BarChart3 size={15} />Relatórios
-            </NavItem>
-          )}
-          {canSeeTeams && (
-            <NavItem to="/teams">
-              <Users size={15} />Equipes
-            </NavItem>
-          )}
-        </NavArea>
+          ))}
+        </Nav>
 
         <Spacer />
 
@@ -615,21 +659,25 @@ export function Topbar() {
         </SearchButton>
 
         {/* org picker */}
-        <OrganizationPicker title="Organização ativa">
-          <Building2 size={14} />
-          <select
-            value={current.id}
-            aria-label="Selecionar organização"
-            onChange={(e) => {
-              switchOrganization(e.target.value);
-              navigate(current.role === 8 ? '/requests' : '/home');
-            }}
-          >
-            {organizations.map((org) => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
-        </OrganizationPicker>
+        {/* Com uma única organização o seletor não oferece escolha alguma: só ocupa
+            espaço na barra. Aparece a partir da segunda. */}
+        {organizations.length > 1 && (
+          <OrganizationPicker title="Organização ativa">
+            <Building2 size={14} />
+            <select
+              value={current.id}
+              aria-label="Selecionar organização"
+              onChange={(e) => {
+                switchOrganization(e.target.value);
+                navigate(current.role === 8 ? '/requests' : '/home');
+              }}
+            >
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+          </OrganizationPicker>
+        )}
 
         {/* active timer */}
         {timer && (
@@ -645,9 +693,42 @@ export function Topbar() {
         )}
 
         {/* novo item */}
-        <Primary aria-label="Novo item" onClick={() => setCreateOpen(true)}>
-          <Plus size={14} /><span>Novo item</span>
-        </Primary>
+        <CreateWrap ref={createRef}>
+          <Primary
+            aria-label="Novo item"
+            aria-expanded={kindMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => setKindMenuOpen((v) => !v)}
+          >
+            <Plus size={14} /><span>Novo item</span>
+          </Primary>
+          {kindMenuOpen && (
+            <CreateKindDropdown role="menu" aria-label="Selecione o tipo de item">
+              {DEFAULT_CREATE_KINDS.map((k) => {
+                const meta = kindMeta(k);
+                const IconComp = KIND_ICONS[k] ?? Plus;
+                const color = KIND_COLORS[k] ?? meta.color;
+                return (
+                  <KindDropItem
+                    key={k}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setCreateKind(k);
+                      setKindMenuOpen(false);
+                      setCreateOpen(true);
+                    }}
+                  >
+                    <span style={{ background: `${color}18`, color }}>
+                      <IconComp size={15} color={color} />
+                    </span>
+                    <strong>{meta.label}</strong>
+                  </KindDropItem>
+                );
+              })}
+            </CreateKindDropdown>
+          )}
+        </CreateWrap>
 
         {/* notifications */}
         <NotificationCenter />
@@ -695,42 +776,19 @@ export function Topbar() {
       {menuOpen && (
         <MobileOverlay role="dialog" aria-modal="true" aria-label="Menu de navegação" onClick={handleOverlayClick}>
           <MobileMenu ref={menuRef} role="menu">
-            {canUseWorkspace && (
-              <MobileNavItem ref={firstMenuLinkRef} to="/home" role="menuitem">
-                <House size={17} />Início
-              </MobileNavItem>
-            )}
-            {canUseWorkspace && (
-              <MobileNavItem to="/me/tasks" role="menuitem">
-                <ClipboardList size={17} />Meu trabalho
-              </MobileNavItem>
-            )}
-            {canUseWorkspace && (
+            {navItems.map(({ to, label, icon: Icone, end }, indice) => (
               <MobileNavItem
-                to="/projects"
-                end
+                key={to}
+                to={to}
+                end={end}
                 role="menuitem"
-                // if the first link is hidden (canUseWorkspace false), this needs focus
-                ref={!canUseWorkspace ? firstMenuLinkRef : undefined}
+                /* O primeiro item visível recebe o foco ao abrir o menu, qualquer que seja
+                   ele: para o solicitante externo a lista começa em "Solicitações". */
+                ref={indice === 0 ? firstMenuLinkRef : undefined}
               >
-                <FolderKanban size={17} />Projetos
+                <Icone size={17} />{label}
               </MobileNavItem>
-            )}
-            <MobileNavItem to="/requests" role="menuitem"
-              ref={!canUseWorkspace ? firstMenuLinkRef : undefined}
-            >
-              <Inbox size={17} />Solicitações
-            </MobileNavItem>
-            {canSeeReports && (
-              <MobileNavItem to="/reports" role="menuitem">
-                <BarChart3 size={17} />Relatórios
-              </MobileNavItem>
-            )}
-            {canSeeTeams && (
-              <MobileNavItem to="/teams" role="menuitem">
-                <Users size={17} />Equipes
-              </MobileNavItem>
-            )}
+            ))}
             {canConfigure && (
               <MobileNavItem to="/settings" role="menuitem">
                 <Settings size={17} />Configurações
@@ -750,6 +808,7 @@ export function Topbar() {
       <QuickCreateDialog
         open={createOpen}
         currentProjectId={currentProjectId}
+        initialKind={createKind}
         onOpenChange={setCreateOpen}
         onCreated={setToast}
       />

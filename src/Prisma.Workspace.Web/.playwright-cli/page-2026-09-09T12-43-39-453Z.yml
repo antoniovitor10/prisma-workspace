@@ -1,0 +1,910 @@
+- generic [ref=f3e4]:
+  - generic [ref=f3e5]:
+    - banner [ref=f3e6]:
+      - link "Prisma WorkSpace — página inicial" [ref=f3e7] [cursor=pointer]:
+        - /url: /home
+        - generic [ref=f3e14]:
+          - text: Prisma
+          - emphasis [ref=f3e15]: WorkSpace
+      - navigation "Navegação principal" [ref=f3e16]:
+        - link "Início" [ref=f3e17] [cursor=pointer]:
+          - /url: /home
+        - link "Meu trabalho" [ref=f3e21] [cursor=pointer]:
+          - /url: /me/tasks
+        - link "Projetos" [ref=f3e25] [cursor=pointer]:
+          - /url: /projects
+        - link "Solicitações" [ref=f3e28] [cursor=pointer]:
+          - /url: /requests
+        - link "Relatórios" [ref=f3e32] [cursor=pointer]:
+          - /url: /reports
+        - link "Equipes" [ref=f3e35] [cursor=pointer]:
+          - /url: /teams
+      - button "Abrir pesquisa global (Ctrl K)" [ref=f3e41] [cursor=pointer]:
+        - generic [ref=f3e45]: Buscar...
+        - generic [ref=f3e46]: Ctrl K
+      - generic "Organização ativa" [ref=f3e47]:
+        - combobox "Selecionar organização" [ref=f3e51]:
+          - option "Prisma Demo" [selected]
+      - button "Novo item" [ref=f3e52] [cursor=pointer]
+      - button "Notificações" [ref=f3e56] [cursor=pointer]
+      - button "Ativar modo escuro" [ref=f3e60] [cursor=pointer]
+      - button "Menu da conta" [ref=f3e64] [cursor=pointer]: EU
+    - generic [ref=f3e67]:
+      - link "Projetos" [ref=f3e68] [cursor=pointer]:
+        - /url: /projects
+      - generic [ref=f3e73]: Produto Demo
+  - main [ref=f3e74]:
+    - generic [ref=f3e75]:
+      - generic [ref=f3e76]:
+        - generic [ref=f3e77]:
+          - generic [ref=f3e78]:
+            - heading "Produto Demo" [level=1] [ref=f3e79]
+            - paragraph [ref=f3e80]: Exemplo genérico para explorar planejamento e execução de trabalho.
+          - generic [ref=f3e81]: DEMO
+        - navigation [ref=f3e82]:
+          - link "Itens" [ref=f3e83] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/items
+          - link "Backlog" [ref=f3e84] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/backlog
+          - link "Sprints" [ref=f3e85] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/sprints
+          - link "Kanban" [ref=f3e86] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/boards
+          - link "Relatórios" [ref=f3e87] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/reports
+          - link "Wiki" [ref=f3e88] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/wiki
+          - link "Configurações" [ref=f3e89] [cursor=pointer]:
+            - /url: /projects/703e030a-6406-44ce-b8de-956da60b6c12/settings
+      - generic [ref=f3e91]:
+        - generic [ref=f3e92]:
+          - heading "Dados do projeto" [level=2] [ref=f3e105]
+          - generic [ref=f3e106]:
+            - generic [ref=f3e107]:
+              - text: Nome
+              - textbox "Nome" [ref=f3e108]: Produto Demo
+            - generic [ref=f3e109]:
+              - text: Descrição
+              - textbox "Descrição" [ref=f3e110]: Exemplo genérico para explorar planejamento e execução de trabalho.
+            - generic [ref=f3e111]:
+              - text: Responsável
+              - combobox "Responsável" [ref=f3e112]:
+                - option "Selecione..."
+                - option "Usuário 80d791ec" [selected]
+                - option "Usuário b7709ce9"
+                - option "Usuário 56691770"
+            - generic [ref=f3e113]:
+              - text: Status
+              - combobox "Status" [ref=f3e114]:
+                - option "Planejamento"
+                - option "Ativo" [selected]
+                - option "Pausado"
+                - option "Concluído"
+                - option "Cancelado"
+            - generic [ref=f3e115]:
+              - text: Natureza
+              - combobox "Natureza" [ref=f3e116]:
+                - option "Selecione..." [disabled]
+                - option "Projeto" [selected]
+                - option "Melhoria"
+                - option "Sustentação"
+            - generic [ref=f3e117]:
+              - text: Tipo de Trabalho
+              - combobox "Tipo de Trabalho" [ref=f3e118]:
+                - option "Selecione..." [disabled]
+                - option "Desenvolvimento" [selected]
+                - option "Infraestrutura"
+                - option "Banco de Dados"
+                - option "Suporte"
+                - option "Segurança"
+                - option "Dados/BI"
+                - option "Integração"
+                - option "Documentação"
+                - option "Gestão"
+            - generic [ref=f3e119]:
+              - text: Data de início
+              - textbox "Data de início" [ref=f3e120]
+            - generic [ref=f3e121]:
+              - text: Prazo
+              - textbox "Prazo" [ref=f3e122]
+            - button "Salvar alterações" [ref=f3e124] [cursor=pointer]
+        - generic [ref=f3e127]:
+          - heading "Ciclo de vida" [level=2] [ref=f3e132]
+          - generic [ref=f3e133]:
+            - paragraph [ref=f3e134]: Arquivar preserva tarefas, horas, sprints e histórico. O projeto pode ser reativado depois.
+            - button "Arquivar projeto" [ref=f3e135] [cursor=pointer]
+        - generic [ref=f3e139]:
+          - generic [ref=f3e140]:
+            - heading "Membros e papéis" [level=2] [ref=f3e146]
+            - generic [ref=f3e147]: 1 pessoa(s)
+          - generic [ref=f3e149]:
+            - generic [ref=f3e150]:
+              - strong [ref=f3e151]: Usuário 80d791ec
+              - text: Responsável principal
+            - combobox [ref=f3e153]:
+              - option "Visualizador"
+              - option "Membro"
+              - option "Scrum Master"
+              - option "Product Owner"
+              - option "Administrador" [selected]
+          - generic [ref=f3e154]:
+            - combobox [ref=f3e155]:
+              - option "Adicionar membro..." [selected]
+              - option "Usuário b7709ce9"
+              - option "Usuário 56691770"
+            - combobox [ref=f3e156]:
+              - option "Visualizador"
+              - option "Membro" [selected]
+              - option "Scrum Master"
+              - option "Product Owner"
+              - option "Administrador"
+            - button "Adicionar" [ref=f3e157] [cursor=pointer]
+        - generic [ref=f3e162]:
+          - heading "Equipes" [level=2] [ref=f3e168]
+          - generic [ref=f3e169]: Salvo automaticamente ao marcar
+        - generic [ref=f3e170]:
+          - heading "Etiquetas do projeto" [level=2] [ref=f3e176]
+          - paragraph [ref=f3e178]: As etiquetas selecionadas são salvas junto com os dados gerais.
+        - generic [ref=f3e179]:
+          - heading "Campos personalizados" [level=2] [ref=f3e182]
+          - paragraph [ref=f3e184]: Nenhum campo personalizado.
+          - generic [ref=f3e185]:
+            - textbox "Nome do campo" [ref=f3e186]
+            - combobox [ref=f3e187]:
+              - option "Texto" [selected]
+              - option "Número"
+              - option "Data"
+              - option "Sim/não"
+              - option "Seleção"
+              - option "Seleção múltipla"
+              - option "Texto longo"
+              - option "Percentual"
+              - option "Data e hora"
+              - option "Usuário"
+              - option "Equipe"
+              - option "URL"
+            - generic [ref=f3e188]:
+              - checkbox "Obrigatório" [ref=f3e189]
+              - text: Obrigatório
+            - button "Criar" [ref=f3e190] [cursor=pointer]
+        - generic [ref=f3e192]:
+          - heading "Histórico do projeto" [level=2] [ref=f3e197]
+          - paragraph [ref=f3e199]: Nenhuma alteração administrativa registrada.
+        - generic [ref=f3e200]:
+          - generic [ref=f3e201]:
+            - heading "Status e fluxo" [level=2] [ref=f3e206]
+            - paragraph [ref=f3e207]: Regras únicas para Kanban, backlog, sprints e relatórios
+          - generic [ref=f3e208]:
+            - generic [ref=f3e209]:
+              - generic [ref=f3e210]:
+                - strong [ref=f3e211]: Personalizado no projeto
+                - generic [ref=f3e212]: Este projeto mantém seu próprio fluxo e não recebe mudanças do template.
+              - generic [ref=f3e213]:
+                - combobox "Template de workflow" [ref=f3e214]
+                - button "Herdar template" [disabled] [ref=f3e215] [cursor=pointer]
+            - group [ref=f3e216]:
+              - generic [ref=f3e217]:
+                - generic [ref=f3e218]:
+                  - heading "Status do projeto" [level=3] [ref=f3e219]
+                  - paragraph [ref=f3e220]: Defina significado, ordem, cor e quais estados iniciam ou encerram o trabalho.
+                - generic [ref=f3e221]:
+                  - textbox "Cor de Ideias" [ref=f3e222]: "#94a3b8"
+                  - textbox "Nome do status" [ref=f3e223]: Ideias
+                  - combobox "Categoria" [ref=f3e224]:
+                    - option "Backlog" [selected]
+                    - option "Pronta"
+                    - option "Em andamento"
+                    - option "Revisão"
+                    - option "Concluída"
+                  - generic [ref=f3e225]:
+                    - radio "Inicial" [checked] [ref=f3e226]
+                    - text: Inicial
+                  - generic [ref=f3e227]:
+                    - checkbox "Final" [ref=f3e228]
+                    - text: Final
+                  - generic [ref=f3e229]:
+                    - button "Subir" [disabled] [ref=f3e230] [cursor=pointer]
+                    - button "Descer" [ref=f3e233] [cursor=pointer]
+                    - button "Salvar status" [ref=f3e236] [cursor=pointer]
+                    - button "Excluir status" [ref=f3e241] [cursor=pointer]
+                - generic [ref=f3e245]:
+                  - textbox "Cor de Em andamento" [ref=f3e246]: "#f59e0b"
+                  - textbox "Nome do status" [ref=f3e247]: Em andamento
+                  - combobox "Categoria" [ref=f3e248]:
+                    - option "Backlog"
+                    - option "Pronta"
+                    - option "Em andamento" [selected]
+                    - option "Revisão"
+                    - option "Concluída"
+                  - generic [ref=f3e249]:
+                    - radio "Inicial" [ref=f3e250]
+                    - text: Inicial
+                  - generic [ref=f3e251]:
+                    - checkbox "Final" [ref=f3e252]
+                    - text: Final
+                  - generic [ref=f3e253]:
+                    - button "Subir" [ref=f3e254] [cursor=pointer]
+                    - button "Descer" [ref=f3e257] [cursor=pointer]
+                    - button "Salvar status" [ref=f3e260] [cursor=pointer]
+                    - button "Excluir status" [ref=f3e265] [cursor=pointer]
+                - generic [ref=f3e269]:
+                  - textbox "Cor de Revisão" [ref=f3e270]: "#8b5cf6"
+                  - textbox "Nome do status" [ref=f3e271]: Revisão
+                  - combobox "Categoria" [ref=f3e272]:
+                    - option "Backlog"
+                    - option "Pronta"
+                    - option "Em andamento"
+                    - option "Revisão" [selected]
+                    - option "Concluída"
+                  - generic [ref=f3e273]:
+                    - radio "Inicial" [ref=f3e274]
+                    - text: Inicial
+                  - generic [ref=f3e275]:
+                    - checkbox "Final" [ref=f3e276]
+                    - text: Final
+                  - generic [ref=f3e277]:
+                    - button "Subir" [ref=f3e278] [cursor=pointer]
+                    - button "Descer" [ref=f3e281] [cursor=pointer]
+                    - button "Salvar status" [ref=f3e284] [cursor=pointer]
+                    - button "Excluir status" [ref=f3e289] [cursor=pointer]
+                - generic [ref=f3e293]:
+                  - textbox "Cor de Concluído" [ref=f3e294]: "#10b981"
+                  - textbox "Nome do status" [ref=f3e295]: Concluído
+                  - combobox "Categoria" [ref=f3e296]:
+                    - option "Backlog"
+                    - option "Pronta"
+                    - option "Em andamento"
+                    - option "Revisão"
+                    - option "Concluída" [selected]
+                  - generic [ref=f3e297]:
+                    - radio "Inicial" [ref=f3e298]
+                    - text: Inicial
+                  - generic [ref=f3e299]:
+                    - checkbox "Final" [checked] [ref=f3e300]
+                    - text: Final
+                  - generic [ref=f3e301]:
+                    - button "Subir" [ref=f3e302] [cursor=pointer]
+                    - button "Descer" [disabled] [ref=f3e305] [cursor=pointer]
+                    - button "Salvar status" [ref=f3e308] [cursor=pointer]
+                    - button "Excluir status" [ref=f3e313] [cursor=pointer]
+                - generic [ref=f3e317]:
+                  - textbox [ref=f3e318]: "#3b82f6"
+                  - textbox "Novo status" [ref=f3e319]
+                  - combobox [ref=f3e320]:
+                    - option "Backlog"
+                    - option "Pronta"
+                    - option "Em andamento" [selected]
+                    - option "Revisão"
+                    - option "Concluída"
+                  - button "Adicionar" [ref=f3e321] [cursor=pointer]
+              - generic [ref=f3e323]:
+                - generic [ref=f3e324]:
+                  - heading "Transições permitidas" [level=3] [ref=f3e325]
+                  - paragraph [ref=f3e326]: Marque os destinos aceitos para cada status de origem. Movimentos inválidos serão bloqueados em todas as telas.
+                - table [ref=f3e328]:
+                  - rowgroup [ref=f3e329]:
+                    - row [ref=f3e330]:
+                      - columnheader "De \\ Para" [ref=f3e331]
+                      - columnheader "Ideias" [ref=f3e332]
+                      - columnheader "Em andamento" [ref=f3e333]
+                      - columnheader "Revisão" [ref=f3e334]
+                      - columnheader "Concluído" [ref=f3e335]
+                  - rowgroup [ref=f3e336]:
+                    - row [ref=f3e337]:
+                      - rowheader "● Ideias" [ref=f3e338]
+                      - cell "—" [ref=f3e339]
+                      - cell [ref=f3e340]:
+                        - checkbox "Ideias para Em andamento" [checked] [ref=f3e341]
+                      - cell [ref=f3e342]:
+                        - checkbox "Ideias para Revisão" [checked] [ref=f3e343]
+                      - cell [ref=f3e344]:
+                        - checkbox "Ideias para Concluído" [checked] [ref=f3e345]
+                    - row [ref=f3e346]:
+                      - rowheader "● Em andamento" [ref=f3e347]
+                      - cell [ref=f3e348]:
+                        - checkbox "Em andamento para Ideias" [checked] [ref=f3e349]
+                      - cell "—" [ref=f3e350]
+                      - cell [ref=f3e351]:
+                        - checkbox "Em andamento para Revisão" [checked] [ref=f3e352]
+                      - cell [ref=f3e353]:
+                        - checkbox "Em andamento para Concluído" [checked] [ref=f3e354]
+                    - row [ref=f3e355]:
+                      - rowheader "● Revisão" [ref=f3e356]
+                      - cell [ref=f3e357]:
+                        - checkbox "Revisão para Ideias" [checked] [ref=f3e358]
+                      - cell [ref=f3e359]:
+                        - checkbox "Revisão para Em andamento" [checked] [ref=f3e360]
+                      - cell "—" [ref=f3e361]
+                      - cell [ref=f3e362]:
+                        - checkbox "Revisão para Concluído" [checked] [ref=f3e363]
+                    - row [ref=f3e364]:
+                      - rowheader "● Concluído" [ref=f3e365]
+                      - cell [ref=f3e366]:
+                        - checkbox "Concluído para Ideias" [checked] [ref=f3e367]
+                      - cell [ref=f3e368]:
+                        - checkbox "Concluído para Em andamento" [checked] [ref=f3e369]
+                      - cell [ref=f3e370]:
+                        - checkbox "Concluído para Revisão" [checked] [ref=f3e371]
+                      - cell "—" [ref=f3e372]
+                - button "Salvar transições" [ref=f3e374] [cursor=pointer]
+              - generic [ref=f3e379]:
+                - generic [ref=f3e380]:
+                  - heading "Colunas" [level=3] [ref=f3e381]
+                  - paragraph [ref=f3e382]: Cada coluna representa um status do fluxo do projeto.
+                - generic [ref=f3e383]:
+                  - strong [ref=f3e384]: Planejamento do Produto Demo
+                  - generic [ref=f3e385]:
+                    - textbox "Nome da coluna" [ref=f3e386]: Ideias
+                    - combobox "Status da coluna" [ref=f3e387]:
+                      - option "Ideias" [selected]
+                      - option "Em andamento"
+                      - option "Revisão"
+                      - option "Concluído"
+                    - generic [ref=f3e388]:
+                      - button "Salvar coluna" [ref=f3e389] [cursor=pointer]
+                      - button "Excluir coluna" [ref=f3e394] [cursor=pointer]
+                  - generic [ref=f3e398]:
+                    - textbox "Nome da coluna" [ref=f3e399]: Em andamento
+                    - combobox "Status da coluna" [ref=f3e400]:
+                      - option "Ideias"
+                      - option "Em andamento" [selected]
+                      - option "Revisão"
+                      - option "Concluído"
+                    - generic [ref=f3e401]:
+                      - button "Salvar coluna" [ref=f3e402] [cursor=pointer]
+                      - button "Excluir coluna" [ref=f3e407] [cursor=pointer]
+                  - generic [ref=f3e411]:
+                    - textbox "Nome da coluna" [ref=f3e412]: Revisão
+                    - combobox "Status da coluna" [ref=f3e413]:
+                      - option "Ideias"
+                      - option "Em andamento"
+                      - option "Revisão" [selected]
+                      - option "Concluído"
+                    - generic [ref=f3e414]:
+                      - button "Salvar coluna" [ref=f3e415] [cursor=pointer]
+                      - button "Excluir coluna" [ref=f3e420] [cursor=pointer]
+                  - generic [ref=f3e424]:
+                    - textbox "Nome da coluna" [ref=f3e425]: Concluído
+                    - combobox "Status da coluna" [ref=f3e426]:
+                      - option "Ideias"
+                      - option "Em andamento"
+                      - option "Revisão"
+                      - option "Concluído" [selected]
+                    - generic [ref=f3e427]:
+                      - button "Salvar coluna" [ref=f3e428] [cursor=pointer]
+                      - button "Excluir coluna" [ref=f3e433] [cursor=pointer]
+        - generic [ref=f3e437]:
+          - generic [ref=f3e438]:
+            - heading "Portal Externo e formulários" [level=2] [ref=f3e444]
+            - generic [ref=f3e445]: Publicado
+          - generic [ref=f3e446]:
+            - generic [ref=f3e447]:
+              - text: Quadro de entrada
+              - combobox "Quadro de entrada" [ref=f3e448]:
+                - option "Selecione..."
+                - option "Planejamento do Produto Demo" [selected]
+            - generic [ref=f3e449]:
+              - text: Endereço público
+              - textbox "Endereço público" [ref=f3e450]: demo
+            - generic [ref=f3e451]:
+              - generic [ref=f3e452]:
+                - checkbox "Link público" [checked] [ref=f3e453]
+                - text: Link público
+              - generic [ref=f3e454]:
+                - checkbox "Login" [ref=f3e455]
+                - text: Login
+              - generic [ref=f3e456]:
+                - checkbox "Convite" [ref=f3e457]
+                - text: Convite
+              - generic [ref=f3e458]:
+                - checkbox "Código por e-mail" [checked] [ref=f3e459]
+                - text: Código por e-mail
+            - generic [ref=f3e461]:
+              - checkbox "Portal habilitado" [checked] [ref=f3e462]
+              - text: Portal habilitado
+            - generic [ref=f3e464]:
+              - checkbox "Exigir autenticação" [ref=f3e465]
+              - text: Exigir autenticação
+            - paragraph [ref=f3e466]: O acompanhamento individual sempre exige protocolo e chave. Os envios usam rate limiting, honeypot e validação de campos e arquivos.
+            - generic [ref=f3e471]:
+              - code [ref=f3e472]: http://127.0.0.1:5450/portal/demo
+              - button "Copiar" [ref=f3e473] [cursor=pointer]
+              - link "Abrir" [ref=f3e477] [cursor=pointer]:
+                - /url: http://127.0.0.1:5450/portal/demo
+            - generic [ref=f3e467]:
+              - paragraph [ref=f3e483]: Configuração do portal salva.
+              - button "Salvar portal" [ref=f3e468] [cursor=pointer]
+          - generic [ref=f3e484]:
+            - generic [ref=f3e485]:
+              - generic [ref=f3e486]:
+                - heading "Formulários de entrada" [level=3] [ref=f3e487]
+                - paragraph [ref=f3e488]: Crie campos obrigatórios, opcionais ou condicionais e defina a fila e a atribuição.
+              - button "Novo formulário" [ref=f3e489] [cursor=pointer]
+            - generic [ref=f3e491]:
+              - button "Solicitação — Produto Demo solicitacao · publicado · padrão" [ref=f3e493] [cursor=pointer]:
+                - strong [ref=f3e494]: Solicitação — Produto Demo
+                - generic [ref=f3e495]: solicitacao · publicado · padrão
+              - generic [ref=f3e496]:
+                - generic [ref=f3e497]:
+                  - generic [ref=f3e498]:
+                    - text: Título
+                    - textbox "Título" [ref=f3e499]: Solicitação — Produto Demo
+                  - generic [ref=f3e500]:
+                    - text: Slug
+                    - textbox "Slug" [ref=f3e501]: solicitacao
+                  - generic [ref=f3e502]:
+                    - text: Descrição
+                    - textbox "Descrição" [ref=f3e503]: Descreva sua necessidade para que nossa equipe possa iniciar o atendimento.
+                  - generic [ref=f3e504]:
+                    - text: Categoria padrão
+                    - textbox "Categoria padrão" [ref=f3e505]
+                  - generic [ref=f3e506]:
+                    - text: Prioridade padrão
+                    - combobox "Prioridade padrão" [ref=f3e507]:
+                      - option "Baixa"
+                      - option "Média" [selected]
+                      - option "Alta"
+                      - option "Crítica"
+                  - generic [ref=f3e508]:
+                    - text: Etapa/fila inicial
+                    - combobox "Etapa/fila inicial" [ref=f3e509]:
+                      - option "Etapa inicial do quadro" [selected]
+                      - option "Ideias"
+                      - option "Em andamento"
+                      - option "Revisão"
+                      - option "Concluído"
+                  - generic [ref=f3e510]:
+                    - text: Equipe padrão
+                    - combobox "Equipe padrão" [ref=f3e511]:
+                      - option "Equipe do quadro" [selected]
+                  - generic [ref=f3e512]:
+                    - text: Responsável padrão
+                    - combobox "Responsável padrão" [ref=f3e513]:
+                      - option "Sem responsável" [selected]
+                      - option "Usuário 80d791ec"
+                  - generic [ref=f3e514]:
+                    - text: Máximo de anexos
+                    - spinbutton "Máximo de anexos" [ref=f3e515]: "5"
+                  - generic [ref=f3e516]:
+                    - text: Limite por arquivo (MB)
+                    - spinbutton "Limite por arquivo (MB)" [ref=f3e517]: "10"
+                  - generic [ref=f3e518]:
+                    - text: Tempo anti-spam (segundos)
+                    - spinbutton "Tempo anti-spam (segundos)" [ref=f3e519]: "2"
+                  - generic [ref=f3e520]:
+                    - text: Extensões permitidas
+                    - textbox "Extensões permitidas" [ref=f3e521]: .pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx
+                  - generic [ref=f3e522]:
+                    - text: Tipos MIME permitidos
+                    - textbox "Tipos MIME permitidos" [ref=f3e523]: application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                  - generic [ref=f3e524]:
+                    - text: Mensagem de confirmação
+                    - textbox "Mensagem de confirmação" [ref=f3e525]: Recebemos sua solicitação. Guarde o protocolo e a chave de acompanhamento.
+                  - generic [ref=f3e527]:
+                    - checkbox "Publicado" [checked] [ref=f3e528]
+                    - text: Publicado
+                  - generic [ref=f3e530]:
+                    - checkbox "Formulário padrão" [checked] [ref=f3e531]
+                    - text: Formulário padrão
+                - generic [ref=f3e532]:
+                  - heading "Campos" [level=4] [ref=f3e533]
+                  - button "Adicionar campo" [ref=f3e534] [cursor=pointer]
+                - generic [ref=f3e536]:
+                  - generic [ref=f3e537]:
+                    - generic [ref=f3e538]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e539]: Nome
+                    - generic [ref=f3e540]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e541]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome" [selected]
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e542]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e543]:
+                        - option "Texto" [selected]
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e544]:
+                      - checkbox "Obrigatório" [checked] [ref=f3e545]
+                      - text: Obrigatório
+                    - generic [ref=f3e546]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e547]:
+                        - option "Sempre visível" [selected]
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e548] [cursor=pointer]
+                  - generic [ref=f3e552]:
+                    - generic [ref=f3e553]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e554]: E-mail
+                    - generic [ref=f3e555]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e556]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail" [selected]
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e557]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e558]:
+                        - option "Texto"
+                        - option "Texto longo"
+                        - option "E-mail" [selected]
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e559]:
+                      - checkbox "Obrigatório" [checked] [ref=f3e560]
+                      - text: Obrigatório
+                    - generic [ref=f3e561]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e562]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e563] [cursor=pointer]
+                  - generic [ref=f3e567]:
+                    - generic [ref=f3e568]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e569]: Telefone
+                    - generic [ref=f3e570]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e571]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone" [selected]
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e572]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e573]:
+                        - option "Texto"
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone" [selected]
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e574]:
+                      - checkbox "Obrigatório" [ref=f3e575]
+                      - text: Obrigatório
+                    - generic [ref=f3e576]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e577]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e578] [cursor=pointer]
+                  - generic [ref=f3e582]:
+                    - generic [ref=f3e583]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e584]: Assunto
+                    - generic [ref=f3e585]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e586]:
+                        - option "Personalizado"
+                        - option "Assunto" [selected]
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e587]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e588]:
+                        - option "Texto" [selected]
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e589]:
+                      - checkbox "Obrigatório" [checked] [ref=f3e590]
+                      - text: Obrigatório
+                    - generic [ref=f3e591]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e592]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e593] [cursor=pointer]
+                  - generic [ref=f3e597]:
+                    - generic [ref=f3e598]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e599]: Descrição detalhada
+                    - generic [ref=f3e600]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e601]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição" [selected]
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e602]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e603]:
+                        - option "Texto"
+                        - option "Texto longo" [selected]
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e604]:
+                      - checkbox "Obrigatório" [checked] [ref=f3e605]
+                      - text: Obrigatório
+                    - generic [ref=f3e606]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e607]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e608] [cursor=pointer]
+                  - generic [ref=f3e612]:
+                    - generic [ref=f3e613]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e614]: Categoria
+                    - generic [ref=f3e615]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e616]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria" [selected]
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e617]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e618]:
+                        - option "Texto" [selected]
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e619]:
+                      - checkbox "Obrigatório" [ref=f3e620]
+                      - text: Obrigatório
+                    - generic [ref=f3e621]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e622]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e623] [cursor=pointer]
+                  - generic [ref=f3e627]:
+                    - generic [ref=f3e628]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e629]: Prioridade informada
+                    - generic [ref=f3e630]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e631]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos"
+                    - generic [ref=f3e632]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e633]:
+                        - option "Texto"
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção" [selected]
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e634]:
+                      - checkbox "Obrigatório" [ref=f3e635]
+                      - text: Obrigatório
+                    - generic [ref=f3e636]:
+                      - text: Opções e condição
+                      - textbox "Opções e condição Sempre visível" [ref=f3e637]:
+                        - /placeholder: Opções separadas por vírgula
+                        - text: Baixa, Média, Alta, Crítica
+                      - combobox [ref=f3e638]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Serviço relacionado"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e639] [cursor=pointer]
+                  - generic [ref=f3e643]:
+                    - generic [ref=f3e644]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e645]: Serviço relacionado
+                    - generic [ref=f3e646]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e647]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço" [selected]
+                        - option "Anexos"
+                    - generic [ref=f3e648]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e649]:
+                        - option "Texto" [selected]
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo"
+                    - generic [ref=f3e650]:
+                      - checkbox "Obrigatório" [ref=f3e651]
+                      - text: Obrigatório
+                    - generic [ref=f3e652]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e653]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Anexos"
+                    - button "Remover campo" [ref=f3e654] [cursor=pointer]
+                  - generic [ref=f3e658]:
+                    - generic [ref=f3e659]:
+                      - text: Rótulo
+                      - textbox "Rótulo" [ref=f3e660]: Anexos
+                    - generic [ref=f3e661]:
+                      - text: Finalidade
+                      - combobox "Finalidade" [ref=f3e662]:
+                        - option "Personalizado"
+                        - option "Assunto"
+                        - option "Descrição"
+                        - option "Categoria"
+                        - option "Prioridade"
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Serviço"
+                        - option "Anexos" [selected]
+                    - generic [ref=f3e663]:
+                      - text: Tipo
+                      - combobox "Tipo" [ref=f3e664]:
+                        - option "Texto"
+                        - option "Texto longo"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Seleção"
+                        - option "Número"
+                        - option "Sim/não"
+                        - option "Data"
+                        - option "Arquivo" [selected]
+                    - generic [ref=f3e665]:
+                      - checkbox "Obrigatório" [ref=f3e666]
+                      - text: Obrigatório
+                    - generic [ref=f3e667]:
+                      - text: Condição simples
+                      - combobox "Condição simples" [ref=f3e668]:
+                        - option "Sempre visível" [selected]
+                        - option "Nome"
+                        - option "E-mail"
+                        - option "Telefone"
+                        - option "Assunto"
+                        - option "Descrição detalhada"
+                        - option "Categoria"
+                        - option "Prioridade informada"
+                        - option "Serviço relacionado"
+                    - button "Remover campo" [ref=f3e669] [cursor=pointer]
+                - generic [ref=f3e673]:
+                  - heading "Regras de atribuição" [level=4] [ref=f3e674]
+                  - button "Adicionar regra" [ref=f3e675] [cursor=pointer]
+                - generic [ref=f3e677]:
+                  - code [ref=f3e681]: http://127.0.0.1:5450/portal/demo?form=solicitacao
+                  - link "Visualizar" [ref=f3e682] [cursor=pointer]:
+                    - /url: /portal/demo?form=solicitacao
+                - generic [ref=f3e688]:
+                  - paragraph [ref=f3e689]: Alterações entram em vigor imediatamente após salvar.
+                  - button "Salvar formulário" [ref=f3e690] [cursor=pointer]

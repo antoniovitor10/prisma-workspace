@@ -1,0 +1,62 @@
+- generic [ref=f2e109]:
+  - banner [ref=f2e111]:
+    - link "Prisma WorkSpace — página inicial" [ref=f2e112] [cursor=pointer]:
+      - /url: /home
+      - generic [ref=f2e119]:
+        - text: Prisma
+        - emphasis [ref=f2e120]: WorkSpace
+    - navigation "Navegação principal" [ref=f2e121]:
+      - link "Início" [ref=f2e122] [cursor=pointer]:
+        - /url: /home
+      - link "Meu trabalho" [ref=f2e126] [cursor=pointer]:
+        - /url: /me/tasks
+      - link "Projetos" [ref=f2e130] [cursor=pointer]:
+        - /url: /projects
+      - link "Solicitações" [active] [ref=f2e133] [cursor=pointer]:
+        - /url: /requests
+      - link "Relatórios" [ref=f2e275] [cursor=pointer]:
+        - /url: /reports
+      - link "Equipes" [ref=f2e278] [cursor=pointer]:
+        - /url: /teams
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f2e137] [cursor=pointer]:
+      - generic [ref=f2e141]: Buscar...
+      - generic [ref=f2e142]: Ctrl K
+    - generic "Organização ativa" [ref=f2e143]:
+      - combobox "Selecionar organização" [ref=f2e147]:
+        - option "Prisma Demo" [selected]
+    - button "Novo item" [ref=f2e148] [cursor=pointer]
+    - button "Notificações" [ref=f2e152] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f2e156] [cursor=pointer]
+    - button "Menu da conta" [ref=f2e160] [cursor=pointer]: EU
+  - main [ref=f2e163]:
+    - generic [ref=f2e317]:
+      - generic [ref=f2e318]:
+        - generic [ref=f2e319]:
+          - heading "Solicitações" [level=1] [ref=f2e320]
+          - paragraph [ref=f2e321]: Fila real do Portal Externo, integrada às tarefas e ao fluxo do projeto.
+        - textbox "Buscar solicitações" [ref=f2e326]:
+          - /placeholder: Protocolo, assunto ou solicitante...
+      - generic [ref=f2e327]:
+        - article [ref=f2e328]:
+          - generic [ref=f2e333]:
+            - generic [ref=f2e334]: Aguardando atendimento
+            - strong [ref=f2e335]: "0"
+        - article [ref=f2e336]:
+          - generic [ref=f2e340]:
+            - generic [ref=f2e341]: Com interação
+            - strong [ref=f2e342]: "0"
+        - article [ref=f2e343]:
+          - generic [ref=f2e348]:
+            - generic [ref=f2e349]: Concluídas
+            - strong [ref=f2e350]: "0"
+      - generic [ref=f2e351]:
+        - generic [ref=f2e352]:
+          - heading "Fila de triagem" [level=2] [ref=f2e353]
+          - generic [ref=f2e354]: Origem, protocolo e status preservados
+        - button "Protocolo Solicitação Solicitante Status Na fila":
+          - generic: Protocolo
+          - generic: Solicitação
+          - generic: Solicitante
+          - generic: Status
+          - generic: Na fila
+        - generic [ref=f2e355]: Nenhuma solicitação encontrada.

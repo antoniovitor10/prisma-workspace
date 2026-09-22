@@ -10,8 +10,8 @@ public enum NotificationType
     TaskOverdue = 6,
     ExternalRequestReceived = 7,
     ExternalReply = 8,
-    SlaNearDue = 9,
-    SlaOverdue = 10,
+    // 9 e 10 pertenciam a SlaNearDue e SlaOverdue, removidos pela D83.
+    // Os numeros nao sao reaproveitados para nao reinterpretar notificacoes gravadas.
     SprintStarted = 11,
     SprintCompleted = 12,
     StatusChanged = 13

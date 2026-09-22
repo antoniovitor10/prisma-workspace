@@ -33,12 +33,9 @@ public class ProjectsController : ControllerBase
             request.Key, request.Name, request.Description, UserId,
             request.Nature, request.WorkType, request.Methodology, request.StartDate, request.DueDate, request.WorkflowTemplateId), ct);
 
-        // Projeto nasce pronto pra uso: quadro principal + colunas padrão.
-        // CreateBoardCommand já cria a etapa "Backlog" (Ready/pos=100);
-        // adicionamos apenas Em andamento e Concluído para completar o fluxo.
-        var boardId = await _mediator.Send(new CreateBoardCommand("Quadro principal", UserId, id), ct);
-        await _mediator.Send(new CreateStageCommand(boardId, "Em andamento", 200, null, null, StageCategory.InProgress, "#F59E0B", UserId), ct);
-        await _mediator.Send(new CreateStageCommand(boardId, "Concluído", 300, null, null, StageCategory.Done, "#10B981", UserId), ct);
+        // O handler do projeto já persiste o fluxo (do template ou padrão).
+        // Criar a visão não deve duplicar nem modificar suas colunas.
+        await _mediator.Send(new CreateBoardCommand("Quadro principal", UserId, id), ct);
 
         return CreatedAtAction(nameof(Get), new { id }, id);
     }

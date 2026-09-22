@@ -32,6 +32,7 @@ export interface BacklogItem {
   assigneeIds?: string[];
   links?: BacklogLink[];
   isBlocked?: boolean;
+  isArchived?: boolean;
   version?: string;
 }
 
@@ -71,7 +72,6 @@ export interface WorkItemExternalCommunication {
   rating?: number;
   ratingComment?: string;
   completionConfirmedAt?: string;
-  sla: import('./portal').ExternalRequestSla;
   messages: import('./portal').ExternalRequestMessage[];
 }
 
@@ -184,18 +184,9 @@ export interface Team {
   members: TeamMember[];
 }
 
-export const kindNames: Record<number, string> = {
-  1: 'Épico',
-  2: 'Feature',
-  3: 'História',
-  4: 'Bug',
-  5: 'Tarefa',
-  6: 'Subtarefa',
-  7: 'Melhoria',
-  8: 'Débito técnico',
-  9: 'Solicitação',
-  10: 'Incidente',
-};
+// Taxonomia dos tipos vive em features/workItems/workItemKinds.ts, que tambem carrega
+// cor, sigla, descricao e hierarquia. Reexportado aqui para nao quebrar quem ja importava.
+export { kindNames } from '../features/workItems/workItemKinds';
 
 export const priorityNames: Record<number, string> = {
   0: 'Baixa',

@@ -27,11 +27,22 @@ function New-HexSecret([int]$ByteCount) {
     return ([BitConverter]::ToString($bytes)).Replace('-', '')
 }
 
+function New-Base64UrlSecret([int]$ByteCount) {
+    $bytes = New-Object byte[] $ByteCount
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $generator.GetBytes($bytes) }
+    finally { $generator.Dispose() }
+    return [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+}
+
 $sqlPassword = 'Pr1!' + (New-HexSecret 24)
 $jwtKey = New-HexSecret 48
+$setupToken = New-Base64UrlSecret 32
 $content = @(
     "MSSQL_SA_PASSWORD=$sqlPassword"
     "PRISMA_JWT_KEY=$jwtKey"
+    'PRISMA_SETUP_ENABLED=true'
+    "PRISMA_SETUP_TOKEN=$setupToken"
     'MSSQL_PID=Developer'
     'PRISMA_DB_NAME=PrismaWorkspace'
     'PRISMA_HTTP_PORT=8080'

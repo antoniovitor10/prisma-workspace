@@ -74,7 +74,7 @@ public sealed class WorkflowController : ControllerBase
         Guid projectId, Guid stageId, [FromBody] WorkflowStageRequest request, CancellationToken ct)
     {
         await _mediator.Send(new UpdateWorkflowStageCommand(projectId, stageId, request.Name,
-            request.Position, request.WipLimit, request.WorkflowStatusId, UserId), ct);
+            request.Position, request.WorkflowStatusId, UserId), ct);
         return NoContent();
     }
 
@@ -101,5 +101,5 @@ public sealed record WorkflowStatusRequest(
 public sealed record ReorderWorkflowRequest(IReadOnlyList<Guid> StatusIds);
 public sealed record ReplaceTransitionsRequest(IReadOnlyList<WorkflowTransitionDto> Transitions);
 public sealed record WorkflowStageRequest(
-    string Name, double Position, int? WipLimit, Guid WorkflowStatusId);
+    string Name, double Position, Guid WorkflowStatusId);
 public sealed record BoardCardSettingsRequest(string SettingsJson);

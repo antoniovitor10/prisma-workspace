@@ -8,7 +8,6 @@ using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using Prisma.Workspace.Application.Features.Workflow;
 using Prisma.Workspace.Application.Features.ExternalPortal;
-using Prisma.Workspace.Application.Features.Sla;
 using FluentValidation;
 using MediatR;
 
@@ -39,7 +38,6 @@ public record WorkItemExternalCommunicationDto(
     int? Rating,
     string? RatingComment,
     DateTimeOffset? CompletionConfirmedAt,
-    ExternalRequestSlaDto Sla,
     IReadOnlyList<ExternalRequestMessageDto> Messages);
 
 public record WorkItemDetailsDto(
@@ -182,7 +180,6 @@ public class GetWorkItemDetailsQueryHandler : IRequestHandler<GetWorkItemDetails
                 item.ExternalRequest.Rating,
                 item.ExternalRequest.RatingComment,
                 item.ExternalRequest.CompletionConfirmedAt,
-                SlaCalculator.MapRequest(item.ExternalRequest),
                 item.ExternalRequest.Messages.OrderBy(x => x.CreatedAt)
                     .Select(x => new ExternalRequestMessageDto(
                         x.Id, x.AuthorType, x.AuthorName, x.Content, x.CreatedAt)).ToList()),
@@ -255,6 +252,7 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
     private readonly IWorkflowRepository? _workflow;
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IPlatformNotificationPublisher? _notifications;
+    private readonly IHtmlSanitizer? _htmlSanitizer;
 
     public UpdateWorkItemCommandHandler(
         IWorkItemManagementRepository management,
@@ -267,9 +265,10 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         IAutomationExecutor? automations = null,
         IWorkflowRepository? workflow = null,
         IBoardRealtimeNotifier? realtime = null,
-        IPlatformNotificationPublisher? notifications = null)
-        => (_management, _projectAccess, _permissions, _stages, _teams, _users, _feed, _automations, _workflow, _realtime, _notifications)
-            = (management, projectAccess, permissions, stages, teams, users, feed, automations, workflow, realtime, notifications);
+        IPlatformNotificationPublisher? notifications = null,
+        IHtmlSanitizer? htmlSanitizer = null)
+        => (_management, _projectAccess, _permissions, _stages, _teams, _users, _feed, _automations, _workflow, _realtime, _notifications, _htmlSanitizer)
+            = (management, projectAccess, permissions, stages, teams, users, feed, automations, workflow, realtime, notifications, htmlSanitizer);
 
     public async Task Handle(UpdateWorkItemCommand request, CancellationToken ct)
     {
@@ -284,12 +283,13 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
             ?? UserDisplayName.Resolve(request.ActorId, null, request.ActorName, null);
 
         Stage? destinationStage = null;
+        DomainException.Garantir(request.StageId.HasValue, "Escolha uma coluna do quadro da tarefa.");
         if (request.StageId.HasValue)
         {
             destinationStage = await _stages.GetByIdAsync(request.StageId.Value, ct)
                 ?? throw new NaoEncontradoException("Etapa");
-            DomainException.Garantir(destinationStage.BoardId == item.BoardId,
-                "A etapa nao pertence ao quadro da tarefa.");
+            DomainException.Garantir(destinationStage.ProjectId == item.Board.ProjectId && destinationStage.BoardId == item.BoardId,
+                "A etapa nao pertence ao projeto da tarefa.");
             if (item.StageId != request.StageId && _workflow is not null)
                 await WorkflowMoveGuard.EnsureAllowedAsync(item, destinationStage, _workflow, ct);
         }
@@ -304,11 +304,16 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
                 "A equipe nao esta associada ao projeto.");
         }
 
-        if (!string.IsNullOrWhiteSpace(request.ResponsibleId))
+        if (!string.IsNullOrWhiteSpace(request.ResponsibleId)
+            && !string.Equals(item.ResponsibleId, request.ResponsibleId, StringComparison.Ordinal))
         {
-            var responsible = await _users.GetDisplayNamesAsync([request.ResponsibleId], ct);
-            DomainException.Garantir(responsible.ContainsKey(request.ResponsibleId),
+            var responsible = await _users.GetByIdsAsync(
+                [request.ResponsibleId], includeInactive: false, ct);
+            DomainException.Garantir(responsible.Any(x => x.Id == request.ResponsibleId),
                 "O responsavel informado nao existe.");
+            var role = await _projectAccess.GetRoleAsync(item.Board.ProjectId, request.ResponsibleId, ct);
+            DomainException.Garantir(role is not null,
+                "Conceda acesso ao projeto antes de atribuir a tarefa.");
             if (item.Assignees.All(x => x.UserId != request.ResponsibleId))
                 item.Assignees.Add(new WorkItemAssignee
                 {
@@ -356,7 +361,8 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         }
 
         item.Title = request.Title.Trim();
-        item.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        var description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        item.Description = description is null ? null : (_htmlSanitizer?.Sanitize(description) ?? description);
         item.Kind = item.ParentId.HasValue && request.Kind == WorkItemKind.Task
             ? WorkItemKind.Subtask : request.Kind;
         item.Priority = request.Priority;
@@ -409,9 +415,7 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         await _management.SaveWithEventAsync(taskEvent, ct);
         if (_notifications is not null)
         {
-            var link = item.Board.ProjectId.HasValue
-                ? $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}"
-                : $"/boards/{item.BoardId}?item={item.Id}";
+            var link = $"/projects/{item.Board.ProjectId}/backlog?item={item.Id}";
             if (!string.IsNullOrWhiteSpace(item.ResponsibleId)
                 && item.ResponsibleId != previous.ResponsibleId
                 && item.ResponsibleId != request.ActorId)
@@ -500,8 +504,8 @@ public class DuplicateWorkItemCommandHandler : IRequestHandler<DuplicateWorkItem
         await WorkItemAccessGuard.EnsureAsync(
             source, request.ActorId, ProjectRole.Member, PlatformPermission.Create,
             _projectAccess, _permissions, ct,
-            source.Board.ProjectId.HasValue ? PermissionScope.Project : PermissionScope.WorkItem,
-            source.Board.ProjectId ?? source.Id);
+            PermissionScope.Project,
+            source.Board.ProjectId);
 
         var now = DateTimeOffset.UtcNow;
         var copy = new WorkItem
@@ -778,8 +782,7 @@ internal static class WorkItemAccessGuard
         PermissionScope scope = PermissionScope.WorkItem,
         Guid? scopeId = null)
     {
-        if (item.Board.ProjectId.HasValue)
-            await projectAccess.EnsureAtLeastAsync(item.Board.ProjectId.Value, actorId, minimumRole, ct);
+        await projectAccess.EnsureAtLeastAsync(item.Board.ProjectId, actorId, minimumRole, ct);
         await permissions.EnsureAsync(actorId, permission, scope, scopeId ?? item.Id, ct);
     }
 }

@@ -1,5 +1,9 @@
 # DECISIONS — decisões travadas (ADR-lite)
 
+- **D89** - Em 2026-09-22, o PO escolheu explicitamente "Mudar para colunas independentes por quadro" ao comparar o relatório de testes com D83. Sucede a direção de fluxo compartilhado por projeto da D83. Não autoriza apagar dados nem reativar WIP ou quadros transversais. Contrato em `specs/independent-board-columns.md` (`approved`). O PO aprovou G-MIGRATION/G-WORKFLOW com "Aprovo a migration e esse fluxo seguro": cópia incremental das colunas por quadro, tarefas mantidas no quadro atual, IDs históricos preservados, backup verificado e ensaio antes de produção. Exclusão de estrutura ocupada exige destino explícito. Aprovação não significa migração aplicada nem dispensa validação.
+
+- **D90** - Em 2026-09-22, o PO escolheu "Exigir acesso ao projeto antes de atribuir a tarefa". Atribuição não concede acesso. Responsável principal e adicionais devem ser pessoas ativas da organização com acesso efetivo ao projeto; a interface oferece elegíveis e a API revalida todas as entradas. Atribuições legadas inconsistentes não são apagadas nem liberam visibilidade em Meu Trabalho. Contrato aprovado em `specs/project-assignment-access.md`; não exige alteração de schema.
+
 Uma linha por decisão. Pra mudar: não apague, marque ~~riscado~~ e adicione a nova abaixo.
 Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 
@@ -444,3 +448,127 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   ativado na promoção pública, pois no repositório privado pessoal sua disponibilidade não é garantida. Advisories
   críticos bloqueiam o frontend; o passivo alto/moderado conhecido é corrigido em lotes testados, sem `audit fix`
   major automático. (2026-09-05)
+
+- **D79** — O primeiro acesso de uma instalação Community usa setup anônimo de uso único protegido por token externo
+  forte, estado singleton persistido e transação serializável no SQL Server compartilhada entre Identity e domínio.
+  O primeiro e-mail nasce confirmado para permitir operação sem SMTP; o token trafega somente no header redigido
+  `X-Prisma-Setup-Token`. O seed demonstrativo deixa de ser implícito, passa a ser Development-only, opt-in e neutro,
+  e também encerra o setup. O PO aprovou diretamente `G-SPEC` e `G-MIGRATION` em 2026-09-05. (2026-09-05)
+
+- **D80** — Programa **Prisma WorkSpace v2**: decisão humana registrada em 2026-09-08. O PO determinou
+  textualmente que *"só no prisma, tudo que há de ser feito agora é no prisma e só"* — todo o trabalho de produto
+  passa a acontecer exclusivamente no repositório `prisma-workspace`, e o repositório antigo `runrun` sai do
+  caminho como origem de trabalho. O PO também autorizou deploy em produção *"Sim, sem restrição"*, com o alvo de
+  `https://prisma.nordevs.com.br` passar a servir o código do `prisma-workspace` (D74 permanece quanto ao domínio
+  canônico). Sobre o `G-SPEC` em bloco, o PO declarou *"pode garantir todas as specs como aprovadas exceto isso que
+  passei ai agora"*: ficam aprovadas as specs ativas de `specs/`, **exceto** `SPEC-S-003` (`specs/sprints.md`), que
+  retorna a `draft` e recebe contrato novo antes de qualquer implementação. Esta decisão é aprovação humana
+  explícita, não autoaprovação de agente. A ordem de execução do programa mantém a **cadeia incremental de
+  migrations durante todo o programa**, com consolidação apenas no lote final `migrations-consolidation`, porque a
+  hipótese de migration inicial única (fresh-install-only, antiga Fase 5 do plano de distribuição) é incompatível
+  com a base real de produção, que possui dados e histórico de migrations aplicadas. (2026-09-08)
+
+- **D81 — PROPOSTA, NÃO APROVADA** — Sucessora de D25. Sprint deixa de pertencer a um único projeto e passa a
+  pertencer à **Organization**, com `Team` opcional. Introduz `SprintProject` (`SprintId` + `ProjectId`): uma
+  sprint reúne vários projetos e um projeto participa de várias sprints. `WorkItem` continua em um único
+  `Project` e em no máximo uma sprint, e só pode ser vinculado a uma sprint que contenha o seu projeto.
+  Adicionar ou remover sprint nunca altera `Board`, `Stage` ou `Position`. Remover um projeto de uma sprint exige
+  tratar atomicamente as tarefas vinculadas daquele projeto, com destino explícito. Métricas são consolidadas e
+  segmentáveis por projeto. Permissões são validadas em todos os projetos envolvidos, sem execução parcial. O
+  backfill de `Sprint.ProjectId` para `SprintProject` é obrigatório e verificável. O estado da sprint passa a ser
+  calculado pelas datas, não existe `Iniciar sprint` e períodos sobrepostos são permitidos. Excluir sprint remove
+  somente o `SprintId` das tarefas; tarefas e histórico nunca são excluídos. Planejamento hierárquico é atômico e
+  tarefas abertas no encerramento exigem destino explícito. **Esta proposta sucede D25 somente se e quando o PO
+  aprovar o `G-SPEC` da `SPEC-S-003 v2`.** Até lá, D25 permanece vigente e nenhuma implementação é autorizada.
+  Gates exigidos: `G-SPEC` (pendente), `G-MIGRATION` (obrigatório), `G-WORKFLOW` (obrigatório) e `G-HISTORY`
+  (somente se `SprintItemSnapshot` mudar de estrutura). (proposta em 2026-09-08)
+
+- **D81 — APROVADA em 2026-09-08.** O PO leu o contrato e respondeu *"Aprovo, pode implementar"* ao `G-SPEC` da
+  `SPEC-S-003 v2`. A `SPEC-S-003` passa a `approved` e D81 sucede D25, que fica revogada quanto à regra de uma
+  única sprint ativa e à transição manual de status. `G-MIGRATION` e `G-WORKFLOW` ficam cobertos pela mesma
+  instrução, combinada com a determinação anterior do PO de que a Sprint N:N deve rodar em produção
+  (*"no prisma em si, quero ver no prisma.nordevs.com.br"*), que não é realizável sem a alteração de schema e de
+  regra de workflow. `G-HISTORY` permanece exigido se e quando `SprintItemSnapshot` mudar de estrutura.
+  (2026-09-08)
+
+- **D82** — Classificação de coluna escolhida pela pessoa, nunca inferida. O PO decidiu em 2026-09-08, entre três
+  alternativas apresentadas, que a categoria da coluna (`StageCategory`) é escolhida explicitamente na interface.
+  Ficam recusadas a inferência por nome e a convenção de "última coluna é a de conclusão", porque ambas concluem
+  tarefa sem intenção humana. Consequências: `StageDto` passa a expor `Category`; a criação de coluna no Kanban
+  oferece o campo de classificação; a reclassificação continua pela configuração de workflow do projeto, que já
+  propaga `status.Category` para a etapa. O PO também declarou que *"todos os dados atuais são fakes"*, portanto
+  **não há backfill** de colunas existentes e nenhuma tarefa histórica é reclassificada em massa. (2026-09-08)
+
+- **D83** — Quadro é visão opcional; fluxo pertence ao projeto; WIP removido. O PO decidiu em 2026-09-08,
+  textualmente *"eu queria de uma forma que quadros fossem descartáveis ou opcionais porque não to vendo
+  sentido pra eles"*, confirmado com *"pode seguir minha ideia"*, e *"tira o wip por favor"*. O conjunto
+  ordenado de colunas passa a pertencer ao `Project`; `Board` deixa de ser contêiner e vira visão salva, sem
+  colunas próprias; um projeto opera sem nenhum quadro. `WorkItemBoardPlacement` é removido e a tarefa passa a
+  ter uma única `StageId`/`Position` — a duplicidade que causou o defeito corrigido em `94980fc`. O limite de
+  WIP sai do modelo, da API, da interface e da configuração de projeto. Nas três decisões em aberto o PO
+  escolheu: quadro transversal a vários projetos é **revogado** (todo quadro pertence a um projeto); o nome
+  **"Quadro"** é mantido na interface; equipe e permissão passam a ser **do projeto**, e o quadro não restringe
+  quem o enxerga, o que tira o propósito de `PermissionScope.Board` e obriga a reavaliá-lo no lote de perfis e
+  permissões. Esta decisão sucede a `SPEC-BOARDS-STAGES-WIP` pela `SPEC-BOARD-AS-VIEW`. `G-SPEC`,
+  `G-MIGRATION` e `G-WORKFLOW` aprovados pela instrução direta do PO; `G-HISTORY` não se aplica porque
+  `StageHistory` e `TaskEvent` não mudam de estrutura. (2026-09-08)
+  **Constatação em implementação Stage→Project (2026-09-09):** `PermissionScope.Board` permanece no enum e
+  no código até decisão explícita do PO no lote de perfis — **não remover nesta migration**.
+
+- **D84 — SUCEDE E REVOGA D81.** Sprint volta a pertencer a **um único projeto**. O PO determinou em
+  2026-09-09, textualmente: *"a sprint pode ter apenas 1 projeto, mas 1 projeto pode ter várias sprints"*.
+  Ficam **revogados** a associação `SprintProject`, o `Sprint.OrganizationId` próprio e o backfill previsto em
+  D81; o tenant da sprint continua sendo o do seu projeto e `Sprint.ProjectId` segue obrigatório. Permanecem
+  válidas, vindas da v2: estado calculado pelas datas no fuso da organização, ausência da ação manual
+  `Iniciar sprint`, várias sprints simultâneas por projeto quando os períodos se sobrepõem, exclusão que apenas
+  desvincula tarefas de forma transacional, destino explícito para tarefas abertas no encerramento e
+  planejamento hierárquico atômico. Acrescenta-se a regra de que **sprint encerrada não aceita novas tarefas**,
+  defeito relatado pelo PO na mesma data. Consequência prática: o contrato deixa de exigir migration —
+  `G-MIGRATION` passa a ser necessário apenas se a implementação alterar schema, por exemplo ao remover
+  `Sprint.Status` da tabela. Ver `SPEC-S-003 v3`. (2026-09-09)
+
+- **D85 — EM ABERTO, NÃO DECIDIDA.** Suporte a banco de dados escolhível pela pessoa que instala, com um
+  padrão gratuito, levantado pelo PO em 2026-09-09 no contexto da distribuição open source. Hoje o produto é
+  **SQL Server apenas**. A viabilidade é real e o caminho é o padrão do EF Core (um provider por configuração
+  e um assembly de migrations por provider), mas existem acoplamentos concretos a resolver, todos já
+  identificados no código: `sys.sp_getapplock` usado como lock consultivo em
+  `WorkItemManagementRepository.AcquireOrganizationDependencyLockAsync`; `HasColumnType("nvarchar(max)")` nas
+  configurations; a sequence que gera `WorkItem.Number`; e os tipos `datetimeoffset`. Requer `G-SCOPE` e spec
+  própria antes de qualquer implementação. (levantado em 2026-09-09)
+
+- **D86** — O seed de demonstração **pula silenciosamente não**: pula com aviso. Quando `Seed:DemoEnabled`
+  está ligado e a instalação já possui dados, `DbInitializer.SeedDataAsync` retorna `false` em vez de lançar
+  exceção, e `Program.cs` registra um `Warning` explicando que nada foi semeado e que é preciso recriar o banco
+  para semear do zero. A regra de segurança original permanece intacta — **o seed nunca altera dado
+  existente** —, mas deixa de derrubar a aplicação no boot, o que era pior operacionalmente: um restart de
+  container contra base populada quebrava a subida. A alteração entrou de carona na correção do
+  `WorkflowMoveGuard` (`97a5adf`) sem registro; esta decisão a torna explícita e acrescenta o aviso, para que o
+  pulo não passe despercebido por quem esperava um banco semeado. (2026-09-09)
+
+- **D87** — Navegação lateral recolhível volta, ao lado da barra superior. O dev Sergio pediu em 2026-09-07,
+  textualmente, *"ao invés de abas menu tipo sanduíche"*, e o PO decidiu em 2026-09-08: *"mantem o que o sergio
+  decidiu mas algo que abre de tamanho como o ClickUp"*. Isso **sucede parcialmente** a
+  `SPEC-TOP-NAVIGATION-SHELL`, que proibia sidebar: a navegação principal **sai das abas da barra superior** e
+  passa a ser um trilho de ícones à esquerda que expande para mostrar rótulos — era literalmente o pedido do
+  Sergio, *"ao invés de abas"*. A barra superior mantém busca, seletor de organização, criação rápida e conta.
+  O que continua proibido é **copiar a identidade visual do ClickUp**: a
+  `SPEC-PRISMA-VISUAL-SYSTEM` permanece intacta, e o que se adota é o *comportamento* de trilho expansível, não
+  cores, tipografia ou ícones de outro produto. O estado recolhido ou expandido é preferência por pessoa,
+  guardada no navegador. Em telas estreitas (até 768px) o trilho não aparece: quem navega ali é o menu
+  hambúrguer que a barra superior já tem. Isso corrige a intenção registrada antes da implementação, de abrir o
+  trilho sobreposto no mobile — seriam duas navegações sobrepostas concorrentes na mesma tela, e o hambúrguer já
+  resolvia o caso com foco e Escape testados.
+  Os itens e seus portões de permissão são definidos em um único lugar (`layout/navigation.ts`) e consumidos
+  pelo trilho e pelo hambúrguer, para que não exista navegação divergente entre as duas superfícies. (2026-09-08, implementada em 2026-09-09)
+
+- **D88** — Navegação global volta ao cabeçalho; lateral vira contexto do projeto. O PO pediu em 2026-09-10
+  mover os itens do trilho (Início, Meu trabalho, Projetos, etc.) para o header e colocar no lugar o bloco do
+  projeto (nome, chave, descrição e abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações), visível
+  **somente** dentro de `/projects/:projectId`. Isso **sucede a D87** quanto ao destino da navegação global:
+  o trilho de ícones deixa de ser a casa da navegação principal. A barra superior recupera os links globais
+  (desktop) e o hambúrguer continua sendo a superfície mobile. A lateral deixa de ser navegação global
+  persistente e passa a ser **painel contextual do projeto**; fora do projeto ela não aparece. Em telas
+  estreitas (≤768px) o painel do projeto não aparece — as abas do projeto ficam em faixa horizontal no
+  workspace, para não competir com o hambúrguer. `layout/navigation.ts` permanece a fonte única dos itens
+  globais e dos destinos do projeto. Identidade visual Prisma (D68 / SPEC-PRISMA-VISUAL-SYSTEM) intacta;
+  não copiar visual de outro produto. (2026-09-10)

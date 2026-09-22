@@ -1,0 +1,326 @@
+- generic:
+  - generic [aria-hidden]:
+    - generic:
+      - generic:
+        - banner:
+          - link:
+            - /url: /home
+            - generic:
+              - text: Prisma
+              - emphasis: WorkSpace
+          - navigation:
+            - link:
+              - /url: /home
+              - text: Início
+            - link:
+              - /url: /me/tasks
+              - text: Meu trabalho
+            - link:
+              - /url: /projects
+              - text: Projetos
+            - link:
+              - /url: /requests
+              - text: Solicitações
+            - link:
+              - /url: /reports
+              - text: Relatórios
+            - link:
+              - /url: /teams
+              - text: Equipes
+          - button:
+            - generic: Buscar...
+            - generic: Ctrl K
+          - generic:
+            - combobox
+          - button:
+            - generic: Novo item
+          - generic:
+            - button
+          - button
+          - generic:
+            - button: EU
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - combobox
+                - button:
+                  - generic: Novo Quadro
+                - button:
+                  - generic: Meu Tempo
+              - generic:
+                - generic:
+                  - button: Kanban
+                  - button: Lista
+                  - button: Calendário
+                  - button: Gantt
+                  - button: Dashboard
+                - button:
+                  - generic: Lead Time
+                - button: Automações
+                - button:
+                  - generic: Nova Coluna
+            - region:
+              - generic:
+                - generic:
+                  - textbox:
+                    - /placeholder: Buscar nos cartões
+                - button: Filtros
+                - combobox
+                - generic: 7 de 7 cartão(ões)
+            - region:
+              - generic:
+                - checkbox
+                - text: Selecionar visíveis (7)
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader: ✓
+                    - columnheader: Tarefa ▲
+                    - columnheader: Responsável
+                    - columnheader: Etapa
+                    - columnheader: Entrega
+                    - columnheader: Tempo
+                - rowgroup:
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: Definir objetivos da próxima versão
+                    - cell: PO E2E, Gabriel Tavares E2E
+                    - cell: Concluído
+                    - cell: 14/09
+                    - cell: 06:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: Mapear melhorias do fluxo de trabalho
+                    - cell: Sem responsável
+                    - cell: Ideias
+                    - cell: 21/09
+                    - cell: 00:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: QA criação rápida 1788958390321
+                    - cell: Sem responsável
+                    - cell: Ideias
+                    - cell: —
+                    - cell: 00:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: QA criação rápida 1788958516630
+                    - cell: Sem responsável
+                    - cell: Ideias
+                    - cell: —
+                    - cell: 00:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: QA criação rápida 1788958765197
+                    - cell: Sem responsável
+                    - cell: Ideias
+                    - cell: —
+                    - cell: 00:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: QA criação rápida 1788958933537
+                    - cell: Sem responsável
+                    - cell: Ideias
+                    - cell: —
+                    - cell: 00:00:00
+                  - row:
+                    - cell:
+                      - checkbox
+                    - cell: Revisar protótipo da área de relatórios
+                    - cell: Usuário f4e5becb
+                    - cell: Revisão
+                    - cell: 11/09
+                    - cell: 08:00:00
+  - dialog [ref=f9e182]:
+    - banner [ref=f9e183]:
+      - generic [ref=f9e184]:
+        - text: Item de trabalho
+        - generic [ref=f9e381]: Salvando...
+      - generic [ref=f9e189]:
+        - generic "Responsável principal" [ref=f9e190] [cursor=pointer]:
+          - generic [ref=f9e191]: U—
+          - combobox "Adicionar ou alterar responsável" [active] [ref=f9e192]:
+            - option "Sem responsável" [selected]
+            - option "Gabriel Tavares E2E"
+            - option "PO E2E"
+            - option "Usuário f4e5becb"
+        - button "Seguir tarefa" [ref=f9e196] [cursor=pointer]
+        - button "Fechar modal" [ref=f9e200] [cursor=pointer]
+    - generic [ref=f9e204]:
+      - generic [ref=f9e205]:
+        - generic [ref=f9e206]: Tarefa
+        - generic [ref=f9e207]: DEMO-1000
+        - generic [ref=f9e208]: Criação interna
+      - heading "Revisar protótipo da área de relatórios" [level=2] [ref=f9e209]
+      - generic [ref=f9e210]: Detalhes editáveis da tarefa Revisar protótipo da área de relatórios.
+      - generic [ref=f9e211]:
+        - generic [ref=f9e212]: Concluído
+        - generic [ref=f9e216]: Média
+        - generic [ref=f9e221]: Planejamento do Produto Demo
+      - navigation "Seções da tarefa" [ref=f9e224]:
+        - button "Descrição" [ref=f9e225] [cursor=pointer]
+        - button "Comentários" [ref=f9e226] [cursor=pointer]
+        - button "Subtarefas" [ref=f9e227] [cursor=pointer]
+        - button "Anexos" [ref=f9e228] [cursor=pointer]
+        - button "Histórico" [ref=f9e229] [cursor=pointer]
+        - button "Grafo de estados" [ref=f9e230] [cursor=pointer]
+      - generic [ref=f9e231]:
+        - heading "Dados principais" [level=2] [ref=f9e232]
+        - generic [ref=f9e237]:
+          - generic [ref=f9e238]:
+            - text: Título
+            - textbox "Título" [ref=f9e239]: Revisar protótipo da área de relatórios
+          - generic [ref=f9e240]:
+            - text: Descrição
+            - textbox "Descrição" [ref=f9e241]:
+              - /placeholder: Contexto, escopo e resultado esperado
+              - text: Validar clareza, navegação e critérios de aceite do protótipo com a equipe.
+          - generic [ref=f9e242]:
+            - text: Tipo
+            - combobox "Tipo" [ref=f9e243]:
+              - option "Épico"
+              - option "Feature"
+              - option "História"
+              - option "Bug"
+              - option "Tarefa" [selected]
+              - option "Subtarefa"
+              - option "Melhoria"
+              - option "Débito técnico"
+              - option "Solicitação"
+              - option "Incidente"
+          - generic [ref=f9e244]:
+            - text: Status
+            - combobox "Status" [ref=f9e245]:
+              - option "Backlog / sem etapa"
+              - option "Entregue E2E 1788958443141"
+              - option "Ideias"
+              - option "Em andamento"
+              - option "Revisão"
+              - option "Concluído" [selected]
+              - option "Entregue E2E 1788958819954"
+          - generic [ref=f9e246]:
+            - text: Prioridade
+            - combobox "Prioridade" [ref=f9e247]:
+              - option "Baixa"
+              - option "Média" [selected]
+              - option "Alta"
+              - option "Crítica"
+          - generic [ref=f9e248]:
+            - text: Responsável
+            - combobox "Responsável" [ref=f9e249]:
+              - option "Não atribuído" [selected]
+              - option "Gabriel Tavares E2E"
+              - option "PO E2E"
+              - option "Usuário f4e5becb"
+          - generic [ref=f9e250]:
+            - text: Equipe
+            - combobox "Equipe" [ref=f9e251]:
+              - option "Herdar do quadro" [selected]
+          - generic [ref=f9e252]:
+            - text: Origem
+            - combobox "Origem" [ref=f9e253]:
+              - option "Criação interna" [selected]
+              - option "Portal externo"
+              - option "Formulário"
+              - option "Integração"
+              - option "Importação"
+      - generic [ref=f9e254]:
+        - heading "Planejamento" [level=2] [ref=f9e255]
+        - generic [ref=f9e258]:
+          - generic [ref=f9e259]:
+            - text: Data de início
+            - textbox "Data de início" [ref=f9e260]
+          - generic [ref=f9e261]:
+            - text: Prazo
+            - textbox "Prazo" [ref=f9e262]: 2026-09-11
+          - generic [ref=f9e263]:
+            - text: Horas previstas
+            - spinbutton "Horas previstas" [ref=f9e264]: "16"
+          - generic [ref=f9e265]:
+            - text: Horas restantes
+            - spinbutton "Horas restantes" [ref=f9e266]
+          - generic [ref=f9e267]:
+            - text: Horas realizadas
+            - textbox "Horas realizadas" [ref=f9e268]: 8.00 h
+          - generic [ref=f9e269]:
+            - text: Critérios de aceite
+            - textbox "Critérios de aceite" [ref=f9e270]:
+              - /placeholder: Condições objetivas para concluir esta tarefa
+      - generic [ref=f9e271]:
+        - heading "Participantes" [level=2] [ref=f9e272]
+        - generic [ref=f9e277]:
+          - generic [ref=f9e278]: UF
+          - text: Usuário f4e5becb
+          - button "Remover Usuário f4e5becb" [ref=f9e279] [cursor=pointer]
+        - generic [ref=f9e283]:
+          - combobox [ref=f9e284]:
+            - option "Adicionar participante..." [selected]
+            - option "Gabriel Tavares E2E"
+            - option "PO E2E"
+          - button "Adicionar" [disabled] [ref=f9e285] [cursor=pointer]
+      - generic [ref=f9e289]:
+        - heading "Classificação" [level=2] [ref=f9e290]
+        - generic [ref=f9e295]:
+          - generic [ref=f9e296]: Tipo de tarefa
+          - combobox [ref=f9e297]:
+            - option "Sem tipo" [selected]
+          - generic [ref=f9e298]:
+            - textbox "Novo tipo..." [ref=f9e299]
+            - button "+ Criar" [ref=f9e300] [cursor=pointer]
+        - generic [ref=f9e301]:
+          - generic [ref=f9e302]: Tags
+          - generic [ref=f9e303]: Nenhuma tag ainda.
+          - generic [ref=f9e305]:
+            - textbox "Nova tag..." [ref=f9e306]
+            - button "+ Criar" [ref=f9e307] [cursor=pointer]
+      - generic [ref=f9e308]:
+        - heading "Dependências e bloqueios" [level=2] [ref=f9e309]
+        - paragraph [ref=f9e314]: Nenhuma dependência ou bloqueio.
+        - generic [ref=f9e315]:
+          - combobox "Buscar tarefa relacionada" [ref=f9e321]
+          - combobox [ref=f9e322]:
+            - option "Depende de" [selected]
+            - option "Bloqueia"
+            - option "Relacionado a"
+            - option "Duplicado de"
+          - button "Vincular" [disabled] [ref=f9e323] [cursor=pointer]
+      - generic [ref=f9e327]:
+        - heading "Apontamento de horas" [level=2] [ref=f9e328]
+        - generic [ref=f9e332]:
+          - generic [ref=f9e333]:
+            - button "Iniciar cronômetro" [ref=f9e334] [cursor=pointer]
+            - generic [ref=f9e337]: 8.00 h realizadas
+          - generic [ref=f9e341]:
+            - textbox "Início do apontamento" [ref=f9e342]: 2026-09-09T09:13
+            - textbox "Fim do apontamento" [ref=f9e343]: 2026-09-09T10:13
+            - textbox "Observação do apontamento (opcional)" [ref=f9e344]
+            - button "Registrar manualmente" [ref=f9e345] [cursor=pointer]
+          - article [ref=f9e348]:
+            - generic [ref=f9e349]:
+              - strong [ref=f9e350]: Usuário f4e5becb
+              - paragraph [ref=f9e351]: 03/09/2026, 17:50:02 — 04/09/2026, 01:50:02
+              - text: Avaliação do protótipo.
+            - strong [ref=f9e352]: 8h 00min
+      - generic [ref=f9e353]:
+        - button "Seguir tarefa" [ref=f9e354] [cursor=pointer]
+        - button "Duplicar" [ref=f9e358] [cursor=pointer]
+        - button "Arquivar" [ref=f9e362] [cursor=pointer]
+      - generic [ref=f9e366]:
+        - heading "Páginas do wiki" [level=2] [ref=f9e367]
+        - paragraph [ref=f9e370]: Nenhuma página do wiki vinculada a esta tarefa.
+      - generic [ref=f9e371]:
+        - heading "Auditoria" [level=2] [ref=f9e372]
+        - generic [ref=f9e376]:
+          - generic [ref=f9e377]: Criada em 01/09/2026, 09:50:02
+          - generic [ref=f9e378]: Atualizada em 09/09/2026, 09:50:02
+          - generic [ref=f9e379]: 0 comentário(s)
+          - generic [ref=f9e380]: 0 anexo(s)

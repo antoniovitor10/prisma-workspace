@@ -8,7 +8,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { GripVertical, LoaderCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import type { DragEvent as NativeDragEvent } from 'react';
@@ -20,7 +20,8 @@ import { kindNames } from '../../types/scrum';
 
 interface Stage {
   id: string;
-  boardId: string;
+  boardId?: string;
+  projectId?: string;
   name: string;
   position: number;
   isFinal?: boolean;
@@ -193,14 +194,14 @@ export default function SprintKanbanBoard({ projectId, sprint, items, onOpenItem
   const queryClient = useQueryClient();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const boards = useMemo(() => groupSprintItemsByBoard(items), [items]);
-  const stageQueries = useQueries({
-    queries: boards.map((board) => ({
-      queryKey: ['stages', board.boardId],
-      queryFn: () => api.getStages(board.boardId) as Promise<Stage[]>,
-      retry: false,
-      staleTime: 30_000,
-    })),
+  const stagesQuery = useQuery({
+    queryKey: ['stages', projectId],
+    queryFn: () => api.getStages(projectId) as Promise<Stage[]>,
+    retry: false,
+    staleTime: 30_000,
+    enabled: Boolean(projectId),
   });
+  const stages = stagesQuery.data ?? [];
   const readOnly = sprint.status >= 3;
 
   const moveMutation = useMutation({
@@ -245,26 +246,26 @@ export default function SprintKanbanBoard({ projectId, sprint, items, onOpenItem
 
   return (
     <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
-      {boards.map((board, index) => {
-        const stages = [...(stageQueries[index]?.data ?? [])].sort((left, right) => left.position - right.position);
-        const loading = stageQueries[index]?.isLoading;
+      {boards.map((board) => {
+        const loading = stagesQuery.isLoading;
+        const boardStages = stages.filter(stage => stage.boardId === board.boardId);
         return (
           <Section key={board.boardId} aria-label={`Quadro ${board.boardName}`}>
             <header>
-              <div><h3>{board.boardName}</h3><p>{board.items.length} itens · todas as etapas deste quadro</p></div>
+              <div><h3>{board.boardName}</h3><p>{board.items.length} itens · fluxo do projeto</p></div>
               {readOnly && <Notice>Somente leitura: sprint encerrada</Notice>}
               {moveMutation.isPending && <Notice><LoaderCircle aria-hidden size={13} />Salvando movimento...</Notice>}
             </header>
             {loading ? <Empty>Carregando etapas...</Empty> : (
               <Columns>
-                {stages.map((stage) => (
-                  <SprintColumn key={stage.id} boardId={board.boardId} stage={stage} stages={stages}
+                {[...boardStages].sort((left, right) => left.position - right.position).map((stage) => (
+                  <SprintColumn key={stage.id} boardId={board.boardId} stage={stage} stages={boardStages}
                     items={board.items.filter((item) => item.stageId === stage.id)}
                     disabled={readOnly || moveMutation.isPending} showPoints={showPoints} onOpen={onOpenItem}
                     onNativeDrop={(workItemId, targetStage) => moveItemToStage(
                       items.find(item => item.id === workItemId), targetStage, board.boardId)} />
                 ))}
-                {stages.length === 0 && <Empty>Este quadro ainda não possui etapas.</Empty>}
+                {boardStages.length === 0 && <Empty>Este projeto ainda não possui etapas.</Empty>}
               </Columns>
             )}
           </Section>

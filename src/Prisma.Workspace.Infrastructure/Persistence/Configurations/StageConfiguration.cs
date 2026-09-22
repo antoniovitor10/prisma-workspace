@@ -16,8 +16,6 @@ public class StageConfiguration : IEntityTypeConfiguration<Stage>
 
         builder.HasKey(s => s.Id);
 
-        // --- Propriedades escalares ---
-
         builder.Property(s => s.Name)
             .IsRequired()
             .HasMaxLength(200);
@@ -32,19 +30,29 @@ public class StageConfiguration : IEntityTypeConfiguration<Stage>
             .HasConversion<int>()
             .IsRequired();
 
-        // --- Índices ---
-
+        builder.HasIndex(s => s.ProjectId);
         builder.HasIndex(s => s.BoardId);
+        builder.HasIndex(s => s.LegacyStageId);
         builder.HasIndex(s => s.WorkflowStatusId);
+        builder.HasIndex(s => new { s.ProjectId, s.Position });
+        builder.HasIndex(s => new { s.BoardId, s.Position });
 
-        // --- Relacionamentos ---
+        builder.HasOne(s => s.Project)
+            .WithMany(p => p.Stages)
+            .HasForeignKey(s => s.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Board → Stages já configurado em BoardConfiguration (lado principal).
-        // Aqui apenas reforçamos a FK para clareza.
+        // Restrict preserva as etapas legadas e impede apagar quadro com colunas operacionais.
         builder.HasOne(s => s.Board)
             .WithMany(b => b.Stages)
             .HasForeignKey(s => s.BoardId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Referência lógica da clone para a etapa legada; nunca gera cascade no histórico.
+        builder.HasOne(s => s.LegacyStage)
+            .WithMany()
+            .HasForeignKey(s => s.LegacyStageId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(s => s.WorkItems)
             .WithOne(w => w.Stage)

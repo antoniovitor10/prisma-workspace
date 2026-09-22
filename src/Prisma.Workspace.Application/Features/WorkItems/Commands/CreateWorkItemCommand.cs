@@ -5,8 +5,8 @@ namespace Prisma.Workspace.Application.Features.WorkItems.Commands;
 
 /// <summary>
 /// Comando para criar um novo item de trabalho (WorkItem).
-/// Permite especificar BoardId (quadro home), uma lista de BoardIds (multi-board)
-/// ou apenas ProjectId (usa o DefaultBoard do projeto).
+/// Permite especificar BoardId ou apenas ProjectId (usa o DefaultBoard do projeto).
+/// A tarefa pertence a um único quadro (D83).
 /// </summary>
 public record CreateWorkItemCommand(
     Guid BoardId,
@@ -33,12 +33,7 @@ public record CreateWorkItemCommand(
     DateOnly? StartDate = null,
     string? AcceptanceCriteria = null,
     /// <summary>
-    /// Lista de quadros onde o item deve aparecer (multi-board).
-    /// Quando preenchida, substitui BoardId como lista de destinos.
-    /// </summary>
-    IReadOnlyList<Guid>? BoardIds = null,
-    /// <summary>
-    /// Projecto de origem; quando BoardId e BoardIds são vazios, o quadro padrão é usado.
+    /// Projeto de origem; quando BoardId é vazio, o quadro padrão do projeto é usado.
     /// </summary>
     Guid? ProjectId = null
 ) : IRequest<Guid>;

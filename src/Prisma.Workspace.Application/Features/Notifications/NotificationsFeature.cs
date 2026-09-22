@@ -178,8 +178,6 @@ public static class NotificationCatalog
         NotificationType.TaskOverdue => "Tarefa atrasada",
         NotificationType.ExternalRequestReceived => "Solicitação recebida",
         NotificationType.ExternalReply => "Resposta externa",
-        NotificationType.SlaNearDue => "SLA próximo do vencimento",
-        NotificationType.SlaOverdue => "SLA vencido",
         NotificationType.SprintStarted => "Sprint iniciada",
         NotificationType.SprintCompleted => "Sprint encerrada",
         NotificationType.StatusChanged => "Mudança de status",
@@ -189,8 +187,8 @@ public static class NotificationCatalog
     public static (bool InApp, bool Email) Default(NotificationType type) => type switch
     {
         NotificationType.TaskAssigned or NotificationType.Mention
-            or NotificationType.ExternalRequestReceived or NotificationType.ExternalReply
-            or NotificationType.SlaNearDue or NotificationType.SlaOverdue => (true, true),
+            or NotificationType.ExternalRequestReceived
+            or NotificationType.ExternalReply => (true, true),
         _ => (true, false)
     };
 }

@@ -308,9 +308,14 @@ public static class WorkflowTemplateProjection
             local.IsActive = definition.IsActive;
         }
         foreach (var obsolete in bySource.Where(x => template.Statuses.All(s => s.Id != x.Key)).Select(x => x.Value))
-            obsolete.IsActive = false;
+            DeactivateUnlessBackingColumns(obsolete);
         if (attachCustom)
-            foreach (var legacy in unbound) legacy.IsActive = false;
+            foreach (var legacy in unbound)
+                DeactivateUnlessBackingColumns(legacy);
+
+        // Se um status novo do template substituiu o legado por nome, remapeia colunas e
+        // tarefas que ainda apontavam para o legado inativo — evita 400 do WorkflowMoveGuard.
+        RemapOrphanedStageStatuses(project);
 
         var current = project.WorkflowStatuses.SelectMany(x => x.OutgoingTransitions).ToList();
         var desired = template.Transitions
@@ -321,6 +326,14 @@ public static class WorkflowTemplateProjection
         var desiredKeys = desired.ToHashSet();
         var currentKeys = current.Select(x => (x.SourceStatusId, x.TargetStatusId)).ToHashSet();
 
+        // Status que ainda sustentam colunas do quadro precisam manter as transições
+        // entre si. Sem isso, herdar o template remove Revisão→Concluído e o
+        // WorkflowMoveGuard bloqueia a conclusão pela gaveta (board-stage-sync).
+        var activeIds = project.WorkflowStatuses.Where(x => x.IsActive).Select(x => x.Id).ToHashSet();
+        foreach (var existing in current.Where(x =>
+                     activeIds.Contains(x.SourceStatusId) && activeIds.Contains(x.TargetStatusId)))
+            desiredKeys.Add((existing.SourceStatusId, existing.TargetStatusId));
+
         // Preserva transicoes que ja representam o template. Remover e inserir a mesma
         // chave composta no mesmo SaveChanges fazia o EF emitir uma exclusao concorrente
         // para um registro que tambem estava sendo recriado, resultando em 409 permanente.
@@ -330,6 +343,48 @@ public static class WorkflowTemplateProjection
             .Where(x => !currentKeys.Contains(x))
             .Select(x => WorkflowTransition.Create(x.SourceStatusId, x.TargetStatusId)));
         project.WorkflowTemplateVersion = template.Version;
+    }
+
+    /// <summary>
+    /// Status que ainda sustentam colunas ou tarefas não podem ficar inativos:
+    /// o WorkflowMoveGuard bloqueia qualquer movimento para destino com IsActive != true.
+    /// </summary>
+    internal static void DeactivateUnlessBackingColumns(WorkflowStatus status)
+    {
+        if (status.Stages.Count > 0 || status.WorkItems.Count > 0)
+            return;
+        status.IsActive = false;
+    }
+
+    /// <summary>
+    /// Quando o template cria um status ativo homônimo e o legado ficou inativo,
+    /// remapeia colunas/tarefas; se não houver substituto, reativa o legado em uso.
+    /// </summary>
+    internal static void RemapOrphanedStageStatuses(Project project)
+    {
+        var active = project.WorkflowStatuses.Where(x => x.IsActive).ToList();
+        foreach (var inactive in project.WorkflowStatuses.Where(x => !x.IsActive).ToList())
+        {
+            if (inactive.Stages.Count == 0 && inactive.WorkItems.Count == 0)
+                continue;
+
+            var replacement = active.FirstOrDefault(x =>
+                x.Id != inactive.Id
+                && x.Name.Equals(inactive.Name, StringComparison.OrdinalIgnoreCase));
+            if (replacement is null)
+            {
+                // Intencional: sem substituto homônimo ativo, reativa o legado em uso
+                // para as colunas/tarefas não ficarem órfãs e o WorkflowMoveGuard não
+                // bloquear movimentos para um destino inativo.
+                inactive.IsActive = true;
+                continue;
+            }
+
+            foreach (var stage in inactive.Stages.ToList())
+                stage.WorkflowStatusId = replacement.Id;
+            foreach (var item in inactive.WorkItems.ToList())
+                item.WorkflowStatusId = replacement.Id;
+        }
     }
 
     public static OrganizationWorkflowTemplateDto Map(OrganizationWorkflowTemplate template)

@@ -1,20 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTheme } from 'styled-components';
 import { api } from '../services/api';
 import { Fragment, useMemo } from 'react';
-import { TaskFeed } from '../features/task/TaskFeed';
-import { TaskTaxonomyPanel } from '../features/task/TaskTaxonomyPanel';
-import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
-import { TaskDescriptionPanel } from '../features/task/TaskDescriptionPanel';
 import { BoardCalendar } from '../features/board/BoardCalendar';
 import { BoardGantt } from '../features/board/BoardGantt';
 import { BoardDashboard } from '../features/board/BoardDashboard';
-import { TaskApprovalPanel } from '../features/task/TaskApprovalPanel';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
+import { WorkItemKind } from '../features/workItems/workItemKinds';
+import { WorkItemKindSelector } from '../components/WorkItemKindSelector';
 import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { KanbanFilterBar } from '../features/board/KanbanFilterBar';
-import { compareNewestWorkItems } from '../features/board/kanbanOrdering';
+import { compareKanbanWorkItems, compareNewestWorkItems, type KanbanCardSort } from '../features/board/kanbanOrdering';
 import { AutomationManager } from '../features/board/AutomationManager';
 import { KanbanBulkToolbar } from '../features/board/KanbanBulkToolbar';
 import {
@@ -24,7 +22,6 @@ import {
 import { useBoardRealtime } from '../features/board/useBoardRealtime';
 import {
   Plus,
-  Play,
   Square,
   ChevronLeft,
   ChevronRight,
@@ -32,20 +29,23 @@ import {
   FolderPlus,
   AlertTriangle,
   Users,
-  UserPlus,
   X,
   Paperclip,
-  Download,
   CheckSquare,
   BarChart2,
   Trash2,
+  Pencil,
   ArrowRight as ArrowRightIcon
 } from 'lucide-react';
 import {
   AppLayout,
   MainContent,
   BoardHeader,
+  BoardHelp,
   SelectorContainer,
+  BoardActions,
+  ViewSwitcher,
+  ViewSwitcherButton,
   Select,
   ActionButton,
   AddCardButton,
@@ -69,17 +69,8 @@ import {
   ModalOverlay,
   Modal,
   ModalTitle,
-  DetailSection,
-  DetailLabel,
   DetailText,
-  SectionHeader,
-  SectionTitle,
-  ListPanel,
-  ListItem,
-  MutedText,
-  InlineForm,
   SmallButton,
-  FileInput,
   ModalForm,
   FormRow,
   Input,
@@ -102,24 +93,8 @@ import {
   TempoPct,
   TempoAdjust,
   TempoTodayBadge,
-  TaskModal,
-  TaskTopbar,
-  TaskTimerBtn,
-  TaskBody,
-  TaskMain,
-  TaskSidebar,
-  TaskH1,
-  TaskMeta,
-  SidebarRow,
-  SidebarLabel,
-  SidebarValue,
-  Avatars,
-  Avatar,
-  ProgressTrack,
-  ProgressFill,
-  TaskTabs,
-  TaskTab
 } from './Kanban.styles';
+import { StageCategory, stageCategoryOptions, type StageCategoryValue } from '../features/workflow/stageCategories';
 
 
 
@@ -186,7 +161,7 @@ interface Stage {
   boardId: string;
   name: string;
   position: number;
-  wipLimit?: number | null;
+  category?: StageCategoryValue;
   workflowStatusId?: string | null;
   statusName?: string | null;
   statusColor?: string | null;
@@ -261,19 +236,7 @@ interface SprintOptionDto {
   status: number;
 }
 
-interface AssignedUser extends UserDto {
-  assignedAt: string;
-}
 
-interface Attachment {
-  id: string;
-  workItemId: string;
-  fileName: string;
-  fileSize?: number;
-  mimeType?: string;
-  uploadedBy?: string;
-  createdAt: string;
-}
 
 interface TimeEntry {
   id: string;
@@ -283,35 +246,6 @@ interface TimeEntry {
   endedAt?: string | null;
   durationSeconds?: number;
 }
-
-// Mantido temporariamente durante a migração visual; a gaveta canônica é TaskDetailDrawer.
-const legacyTaskModalEnabled = false;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 interface DailyTime {
@@ -335,11 +269,25 @@ interface StageLeadTime {
 }
 
 export const Kanban: React.FC = () => {
-  const { boardId: urlBoardId } = useParams();
+  /**
+   * Duas entradas para a mesma tela:
+   *   /boards/:boardId            — um quadro específico
+   *   /projects/:projectId/boards — o Kanban do projeto, que abre direto
+   *
+   * No modo projeto ninguém escolhe quadro antes: o fluxo é do projeto (D83) e os cartões
+   * vêm do projeto inteiro, então nenhuma tarefa fica escondida por estar em outro quadro.
+   * O quadro continua sendo resolvido em segundo plano porque criar tarefa, salvar filtro
+   * e as configurações de cartão ainda são por quadro.
+   */
+  const { boardId: urlBoardId, projectId: urlProjectId } = useParams();
+  const modoProjeto = Boolean(urlProjectId);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string>(urlBoardId ?? '');
+  const [boardsStatus, setBoardsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [boardsError, setBoardsError] = useState('');
   // O seletor mostra só os quadros do mesmo projeto do quadro atual (não os da org toda).
   const visibleBoards = useMemo(() => {
     const current = boards.find(b => b.id === selectedBoardId);
@@ -347,6 +295,8 @@ export const Kanban: React.FC = () => {
   }, [boards, selectedBoardId]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [boardDataStatus, setBoardDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [boardDataError, setBoardDataError] = useState('');
   const [boardView, setBoardView] = useState<'kanban' | 'lista' | 'calendario' | 'gantt' | 'dashboard'>('kanban');
   const [listSort, setListSort] = useState<{ key: string; dir: 1 | -1 }>({ key: 'title', dir: 1 });
   const [filters, setFilters] = useState<KanbanFilterState>(
@@ -355,7 +305,8 @@ export const Kanban: React.FC = () => {
       : defaultKanbanFilters,
   );
   const [groupBy, setGroupBy] = useState('none');
-  const [cardSort, setCardSort] = useState('created');
+  const [cardSort, setCardSort] = useState<KanbanCardSort>('position');
+  const [columnSorts, setColumnSorts] = useState<Record<string, KanbanCardSort>>({});
   const [savedFilters, setSavedFilters] = useState<SavedFilterOption[]>([]);
   const [cardSettings, setCardSettings] = useState<KanbanCardSettings>(defaultCardSettings);
   const [projectMethodology, setProjectMethodology] = useState<number | null>(null);
@@ -370,6 +321,16 @@ export const Kanban: React.FC = () => {
   // Modais
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
+  const [showEditStageModal, setShowEditStageModal] = useState(false);
+  const [editingStage, setEditingStage] = useState<Stage | null>(null);
+  const [deleteStageDestination, setDeleteStageDestination] = useState('');
+  const [confirmCategoryChange, setConfirmCategoryChange] = useState(false);
+  const [confirmDescendants, setConfirmDescendants] = useState(false);
+  const [stageImpact, setStageImpact] = useState<Awaited<ReturnType<typeof api.getStageImpact>> | null>(null);
+  const [editStageName, setEditStageName] = useState('');
+  const [editStageCategory, setEditStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
+  const [editStagePending, setEditStagePending] = useState(false);
+  const [editStageError, setEditStageError] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
   const [showLeadTimeModal, setShowLeadTimeModal] = useState(false);
   const [showTempoModal, setShowTempoModal] = useState(false);
@@ -414,18 +375,10 @@ export const Kanban: React.FC = () => {
     await loadAdjustData(adjustDay);
   };
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
-  const [taskTab, setTaskTab] = useState<'descricao' | 'comentarios' | 'anexos' | 'subtarefas'>('descricao');
   const [targetStageIdForNewItem, setTargetStageIdForNewItem] = useState<string | null>(null);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dropTargetStageId, setDropTargetStageId] = useState<string | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<UserDto[]>([]);
-  const [selectedItemAssignees, setSelectedItemAssignees] = useState<AssignedUser[]>([]);
-  const [selectedItemSubItems, setSelectedItemSubItems] = useState<WorkItem[]>([]);
-  const [selectedItemAttachments, setSelectedItemAttachments] = useState<Attachment[]>([]);
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState('');
-  const [newSubItemTitle, setNewSubItemTitle] = useState('');
-  const [uploadingAttachment, setUploadingAttachment] = useState(false);
-  const [manualMinutes, setManualMinutes] = useState<number | undefined>(undefined);
   const [leadTimeData, setLeadTimeData] = useState<StageLeadTime[]>([]);
   const [loadingLeadTime, setLoadingLeadTime] = useState(false);
   const [dragPreview, setDragPreview] = useState<{
@@ -443,6 +396,8 @@ export const Kanban: React.FC = () => {
     isDragging: boolean;
   } | null>(null);
   const suppressNextCardClickRef = useRef(false);
+  const boardDataRequestRef = useRef(0);
+  const loadedBoardContextRef = useRef<string | null>(null);
 
   // TASK-026: estado do modal de criar quadro
   const [createBoardPending, setCreateBoardPending] = useState(false);
@@ -457,12 +412,31 @@ export const Kanban: React.FC = () => {
 
   // Form values
   const [newBoardName, setNewBoardName] = useState('');
+  const [copyBoardId, setCopyBoardId] = useState('');
+  const [deleteBoardStageId, setDeleteBoardStageId] = useState('');
+  const [destinationStages, setDestinationStages] = useState<Stage[]>([]);
+  useEffect(() => {
+    setDeleteBoardStageId(''); setDestinationStages([]);
+    let active = true;
+    if (deleteBoardDestId) api.getBoardStages(deleteBoardDestId).then(data => { if (active) setDestinationStages(data); }).catch(() => { if (active) setDeleteBoardError('Não foi possível carregar as colunas de destino.'); });
+    return () => { active = false; };
+  }, [deleteBoardDestId]);
+  // Equipe do quadro: existia na tela que apenas listava quadros e foi trazida para cá
+  // junto com a criação, para a capacidade não se perder ao remover aquela tela.
+  const [newBoardTeamId, setNewBoardTeamId] = useState('');
+  const [projectTeams, setProjectTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [newStageName, setNewStageName] = useState('');
+  // Sem escolha explícita, toda coluna nascia como "em andamento" — inclusive uma
+  // chamada "Concluído" — e as tarefas nela nunca eram contadas como concluídas.
+  const [newStageCategory, setNewStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemSubtitle, setNewItemSubtitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemPriority, setNewItemPriority] = useState<number>(0);
   const [newItemHours, setNewItemHours] = useState<number | undefined>(undefined);
+  const [newItemKind, setNewItemKind] = useState<number>(WorkItemKind.Task);
+  const [newItemResponsibleId, setNewItemResponsibleId] = useState('');
+  const [newItemParticipantIds, setNewItemParticipantIds] = useState<string[]>([]);
 
   // Timer persistido em TimeEntry.
   const [runningItemId, setRunningItemId] = useState<string | null>(null);
@@ -470,9 +444,19 @@ export const Kanban: React.FC = () => {
   const [activeTime, setActiveTime] = useState<number>(0);
 
   const fetchBoards = useCallback(async () => {
+    setBoardsStatus('loading');
+    setBoardsError('');
     try {
       const data = await api.getBoards();
       setBoards(data);
+      setBoardsStatus('ready');
+      if (modoProjeto) {
+        // Escolhe sozinho um quadro do projeto, em vez de pedir que a pessoa escolha.
+        const doProjeto = (data as Board[]).filter((b) => b.projectId === urlProjectId);
+        const aindaVale = selectedBoardId && doProjeto.some((b) => b.id === selectedBoardId);
+        if (!aindaVale) setSelectedBoardId(doProjeto[0]?.id ?? '');
+        return;
+      }
       if (data.length > 0) {
         const stillValid = selectedBoardId && data.some((b: Board) => b.id === selectedBoardId);
         if (!stillValid) {
@@ -482,29 +466,60 @@ export const Kanban: React.FC = () => {
         }
       }
     } catch (e) {
-      console.error(e);
+      setBoards([]);
+      setSelectedBoardId('');
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+      setBoardsStatus('error');
+      setBoardsError('Não foi possível carregar os quadros disponíveis para seu acesso. Tente novamente.');
     }
-  }, [selectedBoardId]);
+  }, [selectedBoardId, modoProjeto, urlProjectId]);
 
   const loadBoardData = useCallback(async (boardId: string) => {
     if (!boardId) return;
+    const contextKey = `board:${boardId}`;
+    const contextChanged = loadedBoardContextRef.current !== contextKey;
+    const requestId = ++boardDataRequestRef.current;
+    if (contextChanged) {
+      setBoardDataStatus('loading');
+      setBoardDataError('');
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+    }
     try {
+      const board = boards.find(b => b.id === boardId);
+      const projectId = urlProjectId ?? board?.projectId;
+      if (!projectId) {
+        if (boardsStatus === 'loading') { setBoardDataStatus('idle'); return; }
+        throw new Error('O quadro selecionado não está disponível para seu acesso.');
+      }
       const [stageData, itemData] = await Promise.all([
-        api.getStages(boardId),
+        api.getBoardStages(boardId),
         api.getWorkItems(boardId)
       ]);
+      if (requestId !== boardDataRequestRef.current) return;
       setStages(stageData);
       setWorkItems(itemData);
       const currentIds = new Set((itemData as WorkItem[]).map(item => item.id));
-      setSelectedItemIds(current => new Set([...current].filter(id => currentIds.has(id))));
+      if (contextChanged) setSelectedItemIds(new Set());
+      else setSelectedItemIds(current => new Set([...current].filter(id => currentIds.has(id))));
+      loadedBoardContextRef.current = contextKey;
+      setBoardDataStatus('ready');
     } catch (e) {
-      console.error(e);
+      if (requestId !== boardDataRequestRef.current) return;
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+      setBoardDataStatus('error');
+      setBoardDataError((e as Error).message || 'Não foi possível carregar este quadro. Tente novamente.');
     }
-  }, []);
+  }, [boards, boardsStatus, modoProjeto, urlProjectId]);
 
   const refreshRealtimeBoard = useCallback(() => {
-    if (selectedBoardId) loadBoardData(selectedBoardId);
-  }, [selectedBoardId, loadBoardData]);
+    if (selectedBoardId || modoProjeto) loadBoardData(selectedBoardId);
+  }, [selectedBoardId, modoProjeto, loadBoardData]);
   useBoardRealtime(selectedBoardId, refreshRealtimeBoard);
 
   useEffect(() => {
@@ -525,28 +540,30 @@ export const Kanban: React.FC = () => {
   useEffect(() => {
     setSelectedItemIds(new Set());
     setBulkFeedback(null);
-    if (!selectedBoardId) {
+    if (!selectedBoardId && !modoProjeto) {
       setCatalogTags([]);
       setBoardSprints([]);
       return;
     }
     api.getTags().then(setCatalogTags).catch(() => setCatalogTags([]));
-    const projectId = boards.find(board => board.id === selectedBoardId)?.projectId;
+    const projectId = urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId;
     if (!projectId) {
       setBoardSprints([]);
       setProjectMethodology(null);
       return;
     }
     api.getProject(projectId)
-      .then((project: {methodology?:number;key?:string}) => {
+      .then((project: {methodology?:number;key?:string;teams?:Array<{id:string;name:string}>}) => {
         setProjectMethodology(project.methodology ?? 1);
         setProjectKey(project.key ?? 'ITEM');
+        setProjectTeams(project.teams ?? []);
       })
-      .catch(() => { setProjectMethodology(null); setProjectKey('ITEM'); });
+      .catch(() => { setProjectMethodology(null); setProjectKey('ITEM'); setProjectTeams([]); });
     api.getProjectSprints(projectId)
       .then((items: SprintOptionDto[]) => setBoardSprints(items.filter(item => item.status === 1 || item.status === 2)))
       .catch(() => setBoardSprints([]));
-  }, [selectedBoardId, boards]);
+    api.getAssignableUsers(projectId).then(setAssignableUsers).catch(() => setAssignableUsers([]));
+  }, [selectedBoardId, boards, modoProjeto, urlProjectId]);
 
   const loadLeadTime = useCallback(async () => {
     if (!selectedBoardId) return;
@@ -638,28 +655,6 @@ export const Kanban: React.FC = () => {
     }
   };
 
-  const loadSelectedItemDetails = useCallback(async (itemId: string) => {
-    try {
-      const [users, assignees, subItems, attachments] = await Promise.all([
-        api.getAssignableUsers(),
-        api.getAssignees(itemId),
-        api.getSubItems(itemId),
-        api.getAttachments(itemId)
-      ]);
-
-      setAssignableUsers(users);
-      setSelectedItemAssignees(assignees);
-      setSelectedItemSubItems(subItems);
-      setSelectedItemAttachments(attachments);
-
-      const assignedIds = new Set(assignees.map((user: AssignedUser) => user.id));
-      const firstAvailableUser = users.find((user: UserDto) => !assignedIds.has(user.id));
-      setSelectedAssigneeId(firstAvailableUser?.id || '');
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   const loadRunningTimer = useCallback(async () => {
     try {
       const running = await api.getRunningTimeEntry() as TimeEntry | null;
@@ -680,29 +675,13 @@ export const Kanban: React.FC = () => {
   useEffect(() => {
     fetchBoards();
     loadRunningTimer();
-    api.getAssignableUsers().then(setAssignableUsers).catch(() => undefined);
   }, [fetchBoards, loadRunningTimer]);
 
   useEffect(() => {
-    if (selectedBoardId) {
+    if (selectedBoardId || modoProjeto) {
       loadBoardData(selectedBoardId);
     }
-  }, [selectedBoardId, loadBoardData]);
-
-  useEffect(() => {
-    if (selectedItem) {
-      setTaskTab('descricao');
-      loadSelectedItemDetails(selectedItem.id);
-      return;
-    }
-
-    setSelectedItemAssignees([]);
-    setSelectedItemSubItems([]);
-    setSelectedItemAttachments([]);
-    setSelectedAssigneeId('');
-    setNewSubItemTitle('');
-    setManualMinutes(undefined);
-  }, [selectedItem, loadSelectedItemDetails]);
+  }, [selectedBoardId, modoProjeto, loadBoardData]);
 
   // Contagem visual baseada no timer persistido.
   useEffect(() => {
@@ -728,7 +707,8 @@ export const Kanban: React.FC = () => {
     setCreateBoardPending(true);
     setCreateBoardError('');
     try {
-      const result = await api.createBoard(newBoardName.trim(), currentProjectId ?? undefined);
+      const result = await api.createBoard(
+        newBoardName.trim(), currentProjectId ?? undefined, newBoardTeamId || undefined, copyBoardId || undefined);
       const newBoardId: string = typeof result === 'string' ? result : (result as { id?: string })?.id ?? String(result);
       setCreateBoardSuccessId(newBoardId);
       await fetchBoards();
@@ -744,7 +724,7 @@ export const Kanban: React.FC = () => {
     setDeleteBoardPending(true);
     setDeleteBoardError('');
     try {
-      await api.deleteBoard(selectedBoardId, deleteBoardDestId || undefined);
+      await api.deleteBoard(selectedBoardId, deleteBoardDestId || undefined, deleteBoardStageId || undefined);
       setShowDeleteBoardModal(false);
       setDeleteBoardDestId('');
       await fetchBoards();
@@ -769,6 +749,8 @@ export const Kanban: React.FC = () => {
     setStages(newStages);
 
     try {
+      const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
+      if (!projectId) throw new Error('Projeto do quadro não encontrado.');
       await api.reorderStages(selectedBoardId, newStages.map(s => s.id));
     } catch (err) {
       setStages(stages);
@@ -780,13 +762,71 @@ export const Kanban: React.FC = () => {
     e.preventDefault();
     if (!newStageName.trim() || !selectedBoardId) return;
     try {
+      const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
+      if (!projectId) throw new Error('Projeto do quadro não encontrado.');
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(selectedBoardId, newStageName, nextPos);
+      await api.createStage(projectId, newStageName, nextPos, { category: newStageCategory, boardId: selectedBoardId });
       setNewStageName('');
+      setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
       alert('Erro ao criar coluna');
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    setStageImpact(null);setConfirmCategoryChange(false);setConfirmDescendants(false);
+    if (showEditStageModal && editingStage && editingStage.category !== editStageCategory) {
+      api.getStageImpact(editingStage.id, editStageCategory).then(impact => {
+        if (active) setStageImpact(impact);
+      }).catch(error => { if (active) setEditStageError((error as Error).message || 'Erro ao carregar impacto'); });
+    }
+    return () => { active = false; };
+  }, [showEditStageModal, editingStage, editStageCategory]);
+
+  const handleOpenEditStage = (stage: Stage) => {
+    setEditingStage(stage);
+    setConfirmCategoryChange(false);
+    setDeleteStageDestination('');
+    setEditStageName(stage.name);
+    setEditStageCategory(stage.category ?? StageCategory.InProgress);
+    setEditStageError('');
+    setShowEditStageModal(true);
+  };
+
+  const handleUpdateStage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStage || !editStageName.trim()) return;
+    if (editingStage.category !== editStageCategory
+      && (!stageImpact || (stageImpact.totalItems > 0 && !confirmCategoryChange)
+        || (stageImpact.openDescendants > 0 && !confirmDescendants))) {
+      setEditStageError('Revise o impacto e confirme explicitamente as alterações.');return;
+    }
+    setEditStagePending(true);
+    setEditStageError('');
+    try {
+      await api.updateStage(editingStage.id, {
+        name: editStageName.trim(),
+        category: editStageCategory,
+        confirmCategoryChange,
+        confirmDescendants,
+        impactToken: stageImpact?.snapshotToken,
+      });
+      setShowEditStageModal(false);
+      setEditingStage(null);
+      await loadBoardData(selectedBoardId);
+    } catch (err: unknown) {
+      console.error(err);
+      setEditStageError((err as Error)?.message || 'Erro ao atualizar coluna');
+      setConfirmCategoryChange(false);setConfirmDescendants(false);
+      if (editingStage.category !== editStageCategory) {
+        try { setStageImpact(await api.getStageImpact(editingStage.id, editStageCategory)); }
+        catch { setStageImpact(null); }
+      }
+    } finally {
+      setEditStagePending(false);
     }
   };
 
@@ -795,7 +835,9 @@ export const Kanban: React.FC = () => {
     if (!newItemTitle.trim() || !selectedBoardId) return;
     try {
       const columnItems = workItems.filter(w => w.stageId === targetStageIdForNewItem);
-      const nextPos = columnItems.length > 0 ? Math.max(...columnItems.map(c => c.position)) + 100 : 100;
+      const nextPos = columnItems.length > 0
+        ? Math.max(0, Math.min(...columnItems.map(c => c.position)) - 100)
+        : 100;
 
       await api.createWorkItem({
         boardId: selectedBoardId,
@@ -805,7 +847,10 @@ export const Kanban: React.FC = () => {
         description: newItemDesc || undefined,
         priority: newItemPriority,
         estimatedHours: newItemHours,
-        position: nextPos
+        position: nextPos,
+        kind: newItemKind,
+        responsibleId: newItemResponsibleId || undefined,
+        participantIds: newItemParticipantIds.filter(id => id !== newItemResponsibleId),
       });
 
       // Reset
@@ -814,6 +859,9 @@ export const Kanban: React.FC = () => {
       setNewItemDesc('');
       setNewItemPriority(0);
       setNewItemHours(undefined);
+      setNewItemKind(WorkItemKind.Task);
+      setNewItemResponsibleId('');
+      setNewItemParticipantIds([]);
       setShowItemModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
@@ -954,123 +1002,6 @@ export const Kanban: React.FC = () => {
     setSelectedItem(item);
   };
 
-  const handleAssignUser = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !selectedAssigneeId) return;
-
-    try {
-      await api.assignUser(selectedItem.id, selectedAssigneeId);
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao atribuir responsavel');
-    }
-  };
-
-  const handleRemoveAssignee = async (userId: string) => {
-    if (!selectedItem) return;
-
-    try {
-      await api.removeAssignee(selectedItem.id, userId);
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao remover responsavel');
-    }
-  };
-
-  const handleCreateSubItem = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !newSubItemTitle.trim()) return;
-
-    const nextPos = selectedItemSubItems.length > 0
-      ? Math.max(...selectedItemSubItems.map(item => item.position)) + 100
-      : 100;
-
-    try {
-      await api.createWorkItem({
-        boardId: selectedItem.boardId,
-        stageId: selectedItem.stageId || undefined,
-        parentId: selectedItem.id,
-        title: newSubItemTitle,
-        priority: 0,
-        position: nextPos
-      });
-
-      setNewSubItemTitle('');
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao criar subtarefa');
-    }
-  };
-
-  const handleUploadAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedItem || !event.target.files?.[0]) return;
-
-    try {
-      setUploadingAttachment(true);
-      await api.uploadAttachment(selectedItem.id, event.target.files[0]);
-      event.target.value = '';
-      await loadSelectedItemDetails(selectedItem.id);
-      if (selectedBoardId) await loadBoardData(selectedBoardId);
-    } catch {
-      alert('Erro ao enviar anexo');
-    } finally {
-      setUploadingAttachment(false);
-    }
-  };
-
-  const handleDownloadAttachment = async (attachment: Attachment) => {
-    if (!selectedItem) return;
-
-    try {
-      const blob = await api.downloadAttachment(selectedItem.id, attachment.id);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = attachment.fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      alert('Erro ao baixar anexo');
-    }
-  };
-
-  const handleCreateManualTimeEntry = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedItem || !manualMinutes || manualMinutes <= 0) return;
-
-    const endedAt = new Date();
-    const startedAt = new Date(endedAt.getTime() - manualMinutes * 60 * 1000);
-
-    try {
-      await api.createManualTimeEntry({
-        workItemId: selectedItem.id,
-        startedAt: startedAt.toISOString(),
-        endedAt: endedAt.toISOString()
-      });
-
-      // Reflete o lançamento imediatamente no "Tempo nesta tarefa"
-      // (antes, o total só atualizava ao reabrir o modal).
-      const addedSeconds = manualMinutes * 60;
-      setSelectedItem(prev => prev
-        ? { ...prev, totalTimeSeconds: (prev.totalTimeSeconds || 0) + addedSeconds }
-        : prev);
-
-      setManualMinutes(undefined);
-      await loadSelectedItemDetails(selectedItem.id);
-
-      if (selectedBoardId) {
-        await loadBoardData(selectedBoardId);
-      }
-    } catch {
-      alert('Erro ao lancar tempo manual');
-    }
-  };
-
   const toggleTimer = async (itemId: string) => {
     try {
       if (runningItemId === itemId) {
@@ -1080,18 +1011,9 @@ export const Kanban: React.FC = () => {
         setActiveTime(0);
         window.dispatchEvent(new Event('timer-change'));
 
-        if (selectedItem?.id === itemId) {
-          await loadSelectedItemDetails(itemId);
-        }
-
         if (selectedBoardId) {
           await loadBoardData(selectedBoardId);
         }
-        return;
-      }
-
-      if (runningItemId && runningItemId !== itemId) {
-        alert('Pare o timer atual antes de iniciar outro card.');
         return;
       }
 
@@ -1113,17 +1035,6 @@ export const Kanban: React.FC = () => {
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const formatTotalHours = (seconds?: number) => {
-    if (!seconds) return '0.00h';
-    return `${(seconds / 3600).toFixed(2)}h`;
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '0 KB';
-    if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   const getUserLabel = (user: UserDto) => userDisplayLabel(user);
@@ -1270,17 +1181,24 @@ export const Kanban: React.FC = () => {
     } catch (error) { alert((error as Error).message); }
   };
 
+  const canRenderBoard = Boolean(selectedBoardId) && boardDataStatus === 'ready';
+
   return (
     <AppLayout>
       <MainContent>
         <BoardHeader>
           <SelectorContainer>
             <Select
+              aria-label="Selecionar quadro"
               value={selectedBoardId}
               onChange={e => setSelectedBoardId(e.target.value)}
-              disabled={boards.length === 0}
+              disabled={boardsStatus !== 'ready' || boards.length === 0}
             >
-              {visibleBoards.length === 0 ? (
+              {boardsStatus === 'loading' ? (
+                <option>Carregando quadros...</option>
+              ) : boardsStatus === 'error' ? (
+                <option>Quadros indisponíveis</option>
+              ) : visibleBoards.length === 0 ? (
                 <option>Nenhum quadro disponível</option>
               ) : (
                 visibleBoards.map(b => (
@@ -1299,7 +1217,7 @@ export const Kanban: React.FC = () => {
               <span>Novo Quadro</span>
             </ActionButton>
 
-            {visibleBoards.length > 1 && selectedBoardId && (
+            {canRenderBoard && visibleBoards.length > 1 && selectedBoardId && (
               <ActionButton
                 onClick={() => {
                   const others = visibleBoards.filter(b => b.id !== selectedBoardId);
@@ -1320,18 +1238,19 @@ export const Kanban: React.FC = () => {
             </ActionButton>
           </SelectorContainer>
 
-          {selectedBoardId && (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'inline-flex', border: '1px solid #cbd5e1', borderRadius: 6, overflow: 'hidden' }}>
+          {canRenderBoard && (
+            <BoardActions>
+              <ViewSwitcher role="group" aria-label="Visão do quadro">
                 {([['kanban', 'Kanban'], ['lista', 'Lista'], ['calendario', 'Calendário'], ['gantt', 'Gantt'], ['dashboard', 'Dashboard']] as const).map(([key, label]) => (
-                  <button
+                  <ViewSwitcherButton
                     key={key}
                     type="button"
+                    $active={boardView === key}
+                    aria-pressed={boardView === key}
                     onClick={() => setBoardView(key)}
-                    style={{ padding: '8px 14px', fontSize: 15, fontWeight: 700, background: boardView === key ? '#1E7BD7' : '#fff', color: boardView === key ? '#fff' : '#64748B' }}
-                  >{label}</button>
+                  >{label}</ViewSwitcherButton>
                 ))}
-              </div>
+              </ViewSwitcher>
               <ActionButton onClick={() => {
                 loadLeadTime();
                 setShowLeadTimeModal(true);
@@ -1349,11 +1268,14 @@ export const Kanban: React.FC = () => {
                 <Plus size={16} />
                 <span>Nova Coluna</span>
               </ActionButton>
-            </div>
+            </BoardActions>
           )}
         </BoardHeader>
+        {canRenderBoard && boardView === 'kanban' && (
+          <BoardHelp>Arraste um cartão para outra coluna. Use o seletor no cabeçalho de cada coluna para ordenar somente aquela coluna; a ordem manual é a padrão compartilhada.</BoardHelp>
+        )}
 
-        {selectedBoardId && boardView !== 'dashboard' && (
+        {canRenderBoard && boardView !== 'dashboard' && (
           <KanbanFilterBar
             items={workItems}
             resultCount={visibleWorkItems.length}
@@ -1363,11 +1285,14 @@ export const Kanban: React.FC = () => {
             groupBy={groupBy}
             onGroupBy={setGroupBy}
             sortBy={cardSort}
-            onSortBy={setCardSort}
+            onSortBy={value => {
+              setCardSort(value as KanbanCardSort);
+              setColumnSorts({});
+            }}
             savedFilters={savedFilters}
             onApplySaved={applySavedFilter}
             onSaveFilter={saveCurrentFilter}
-            onReset={() => { setFilters(defaultKanbanFilters); setGroupBy('none'); setCardSort('created'); }}
+            onReset={() => { setFilters(defaultKanbanFilters); setGroupBy('none'); setCardSort('position'); setColumnSorts({}); }}
             cardSettings={cardSettings}
             onCardSettings={setCardSettings}
             onSaveCardSettings={saveCardView}
@@ -1375,7 +1300,7 @@ export const Kanban: React.FC = () => {
           />
         )}
 
-        {selectedBoardId && (boardView === 'kanban' || boardView === 'lista') && (
+        {canRenderBoard && (boardView === 'kanban' || boardView === 'lista') && (
           <KanbanBulkToolbar
             selectedCount={selectedItemIds.size}
             visibleCount={visibleWorkItems.length}
@@ -1392,20 +1317,34 @@ export const Kanban: React.FC = () => {
           />
         )}
 
-        {selectedBoardId && boardView === 'calendario' ? (
+        {boardsStatus === 'loading' ? (
+          <div role="status" aria-live="polite" style={{ padding: '48px 16px', textAlign: 'center', color: theme.color.textMuted }}>Carregando quadros disponíveis...</div>
+        ) : boardsStatus === 'error' ? (
+          <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
+            <p>{boardsError}</p>
+            <button type="button" onClick={() => void fetchBoards()}>Tentar carregar os quadros novamente</button>
+          </div>
+        ) : boardDataStatus === 'loading' ? (
+          <div role="status" aria-live="polite" style={{ padding: '48px 16px', textAlign: 'center', color: theme.color.textMuted }}>Carregando quadro...</div>
+        ) : boardDataStatus === 'error' ? (
+          <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
+            <p>{boardDataError}</p>
+            <button type="button" onClick={() => void loadBoardData(selectedBoardId)}>Tentar carregar o quadro novamente</button>
+          </div>
+        ) : canRenderBoard && boardView === 'calendario' ? (
           <BoardCalendar
             items={visibleWorkItems}
             onOpen={id => { const it = visibleWorkItems.find(w => w.id === id); if (it) handleCardClick(it); }}
           />
-        ) : selectedBoardId && boardView === 'gantt' ? (
+        ) : canRenderBoard && boardView === 'gantt' ? (
           <BoardGantt
             items={visibleWorkItems}
             stages={stages}
             onOpen={id => { const it = visibleWorkItems.find(w => w.id === id); if (it) handleCardClick(it); }}
           />
-        ) : selectedBoardId && boardView === 'dashboard' ? (
+        ) : canRenderBoard && boardView === 'dashboard' ? (
           <BoardDashboard boardId={selectedBoardId} />
-        ) : selectedBoardId && boardView === 'lista' ? (
+        ) : canRenderBoard && boardView === 'lista' ? (
           (() => {
             const stageName = (id: string | null) => stages.find(s => s.id === id)?.name || '—';
             const sorted = [...visibleWorkItems].sort((a, b) => {
@@ -1421,7 +1360,7 @@ export const Kanban: React.FC = () => {
             const th = (key: string, label: string) => (
               <th
                 onClick={() => setListSort(s => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : 1 }))}
-                style={{ textAlign: 'left', padding: '10px 12px', fontSize: 14, color: '#64748B', fontWeight: 700, cursor: 'pointer', userSelect: 'none', borderBottom: '2px solid #E2E8F0', whiteSpace: 'nowrap' }}
+                style={{ textAlign: 'left', padding: '10px 12px', fontSize: 14, color: theme.color.textMutedAccessible, fontWeight: 700, cursor: 'pointer', userSelect: 'none', borderBottom: '2px solid #E2E8F0', whiteSpace: 'nowrap' }}
               >{label}{listSort.key === key ? (listSort.dir === 1 ? ' ▲' : ' ▼') : ''}</th>
             );
             return (
@@ -1454,10 +1393,10 @@ export const Kanban: React.FC = () => {
                             {item.taskTypeName && <span style={{ fontSize: 13, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: '#fff', background: item.taskTypeColor || '#1E7BD7', marginRight: 8 }}>{item.taskTypeName}</span>}
                             {item.title}
                           </td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{getCardAssigneeLabel(item)}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{stageName(item.stageId)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{getCardAssigneeLabel(item)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{stageName(item.stageId)}</td>
                           <td style={{ padding: '10px 12px', fontSize: 15, color: late ? '#D92D20' : '#64748B', fontWeight: late ? 700 : 400 }}>{item.dueDate ? `${item.dueDate.slice(8,10)}/${item.dueDate.slice(5,7)}` : '—'}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{formatTime(item.totalTimeSeconds || 0)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{formatTime(item.totalTimeSeconds || 0)}</td>
                         </tr>
                       );
                     })}
@@ -1469,10 +1408,13 @@ export const Kanban: React.FC = () => {
               </div>
             );
           })()
-        ) : selectedBoardId ? (
+        ) : canRenderBoard ? (
           <KanbanGrid>
             {stages.map(stage => {
-              const itemsInStage = visibleWorkItems.filter(w => w.stageId === stage.id);
+              const columnSort = columnSorts[stage.id] || cardSort;
+              const itemsInStage = visibleWorkItems
+                .filter(w => w.stageId === stage.id)
+                .sort((a, b) => compareKanbanWorkItems(a, b, columnSort));
               return (
                 <Column
                   key={stage.id}
@@ -1481,14 +1423,36 @@ export const Kanban: React.FC = () => {
                   $isDraggingAny={draggedItemId !== null}
                 >
                   <ColumnHeader>
-                    <ColumnTitle><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                    <ColumnTitle as="h2"><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                      <select
+                        aria-label={`Ordenar cartões da coluna ${stage.name}`}
+                        value={columnSort}
+                        onChange={event => setColumnSorts(current => ({ ...current, [stage.id]: event.target.value as KanbanCardSort }))}
+                        style={{ maxWidth: 120, minHeight: 26, padding: '0 4px', border: '1px solid #CBD5E1', borderRadius: 5, color: theme.color.textMutedAccessible, fontSize: 11 }}
+                      >
+                        <option value="position">Ordem manual</option>
+                        <option value="priority">Prioridade</option>
+                        <option value="due">Prazo</option>
+                        <option value="title">Título</option>
+                        <option value="created">Mais recentes</option>
+                      </select>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CardCount style={stage.wipLimit && itemsInStage.length >= stage.wipLimit ? { color: '#B42318', borderColor: '#FCA5A5', background: '#FEF2F2' } : undefined}>
-                        {itemsInStage.length}{stage.wipLimit ? ` / ${stage.wipLimit} WIP` : ''}
+                      <CardCount>
+                        {itemsInStage.length}
                       </CardCount>
                       <button
                         type="button"
-                        title="Mover coluna para esquerda"
+                        title={`Editar coluna ${stage.name}`}
+                        aria-label={`Editar coluna ${stage.name}`}
+                        onClick={() => handleOpenEditStage(stage)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        title={`Mover coluna ${stage.name} para a esquerda`}
+                        aria-label={`Mover coluna ${stage.name} para a esquerda`}
                         disabled={stages.indexOf(stage) === 0}
                         onClick={() => handleMoveStage(stage.id, 'left')}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === 0 ? 0.3 : 1 }}
@@ -1497,7 +1461,8 @@ export const Kanban: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        title="Mover coluna para direita"
+                        title={`Mover coluna ${stage.name} para a direita`}
+                        aria-label={`Mover coluna ${stage.name} para a direita`}
                         disabled={stages.indexOf(stage) === stages.length - 1}
                         onClick={() => handleMoveStage(stage.id, 'right')}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === stages.length - 1 ? 0.3 : 1 }}
@@ -1511,7 +1476,7 @@ export const Kanban: React.FC = () => {
                     {itemsInStage.map((item, itemIndex) => (
                       <Fragment key={item.id}>
                         {groupBy !== 'none' && (itemIndex === 0 || getGroupLabel(itemsInStage[itemIndex - 1]) !== getGroupLabel(item)) && (
-                          <div style={{ padding: '5px 2px 1px', fontSize: 13, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          <div style={{ padding: '5px 2px 1px', fontSize: 13, fontWeight: 800, color: theme.color.textMutedAccessible, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                             {getGroupLabel(item)}
                           </div>
                         )}
@@ -1640,6 +1605,8 @@ export const Kanban: React.FC = () => {
                         <CardActions>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <ActionIcon
+                              aria-label="Mover tarefa para a coluna anterior"
+                              title="Mover tarefa para a coluna anterior"
                               onClick={event => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'left');
@@ -1649,6 +1616,8 @@ export const Kanban: React.FC = () => {
                               <ChevronLeft size={16} />
                             </ActionIcon>
                             <ActionIcon
+                              aria-label="Mover tarefa para a próxima coluna"
+                              title="Mover tarefa para a próxima coluna"
                               onClick={event => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'right');
@@ -1660,6 +1629,8 @@ export const Kanban: React.FC = () => {
                           </div>
 
                           <ActionIcon
+                            aria-label={runningItemId === item.id ? 'Parar cronômetro da tarefa' : 'Iniciar cronômetro da tarefa'}
+                            title={runningItemId === item.id ? 'Parar cronômetro' : 'Iniciar cronômetro'}
                             $color={runningItemId === item.id ? '#EF4444' : '#10B981'}
                             onClick={event => {
                               event.stopPropagation();
@@ -1749,7 +1720,26 @@ export const Kanban: React.FC = () => {
                   required
                   autoFocus
                   disabled={createBoardPending}
+                  aria-label="Nome do quadro"
                 />
+                {projectTeams.length > 0 && (
+                  <Select
+                    aria-label="Equipe do quadro"
+                    value={newBoardTeamId}
+                    onChange={e => setNewBoardTeamId(e.target.value)}
+                    disabled={createBoardPending}
+                  >
+                    <option value="">Sem equipe específica</option>
+                    {projectTeams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </Select>
+                )}
+                <label htmlFor="board-structure">Estrutura de colunas</label>
+                <Select id="board-structure" value={copyBoardId} onChange={e => setCopyBoardId(e.target.value)}>
+                  <option value="">Estrutura básica</option>
+                  {visibleBoards.filter(b => b.projectId === (urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId)).map(b => <option key={b.id} value={b.id}>Copiar colunas de {b.name}</option>)}
+                </Select>
                 {createBoardError && (
                   <p style={{ color: '#D92D20', fontSize: 13.5, marginTop: 4 }}>{createBoardError}</p>
                 )}
@@ -1776,7 +1766,7 @@ export const Kanban: React.FC = () => {
             </p>
             {visibleBoards.filter(b => b.id !== selectedBoardId).length > 0 && (
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13.5, fontWeight: 700, color: '#64748B', display: 'block', marginBottom: 5 }}>
+                <label style={{ fontSize: 13.5, fontWeight: 700, color: theme.color.textMutedAccessible, display: 'block', marginBottom: 5 }}>
                   Mover tarefas para:
                 </label>
                 <Select
@@ -1785,12 +1775,17 @@ export const Kanban: React.FC = () => {
                   disabled={deleteBoardPending}
                   style={{ width: '100%' }}
                 >
-                  {visibleBoards.filter(b => b.id !== selectedBoardId).map(b => (
+                  <option value="">Escolha o quadro de destino</option>
+                  {visibleBoards.filter(b => b.id !== selectedBoardId && b.projectId === (urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId)).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </Select>
               </div>
             )}
+            {deleteBoardDestId && <Select aria-label="Coluna de destino" value={deleteBoardStageId} onChange={e => setDeleteBoardStageId(e.target.value)}>
+              <option value="">Escolha a coluna de destino</option>
+              {destinationStages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+            </Select>}
             {deleteBoardError && (
               <p style={{ color: '#D92D20', fontSize: 13.5, marginBottom: 8 }}>{deleteBoardError}</p>
             )}
@@ -1822,9 +1817,80 @@ export const Kanban: React.FC = () => {
                 required
                 autoFocus
               />
+              <Select
+                aria-label="Classificação da coluna"
+                value={newStageCategory}
+                onChange={e => setNewStageCategory(Number(e.target.value) as StageCategoryValue)}
+              >
+                {stageCategoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </Select>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowStageModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Adicionar</SubmitButton>
+              </ModalActions>
+            </ModalForm>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {showEditStageModal && editingStage && (
+        <ModalOverlay>
+          <Modal>
+            <ModalTitle>Editar Coluna</ModalTitle>
+            <ModalForm onSubmit={handleUpdateStage}>
+              <Input
+                type="text"
+                placeholder="Nome da Coluna"
+                value={editStageName}
+                onChange={e => setEditStageName(e.target.value)}
+                required
+                autoFocus
+              />
+              <Select
+                aria-label="Classificação da coluna"
+                value={editStageCategory}
+                onChange={e => setEditStageCategory(Number(e.target.value) as StageCategoryValue)}
+              >
+                {stageCategoryOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </Select>
+              {editingStage.category !== editStageCategory && <div aria-label="Impacto da reclassificação">
+                {stageImpact ? <>
+                  <p>{editingStage.name}: {editStageCategory === StageCategory.Done ? 'concluir' : 'reabrir'}. {stageImpact.totalItems} tarefa(s) na coluna; {stageImpact.changedItems} terão o estado alterado; {stageImpact.openDescendants} descendente(s) aberto(s) fora da coluna.</p>
+                  {stageImpact.totalItems > 0 && <label><input type="checkbox" checked={confirmCategoryChange} onChange={e=>setConfirmCategoryChange(e.target.checked)}/>Confirmo alterar o estado das tarefas desta coluna</label>}
+                  {stageImpact.openDescendants > 0 && <label><input type="checkbox" checked={confirmDescendants} onChange={e=>setConfirmDescendants(e.target.checked)}/>Aceito concluir também todos os {stageImpact.openDescendants} descendentes abertos, sem movê-los</label>}
+                </> : <p>Carregando impacto da alteração...</p>}
+              </div>}
+              <label htmlFor="remove-stage-destination">Ao excluir, transferir tarefas para</label>
+              <Select id="remove-stage-destination" value={deleteStageDestination} onChange={e=>setDeleteStageDestination(e.target.value)}>
+                <option value="">Escolha uma coluna de destino</option>
+                {stages.filter(stage=>stage.id!==editingStage.id).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
+              </Select>
+              <button type="button" disabled={editStagePending} onClick={async()=>{
+                setEditStagePending(true);setEditStageError('');
+                try { await api.deleteStage(editingStage.id,deleteStageDestination||undefined);setShowEditStageModal(false);setEditingStage(null);setDeleteStageDestination('');await loadBoardData(selectedBoardId); }
+                catch(error) { setEditStageError((error as Error).message); }
+                finally { setEditStagePending(false); }
+              }}>Excluir coluna</button>
+              {editStageError && (
+                <div style={{ color: '#EF4444', fontSize: '13px', marginTop: '4px' }}>
+                  {editStageError}
+                </div>
+              )}
+              <ModalActions>
+                <CancelButton
+                  type="button"
+                  onClick={() => { setShowEditStageModal(false); setEditingStage(null); }}
+                  disabled={editStagePending}
+                >
+                  Cancelar
+                </CancelButton>
+                <SubmitButton type="submit" disabled={editStagePending}>
+                  {editStagePending ? 'Salvando…' : 'Salvar'}
+                </SubmitButton>
               </ModalActions>
             </ModalForm>
           </Modal>
@@ -1855,6 +1921,13 @@ export const Kanban: React.FC = () => {
                 value={newItemDesc}
                 onChange={e => setNewItemDesc(e.target.value)}
               />
+              <div>
+                <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Tipo do Card</label>
+                <WorkItemKindSelector
+                  value={newItemKind}
+                  onChange={setNewItemKind}
+                />
+              </div>
               <FormRow>
                 <div>
                   <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Prioridade</label>
@@ -1879,6 +1952,34 @@ export const Kanban: React.FC = () => {
                   />
                 </div>
               </FormRow>
+              <FormRow>
+                <div>
+                  <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Responsável principal</label>
+                  <Select
+                    aria-label='Responsável principal da nova tarefa'
+                    style={{ width: '100%' }}
+                    value={newItemResponsibleId}
+                    onChange={e => setNewItemResponsibleId(e.target.value)}
+                    required
+                  >
+                    <option value=''>Selecione uma pessoa...</option>
+                    {assignableUsers.map(user => <option key={user.id} value={user.id}>{getUserLabel(user)}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Responsáveis adicionais</label>
+                  <Select
+                    aria-label='Responsáveis adicionais da nova tarefa'
+                    style={{ width: '100%', minHeight: 86 }}
+                    multiple
+                    value={newItemParticipantIds}
+                    onChange={e => setNewItemParticipantIds(Array.from(e.currentTarget.selectedOptions, option => option.value))}
+                  >
+                    {assignableUsers.filter(user => user.id !== newItemResponsibleId).map(user => <option key={user.id} value={user.id}>{getUserLabel(user)}</option>)}
+                  </Select>
+                </div>
+              </FormRow>
+              <p style={{ margin: '0', color: theme.color.textMutedAccessible, fontSize: '12px' }}>Somente pessoas com acesso ao projeto aparecem nesta lista.</p>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowItemModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Criar Card</SubmitButton>
@@ -1917,284 +2018,9 @@ export const Kanban: React.FC = () => {
         } satisfies BacklogItem) : null}
         projectKey={projectKey}
         onOpenChange={open=>{if(!open){setSelectedItem(null);if(selectedBoardId)void loadBoardData(selectedBoardId);}}}
+        onItemUpdated={()=>{if(selectedBoardId)void loadBoardData(selectedBoardId);}}
+        onOpenSubtask={workItemId=>{void api.getWorkItemDetails(workItemId).then(details=>setSelectedItem(details as unknown as WorkItem));}}
       />
-
-      {selectedItem && legacyTaskModalEnabled && (() => {
-        const boardName = boards.find(b => b.id === selectedItem.boardId)?.name || '—';
-        const stageName = stages.find(s => s.id === selectedItem.stageId)?.name || '—';
-        const isCurrent = runningItemId === selectedItem.id;
-        const totalSecs = (selectedItem.totalTimeSeconds || 0) + (isCurrent ? activeTime : 0);
-        const userSecs = (selectedItem.userTimeSeconds || 0) + (isCurrent ? activeTime : 0);
-        const estSecs = (selectedItem.estimatedHours || 0) * 3600;
-        const timePct = estSecs > 0 ? (totalSecs / estSecs) * 100 : 0;
-        return (
-        <ModalOverlay onClick={() => setSelectedItem(null)}>
-          <TaskModal onClick={event => event.stopPropagation()}>
-            <TaskTopbar>
-              <TaskTimerBtn $running={isCurrent} onClick={() => toggleTimer(selectedItem.id)}>
-                {isCurrent ? <Square size={16} /> : <Play size={16} />}
-                <span>{isCurrent ? formatTime(activeTime) : 'Iniciar'}</span>
-              </TaskTimerBtn>
-              <Avatars>
-                {selectedItemAssignees.slice(0, 5).map(user => (
-                  <Avatar key={user.id} title={getUserLabel(user)}>
-                    {getUserLabel(user).slice(0, 2).toUpperCase()}
-                  </Avatar>
-                ))}
-              </Avatars>
-              <div style={{ flex: 1 }} />
-              <Tag $priority={selectedItem.priority}>
-                {selectedItem.priority === 2 ? 'Alta' : selectedItem.priority === 1 ? 'Media' : 'Baixa'}
-              </Tag>
-              <ActionIcon onClick={() => setSelectedItem(null)} title="Fechar">
-                <X size={18} />
-              </ActionIcon>
-            </TaskTopbar>
-
-            <TaskBody>
-              <TaskMain>
-                <TaskH1>{selectedItem.title}</TaskH1>
-                <TaskMeta>
-                  Criada em {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleDateString('pt-BR') : '—'}
-                </TaskMeta>
-
-                <TaskTabs>
-                  <TaskTab $active={taskTab === 'descricao'} onClick={() => setTaskTab('descricao')}>Descrição</TaskTab>
-                  <TaskTab $active={taskTab === 'comentarios'} onClick={() => setTaskTab('comentarios')}>Comentários</TaskTab>
-                  <TaskTab $active={taskTab === 'subtarefas'} onClick={() => setTaskTab('subtarefas')}>Subtarefas</TaskTab>
-                  <TaskTab $active={taskTab === 'anexos'} onClick={() => setTaskTab('anexos')}>Anexos</TaskTab>
-                </TaskTabs>
-
-                {taskTab === 'comentarios' && <TaskFeed workItemId={selectedItem.id} />}
-
-                {taskTab === 'descricao' && (<>
-                {selectedItem.subtitle && (
-                  <DetailSection>
-                    <DetailLabel>Subtitulo</DetailLabel>
-                    <DetailText>{selectedItem.subtitle}</DetailText>
-                  </DetailSection>
-                )}
-
-                <DetailSection>
-                  <DetailLabel>Descrição</DetailLabel>
-                  <TaskDescriptionPanel
-                    workItemId={selectedItem.id}
-                    description={selectedItem.description}
-                    onChanged={text => {
-                      setSelectedItem(prev => prev ? { ...prev, description: text ?? undefined } : prev);
-                      setWorkItems(items => items.map(w => w.id === selectedItem.id ? { ...w, description: text ?? undefined } : w));
-                    }}
-                  />
-                </DetailSection>
-                </>)}
-
-                {taskTab === 'subtarefas' && (
-                <DetailSection>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <CheckSquare size={16} />
-                      <span>Subtarefas</span>
-                    </SectionTitle>
-                    <InlineForm onSubmit={handleCreateSubItem}>
-                      <Input
-                        type="text"
-                        placeholder="Nova subtarefa"
-                        value={newSubItemTitle}
-                        onChange={event => setNewSubItemTitle(event.target.value)}
-                      />
-                      <SmallButton type="submit" disabled={!newSubItemTitle.trim()}>
-                        <Plus size={14} />
-                        <span>Criar</span>
-                      </SmallButton>
-                    </InlineForm>
-                  </SectionHeader>
-
-                  <ListPanel>
-                    {selectedItemSubItems.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhuma subtarefa criada.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemSubItems.map(subItem => (
-                        <ListItem key={subItem.id}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <span>{subItem.title}</span>
-                            {subItem.subtitle && <MutedText>{subItem.subtitle}</MutedText>}
-                          </div>
-                          <Tag $priority={subItem.priority}>
-                            {subItem.priority === 2 ? 'Alta' : subItem.priority === 1 ? 'Media' : 'Baixa'}
-                          </Tag>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-                )}
-
-                {taskTab === 'anexos' && (
-                <DetailSection>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <Paperclip size={16} />
-                      <span>Anexos</span>
-                    </SectionTitle>
-                    <FileInput
-                      type="file"
-                      onChange={handleUploadAttachment}
-                      disabled={uploadingAttachment}
-                    />
-                  </SectionHeader>
-
-                  <ListPanel>
-                    {selectedItemAttachments.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhum anexo enviado.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemAttachments.map(attachment => (
-                        <ListItem key={attachment.id}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                            <span style={{ overflowWrap: 'anywhere' }}>{attachment.fileName}</span>
-                            <MutedText>{formatFileSize(attachment.fileSize)}</MutedText>
-                          </div>
-                          <SmallButton type="button" onClick={() => handleDownloadAttachment(attachment)}>
-                            <Download size={14} />
-                            <span>Baixar</span>
-                          </SmallButton>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-                )}
-              </TaskMain>
-
-              <TaskSidebar>
-                <SidebarRow>
-                  <SidebarLabel>Quadro</SidebarLabel>
-                  <SidebarValue>{boardName}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Etapa</SidebarLabel>
-                  <SidebarValue>{stageName}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Horas estimadas</SidebarLabel>
-                  <SidebarValue>{selectedItem.estimatedHours ? `${selectedItem.estimatedHours}h` : '—'}</SidebarValue>
-                </SidebarRow>
-                <SidebarRow>
-                  <SidebarLabel>Vencimento</SidebarLabel>
-                  <SidebarValue>{selectedItem.dueDate || '—'}</SidebarValue>
-                </SidebarRow>
-
-                <TaskTaxonomyPanel
-                  workItemId={selectedItem.id}
-                  taskTypeId={selectedItem.taskTypeId}
-                  points={selectedItem.points}
-                  tagIds={(selectedItem.tags || []).map(t => t.id)}
-                  showPoints={showStoryPoints}
-                  onChanged={async () => {
-                    if (!selectedBoardId) return;
-                    const fresh = await api.getWorkItems(selectedBoardId);
-                    setWorkItems(fresh);
-                    const updated = fresh.find((w: WorkItem) => w.id === selectedItem.id);
-                    if (updated) setSelectedItem(updated);
-                  }}
-                />
-
-                <TaskApprovalPanel workItemId={selectedItem.id} users={assignableUsers} />
-
-                <TaskChecklistPanel
-                  workItemId={selectedItem.id}
-                  onChanged={async () => {
-                    if (!selectedBoardId) return;
-                    const fresh = await api.getWorkItems(selectedBoardId);
-                    setWorkItems(fresh);
-                    const updated = fresh.find((w: WorkItem) => w.id === selectedItem.id);
-                    if (updated) setSelectedItem(updated);
-                  }}
-                />
-
-                <div style={{ padding: '14px 0', borderBottom: '1px solid #edf2f7' }}>
-                  <SidebarLabel><Clock size={14} /> Tempo nesta tarefa</SidebarLabel>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontWeight: 600, fontSize: 15 }}>
-                    <span>
-                      {formatTotalHours(totalSecs)}
-                      {totalSecs !== userSecs ? ` (Você ${formatTotalHours(userSecs)})` : ''}
-                    </span>
-                    <span>{selectedItem.estimatedHours ? `${selectedItem.estimatedHours}h` : ''}</span>
-                  </div>
-                  <ProgressTrack><ProgressFill $pct={timePct} /></ProgressTrack>
-                  {isCurrent && (
-                    <div style={{ marginTop: 8, color: '#008ECF', fontWeight: 'bold' }}>
-                      ● {formatTime(activeTime)} agora
-                    </div>
-                  )}
-                  <InlineForm onSubmit={handleCreateManualTimeEntry} style={{ marginTop: 12 }}>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="Minutos"
-                      value={manualMinutes || ''}
-                      onChange={event => setManualMinutes(event.target.value ? Number(event.target.value) : undefined)}
-                    />
-                    <SmallButton type="submit" disabled={!manualMinutes || manualMinutes <= 0}>
-                      <Plus size={14} />
-                      <span>Lançar</span>
-                    </SmallButton>
-                  </InlineForm>
-                </div>
-
-                <DetailSection style={{ marginTop: 14 }}>
-                  <SectionHeader>
-                    <SectionTitle>
-                      <Users size={16} />
-                      <span>Responsáveis</span>
-                    </SectionTitle>
-                  </SectionHeader>
-                  <InlineForm onSubmit={handleAssignUser}>
-                    <Select
-                      value={selectedAssigneeId}
-                      onChange={event => setSelectedAssigneeId(event.target.value)}
-                      disabled={assignableUsers.length === selectedItemAssignees.length}
-                    >
-                      <option value="">Selecionar usuario</option>
-                      {assignableUsers
-                        .filter(user => !selectedItemAssignees.some(assignee => assignee.id === user.id))
-                        .map(user => (
-                          <option key={user.id} value={user.id}>
-                            {getUserLabel(user)}
-                          </option>
-                        ))}
-                    </Select>
-                    <SmallButton type="submit" disabled={!selectedAssigneeId}>
-                      <UserPlus size={14} />
-                      <span>Atribuir</span>
-                    </SmallButton>
-                  </InlineForm>
-                  <ListPanel>
-                    {selectedItemAssignees.length === 0 ? (
-                      <ListItem>
-                        <MutedText>Nenhum responsavel atribuido.</MutedText>
-                      </ListItem>
-                    ) : (
-                      selectedItemAssignees.map(user => (
-                        <ListItem key={user.id}>
-                          <span>{getUserLabel(user)}</span>
-                          <ActionIcon onClick={() => handleRemoveAssignee(user.id)} title="Remover">
-                            <X size={14} />
-                          </ActionIcon>
-                        </ListItem>
-                      ))
-                    )}
-                  </ListPanel>
-                </DetailSection>
-              </TaskSidebar>
-            </TaskBody>
-          </TaskModal>
-        </ModalOverlay>
-        );
-      })()}
 
       {showLeadTimeModal && (
         <ModalOverlay onClick={() => setShowLeadTimeModal(false)}>
@@ -2371,7 +2197,7 @@ export const Kanban: React.FC = () => {
                         <span>{j.reason}</span>
                         <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
                           <strong>{j.hours}h</strong>
-                          <button type="button" onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></button>
+                          <button type="button" aria-label={`Remover justificativa ${j.reason}`} onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></button>
                         </span>
                       </div>
                     ))}

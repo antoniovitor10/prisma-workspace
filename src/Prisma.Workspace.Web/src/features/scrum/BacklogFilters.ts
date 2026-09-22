@@ -5,6 +5,9 @@ export type BacklogRelationFilter = 'all' | 'blocked' | 'dependencies' | 'unpare
 export type BacklogGroupBy = 'none' | 'epic' | 'kind' | 'priority' | 'board';
 
 export interface BacklogFilterState {
+  /** Tarefa arquivada some de toda listagem por padrão; ligar aqui a torna visível
+   *  e alcançável para restaurar. */
+  includeArchived: boolean;
   search: string;
   kind: string;
   priority: string;
@@ -13,6 +16,7 @@ export interface BacklogFilterState {
 }
 
 export const defaultBacklogFilters: BacklogFilterState = {
+  includeArchived: false,
   search: '',
   kind: 'all',
   priority: 'all',
@@ -52,6 +56,8 @@ export function getBacklogRelations(item: BacklogItem) {
 export function filterBacklogItems(items: BacklogItem[], filters: BacklogFilterState) {
   const search = filters.search.trim().toLocaleLowerCase('pt-BR');
   return items.filter((item) => {
+    // Arquivada só aparece quando explicitamente pedido.
+    if (item.isArchived && !filters.includeArchived) return false;
     if (search) {
       const haystack = `${item.number ?? ''} ${item.title} ${item.boardName} ${item.requesterName ?? ''}`
         .toLocaleLowerCase('pt-BR');

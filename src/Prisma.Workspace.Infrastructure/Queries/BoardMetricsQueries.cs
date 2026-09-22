@@ -17,8 +17,13 @@ public class BoardMetricsQueries : IBoardMetricsQueries
 
     public async Task<BoardMetricsDto> GetAsync(Guid boardId, CancellationToken ct = default)
     {
+        var board = await _context.Boards.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == boardId, ct);
+        if (board is null)
+            return new BoardMetricsDto();
+
         var stages = await _context.Stages.AsNoTracking()
-            .Where(s => s.BoardId == boardId)
+            .Where(s => s.ProjectId == board.ProjectId)
             .OrderBy(s => s.Position)
             .Select(s => new { s.Id, s.Name })
             .ToListAsync(ct);

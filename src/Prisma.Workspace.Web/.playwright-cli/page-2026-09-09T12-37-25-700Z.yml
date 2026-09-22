@@ -1,0 +1,86 @@
+- generic [ref=f2e109]:
+  - banner [ref=f2e111]:
+    - link "Prisma WorkSpace — página inicial" [ref=f2e112] [cursor=pointer]:
+      - /url: /home
+      - generic [ref=f2e119]:
+        - text: Prisma
+        - emphasis [ref=f2e120]: WorkSpace
+    - navigation "Navegação principal" [ref=f2e121]:
+      - link "Início" [ref=f2e122] [cursor=pointer]:
+        - /url: /home
+      - link "Meu trabalho" [ref=f2e126] [cursor=pointer]:
+        - /url: /me/tasks
+      - link "Projetos" [ref=f2e130] [cursor=pointer]:
+        - /url: /projects
+      - link "Solicitações" [ref=f2e133] [cursor=pointer]:
+        - /url: /requests
+    - button "Abrir pesquisa global (Ctrl K)" [ref=f2e137] [cursor=pointer]:
+      - generic [ref=f2e141]: Buscar...
+      - generic [ref=f2e142]: Ctrl K
+    - generic "Organização ativa" [ref=f2e143]:
+      - combobox "Selecionar organização" [ref=f2e147]:
+        - option "Prisma Demo" [selected]
+    - button "Novo item" [ref=f2e148] [cursor=pointer]
+    - button "Notificações" [ref=f2e152] [cursor=pointer]
+    - button "Ativar modo escuro" [ref=f2e156] [cursor=pointer]
+    - button "Menu da conta" [ref=f2e160] [cursor=pointer]: EU
+  - main [ref=f2e163]:
+    - generic [ref=f2e164]:
+      - generic [ref=f2e165]:
+        - generic [ref=f2e166]:
+          - generic [ref=f2e167]: Bom dia · visão geral
+          - heading "O trabalho que importa, claro desde o primeiro olhar." [level=1] [ref=f2e171]
+          - paragraph [ref=f2e172]: Veja o que pede atenção agora, retome seus projetos e avance sem precisar procurar onde começar em Prisma Demo.
+        - generic [ref=f2e173]:
+          - button "Ver meu trabalho" [ref=f2e174] [cursor=pointer]
+          - button "Explorar projetos" [ref=f2e178] [cursor=pointer]
+      - region "Resumo do trabalho" [ref=f2e181]:
+        - button [ref=f2e182] [cursor=pointer]:
+          - generic [ref=f2e187]:
+            - text: Atribuídas
+            - strong [ref=f2e188]: —
+        - button [ref=f2e191] [cursor=pointer]:
+          - generic [ref=f2e196]:
+            - text: Para hoje
+            - strong [ref=f2e197]: —
+        - button [ref=f2e200] [cursor=pointer]:
+          - generic [ref=f2e204]:
+            - text: Atrasadas
+            - strong [ref=f2e205]: —
+        - button [ref=f2e208] [cursor=pointer]:
+          - generic [ref=f2e213]:
+            - text: Bloqueadas
+            - strong [ref=f2e214]: —
+      - generic [ref=f2e217]:
+        - generic [ref=f2e218]:
+          - generic [ref=f2e219]:
+            - generic [ref=f2e223]:
+              - heading "Sua prioridade agora" [level=2] [ref=f2e224]
+              - paragraph [ref=f2e225]: Ordenada por atraso, bloqueio, prazo e importância.
+            - button "Ver tudo" [ref=f2e226] [cursor=pointer]
+          - generic [ref=f2e229]: Organizando suas prioridades...
+        - complementary [ref=f2e230]:
+          - generic [ref=f2e231]:
+            - generic [ref=f2e232]:
+              - generic [ref=f2e235]:
+                - heading "Projetos recentes" [level=2] [ref=f2e236]
+                - paragraph [ref=f2e237]: Continue de onde parou.
+              - button "Todos" [ref=f2e238] [cursor=pointer]
+            - generic [ref=f2e241]: Carregando projetos...
+          - generic [ref=f2e242]:
+            - generic [ref=f2e249]:
+              - heading "Acesso rápido" [level=2] [ref=f2e250]
+              - paragraph [ref=f2e251]: Atalhos para os fluxos mais usados.
+            - generic [ref=f2e252]:
+              - button "Projetos Backlog, sprints e quadros." [ref=f2e253] [cursor=pointer]:
+                - strong [ref=f2e256]: Projetos
+                - generic [ref=f2e257]: Backlog, sprints e quadros.
+              - button "Relatórios Indicadores e análises." [ref=f2e258] [cursor=pointer]:
+                - strong [ref=f2e261]: Relatórios
+                - generic [ref=f2e262]: Indicadores e análises.
+              - button "Solicitações Demandas e atendimento." [ref=f2e263] [cursor=pointer]:
+                - strong [ref=f2e267]: Solicitações
+                - generic [ref=f2e268]: Demandas e atendimento.
+              - button "Meu trabalho Fila pessoal de atenção." [ref=f2e269] [cursor=pointer]:
+                - strong [ref=f2e273]: Meu trabalho
+                - generic [ref=f2e274]: Fila pessoal de atenção.

@@ -1,0 +1,50 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - heading "Produto Demo" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Abra uma solicitação ou acompanhe o atendimento com seu protocolo.
+  - generic [ref=e7]:
+    - navigation [ref=e8]:
+      - button "Nova solicitação" [ref=e9] [cursor=pointer]
+      - button "Acompanhar" [ref=e13] [cursor=pointer]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - text: Formulário
+        - combobox "Formulário" [ref=e20]:
+          - option "Solicitação — Produto Demo" [selected]
+      - generic [ref=e21]: Descreva sua necessidade para que nossa equipe possa iniciar o atendimento.
+      - generic [ref=e26]:
+        - text: Nome
+        - textbox "Nome" [ref=e27]
+      - generic [ref=e28]:
+        - text: E-mail
+        - textbox "E-mail" [ref=e29]
+      - generic [ref=e30]:
+        - text: Telefone
+        - textbox "Telefone" [ref=e31]
+      - generic [ref=e32]:
+        - text: Assunto
+        - textbox "Assunto" [ref=e33]
+      - generic [ref=e34]:
+        - text: Descrição detalhada
+        - textbox "Descrição detalhada" [ref=e35]
+      - generic [ref=e36]:
+        - text: Categoria
+        - textbox "Categoria" [ref=e37]
+      - generic [ref=e38]:
+        - text: Prioridade informada
+        - combobox "Prioridade informada" [ref=e39]:
+          - option "Selecione..." [selected]
+          - option "Baixa"
+          - option "Média"
+          - option "Alta"
+          - option "Crítica"
+      - generic [ref=e40]:
+        - text: Serviço relacionado
+        - textbox "Serviço relacionado" [ref=e41]
+      - generic [ref=e42]:
+        - text: Anexos
+        - button "Anexos" [ref=e43]
+      - generic [aria-hidden] [ref=e44]:
+        - text: Website
+        - textbox [ref=e45]
+      - button "Gerar protocolo" [ref=e47] [cursor=pointer]

@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { api } from '../../services/api';
 import { previewMode } from '../../preview';
 import { useOrganization } from '../organizations/OrganizationState';
+import { stageCategoryOptions } from './stageCategories';
 
 interface WorkflowStatus {
   id: string; name: string; color: string; position: number; category: number;
@@ -13,7 +14,7 @@ interface WorkflowStatus {
 interface WorkflowTransition { sourceStatusId: string; targetStatusId: string; }
 interface WorkflowStage {
   id: string; boardId: string; boardName: string; name: string; position: number;
-  wipLimit?: number | null; workflowStatusId?: string | null;
+  workflowStatusId?: string | null;
 }
 interface ProjectWorkflow {
   inheritanceMode: number; workflowTemplateId?: string | null; workflowTemplateName?: string | null;
@@ -54,7 +55,7 @@ const ModePanel = styled.div`
 `;
 const Locked = styled.fieldset`display:contents;&:disabled{opacity:.72;}`;
 
-const categories = [[1,'Backlog'],[2,'Pronta'],[3,'Em andamento'],[4,'Revisão'],[5,'Concluída']] as const;
+const categories = stageCategoryOptions;
 const emptyWorkflow: ProjectWorkflow = { inheritanceMode:1, isSynchronized:true, statuses: [], transitions: [], stages: [], boards: [] };
 
 export function ProjectWorkflowSettings({ projectId }: { projectId: string }) {
@@ -131,7 +132,7 @@ export function ProjectWorkflowSettings({ projectId }: { projectId: string }) {
       <AddForm onSubmit={event=>{event.preventDefault();if(newStatus.name.trim())create.mutate();}}><input type="color" value={newStatus.color} onChange={e=>setNewStatus({...newStatus,color:e.target.value})}/><input type="text" required placeholder="Novo status" value={newStatus.name} onChange={e=>setNewStatus({...newStatus,name:e.target.value})}/><select value={newStatus.category} onChange={e=>setNewStatus({...newStatus,category:Number(e.target.value)})}>{categories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><Primary disabled={create.isPending}><Plus size={13}/>Adicionar</Primary></AddForm>
     </Block>
     {statuses.length>1&&<Block><div><h3>Transições permitidas</h3><p>Marque os destinos aceitos para cada status de origem. Movimentos inválidos serão bloqueados em todas as telas.</p></div><MatrixWrap><table><thead><tr><th>De \ Para</th>{statuses.map(target=><th key={target.id}>{target.name}</th>)}</tr></thead><tbody>{statuses.map(source=><tr key={source.id}><th><span style={{color:source.color}}>●</span> {source.name}</th>{statuses.map(target=><td key={target.id}>{source.id===target.id?'—':<input aria-label={`${source.name} para ${target.name}`} type="checkbox" checked={transitions.has(`${source.id}:${target.id}`)} onChange={()=>toggleTransition(source.id,target.id)}/>}</td>)}</tr>)}</tbody></table></MatrixWrap><div><Primary onClick={saveTransitions}><Save size={13}/>Salvar transições</Primary></div></Block>}
-    <Block><div><h3>Colunas e limites de WIP</h3><p>Cada coluna representa um status. O limite é validado pelo servidor inclusive em ações em lote.</p></div>{query.data?.boards.map(board=><BoardGroup key={board.id}><strong>{board.name}</strong>{(byBoard.get(board.id)??[]).map(stage=><EditableStage key={stage.id} stage={stage} statuses={statuses} onSave={value=>run(()=>api.updateWorkflowStage(projectId,stage.id,value))} onDelete={()=>window.confirm('Excluir esta coluna vazia?')&&run(()=>api.deleteWorkflowStage(projectId,stage.id))}/>)}</BoardGroup>)}</Block>
+    <Block><div><h3>Colunas</h3><p>Cada coluna representa um status do fluxo do projeto.</p></div>{query.data?.boards.map(board=><BoardGroup key={board.id}><strong>{board.name}</strong>{(byBoard.get(board.id)??[]).map(stage=><EditableStage key={stage.id} stage={stage} statuses={statuses} onSave={value=>run(()=>api.updateWorkflowStage(projectId,stage.id,value))} onDelete={()=>window.confirm('Excluir esta coluna vazia?')&&run(()=>api.deleteWorkflowStage(projectId,stage.id))}/>)}</BoardGroup>)}</Block>
     </Locked>
     {message&&<ErrorText role="alert">{message}</ErrorText>}
   </Content></Shell>;
@@ -139,10 +140,10 @@ export function ProjectWorkflowSettings({ projectId }: { projectId: string }) {
 
 function EditableStage({stage,statuses,onSave,onDelete}:{
   stage:WorkflowStage;statuses:WorkflowStatus[];
-  onSave:(value:{name:string;position:number;wipLimit:number|null;workflowStatusId:string})=>void;
+  onSave:(value:{name:string;position:number;workflowStatusId:string})=>void;
   onDelete:()=>void;
 }){
-  const [value,setValue]=useState({name:stage.name,wipLimit:stage.wipLimit?.toString()??'',workflowStatusId:stage.workflowStatusId??statuses[0]?.id??''});
-  useEffect(()=>setValue({name:stage.name,wipLimit:stage.wipLimit?.toString()??'',workflowStatusId:stage.workflowStatusId??statuses[0]?.id??''}),[stage,statuses]);
-  return <StageRow><input aria-label="Nome da coluna" value={value.name} onChange={e=>setValue({...value,name:e.target.value})}/><select aria-label="Status da coluna" value={value.workflowStatusId} onChange={e=>setValue({...value,workflowStatusId:e.target.value})}>{statuses.map(status=><option key={status.id} value={status.id}>{status.name}</option>)}</select><input aria-label="Limite de WIP" type="number" min="1" placeholder="Sem limite" value={value.wipLimit} onChange={e=>setValue({...value,wipLimit:e.target.value})}/><Actions><button title="Salvar coluna" onClick={()=>onSave({name:value.name,position:stage.position,wipLimit:value.wipLimit?Number(value.wipLimit):null,workflowStatusId:value.workflowStatusId})}><Save size={13}/></button><button title="Excluir coluna" onClick={onDelete}><Trash2 size={13}/></button></Actions></StageRow>;
+  const [value,setValue]=useState({name:stage.name,workflowStatusId:stage.workflowStatusId??statuses[0]?.id??''});
+  useEffect(()=>setValue({name:stage.name,workflowStatusId:stage.workflowStatusId??statuses[0]?.id??''}),[stage,statuses]);
+  return <StageRow><input aria-label="Nome da coluna" value={value.name} onChange={e=>setValue({...value,name:e.target.value})}/><select aria-label="Status da coluna" value={value.workflowStatusId} onChange={e=>setValue({...value,workflowStatusId:e.target.value})}>{statuses.map(status=><option key={status.id} value={status.id}>{status.name}</option>)}</select><Actions><button title="Salvar coluna" onClick={()=>onSave({name:value.name,position:stage.position,workflowStatusId:value.workflowStatusId})}><Save size={13}/></button><button title="Excluir coluna" onClick={onDelete}><Trash2 size={13}/></button></Actions></StageRow>;
 }

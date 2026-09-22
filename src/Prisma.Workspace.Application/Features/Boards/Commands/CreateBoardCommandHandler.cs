@@ -7,29 +7,27 @@ namespace Prisma.Workspace.Application.Features.Boards.Commands;
 
 /// <summary>
 /// Handler do comando CreateBoard.
-/// Cria um novo quadro, adiciona automaticamente a etapa Backlog
-/// e define como quadro padrão do projeto quando não há nenhum.
+/// Cria um quadro do projeto com colunas próprias (D89).
 /// </summary>
 public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, Guid>
 {
     private readonly IBoardRepository _boardRepository;
-    private readonly IStageRepository _stageRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IProjectAccessService _projectAccess;
     private readonly IPermissionService? _permissions;
+    private readonly IStageRepository? _stages;
 
     public CreateBoardCommandHandler(
         IBoardRepository boardRepository,
-        IStageRepository stageRepository,
         IProjectRepository projectRepository,
         IProjectAccessService projectAccess,
-        IPermissionService? permissions = null)
+        IPermissionService? permissions = null, IStageRepository? stages = null)
     {
         _boardRepository = boardRepository;
-        _stageRepository = stageRepository;
         _projectRepository = projectRepository;
         _projectAccess = projectAccess;
         _permissions = permissions;
+        _stages = stages;
     }
 
     public async Task<Guid> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
@@ -38,47 +36,59 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, Gui
             await _permissions.EnsureAsync(
                 request.OwnerId,
                 PlatformPermission.Create,
-                request.ProjectId.HasValue ? PermissionScope.Project : PermissionScope.Organization,
+                PermissionScope.Project,
                 request.ProjectId,
                 cancellationToken);
-        if (request.ProjectId.HasValue)
-            await _projectAccess.EnsureAtLeastAsync(request.ProjectId.Value, request.OwnerId,
-                ProjectRole.ProjectAdmin, cancellationToken);
+
+        await _projectAccess.EnsureAtLeastAsync(
+            request.ProjectId, request.OwnerId, ProjectRole.ProjectAdmin, cancellationToken);
+
+        var project = await _projectRepository.GetByIdAsync(request.ProjectId, cancellationToken)
+            ?? throw new ArgumentException("O projeto especificado não existe.");
+
+        var template = request.CopyStagesFromBoardId.HasValue
+            ? await _boardRepository.GetByIdAsync(request.CopyStagesFromBoardId.Value, cancellationToken)
+            : null;
+        if (request.CopyStagesFromBoardId.HasValue && template?.ProjectId != request.ProjectId)
+            throw new ArgumentException("O quadro de origem deve pertencer ao mesmo projeto.");
 
         var board = new Board
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
             OwnerId = request.OwnerId,
+            OrganizationId = project.OrganizationId,
             ProjectId = request.ProjectId,
             TeamId = request.TeamId,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
+        if (_stages is not null)
+        {
+            var source = template is null
+                ? Array.Empty<Stage>()
+                : await _stages.GetByBoardIdAsync(template.Id, cancellationToken);
+            var columns = template is not null ? source.Select(x => new Stage
+            {
+                Id = Guid.NewGuid(), ProjectId = request.ProjectId, BoardId = board.Id,
+                Name = x.Name, Position = x.Position, Category = x.Category,
+                WorkflowStatusId = x.WorkflowStatusId, CreatedAt = DateTimeOffset.UtcNow
+            }) : new[]
+            {
+                new Stage { Id=Guid.NewGuid(), ProjectId=request.ProjectId, BoardId=board.Id, Name="A fazer", Position=100, Category=StageCategory.Backlog, CreatedAt=DateTimeOffset.UtcNow },
+                new Stage { Id=Guid.NewGuid(), ProjectId=request.ProjectId, BoardId=board.Id, Name="Em andamento", Position=200, Category=StageCategory.InProgress, CreatedAt=DateTimeOffset.UtcNow },
+                new Stage { Id=Guid.NewGuid(), ProjectId=request.ProjectId, BoardId=board.Id, Name="Concluído", Position=300, Category=StageCategory.Done, CreatedAt=DateTimeOffset.UtcNow }
+            };
+            foreach (var stage in columns) board.Stages.Add(stage);
+        }
+
         await _boardRepository.AddAsync(board, cancellationToken);
 
-        // Etapa Backlog criada automaticamente — ponto de entrada de novos itens
-        var backlog = new Stage
-        {
-            Id = Guid.NewGuid(),
-            BoardId = board.Id,
-            Name = "Backlog",
-            Position = 100,
-            Category = StageCategory.Ready,
-            WipLimit = null,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        await _stageRepository.AddAsync(backlog, cancellationToken);
-
         // Define quadro padrão do projeto quando ainda não há nenhum
-        if (request.ProjectId.HasValue)
+        if (project.DefaultBoardId is null)
         {
-            var project = await _projectRepository.GetByIdAsync(request.ProjectId.Value, cancellationToken);
-            if (project is not null && project.DefaultBoardId is null)
-            {
-                project.DefaultBoardId = board.Id;
-                await _projectRepository.SaveAsync(cancellationToken);
-            }
+            project.DefaultBoardId = board.Id;
+            await _projectRepository.SaveAsync(cancellationToken);
         }
 
         return board.Id;

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Application.Features.Sla;
 using Prisma.Workspace.Application.Features.Projects;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -211,7 +210,7 @@ public class SaveExternalFormCommandHandler : IRequestHandler<SaveExternalFormCo
     private async Task ValidateRoutingAsync(
         SaveExternalFormCommand request, Project project, ExternalPortalEntity portal, CancellationToken ct)
     {
-        var stageIds = portal.Board.Stages.Select(x => x.Id).ToHashSet();
+        var stageIds = portal.Project.Stages.Where(x => x.BoardId == portal.BoardId).Select(x => x.Id).ToHashSet();
         var teamIds = project.Teams.Select(x => x.TeamId).ToHashSet();
         var memberIds = project.Members.Select(x => x.UserId).Append(project.OwnerId).ToHashSet();
         DomainException.Garantir(!request.InitialStageId.HasValue || stageIds.Contains(request.InitialStageId.Value),
@@ -286,17 +285,15 @@ public class SubmitExternalFormCommandHandler
     private readonly IExternalPortalRepository _portals;
     private readonly IFileStorage _storage;
     private readonly IPortalEmailSender _emailSender;
-    private readonly ISlaRepository _sla;
     private readonly IPlatformNotificationPublisher? _notifications;
 
     public SubmitExternalFormCommandHandler(
         IExternalPortalRepository portals,
         IFileStorage storage,
         IPortalEmailSender emailSender,
-        ISlaRepository sla,
         IPlatformNotificationPublisher? notifications = null)
-        => (_portals, _storage, _emailSender, _sla, _notifications)
-            = (portals, storage, emailSender, sla, notifications);
+        => (_portals, _storage, _emailSender, _notifications)
+            = (portals, storage, emailSender, notifications);
 
     public async Task<CreatedExternalRequestDto> Handle(SubmitExternalFormCommand request, CancellationToken ct)
     {
@@ -339,11 +336,11 @@ public class SubmitExternalFormCommandHandler
         var initialStatus = portal.Project.WorkflowStatuses.OrderBy(x => x.Position)
             .FirstOrDefault(x => x.IsInitial);
         var initialStage = stageId.HasValue
-            ? portal.Board.Stages.FirstOrDefault(x => x.Id == stageId)
-            : portal.Board.Stages.OrderBy(x => x.Position)
+            ? portal.Project.Stages.FirstOrDefault(x => x.Id == stageId && x.BoardId == portal.BoardId)
+            : portal.Project.Stages.Where(x => x.BoardId == portal.BoardId).OrderBy(x => x.Position)
                 .FirstOrDefault(x => initialStatus == null || x.WorkflowStatusId == initialStatus.Id)
-                ?? portal.Board.Stages.OrderBy(x => x.Position).FirstOrDefault();
-        DomainException.Garantir(!stageId.HasValue || initialStage is not null,
+                ?? portal.Project.Stages.Where(x => x.BoardId == portal.BoardId).OrderBy(x => x.Position).FirstOrDefault();
+        DomainException.Garantir(initialStage is not null,
             "A fila configurada para este formulário não está disponível.");
 
         var now = DateTimeOffset.UtcNow;
@@ -387,9 +384,6 @@ public class SubmitExternalFormCommandHandler
             SubmittedValuesJson = ExternalFormSerialization.Serialize(values),
             TriageStatus = ExternalRequestTriageStatus.New, CreatedAt = now, UpdatedAt = now
         };
-        SlaCalculator.ApplyPolicy(externalRequest,
-            await _sla.GetByProjectAsync(portal.ProjectId, ct),
-            externalRequest.Category, workItem.Priority, now);
         externalRequest.TriageEvents.Add(new ExternalRequestTriageEvent
         {
             Id = Guid.NewGuid(), ExternalRequestId = externalRequest.Id,

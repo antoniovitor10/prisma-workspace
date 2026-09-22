@@ -148,7 +148,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Kpi $danger><span>Tarefas atrasadas</span><strong>{report.tasks.overdue}</strong></Kpi>
       <Kpi><span>Tarefas bloqueadas</span><strong>{report.tasks.blocked}</strong></Kpi>
       <Kpi><span>Solicitações externas</span><strong>{report.externalRequests.total}</strong></Kpi>
-      <Kpi><span>Cumprimento de SLA</span><strong>{report.sla.compliancePercentage}%</strong></Kpi>
       <Kpi><span>Horas previstas</span><strong>{report.hours.planned.toLocaleString('pt-BR')}h</strong></Kpi>
       <Kpi><span>Horas realizadas</span><strong>{report.hours.realized.toLocaleString('pt-BR')}h</strong></Kpi>
     </Kpis>
@@ -161,11 +160,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Card><h3>Tarefas por projeto</h3><BarsChart data={report.tasksByProject} color="#7A5CC6" /></Card>
       <Card><h3>Solicitações por categoria</h3><BarsChart data={report.externalRequests.byCategory} color="#E8833A" /></Card>
       <Card><h3>Solicitações por solicitante</h3><BarsChart data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
-      <Card><h3>SLA</h3><DonutChart data={[
-        { key: 'met', label: 'Cumprido', value: report.sla.met },
-        { key: 'overdue', label: 'Vencido', value: report.sla.overdue },
-        { key: 'paused', label: 'Pausado', value: report.sla.paused },
-      ]} /></Card>
     </Grid>
     <Grid>
       {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
@@ -173,10 +167,6 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
         data={[{ label: 'Horas', planned: report.hours.planned, realized: report.hours.realized }]}
         keys={[{ key: 'planned', label: 'Previsto', color: '#06B6D4' }, { key: 'realized', label: 'Realizado', color: '#10B981' }]}
       /></Card>
-      <Card><h3>Tempo médio de atendimento</h3><BarsChart data={[
-        { key: 'first', label: 'Primeira resposta (min)', value: report.sla.averageFirstResponseMinutes ?? 0 },
-        { key: 'resolution', label: 'Resolução (min)', value: report.sla.averageResolutionMinutes ?? 0 },
-      ]} color="#F97316" /></Card>
       <Card><h3>Volume de trabalho por período</h3><AreaTrend points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
       <Card><h3>Burndown da sprint atual</h3><AreaTrend points={report.burndown} color="#D92D20" label="Restante" /></Card>
     </Grid>
@@ -198,7 +188,16 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
   });
   const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [priority, setPriority] = useState<number | ''>('');
+  /**
+   * Relatório por pessoa, pedido do PO: o gestor escolhe alguém e todo o relatório passa a
+   * falar daquela pessoa. O backend já filtrava por `userId` — considera responsável,
+   * participante e, nas horas, quem lançou — mas a tela nunca ofereceu a escolha.
+   */
+  const [userId, setUserId] = useState('');
   const projectId = fixedProjectId ?? (selectedProjectId || undefined);
+  const peopleQuery = useQuery<Array<{ userId: string; name: string; isActive: boolean }>>({
+    queryKey: ['organization', 'members'], queryFn: () => api.getOrganizationMembers(),
+  });
   const projectsQuery = useQuery<ProjectSummary[]>({
     queryKey: ['projects', false], queryFn: () => api.getProjects(false), enabled: !fixedProjectId,
   });
@@ -212,8 +211,11 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     : projectsQuery.data?.find(item => item.id === projectId);
   const showPoints = projectId ? Boolean(selectedProject) && selectedProject?.methodology !== 1 : true;
   const preparedQuery = useQuery<PreparedReports>({
-    queryKey: ['prepared-reports', projectId, priority, from, to],
-    queryFn: () => api.getPreparedReports({ projectId, priority: priority === '' ? undefined : priority, from, to }),
+    queryKey: ['prepared-reports', projectId, priority, from, to, userId],
+    queryFn: () => api.getPreparedReports({
+      projectId, priority: priority === '' ? undefined : priority, from, to,
+      userId: userId || undefined,
+    }),
   });
   const dashboardQuery = useQuery<Dashboard>({
     queryKey: ['project-dashboard', projectId, priority, from, to],
@@ -221,8 +223,8 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     enabled: !!projectId && tab === 'prepared',
   });
   const hoursQuery = useQuery<OrganizationHoursReport>({
-    queryKey: ['org-hours-report', from, to],
-    queryFn: () => api.getOrganizationHoursReport({ from, to }),
+    queryKey: ['org-hours-report', from, to, userId],
+    queryFn: () => api.getOrganizationHoursReport({ from, to, userId: userId || undefined }),
     enabled: tab === 'hours',
   });
   const customQuery = useQuery<CustomFieldReport>({
@@ -243,7 +245,12 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     ? (projectsQuery.data?.find(item => item.id === projectId)?.name ?? 'Projeto selecionado')
     : 'Todos os projetos';
   const priorityLabel = priority === '' ? 'Todas as prioridades' : ['Baixa', 'Média', 'Alta', 'Crítica'][priority as number];
-  const filterSummary = `${projectLabel} · ${priorityLabel} · ${fmtDate(from)} até ${fmtDate(to)}`;
+  const personLabel = userId
+    ? (peopleQuery.data?.find(person => person.userId === userId)?.name ?? 'Pessoa selecionada')
+    : 'Todas as pessoas';
+  // A pessoa entra no resumo porque ele vai no cabeçalho do PDF: um relatório de uma pessoa
+  // que não diz de quem é serve de pouco depois de impresso.
+  const filterSummary = `${projectLabel} · ${personLabel} · ${priorityLabel} · ${fmtDate(from)} até ${fmtDate(to)}`;
   const handlePdf = async () => {
     setExporting(true);
     try {
@@ -251,7 +258,11 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
         // Relatório de horas: PDF limpo e tabular por responsável (não captura de tela).
         await exportHoursReportPdf(hoursQuery.data, currentOrg.name, filterSummary);
       } else if (reportRef.current) {
-        await exportNodeToPdf(reportRef.current, `relatorio-${tab}-${to}`);
+        await exportNodeToPdf(reportRef.current, `relatorio-${tab}-${to}`, {
+          organization: currentOrg.name,
+          title: tabs.find(([key]) => key === tab)?.[1] ?? 'Relatório',
+          subtitle: filterSummary,
+        });
       }
     }
     catch { /* falha de exportacao nao deve quebrar a tela */ }
@@ -262,6 +273,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
     <Filters>
       {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.key} · {project.name}</option>)}</select></label>}
       <label>Prioridade<select value={priority} onChange={event => setPriority(event.target.value === '' ? '' : Number(event.target.value))}><option value="">Todas</option><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></label>
+      <label>Pessoa<select aria-label="Pessoa" value={userId} onChange={event => setUserId(event.target.value)}><option value="">Todas as pessoas</option>{(peopleQuery.data ?? []).filter(person => person.isActive).map(person => <option key={person.userId} value={person.userId}>{person.name}</option>)}</select></label>
       <label>Período inicial<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
       <label>Período final<input type="date" min={from} value={to} onChange={event => setTo(event.target.value)} /></label>
     </Filters>
@@ -273,7 +285,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
       <ExportButton type="button" onClick={() => window.print()}><Printer size={13} />Imprimir</ExportButton>
       <ExportButton type="button" $primary onClick={handlePdf} disabled={exporting}><FileDown size={13} />{exporting ? 'Gerando PDF...' : 'Baixar PDF'}</ExportButton>
     </ExportBar>}
-    <div ref={reportRef}>
+    <div ref={reportRef} data-print-root>
       {!error && tab === 'prepared' && <PreparedView report={preparedQuery.data} dashboard={dashboardQuery.data} showPoints={showPoints} />}
       {tab === 'builder' && <ReportBuilder key={projectId ?? 'organization'} projectId={projectId} />}
       {!error && tab === 'hours' && <HoursReport report={hoursQuery.data} orgName={currentOrg.name} filterSummary={filterSummary} />}
