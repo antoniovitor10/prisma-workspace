@@ -247,6 +247,40 @@ public class BoardStructureSqlTests
         Assert.Null((await fixture.Context.StageHistories.SingleAsync(x=>x.WorkItemId==fixture.Item.Id)).LeftAt);
     }
 
+    [Theory]
+    [InlineData("initial")]
+    [InlineData("stageId")]
+    [InlineData("StageId")]
+    [InlineData("invalid")]
+    [InlineData("duplicate")]
+    public async Task DeleteStage_BlocksFormReferencesAndUnsafeJsonBeforeMovingTasks(string scenario)
+    {
+        await using var fixture=await Fixture.CreateAsync();
+        var portal=ExternalPortal.Create(fixture.OrganizationId,fixture.Project.Id,fixture.Source.Id,
+            "d89-"+Guid.NewGuid().ToString("N"),false,false,ExternalPortalAccessMode.PublicLink);
+        var form=ExternalForm.CreateDefault(portal.Id,"D89 SQL");
+        form.IsEnabled=false;
+        if(scenario=="initial") form.InitialStageId=fixture.SourceStage.Id;
+        else if(scenario=="invalid") form.AssignmentRulesJson="{invalid";
+        else if(scenario=="duplicate") form.AssignmentRulesJson="""[{"stageId":null,"StageId":null}]""";
+        else form.AssignmentRulesJson=System.Text.Json.JsonSerializer.Serialize(
+            new[] {new Dictionary<string,Guid>{{scenario,fixture.SourceStage.Id}}});
+        var target=new Stage {Id=Guid.NewGuid(),ProjectId=fixture.Project.Id,BoardId=fixture.Source.Id,
+            Name="Destino",Category=StageCategory.Backlog,Position=275,CreatedAt=DateTimeOffset.UtcNow};
+        fixture.Context.AddRange(portal,form,target);
+        await fixture.Context.SaveChangesAsync();
+
+        var error=await Assert.ThrowsAsync<DomainException>(()=>fixture.Repository.DeleteStageAsync(
+            fixture.SourceStage.Id,target.Id,"test",default));
+
+        Assert.Contains("Reconfigure",error.Message);
+        fixture.Context.ChangeTracker.Clear();
+        Assert.Equal(fixture.Source.Id,(await fixture.Context.Stages.SingleAsync(x=>x.Id==fixture.SourceStage.Id)).BoardId);
+        Assert.Equal(fixture.SourceStage.Id,(await fixture.Context.WorkItems.SingleAsync(x=>x.Id==fixture.Item.Id)).StageId);
+        Assert.Null((await fixture.Context.StageHistories.SingleAsync(x=>x.WorkItemId==fixture.Item.Id)).LeftAt);
+        Assert.False(await fixture.Context.TaskEvents.AnyAsync(x=>x.WorkItemId==fixture.Item.Id));
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public Guid OrganizationId { get; } = Guid.NewGuid();

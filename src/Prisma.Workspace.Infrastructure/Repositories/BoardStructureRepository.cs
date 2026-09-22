@@ -136,6 +136,39 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
         DomainException.Garantir(!rules.Any(x => x.TriggerStageId == stageId
             || x.ActionType == AutomationActionType.MoveToStage && Guid.TryParse(x.ActionValue, out var targetId) && targetId == stageId),
             "A coluna é usada como gatilho ou destino de automação. Reconfigure ou exclua essas regras antes de excluir a coluna.");
+        var forms = await context.ExternalForms.IgnoreQueryFilters()
+            .Where(x => x.ExternalPortal.BoardId == source.BoardId)
+            .Select(x => new { x.InitialStageId, x.AssignmentRulesJson }).ToListAsync(ct);
+        foreach (var form in forms)
+        {
+            const string referenced = "A coluna é usada como fila inicial ou destino de regra de formulário externo. Reconfigure o formulário antes de excluir a coluna.";
+            const string invalid = "Há regras JSON inválidas ou ambíguas em formulário deste quadro. Reconfigure o formulário antes de excluir a coluna.";
+            DomainException.Garantir(form.InitialStageId != stageId, referenced);
+            DomainException.Garantir(!string.IsNullOrWhiteSpace(form.AssignmentRulesJson), invalid);
+            try
+            {
+                using var json = JsonDocument.Parse(form.AssignmentRulesJson);
+                DomainException.Garantir(json.RootElement.ValueKind == JsonValueKind.Array, invalid);
+                foreach (var rule in json.RootElement.EnumerateArray())
+                {
+                    DomainException.Garantir(rule.ValueKind == JsonValueKind.Object, invalid);
+                    var stageProperties = rule.EnumerateObject()
+                        .Where(x => string.Equals(x.Name, "StageId", StringComparison.OrdinalIgnoreCase)).ToList();
+                    DomainException.Garantir(stageProperties.Count <= 1, invalid);
+                    foreach (var property in stageProperties)
+                    {
+                        if (property.Value.ValueKind == JsonValueKind.Null) continue;
+                        DomainException.Garantir(property.Value.ValueKind == JsonValueKind.String, invalid);
+                        DomainException.Garantir(Guid.TryParse(property.Value.GetString(), out var formStageId), invalid);
+                        DomainException.Garantir(formStageId != stageId, referenced);
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                throw new DomainException(invalid);
+            }
+        }
         var items = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
             .Where(x => x.StageId == stageId && x.BoardId == source.BoardId).ToListAsync(ct);
         Stage? target = null;

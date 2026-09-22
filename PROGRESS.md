@@ -35,6 +35,13 @@
 ## [2026-09-22] - Codex - D89: exclusão de quadro com portal falha de forma explícita
 
 - DeleteBoardAsync verifica portais e formulários vinculados antes de mover tarefas ou retirar colunas. Retorna erro de domínio orientando reconfigurar esses vínculos; não remapeia portal implicitamente nem depende de erro FK/500 para esse caso esperado.
+## [2026-09-22] - Codex - D89: coluna usada por formulário exige reconfiguração
+
+- DeleteStageAsync agora bloqueia a retirada quando formulário do quadro usa a coluna como InitialStageId ou destino StageId/stageId nas regras JSON, incluindo formulários desativados. A mensagem orienta reconfigurar o formulário; nenhuma transferência ocorre antes dessa validação.
+- JSON malformado, estrutura inesperada, chave StageId duplicada ou GUID inválido também bloqueiam de forma conservadora, sem ignorar silenciosamente uma referência que não pôde ser interpretada.
+- Validação focal SQL DeleteStage: 7/7, cobrindo duas referências de automação e cinco cenários de formulário (fila inicial, camelCase, PascalCase, JSON inválido e chave ambígua). Tarefa, coluna, história e eventos permanecem inalterados nos bloqueios.
+- Sem suíte completa, rebuild de imagem, deploy, alteração de schema ou dados reais. Runtime continua no checkpoint anterior; complemento pronto para integração serial.
+
 - SQL focal combinado: 23/23 (13 de estrutura e 10 de migration), incluindo portal com/sem formulário, ausência de escrita parcial e rollback por falha real de persistência. Sem suíte completa, imagem nova, deploy ou dados reais.
 - Blocker pós-transferência reportado ao coordenador: IAutomationExecutor não recebe chave de operação; visitedRules só existe em memória, e até skips gravam eventos. MoveWorkItemCommandHandler dispara efeitos após Save sem garantia durável e não existe outbox. Reutilizar diretamente permitiria efeitos parciais/duplicados em crash ou retry. Conforme instrução, automações/notificações pós-transferência não foram ligadas à transação; exigem desenho aprovado de idempotência/outbox. Retry transiente novo não foi habilitado.
 - Próximo: integração serial e ensaio de upgrade/restauração pelo coordenador. O runtime permanece na imagem do checkpoint b7e5d4d; commits incrementais ainda precisam rebuild integrado.
