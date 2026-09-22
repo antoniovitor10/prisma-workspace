@@ -70,14 +70,14 @@ const Projects = styled.div`
   >span{display:flex;align-items:center;gap:5px;font-weight:800;} label{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.pill};background:${({theme})=>theme.color.surface};max-width:100%;}
 `;
 const Message = styled.div`padding:50px;text-align:center;color:${({theme})=>theme.color.textMuted};`;
-const ActionFeedback = styled.p`margin:0;padding:0 17px 12px;color:${({theme})=>theme.color.success};font-size:12.5px;font-weight:700;`;
+const ActionFeedback = styled.p<{ $error?: boolean }>`margin:0;padding:0 17px 12px;color:${({theme,$error})=>$error?theme.color.error:theme.color.success};font-size:12.5px;font-weight:700;`;
 
 function TeamCard({ team, users, projects, run }: {
   team: Team; users: UserDto[]; projects: ProjectDto[]; run: (action: () => Promise<unknown>) => Promise<unknown>;
 }) {
   const [editing, setEditing] = useState(false);
   const [pick, setPick] = useState('');
-  const [memberFeedback, setMemberFeedback] = useState('');
+  const [memberFeedback, setMemberFeedback] = useState<{ message:string; error:boolean }|null>(null);
   const [form, setForm] = useState({ name: team.name, leaderId: team.leaderId ?? '', defaultWeeklyCapacityHours: team.defaultWeeklyCapacityHours });
   const submit = (event:FormEvent) => { event.preventDefault(); run(() => api.updateTeam(team.id, {...form, leaderId:form.leaderId || null})); setEditing(false); };
   const labelForUser = (user: UserDto) => user.displayName || user.email || user.userName || user.id;
@@ -110,17 +110,17 @@ function TeamCard({ team, users, projects, run }: {
         </select>
         <Button disabled={!pick} onClick={async()=>{
           if(!pick) return;
-          setMemberFeedback('');
+          setMemberFeedback(null);
           try {
             await run(()=>api.addTeamMember(team.id,pick,team.defaultWeeklyCapacityHours));
             setPick('');
-            setMemberFeedback('Membro adicionado à equipe.');
+            setMemberFeedback({message:'Membro adicionado à equipe.',error:false});
           } catch {
-            setMemberFeedback('Não foi possível adicionar o membro.');
+            setMemberFeedback({message:'Não foi possível adicionar o membro.',error:true});
           }
         }}><Plus size={14}/>Adicionar</Button>
       </AddMember>
-      {memberFeedback&&<ActionFeedback role="status">{memberFeedback}</ActionFeedback>}
+      {memberFeedback&&<ActionFeedback role="status" $error={memberFeedback.error}>{memberFeedback.message}</ActionFeedback>}
     </>}
     <Projects><span><FolderKanban size={13}/>Projetos</span>{projects.map(project => <label key={project.id}><input type="checkbox" checked={team.projectIds.includes(project.id)} onChange={event=>run(()=>event.target.checked?api.addProjectTeam(project.id,team.id):api.removeProjectTeam(project.id,team.id))}/>{project.key} · {project.name}</label>)}</Projects>
   </Card>;

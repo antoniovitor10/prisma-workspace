@@ -1259,7 +1259,10 @@ export const Kanban: React.FC = () => {
             groupBy={groupBy}
             onGroupBy={setGroupBy}
             sortBy={cardSort}
-            onSortBy={value => setCardSort(value as KanbanCardSort)}
+            onSortBy={value => {
+              setCardSort(value as KanbanCardSort);
+              setColumnSorts({});
+            }}
             savedFilters={savedFilters}
             onApplySaved={applySavedFilter}
             onSaveFilter={saveCurrentFilter}
@@ -1382,7 +1385,7 @@ export const Kanban: React.FC = () => {
         ) : canRenderBoard ? (
           <KanbanGrid>
             {stages.map(stage => {
-              const columnSort = columnSorts[stage.id] || 'position';
+              const columnSort = columnSorts[stage.id] || cardSort;
               const itemsInStage = visibleWorkItems
                 .filter(w => w.stageId === stage.id)
                 .sort((a, b) => compareKanbanWorkItems(a, b, columnSort));
