@@ -1189,6 +1189,7 @@ export const Kanban: React.FC = () => {
         <BoardHeader>
           <SelectorContainer>
             <Select
+              aria-label="Selecionar quadro"
               value={selectedBoardId}
               onChange={e => setSelectedBoardId(e.target.value)}
               disabled={boardsStatus !== 'ready' || boards.length === 0}
@@ -1359,7 +1360,7 @@ export const Kanban: React.FC = () => {
             const th = (key: string, label: string) => (
               <th
                 onClick={() => setListSort(s => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : 1 }))}
-                style={{ textAlign: 'left', padding: '10px 12px', fontSize: 14, color: '#64748B', fontWeight: 700, cursor: 'pointer', userSelect: 'none', borderBottom: '2px solid #E2E8F0', whiteSpace: 'nowrap' }}
+                style={{ textAlign: 'left', padding: '10px 12px', fontSize: 14, color: theme.color.textMutedAccessible, fontWeight: 700, cursor: 'pointer', userSelect: 'none', borderBottom: '2px solid #E2E8F0', whiteSpace: 'nowrap' }}
               >{label}{listSort.key === key ? (listSort.dir === 1 ? ' ▲' : ' ▼') : ''}</th>
             );
             return (
@@ -1422,7 +1423,7 @@ export const Kanban: React.FC = () => {
                   $isDraggingAny={draggedItemId !== null}
                 >
                   <ColumnHeader>
-                    <ColumnTitle><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                    <ColumnTitle as="h2"><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
                       <select
                         aria-label={`Ordenar cartões da coluna ${stage.name}`}
                         value={columnSort}
