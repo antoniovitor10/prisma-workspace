@@ -70,7 +70,7 @@ const Projects = styled.div`
   >span{display:flex;align-items:center;gap:5px;font-weight:800;} label{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.pill};background:${({theme})=>theme.color.surface};max-width:100%;}
 `;
 const Message = styled.div`padding:50px;text-align:center;color:${({theme})=>theme.color.textMuted};`;
-const ActionFeedback = styled.p<{ $error?: boolean }>`margin:0;padding:0 17px 12px;color:${({theme,$error})=>$error?theme.color.error:theme.color.success};font-size:12.5px;font-weight:700;`;
+const ActionFeedback = styled.p<{ $error?: boolean }>`margin:0;padding:0 17px 12px;color:${({theme,$error})=>$error?theme.color.danger:theme.color.success};font-size:12.5px;font-weight:700;`;
 
 function TeamCard({ team, users, projects, run }: {
   team: Team; users: UserDto[]; projects: ProjectDto[]; run: (action: () => Promise<unknown>) => Promise<unknown>;
