@@ -26,6 +26,14 @@
 ## [2026-09-22] - Codex - D62: impacto e consentimento recursivo na reclassificação
 
 - Reclassificação por quadro agora possui GET de impacto com nome, total da coluna, estados alterados, descendentes abertos externos e token SHA-256 da fotografia (IDs/vínculos, estado, arquivamento e RowVersion). UPDATE revalida a fotografia dentro da transação Serializable; mudança concorrente cancela integralmente.
+## [2026-09-22] - Codex - D89: referências de automações no backfill
+
+- Migration candidata remapeia AutomationRules.TriggerStageId e ActionValue de MoveToStage por BoardId + LegacyStageId, antes de liberar colunas operacionais. Referências inexistentes/ambíguas abortam antes das clones; contagens de regras e destinos são verificadas.
+- Down imediato reverte ambas as referências para o legado dentro das guardas históricas já existentes. Esta revisão não foi reaplicada ao banco de runtime nem à produção; o SQL da migration foi executado apenas em tabelas temporárias de teste.
+- Exclusão de coluna referenciada por automação, mesmo inativa, retorna erro de domínio orientando reconfigurar/excluir a regra antes da coluna. Nenhuma tarefa/história muda no bloqueio.
+- SQL focal: 17/17 entre BoardStructureSqlTests e IndependentBoardColumnsMigrationTests; inclui gatilho/destino em dois quadros, reversão imediata, referências inválidas e bloqueio sem escrita parcial.
+- Próximo: InitialStageId e regras JSON dos formulários, preflight de portal. Efeitos pós-transferência permanecem bloqueados por ausência de outbox/chave de idempotência no executor atual; não serão disparados dentro da transação.
+
 - Consentimento da coluna e consentimento recursivo são separados. Aberta para Done conclui somente itens efetivamente abertos e descendentes consentidos, sem mover descendentes externos; Done para aberta reabre somente itens da coluna. Arquivados são incluídos, cada estado alterado recebe história/evento individual e itens já no estado final não recebem duplicata.
 - UI apresenta direção e contagens, bloqueia submissão sem consentimentos e recarrega o impacto após rejeição. Corrigida também a rota de criação de coluna para o endpoint por quadro já existente.
 - Validação focal: SQL BoardStructureSqlTests 9/9; typecheck frontend aprovado; ProjectKanbanDirect 10/10, incluindo recusa sem consentimento da árvore e renovação de confirmação obsoleta. Sem suíte completa, rebuild de imagem ou deploy. Runtime continua no checkpoint anterior até validação integrada.

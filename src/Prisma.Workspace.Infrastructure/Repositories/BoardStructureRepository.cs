@@ -132,6 +132,10 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
     {
         var source = await context.Stages.SingleAsync(x => x.Id == stageId && x.BoardId != null, ct);
         DomainException.Garantir(destinationStageId != stageId, "A coluna de destino deve ser diferente.");
+        var rules = await context.AutomationRules.Where(x => x.BoardId == source.BoardId).ToListAsync(ct);
+        DomainException.Garantir(!rules.Any(x => x.TriggerStageId == stageId
+            || x.ActionType == AutomationActionType.MoveToStage && Guid.TryParse(x.ActionValue, out var targetId) && targetId == stageId),
+            "A coluna é usada como gatilho ou destino de automação. Reconfigure ou exclua essas regras antes de excluir a coluna.");
         var items = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
             .Where(x => x.StageId == stageId && x.BoardId == source.BoardId).ToListAsync(ct);
         Stage? target = null;

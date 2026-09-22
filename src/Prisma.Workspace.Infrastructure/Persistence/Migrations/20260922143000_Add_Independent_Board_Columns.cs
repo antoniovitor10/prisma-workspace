@@ -47,6 +47,8 @@ public partial class Add_Independent_Board_Columns : Migration
             DECLARE @stageHistoryCount bigint = (SELECT COUNT_BIG(*) FROM StageHistories);
             DECLARE @taskEventCount bigint = (SELECT COUNT_BIG(*) FROM TaskEvents);
             DECLARE @legacyStageCount bigint = (SELECT COUNT_BIG(*) FROM Stages);
+            DECLARE @automationCount bigint = (SELECT COUNT_BIG(*) FROM AutomationRules);
+            DECLARE @moveActionCount bigint = (SELECT COUNT_BIG(*) FROM AutomationRules WHERE ActionType = 2);
 
             IF EXISTS (SELECT 1 FROM Stages WHERE BoardId IS NOT NULL OR LegacyStageId IS NOT NULL)
                 THROW 50010, 'Stages já possui vínculo de quadro ou legado; abortando para evitar backfill ambíguo.', 1;
@@ -75,6 +77,18 @@ public partial class Add_Independent_Board_Columns : Migration
             WHERE s.BoardId IS NULL
               AND s.LegacyStageId IS NULL;
 
+            IF EXISTS (
+                SELECT 1 FROM AutomationRules r LEFT JOIN @stageMap m
+                    ON m.BoardId = r.BoardId AND m.LegacyStageId = r.TriggerStageId
+                WHERE m.CloneStageId IS NULL)
+                THROW 50021, 'Automação com gatilho sem coluna válida no quadro; abortando backfill.', 1;
+
+            IF EXISTS (
+                SELECT 1 FROM AutomationRules r LEFT JOIN @stageMap m
+                    ON m.BoardId = r.BoardId AND m.LegacyStageId = TRY_CONVERT(uniqueidentifier, r.ActionValue)
+                WHERE r.ActionType = 2 AND (LEN(r.ActionValue) <> 36 OR m.CloneStageId IS NULL))
+                THROW 50022, 'Automação MoveToStage com destino inválido/ambíguo no quadro; abortando backfill.', 1;
+
             INSERT INTO Stages
                 (Id, BoardId, LegacyStageId, ProjectId, WorkflowStatusId, Name, Position, Category, CreatedAt)
             SELECT m.CloneStageId, m.BoardId, m.LegacyStageId, s.ProjectId, s.WorkflowStatusId,
@@ -88,6 +102,18 @@ public partial class Add_Independent_Board_Columns : Migration
             INNER JOIN @stageMap m
                 ON m.BoardId = wi.BoardId
                AND m.LegacyStageId = wi.StageId;
+
+            UPDATE r SET r.TriggerStageId = m.CloneStageId
+            FROM AutomationRules r JOIN @stageMap m ON m.BoardId = r.BoardId AND m.LegacyStageId = r.TriggerStageId;
+            IF @@ROWCOUNT <> @automationCount
+                THROW 50023, 'A contagem de gatilhos remapeados divergiu; abortando.', 1;
+
+            UPDATE r SET r.ActionValue = CONVERT(nvarchar(36), m.CloneStageId)
+            FROM AutomationRules r JOIN @stageMap m
+                ON m.BoardId = r.BoardId AND m.LegacyStageId = TRY_CONVERT(uniqueidentifier, r.ActionValue)
+            WHERE r.ActionType = 2;
+            IF @@ROWCOUNT <> @moveActionCount OR (SELECT COUNT_BIG(*) FROM AutomationRules) <> @automationCount
+                THROW 50024, 'A contagem de automações/destinos divergiu; abortando.', 1;
 
             IF (SELECT COUNT_BIG(*) FROM WorkItems) <> @workItemCount
                 THROW 50012, 'A contagem de WorkItems mudou durante o backfill; abortando.', 1;
@@ -153,6 +179,14 @@ public partial class Add_Independent_Board_Columns : Migration
             FROM WorkItems wi
             INNER JOIN Stages s ON s.Id = wi.StageId
             WHERE s.BoardId IS NOT NULL;
+
+            UPDATE r SET r.TriggerStageId = s.LegacyStageId
+            FROM AutomationRules r JOIN Stages s ON s.Id = r.TriggerStageId AND s.BoardId = r.BoardId
+            WHERE s.BoardId IS NOT NULL;
+            UPDATE r SET r.ActionValue = CONVERT(nvarchar(36), s.LegacyStageId)
+            FROM AutomationRules r JOIN Stages s
+                ON s.Id = TRY_CONVERT(uniqueidentifier, r.ActionValue) AND s.BoardId = r.BoardId
+            WHERE r.ActionType = 2 AND s.BoardId IS NOT NULL;
 
             DELETE FROM Stages WHERE BoardId IS NOT NULL;
             """);

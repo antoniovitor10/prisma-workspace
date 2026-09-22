@@ -202,6 +202,31 @@ public class BoardStructureSqlTests
         Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => x.WorkItemId == fixture.Item.Id));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DeleteStage_BlocksAutomationTriggerOrTargetWithoutPartialChanges(bool trigger)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var other = new Stage { Id=Guid.NewGuid(), ProjectId=fixture.Project.Id, BoardId=fixture.Source.Id,
+            Name="Automação", Position=275, Category=StageCategory.Backlog, CreatedAt=DateTimeOffset.UtcNow };
+        fixture.Context.Stages.Add(other);
+        fixture.Context.AutomationRules.Add(new AutomationRule { Id=Guid.NewGuid(), BoardId=fixture.Source.Id,
+            TriggerStageId=trigger ? fixture.SourceStage.Id : other.Id,
+            ActionType=AutomationActionType.MoveToStage,
+            ActionValue=(trigger ? other.Id : fixture.SourceStage.Id).ToString(), IsActive=false, CreatedAt=DateTimeOffset.UtcNow });
+        await fixture.Context.SaveChangesAsync();
+
+        var error = await Assert.ThrowsAsync<DomainException>(() => fixture.Repository.DeleteStageAsync(
+            fixture.SourceStage.Id, other.Id, "test", default));
+
+        Assert.Contains("automação", error.Message);
+        fixture.Context.ChangeTracker.Clear();
+        Assert.Equal(fixture.Source.Id, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.SourceStage.Id)).BoardId);
+        Assert.Equal(fixture.SourceStage.Id, (await fixture.Context.WorkItems.SingleAsync(x => x.Id == fixture.Item.Id)).StageId);
+        Assert.Null((await fixture.Context.StageHistories.SingleAsync(x => x.WorkItemId == fixture.Item.Id)).LeftAt);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public Guid OrganizationId { get; } = Guid.NewGuid();
