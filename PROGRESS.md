@@ -20,6 +20,13 @@
 ## [2026-09-22] - Codex - checkpoint D89: colunas independentes por quadro
 
 - Trabalho isolado na VPS em `/home/dev/prisma-board-columns-20260922`, branch `feat/board-columns-complete-20260922`, base `a85eb10`. Reaproveitamento revisado somente dos arquivos D89 autorizados da worktree QA, sem alterar QA ou produção.
+## [2026-09-22] - Codex - D89: transferência preserva a árvore inteira
+
+- Correção da revisão independente: TransferAsync carrega recursivamente todos os descendentes com IgnoreQueryFilters, revalida projeto/organização e transfere a árvore em uma única transação Serializable, preservando ParentId, arquivamento e histórico/evento individual.
+- Destino Done não conclui descendentes abertos implicitamente: a transferência inteira é recusada antes de escrever quando não há consentimento D62. Nesta base WorkItem possui IsArchived, mas não campos de soft-delete; a consulta sem filtros inclui todos os registros retidos disponíveis.
+- Testes SQL focais BoardStructureSqlTests: 7/7, incluindo pai, filho aberto, filho arquivado, neto, auditoria individual e recusa atômica Done com descendente aberto/arquivado. Sem rebuild de imagem, suíte completa ou deploy.
+- Próximo: revisão D62 da reclassificação, backfills de referências de automações e formulários; checkpoints separados.
+
 - Implementado: ownership de Stage por Board; criação de quadro básico ou cópia de colunas; consultas, renomeação, classificação e reordenação isoladas; transferência explícita de tarefa; retirada de coluna/quadro ocupado com destino obrigatório, incluindo tarefas arquivadas. Operações de estrutura usam transação SQL Serializable com retry e histórico preservado. Colunas retiradas ficam retidas com BoardId nulo; a API operacional não as oferece como destino.
 - Migration incremental `20260922143000_Add_Independent_Board_Columns`, Designer e snapshot: clones por quadro, mapa de IDs legados, tarefas mantidas no quadro atual, StageHistory/TaskEvent preservados e rejeição de vínculos ausentes/ambíguos. Aplicada somente no banco sintético exclusivo `Prisma_BoardColumns_20260922`. O Down possui travas contra dados novos/alterados; não é uma promessa de rollback após uso operacional.
 - Consumidores alinhados: criação/movimento/edição de tarefas, automações, ações em massa, portal/triagem, lead time, Kanban/Sprint e drawer. Configuração global de workflow deixa de editar colunas; configuração do projeto direciona ao quadro. Novo projeto não cria colunas legadas sem quadro.

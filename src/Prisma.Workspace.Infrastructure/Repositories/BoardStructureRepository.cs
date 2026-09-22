@@ -108,7 +108,29 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
             x => x.Id == destinationStageId && x.BoardId == destinationBoardId, ct);
         DomainException.Garantir(target != null && target.ProjectId == item.Board.ProjectId,
             "Escolha uma coluna do quadro de destino, no mesmo projeto.");
-        await MoveAsync([item], target!, actorId, ct);
+        var tree = new List<WorkItem> { item };
+        var visited = new HashSet<Guid> { item.Id };
+        var frontier = new List<Guid> { item.Id };
+        while (frontier.Count > 0)
+        {
+            // A transferência não pode abandonar descendentes retidos/arquivados.
+            // IgnoreQueryFilters exige revalidar explicitamente o limite do projeto e tenant.
+            var children = await context.WorkItems.IgnoreQueryFilters()
+                .Include(x => x.Board).Include(x => x.StageHistories)
+                .Where(x => x.ParentId.HasValue && frontier.Contains(x.ParentId.Value)).ToListAsync(ct);
+            DomainException.Garantir(children.All(x => x.Board.ProjectId == item.Board.ProjectId
+                && x.Board.OrganizationId == item.Board.OrganizationId),
+                "A árvore contém descendentes de outro projeto ou organização. Corrija o vínculo antes de transferir.");
+            var next = children.Where(x => visited.Add(x.Id)).ToList();
+            tree.AddRange(next);
+            frontier = next.Select(x => x.Id).ToList();
+        }
+        // Selecionar a árvore para transferência não constitui consentimento D62
+        // para concluir descendentes abertos. O contrato atual não recebe esse consentimento.
+        DomainException.Garantir(target!.Category != StageCategory.Done
+            || tree.Where(x => x.Id != item.Id).All(x => x.CompletedAt != null),
+            "Conclua as subtarefas abertas antes de transferir a árvore para uma coluna concluída.");
+        await MoveAsync(tree, target, actorId, ct);
     }, ct);
 
     private async Task MoveAsync(IReadOnlyList<WorkItem> items, Stage destination, string actorId, CancellationToken ct)

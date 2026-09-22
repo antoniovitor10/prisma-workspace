@@ -73,6 +73,76 @@ public class BoardStructureSqlTests
         Assert.Equal(StageCategory.Backlog, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.TargetStage.Id)).Category);
     }
 
+    [Fact]
+    public async Task Transfer_MovesEntireTreeIncludingArchivedDescendantsWithIndividualHistory()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var child = await fixture.AddChildAsync(fixture.Item.Id);
+        var archived = await fixture.AddChildAsync(fixture.Item.Id, archived: true);
+        var grandchild = await fixture.AddChildAsync(archived.Id);
+        var expectedParents = new Dictionary<Guid, Guid?>
+        {
+            [fixture.Item.Id] = null, [child.Id] = fixture.Item.Id,
+            [archived.Id] = fixture.Item.Id, [grandchild.Id] = archived.Id
+        };
+        var ids = expectedParents.Keys.ToList();
+        var originalHistoryIds = await fixture.Context.StageHistories
+            .Where(x => ids.Contains(x.WorkItemId)).Select(x => x.Id).ToListAsync();
+
+        await fixture.Repository.TransferAsync(fixture.Item.Id, fixture.Target.Id, fixture.TargetStage.Id, "test", default);
+
+        fixture.Context.ChangeTracker.Clear();
+        var items = await fixture.Context.WorkItems.IgnoreQueryFilters().Include(x => x.StageHistories)
+            .Where(x => ids.Contains(x.Id)).ToListAsync();
+        Assert.Equal(4, items.Count);
+        foreach (var item in items)
+        {
+            Assert.Equal(fixture.Target.Id, item.BoardId);
+            Assert.Equal(fixture.TargetStage.Id, item.StageId);
+            Assert.Equal(expectedParents[item.Id], item.ParentId);
+            Assert.Null(item.CompletedAt);
+            Assert.Equal(2, item.StageHistories.Count);
+            Assert.Contains(item.StageHistories, x => originalHistoryIds.Contains(x.Id) && x.LeftAt != null);
+            Assert.Equal(fixture.TargetStage.Id, Assert.Single(item.StageHistories.Where(x => x.LeftAt == null)).StageId);
+            var entry = Assert.Single(await fixture.Context.TaskEvents.Where(x => x.WorkItemId == item.Id).ToListAsync());
+            Assert.Equal("stage_changed", entry.Kind);
+            Assert.Contains(fixture.Target.Id.ToString(), entry.Payload);
+        }
+        Assert.True(items.Single(x => x.Id == archived.Id).IsArchived);
+        Assert.NotNull(items.Single(x => x.Id == archived.Id).ArchivedAt);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Transfer_ToDoneRejectsOpenDescendantWithoutChangingAnyItem(bool archived)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var child = await fixture.AddChildAsync(fixture.Item.Id, archived);
+        child.CompletedAt = DateTimeOffset.UtcNow;
+        var grandchild = await fixture.AddChildAsync(child.Id, archived);
+        fixture.TargetStage.Category = StageCategory.Done;
+        await fixture.Context.SaveChangesAsync();
+        var ids = new[] { fixture.Item.Id, child.Id, grandchild.Id };
+
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Repository.TransferAsync(
+            fixture.Item.Id, fixture.Target.Id, fixture.TargetStage.Id, "test", default));
+
+        fixture.Context.ChangeTracker.Clear();
+        var items = await fixture.Context.WorkItems.IgnoreQueryFilters().Include(x => x.StageHistories)
+            .Where(x => ids.Contains(x.Id)).ToListAsync();
+        Assert.Equal(3, items.Count);
+        foreach (var item in items)
+        {
+            Assert.Equal(fixture.Source.Id, item.BoardId);
+            Assert.Equal(fixture.SourceStage.Id, item.StageId);
+            Assert.Null(Assert.Single(item.StageHistories).LeftAt);
+        }
+        Assert.Null(items.Single(x => x.Id == fixture.Item.Id).CompletedAt);
+        Assert.Null(items.Single(x => x.Id == grandchild.Id).CompletedAt);
+        Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => ids.Contains(x.WorkItemId)));
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public Guid OrganizationId { get; } = Guid.NewGuid();
@@ -107,6 +177,18 @@ public class BoardStructureSqlTests
                 fixture.Project, fixture.Source, fixture.Target, fixture.SourceStage, fixture.TargetStage, fixture.Item);
             await fixture.Context.SaveChangesAsync();
             return fixture;
+        }
+        public async Task<WorkItem> AddChildAsync(Guid parentId, bool archived = false)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var child = new WorkItem { Id=Guid.NewGuid(), BoardId=Source.Id, StageId=SourceStage.Id,
+                ParentId=parentId, Title="D89 SQL descendente", CreatedAt=now, UpdatedAt=now,
+                Position=175, IsArchived=archived, ArchivedAt=archived ? now : null };
+            child.StageHistories.Add(new StageHistory { Id=Guid.NewGuid(), WorkItemId=child.Id,
+                StageId=SourceStage.Id, EnteredAt=now });
+            Context.WorkItems.Add(child);
+            await Context.SaveChangesAsync();
+            return child;
         }
         public ValueTask DisposeAsync() => Context.DisposeAsync();
     }
