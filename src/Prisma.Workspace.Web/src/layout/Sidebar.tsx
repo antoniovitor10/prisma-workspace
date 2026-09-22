@@ -55,7 +55,7 @@ const TituloLinha = styled.div`
   gap: 8px;
   min-width: 0;
 
-  h2 {
+  h1 {
     min-width: 0;
     margin: 0;
     color: ${({ theme }) => theme.color.text};
@@ -153,7 +153,7 @@ export function Sidebar() {
         <>
           <Cabecalho>
             <TituloLinha>
-              <h2>{project.name}</h2>
+              <h1>{project.name}</h1>
               <Chave>{project.key}</Chave>
             </TituloLinha>
             <Descricao>
