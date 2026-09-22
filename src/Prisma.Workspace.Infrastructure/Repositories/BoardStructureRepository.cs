@@ -154,6 +154,10 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
     public Task DeleteBoardAsync(Guid boardId, Guid? destinationBoardId, Guid? destinationStageId, string actorId, CancellationToken ct) => AtomicAsync(async () =>
     {
         var source = await context.Boards.SingleAsync(x => x.Id == boardId, ct);
+        var hasPortal = await context.ExternalPortals.IgnoreQueryFilters().AnyAsync(x => x.BoardId == boardId, ct);
+        var hasForm = await context.ExternalForms.IgnoreQueryFilters().AnyAsync(x => x.ExternalPortal.BoardId == boardId, ct);
+        DomainException.Garantir(!hasPortal && !hasForm,
+            "O quadro está vinculado a um portal ou formulário externo. Reconfigure esses vínculos antes de excluir o quadro.");
         DomainException.Garantir(destinationBoardId != boardId, "O quadro de destino deve ser diferente.");
         var items = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
             .Where(x => x.BoardId == boardId).ToListAsync(ct);

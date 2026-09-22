@@ -15,13 +15,10 @@ public class BoardStructureSqlTests
     public async Task DeleteBoard_FailureRollsBackTaskStageAndHistory()
     {
         await using var fixture = await Fixture.CreateAsync();
-        fixture.Context.ExternalPortals.Add(ExternalPortal.Create(fixture.OrganizationId, fixture.Project.Id,
-            fixture.Source.Id, "d89-" + Guid.NewGuid().ToString("N"), false, false, ExternalPortalAccessMode.PublicLink));
-        await fixture.Context.SaveChangesAsync();
         var initialHistory = fixture.Item.StageHistories.Single().Id;
 
         await Assert.ThrowsAsync<DbUpdateException>(() => fixture.Repository.DeleteBoardAsync(
-            fixture.Source.Id, fixture.Target.Id, fixture.TargetStage.Id, "test", default));
+            fixture.Source.Id, fixture.Target.Id, fixture.TargetStage.Id, new string('a', 1000), default));
         fixture.Context.ChangeTracker.Clear();
         var item = await fixture.Context.WorkItems.Include(x => x.StageHistories).SingleAsync(x => x.Id == fixture.Item.Id);
         Assert.Equal(fixture.Source.Id, item.BoardId);
@@ -225,6 +222,29 @@ public class BoardStructureSqlTests
         Assert.Equal(fixture.Source.Id, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.SourceStage.Id)).BoardId);
         Assert.Equal(fixture.SourceStage.Id, (await fixture.Context.WorkItems.SingleAsync(x => x.Id == fixture.Item.Id)).StageId);
         Assert.Null((await fixture.Context.StageHistories.SingleAsync(x => x.WorkItemId == fixture.Item.Id)).LeftAt);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeleteBoard_BlocksPortalAndFormsWithExplicitDomainError(bool withForm)
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var portal=ExternalPortal.Create(fixture.OrganizationId, fixture.Project.Id, fixture.Source.Id,
+            "d89-"+Guid.NewGuid().ToString("N"), false, false, ExternalPortalAccessMode.PublicLink);
+        fixture.Context.ExternalPortals.Add(portal);
+        if (withForm) fixture.Context.ExternalForms.Add(ExternalForm.CreateDefault(portal.Id, "D89 SQL"));
+        await fixture.Context.SaveChangesAsync();
+
+        var error=await Assert.ThrowsAsync<DomainException>(()=>fixture.Repository.DeleteBoardAsync(
+            fixture.Source.Id, fixture.Target.Id, fixture.TargetStage.Id, "test", default));
+
+        Assert.Contains("Reconfigure",error.Message);
+        fixture.Context.ChangeTracker.Clear();
+        Assert.True(await fixture.Context.Boards.AnyAsync(x=>x.Id==fixture.Source.Id));
+        Assert.Equal(fixture.Source.Id,(await fixture.Context.WorkItems.SingleAsync(x=>x.Id==fixture.Item.Id)).BoardId);
+        Assert.Equal(fixture.Source.Id,(await fixture.Context.Stages.SingleAsync(x=>x.Id==fixture.SourceStage.Id)).BoardId);
+        Assert.Null((await fixture.Context.StageHistories.SingleAsync(x=>x.WorkItemId==fixture.Item.Id)).LeftAt);
     }
 
     private sealed class Fixture : IAsyncDisposable
