@@ -274,7 +274,7 @@ export const Card = styled.div<{ $isRunning?: boolean; $isDragging?: boolean; $p
   }
 `;
 
-export const CardTitle = styled.h4`
+export const CardTitle = styled.h3`
   font-size: ${props => props.theme.fontSize.sm};
   font-weight: ${props => props.theme.fontWeight.bold};
   color: ${props => props.theme.color.text};
