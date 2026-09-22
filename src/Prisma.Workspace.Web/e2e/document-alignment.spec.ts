@@ -226,7 +226,7 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
     expect(project.workType).toBe(6);
     expect(sprints).toEqual([]);
     const stages = await appApi<Array<{ name: string }>>(page, `/api/Stages/project/${createdProjectId}`);
-    expect(stages).toEqual([]); // D89: sem quadro criado, não existe coluna operacional.
+    expect(stages.map(stage => stage.name)).toEqual(['A fazer', 'Em andamento', 'Concluído']);
 
     await page.getByRole('link', { name: 'Sprints' }).click();
     await expect(page.getByText('Nenhuma sprint planejada para este projeto.')).toBeVisible();
@@ -235,7 +235,7 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
   }
 });
 
-test('kanban abre com cartões mais recentes no topo e restaura essa ordenação', async ({ page, authenticatedGoto }) => {
+test('kanban abre na ordem manual e restaura a ordenação global escolhida', async ({ page, authenticatedGoto }) => {
   test.setTimeout(60_000);
   await authenticatedGoto('/projects');
   const createdProjectId = await createProjectThroughUi(page);
@@ -244,9 +244,9 @@ test('kanban abre com cartões mais recentes no topo e restaura essa ordenação
     await page.goto(`/boards/${project.boards[0].id}`);
     await page.waitForLoadState('domcontentloaded');
 
-    const sort = page.getByRole('combobox', { name: 'Ordenar cartões' });
+    const sort = page.getByRole('combobox', { name: 'Ordenar cartões', exact: true });
     await expect(sort).toBeVisible({ timeout: 15_000 });
-    await expect(sort).toHaveValue('created');
+    await expect(sort).toHaveValue('position');
     await sort.selectOption('title');
     await expect(sort).toHaveValue('title');
     await sort.selectOption('created');

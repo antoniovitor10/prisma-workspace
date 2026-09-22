@@ -135,7 +135,7 @@ try
                 {
                     // Por IP real (via ForwardedHeaders). Folga para times atrás de
                     // um IP compartilhado; o bloqueio de conta protege contra brute force.
-                    PermitLimit = 30,
+                    PermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPermitLimit", 30),
                     Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0,
                     AutoReplenishment = true
@@ -145,7 +145,7 @@ try
                 partitionKey: $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Request.Path}",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 5,
+                    PermitLimit = builder.Configuration.GetValue("RateLimiting:ExternalSubmissionPermitLimit", 5),
                     Window = TimeSpan.FromMinutes(10),
                     QueueLimit = 0,
                     AutoReplenishment = true
@@ -155,7 +155,7 @@ try
                 partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 5,
+                    PermitLimit = builder.Configuration.GetValue("RateLimiting:SetupPermitLimit", 5),
                     Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0,
                     AutoReplenishment = true
@@ -165,7 +165,7 @@ try
                 partitionKey: $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Request.Path}",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 10,
+                    PermitLimit = builder.Configuration.GetValue("RateLimiting:ExternalPublicPermitLimit", 10),
                     Window = TimeSpan.FromMinutes(10),
                     QueueLimit = 0,
                     AutoReplenishment = true
