@@ -1393,10 +1393,10 @@ export const Kanban: React.FC = () => {
                             {item.taskTypeName && <span style={{ fontSize: 13, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: '#fff', background: item.taskTypeColor || '#1E7BD7', marginRight: 8 }}>{item.taskTypeName}</span>}
                             {item.title}
                           </td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{getCardAssigneeLabel(item)}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{stageName(item.stageId)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{getCardAssigneeLabel(item)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{stageName(item.stageId)}</td>
                           <td style={{ padding: '10px 12px', fontSize: 15, color: late ? '#D92D20' : '#64748B', fontWeight: late ? 700 : 400 }}>{item.dueDate ? `${item.dueDate.slice(8,10)}/${item.dueDate.slice(5,7)}` : '—'}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 15, color: '#64748B' }}>{formatTime(item.totalTimeSeconds || 0)}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 15, color: theme.color.textMutedAccessible }}>{formatTime(item.totalTimeSeconds || 0)}</td>
                         </tr>
                       );
                     })}
@@ -1428,7 +1428,7 @@ export const Kanban: React.FC = () => {
                         aria-label={`Ordenar cartões da coluna ${stage.name}`}
                         value={columnSort}
                         onChange={event => setColumnSorts(current => ({ ...current, [stage.id]: event.target.value as KanbanCardSort }))}
-                        style={{ maxWidth: 120, minHeight: 26, padding: '0 4px', border: '1px solid #CBD5E1', borderRadius: 5, color: '#64748B', fontSize: 11 }}
+                        style={{ maxWidth: 120, minHeight: 26, padding: '0 4px', border: '1px solid #CBD5E1', borderRadius: 5, color: theme.color.textMutedAccessible, fontSize: 11 }}
                       >
                         <option value="position">Ordem manual</option>
                         <option value="priority">Prioridade</option>
@@ -1476,7 +1476,7 @@ export const Kanban: React.FC = () => {
                     {itemsInStage.map((item, itemIndex) => (
                       <Fragment key={item.id}>
                         {groupBy !== 'none' && (itemIndex === 0 || getGroupLabel(itemsInStage[itemIndex - 1]) !== getGroupLabel(item)) && (
-                          <div style={{ padding: '5px 2px 1px', fontSize: 13, fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          <div style={{ padding: '5px 2px 1px', fontSize: 13, fontWeight: 800, color: theme.color.textMutedAccessible, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                             {getGroupLabel(item)}
                           </div>
                         )}
@@ -1766,7 +1766,7 @@ export const Kanban: React.FC = () => {
             </p>
             {visibleBoards.filter(b => b.id !== selectedBoardId).length > 0 && (
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13.5, fontWeight: 700, color: '#64748B', display: 'block', marginBottom: 5 }}>
+                <label style={{ fontSize: 13.5, fontWeight: 700, color: theme.color.textMutedAccessible, display: 'block', marginBottom: 5 }}>
                   Mover tarefas para:
                 </label>
                 <Select
@@ -1979,7 +1979,7 @@ export const Kanban: React.FC = () => {
                   </Select>
                 </div>
               </FormRow>
-              <p style={{ margin: '0', color: '#64748B', fontSize: '12px' }}>Somente pessoas com acesso ao projeto aparecem nesta lista.</p>
+              <p style={{ margin: '0', color: theme.color.textMutedAccessible, fontSize: '12px' }}>Somente pessoas com acesso ao projeto aparecem nesta lista.</p>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowItemModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Criar Card</SubmitButton>
