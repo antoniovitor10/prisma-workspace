@@ -299,6 +299,16 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const duplicate=useMutation({mutationFn:()=>api.duplicateWorkItem(details!.id),onSuccess:async()=>{setSaveState('saved');await invalidate();}});
 
   const onUpload=(event:ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(file)upload.mutate(file);event.target.value='';};
+  const uploadDescriptionImage=useCallback(async(file:File)=>{
+    if(!details)throw new Error('Tarefa indisponível.');
+    const extension=file.type.split('/')[1]?.replace('jpeg','jpg')||'png';
+    const normalized=file.name&&file.name.includes('.')
+      ? file
+      : new File([file],`imagem-colada-${Date.now()}.${extension}`,{type:file.type||'image/png'});
+    const attachment=await upload.mutateAsync(normalized) as Attachment;
+    await queryClient.invalidateQueries({queryKey:['work-item',details.id]});
+    return {attachmentId:attachment.id,alt:attachment.fileName||normalized.name};
+  },[details,queryClient,upload]);
   const downloadAttachment=async(attachment:Attachment)=>{const blob=await api.downloadAttachment(details!.id,attachment.id);const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=attachment.fileName;anchor.click();URL.revokeObjectURL(url);};
   const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&realMode)subtask.mutate();};
   const submitLink=(event:FormEvent)=>{event.preventDefault();if(linkForm.targetWorkItemId&&realMode)link.mutate();};
@@ -388,7 +398,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </Tabs>
 
       {activeTab==='description'&&<>
-      <Section><h2><Save size={14}/>Descrição</h2><RichTaskDescriptionEditor value={draft.description} onSave={saveDescription} onOpenAttachments={()=>setActiveTab('attachments')}/></Section>
+      <Section><h2><Save size={14}/>Descrição</h2><RichTaskDescriptionEditor value={draft.description} workItemId={details.id} onSave={saveDescription} onOpenAttachments={()=>setActiveTab('attachments')} onUploadImage={realMode?uploadDescriptionImage:undefined}/></Section>
       <Section><h2><Save size={14}/>Dados principais</h2><FormGrid>
         <Field $wide>Título<input value={draft.title} maxLength={500} onChange={e=>change('title',e.target.value)} onBlur={()=>draft.title.trim()&&commit({...draft,title:draft.title.trim()})}/></Field>
         <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)} title={kindMeta(draft.kind).description}>{kindDisplayOrder.map(id=><option key={id} value={id} title={workItemKinds[id].description}>{workItemKinds[id].label} — {workItemKinds[id].description}</option>)}</select></Field>

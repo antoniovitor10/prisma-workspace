@@ -15,6 +15,8 @@ public class HtmlSanitizerService : Application.Interfaces.IHtmlSanitizer
         // Classes do editor (formatação) e a referência de tarefa nos links internos.
         _sanitizer.AllowedAttributes.Add("class");
         _sanitizer.AllowedAttributes.Add("data-work-item-id");
+        // Referência opaca do anexo usada pelo editor para carregar imagens autenticadas.
+        _sanitizer.AllowedAttributes.Add("data-attachment-id");
         _sanitizer.AllowedAttributes.Add("target");
         _sanitizer.AllowedAttributes.Add("data-type");
         _sanitizer.AllowedAttributes.Add("data-checked");

@@ -15,6 +15,24 @@ import {
   Paperclip, Pilcrow, Quote, Redo2, Strikethrough, Underline as UnderlineIcon, Undo2,
 } from 'lucide-react';
 import styled from 'styled-components';
+import { api } from '../services/api';
+
+const PASTED_IMAGE_PLACEHOLDER = '/image-placeholder.svg';
+
+const TaskImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      attachmentId: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-attachment-id'),
+        renderHTML: attributes => attributes.attachmentId
+          ? { 'data-attachment-id': attributes.attachmentId }
+          : {},
+      },
+    };
+  },
+});
 
 const Frame = styled.section<{ $expanded: boolean }>`
   position:${({$expanded})=>$expanded?'fixed':'relative'};
@@ -48,15 +66,24 @@ const Editor = styled.div<{ $expanded:boolean }>`
   .ProseMirror blockquote{margin:12px 0;padding-left:14px;border-left:3px solid ${({theme})=>theme.color.accentBlue};color:${({theme})=>theme.color.textMuted}}
   .ProseMirror pre{margin:10px 0;padding:12px;border-radius:8px;background:${({theme})=>theme.color.neutral[100]};overflow:auto}.ProseMirror code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
   .ProseMirror a{color:${({theme})=>theme.color.accentBlue};text-decoration:underline}.ProseMirror img{display:block;max-width:100%;height:auto;margin:12px 0;border-radius:8px}
+  .ProseMirror img[data-attachment-id]{min-width:96px;min-height:72px;background:${({theme})=>theme.color.neutral[100]};object-fit:contain}
+  .ProseMirror img.image-load-error{padding:18px;border:1px dashed ${({theme})=>theme.color.danger};}
   .ProseMirror p.is-editor-empty:first-child::before{content:attr(data-placeholder);float:left;height:0;color:${({theme})=>theme.color.textMuted};pointer-events:none}
 `;
 const Footer = styled.footer`display:flex;min-height:36px;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;border-top:1px solid ${({theme})=>theme.color.border};color:${({theme})=>theme.color.textMuted};font-size:12px;letter-spacing:.01em;`;
 
-interface Props { value:string; onSave:(html:string)=>Promise<void>|void; onOpenAttachments:()=>void; }
+interface UploadedImage { attachmentId:string; alt:string; }
+interface Props {
+  value:string;
+  workItemId?:string;
+  onSave:(html:string)=>Promise<void>|void;
+  onOpenAttachments:()=>void;
+  onUploadImage?:(file:File)=>Promise<UploadedImage>;
+}
 
-export function RichTaskDescriptionEditor({value,onSave,onOpenAttachments}:Props){
+export function RichTaskDescriptionEditor({value,workItemId,onSave,onOpenAttachments,onUploadImage}:Props){
   const [expanded,setExpanded]=useState(false);
-  const [status,setStatus]=useState<'idle'|'saving'|'saved'|'error'>('idle');
+  const [status,setStatus]=useState<'idle'|'uploading'|'saving'|'saved'|'error'>('idle');
   const [feedback,setFeedback]=useState<string|undefined>();
   const timer=useRef<number|undefined>(undefined);
   const expandButtonRef=useRef<HTMLButtonElement>(null);
@@ -64,7 +91,12 @@ export function RichTaskDescriptionEditor({value,onSave,onOpenAttachments}:Props
   const latest=useRef(value);
   const saved=useRef(value);
   const onSaveRef=useRef(onSave);
+  const onUploadImageRef=useRef(onUploadImage);
+  const hydrateImagesRef=useRef<()=>Promise<void>>(async()=>{});
+  const imageObjectUrls=useRef(new Map<string,string>());
+  const loadingImages=useRef(new Set<string>());
   useEffect(()=>{onSaveRef.current=onSave;},[onSave]);
+  useEffect(()=>{onUploadImageRef.current=onUploadImage;},[onUploadImage]);
   const save=useCallback(async()=>{
     window.clearTimeout(timer.current);
     if(latest.current===saved.current)return;
@@ -74,12 +106,73 @@ export function RichTaskDescriptionEditor({value,onSave,onOpenAttachments}:Props
   const editor=useEditor({
     extensions:[StarterKit.configure({link:false,underline:false}),Underline,Link.configure({openOnClick:false,autolink:true}),Highlight,
       TextAlign.configure({types:['heading','paragraph']}),TaskList,TaskItem.configure({nested:true}),
-      Placeholder.configure({placeholder:'Digite aqui os detalhes da tarefa'}),Image.configure({allowBase64:false})],
+      Placeholder.configure({placeholder:'Digite aqui os detalhes da tarefa'}),TaskImage.configure({allowBase64:false})],
     content:value||'',
     onUpdate:({editor:instance})=>{latest.current=instance.getHTML();setStatus('idle');setFeedback(undefined);window.clearTimeout(timer.current);timer.current=window.setTimeout(()=>void save(),900);},
-    editorProps:{attributes:{'aria-label':'Descrição da tarefa',role:'textbox','aria-multiline':'true'}},
+    editorProps:{
+      attributes:{'aria-label':'Descrição da tarefa',role:'textbox','aria-multiline':'true'},
+      handlePaste:(view,event)=>{
+        const images=Array.from(event.clipboardData?.files??[]).filter(file=>file.type.startsWith('image/'));
+        if(!images.length||!onUploadImageRef.current)return false;
+        event.preventDefault();
+        const insertionPosition=view.state.selection.from;
+        void (async()=>{
+          setStatus('uploading');
+          setFeedback(images.length===1?'Enviando imagem colada...':`Enviando ${images.length} imagens coladas...`);
+          try{
+            const uploaded=[] as UploadedImage[];
+            for(const image of images)uploaded.push(await onUploadImageRef.current!(image));
+            const nodes=uploaded.map(image=>view.state.schema.nodes.image.create({
+              src:PASTED_IMAGE_PLACEHOLDER,
+              alt:image.alt,
+              title:'Imagem anexada à tarefa',
+              attachmentId:image.attachmentId,
+            }));
+            const position=Math.min(insertionPosition,view.state.doc.content.size);
+            view.dispatch(view.state.tr.insert(position,nodes));
+            setStatus('idle');
+            setFeedback(images.length===1?'Imagem colada e anexada à tarefa.':`${images.length} imagens coladas e anexadas à tarefa.`);
+            window.requestAnimationFrame(()=>void hydrateImagesRef.current());
+          }catch{
+            setStatus('error');
+            setFeedback('Não foi possível enviar a imagem colada. Tente novamente.');
+          }
+        })();
+        return true;
+      },
+    },
   });
+  const hydrateAttachmentImages=useCallback(async()=>{
+    if(!editor||!workItemId)return;
+    const elements=Array.from(editor.view.dom.querySelectorAll<HTMLImageElement>('img[data-attachment-id]'));
+    await Promise.all(elements.map(async element=>{
+      const attachmentId=element.dataset.attachmentId;
+      if(!attachmentId)return;
+      const cached=imageObjectUrls.current.get(attachmentId);
+      if(cached){if(element.src!==cached)element.src=cached;return;}
+      if(loadingImages.current.has(attachmentId))return;
+      loadingImages.current.add(attachmentId);
+      try{
+        const blob=await api.downloadAttachment(workItemId,attachmentId);
+        const objectUrl=URL.createObjectURL(blob);
+        imageObjectUrls.current.set(attachmentId,objectUrl);
+        if(element.isConnected&&element.dataset.attachmentId===attachmentId){element.src=objectUrl;element.classList.remove('image-load-error');}
+      }catch{
+        element.classList.add('image-load-error');
+        setFeedback('Uma imagem anexada não pôde ser carregada.');
+      }finally{loadingImages.current.delete(attachmentId);}
+    }));
+  },[editor,workItemId]);
+  hydrateImagesRef.current=hydrateAttachmentImages;
   useEffect(()=>{if(editor&&value!==latest.current){latest.current=value;saved.current=value;editor.commands.setContent(value||'',{emitUpdate:false});}},[editor,value]);
+  useEffect(()=>{const frame=window.requestAnimationFrame(()=>void hydrateAttachmentImages());return()=>window.cancelAnimationFrame(frame);},[hydrateAttachmentImages,value]);
+  useEffect(()=>()=>{for(const objectUrl of imageObjectUrls.current.values())URL.revokeObjectURL(objectUrl);imageObjectUrls.current.clear();},[]);
+  useEffect(()=>{
+    if(!editor)return;
+    const onImageError=(event:Event)=>{const image=event.target as HTMLImageElement;if(image.tagName==='IMG'&&!image.dataset.attachmentId){image.classList.add('image-load-error');setFeedback('A imagem indicada não pôde ser carregada.');}};
+    editor.view.dom.addEventListener('error',onImageError,true);
+    return()=>editor.view.dom.removeEventListener('error',onImageError,true);
+  },[editor]);
   useEffect(()=>()=>{window.clearTimeout(timer.current);if(latest.current!==saved.current)void onSaveRef.current(latest.current);},[]);
   useEffect(()=>{if(!expanded)return;const key=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();setExpanded(false);}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[expanded]);
   useEffect(()=>{if(!editor)return;const frame=window.requestAnimationFrame(()=>{if(expanded){editor.commands.focus();wasExpanded.current=true;}else if(wasExpanded.current){expandButtonRef.current?.focus();wasExpanded.current=false;}});return()=>window.cancelAnimationFrame(frame);},[editor,expanded]);
@@ -113,6 +206,6 @@ export function RichTaskDescriptionEditor({value,onSave,onOpenAttachments}:Props
       {button(expanded?'Sair da tela cheia':'Expandir editor',expanded,()=>setExpanded(v=>!v),expanded?<Minimize2 size={17}/>:<Maximize2 size={17}/>,false,expandButtonRef)}
     </Toolbar>
     <Editor $expanded={expanded} onBlur={()=>void save()}><EditorContent editor={editor}/></Editor>
-    <Footer role="status" aria-live="polite">{feedback ?? (status==='saving'?'Salvando...':status==='saved'?'Salvo':status==='error'?'Falha ao salvar':'Salvamento automático')}</Footer>
+    <Footer><span role="status" aria-live="polite">{feedback ?? (status==='uploading'?'Enviando imagem...':status==='saving'?'Salvando...':status==='saved'?'Salvo':status==='error'?'Falha ao salvar':'Salvamento automático')}</span><span>Cole uma imagem com Ctrl+V</span></Footer>
   </Frame>;
 }

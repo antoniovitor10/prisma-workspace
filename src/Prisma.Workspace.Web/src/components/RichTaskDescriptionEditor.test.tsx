@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../styles/theme';
@@ -6,7 +6,7 @@ import { RichTaskDescriptionEditor } from './RichTaskDescriptionEditor';
 
 afterEach(() => { vi.restoreAllMocks(); cleanup(); });
 
-function renderEditor() {
+function renderEditor(onUploadImage?: (file:File)=>Promise<{attachmentId:string;alt:string}>) {
   const onSave = vi.fn();
   const onOpenAttachments = vi.fn();
   render(
@@ -15,6 +15,7 @@ function renderEditor() {
         value="<p>Descrição inicial</p>"
         onSave={onSave}
         onOpenAttachments={onOpenAttachments}
+        onUploadImage={onUploadImage}
       />
     </ThemeProvider>,
   );
@@ -53,5 +54,20 @@ describe('RichTaskDescriptionEditor', () => {
     vi.spyOn(window, 'prompt').mockReturnValue('javascript:alert(1)');
     fireEvent.click(screen.getByRole('button', { name: 'Inserir imagem por endereço' }));
     expect(screen.getByRole('status')).toHaveTextContent('http:// ou https://');
+  });
+
+  it('envia e insere uma imagem colada sem incorporar o arquivo no HTML', async () => {
+    const onUploadImage=vi.fn().mockResolvedValue({attachmentId:'attachment-1',alt:'captura.png'});
+    renderEditor(onUploadImage);
+    const textbox=screen.getByRole('textbox',{name:'Descrição da tarefa'});
+    const file=new File(['imagem'],'captura.png',{type:'image/png'});
+
+    fireEvent.paste(textbox,{clipboardData:{files:[file],getData:()=>''}});
+
+    await waitFor(()=>expect(onUploadImage).toHaveBeenCalledWith(file));
+    await waitFor(()=>expect(screen.getByRole('status')).toHaveTextContent('Imagem colada e anexada'));
+    const image=screen.getByRole('img',{name:'captura.png'});
+    expect(image).toHaveAttribute('data-attachment-id','attachment-1');
+    expect(image.getAttribute('src')).not.toMatch(/^data:/);
   });
 });

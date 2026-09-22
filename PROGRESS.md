@@ -1264,3 +1264,11 @@ Formato:
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+## [2026-09-22] - Codex - colagem fluida de imagens na descrição
+
+- Aprovação funcional: pedido direto do PO para colar imagens na descrição de forma mais fluida; `stories/rich-task-description.md` e a spec aprovada foram ampliadas sem migration.
+- Implementação: o editor intercepta uma ou várias imagens da área de transferência, envia cada arquivo pelo endpoint autenticado de anexos, insere uma referência opaca no ponto da edição e hidrata a imagem com Blob URL autenticada. O HTML não incorpora o binário/base64, o arquivo permanece protegido pelas permissões da tarefa e também aparece na aba Anexos.
+- Experiência e segurança: estados de envio/sucesso/falha, dica de `Ctrl+V`, placeholder local, erro visual de carregamento e anúncio acessível separado da dica. O sanitizador preserva somente `data-attachment-id`; URLs públicas continuam limitadas a HTTP/HTTPS.
+- Testes: build frontend aprovado; Vitest focal 10/10; teste .NET do sanitizador 1/1; E2E Playwright real no candidato Docker aprovado em desktop e mobile (3/3 incluindo setup), com upload, salvamento e reabertura. A primeira execução detectou e levou à correção da dica dentro de `role=status`.
+- Ambiente: imagem isolada `prisma-paste-image:20260922`, QA em `127.0.0.1:55400` e E2E em `127.0.0.1:55401`. Produção não alterada.
+- Próximo passo: integrar os lotes paralelos, executar as suítes completas e validar visualmente o conjunto com agent-browser antes de solicitar/publicar o G-DEPLOY.
