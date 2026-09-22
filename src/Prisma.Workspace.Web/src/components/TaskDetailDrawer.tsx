@@ -188,9 +188,10 @@ interface TaskDetailDrawerProps {
   sprintName?: string;
   onOpenChange: (open:boolean)=>void;
   onItemUpdated?: (item:BacklogItem)=>void;
+  onOpenSubtask?: (workItemId:string)=>void;
 }
 
-export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItemUpdated}:TaskDetailDrawerProps){
+export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItemUpdated,onOpenSubtask}:TaskDetailDrawerProps){
   const queryClient=useQueryClient();
   const realMode=Boolean(api.getToken())&&!previewMode;
   const [draft,setDraft]=useState<Draft|null>(null);
@@ -226,6 +227,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.projectId],queryFn:()=>api.getStages(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const usersQuery=useQuery<AssignableUser[]>({queryKey:['assignable-users',details?.projectId],queryFn:()=>api.getAssignableUsers(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
+  const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
   const showStoryPoints=Boolean(projectQuery.data)&&projectQuery.data?.methodology!==1;
 
@@ -242,7 +244,6 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const invalidate=async()=>Promise.all([
     queryClient.invalidateQueries({queryKey:['work-item',item?.id]}),
     queryClient.invalidateQueries({queryKey:['project-backlog']}),
-    queryClient.invalidateQueries({queryKey:['project-sprints']}),
   ]);
   const update=useMutation({
     mutationFn:async(next:Draft)=>{if(realMode&&details)await api.updateWorkItem(details.id,{title:next.title,description:next.description||null,kind:next.kind,stageId:next.stageId||null,priority:next.priority,responsibleId:next.responsibleId||null,teamId:next.teamId||null,origin:next.origin,requesterId:next.requesterId||null,requesterName:next.requesterName||null,requesterEmail:next.requesterEmail||null,startDate:next.startDate||null,dueDate:next.dueDate||null,estimatedHours:numberOrNull(next.estimatedHours),remainingHours:numberOrNull(next.remainingHours),points:numberOrNull(next.points),acceptanceCriteria:next.acceptanceCriteria||null});return next;},
@@ -283,7 +284,19 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   },[draft,update]);
 
   const assignees=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onMutate:()=>setAssigneeFeedback(''),onSuccess:async(_result,variables)=>{setAssigneeId('');setAssigneeFeedback(variables.add?'Responsável adicionado.':'Responsável removido.');await invalidate();}});
-  const subtask=useMutation({mutationFn:()=>api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),onSuccess:async()=>{setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();}});
+  const subtask=useMutation({
+    mutationFn:async()=>({result:await api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),title:subtaskTitle}),
+    onSuccess:async({result,title})=>{
+      setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();
+      const workItemId=typeof result==='string'?result:(result as {id?:string})?.id;
+      if(workItemId){onOpenSubtask?.(workItemId);return;}
+      if(onOpenSubtask){
+        const created=(await api.getSubItems(details!.id) as Array<{id:string;title:string}>).find(child=>child.title===title);
+        if(created)onOpenSubtask(created.id);
+      }
+    },
+  });
+  const sprint=useMutation({mutationFn:(sprintId:string|null)=>api.planSprint(details!.projectId!,sprintId,[details!.id]),onSuccess:invalidate});
   const link=useMutation({mutationFn:()=>api.addWorkItemLink(details!.id,linkForm.targetWorkItemId,linkForm.type),onSuccess:async()=>{setLinkForm({targetWorkItemId:'',type:1});await invalidate();}});
   const removeLink=useMutation({mutationFn:(linkId:string)=>api.removeWorkItemLink(details!.id,linkId),onSuccess:invalidate});
   const following=useMutation({mutationFn:()=>api.setWorkItemFollowing(details!.id,!details!.isFollowing),onMutate:()=>queryClient.setQueryData<WorkItemDetails>(['work-item',details!.id],current=>current?{...current,isFollowing:!current.isFollowing}:current),onSuccess:invalidate});
@@ -417,6 +430,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
         <Field>Horas previstas<input type="number" min="0.01" step="0.25" value={draft.estimatedHours} onChange={e=>change('estimatedHours',e.target.value)} onBlur={()=>commit(draft)}/></Field>
         <Field>Horas restantes<input type="number" min="0" step="0.25" value={draft.remainingHours} onChange={e=>change('remainingHours',e.target.value)} onBlur={()=>commit(draft)}/></Field>
         {showStoryPoints&&<Field>Story points<input type="number" min="0" value={draft.points} onChange={e=>change('points',e.target.value)} onBlur={()=>commit(draft)}/></Field>}
+        {details.projectId&&<Field>Sprint<select aria-label='Sprint da tarefa' value={details.sprintId??''} disabled={sprint.isPending} onChange={event=>sprint.mutate(event.target.value||null)}><option value=''>Product Backlog</option>{sprintsQuery.data?.filter(current=>current.status===1||current.status===2||current.id===details.sprintId).map(current=><option key={current.id} value={current.id}>{current.name}</option>)}</select></Field>}
         <Field>Horas realizadas<input value={`${details.realizedHours.toFixed(2)} h`} readOnly/></Field>
         <Field $wide>Critérios de aceite<textarea value={draft.acceptanceCriteria} onChange={e=>change('acceptanceCriteria',e.target.value)} onBlur={()=>commit(draft)} placeholder="Condições objetivas para concluir esta tarefa"/></Field>
       </FormGrid></Section>
@@ -431,7 +445,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
       {realMode&&<Section><h2><TagsIcon/>Classificação</h2><TaskTaxonomyPanel workItemId={details.id} taskTypeId={details.taskTypeId} points={details.points} tagIds={details.tags.map(tag=>tag.id)} showPoints={showStoryPoints} onChanged={invalidate}/></Section>}
       </>}
-      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
+      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa. Selecione uma subtarefa para abrir todos os detalhes.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id} role='button' tabIndex={0} aria-label={'Abrir detalhes da subtarefa ' + child.title} onClick={()=>onOpenSubtask?.(child.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenSubtask?.(child.id);}}} style={{cursor:onOpenSubtask?'pointer':'default'}}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
 
       {activeTab==='attachments'&&<Section><h2><Paperclip size={14}/>Anexos</h2><List>{attachmentsQuery.data?.map(attachment=><Row key={attachment.id}><div><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)} · {attachment.mimeType||'arquivo'}</small></div><div style={{display:'flex',gap:4}}><IconButton aria-label={`Baixar ${attachment.fileName}`} onClick={()=>downloadAttachment(attachment)}><Download size={14}/></IconButton>{realMode&&<IconButton $danger aria-label={`Remover ${attachment.fileName}`} disabled={removeAttachment.isPending} onClick={()=>{if(window.confirm(`Remover o anexo "${attachment.fileName}"?`))removeAttachment.mutate(attachment.id);}}><Trash2 size={14}/></IconButton>}</div></Row>)}{!attachmentsQuery.data?.length&&<Empty>Nenhum anexo.</Empty>}</List>{realMode&&<label style={{display:'inline-flex',marginTop:9}}><input type="file" hidden onChange={onUpload}/><Button as="span"><FileUp size={12}/>{upload.isPending?'Enviando...':'Adicionar anexo'}</Button></label>}</Section>}
 

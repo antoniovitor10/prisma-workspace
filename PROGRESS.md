@@ -7,6 +7,13 @@
 - Testes focais frontend aprovados: ordenacao/timer 5/5 e TaskDetailDrawer 6/6 antes do ultimo teste de feedback; npm run e2e bloqueado no setup por ausencia de E2E_TEST_USER_EMAIL e E2E_TEST_USER_PASSWORD. O ambiente VPS nao possui dotnet, portanto o xUnit nao pode ser executado nesta worktree.
 - Validacao final: typecheck e build frontend concluidos; Vitest de ordenacao/timer 5/5 e TaskDetailDrawer 6/6, incluindo feedback de membro; commit b30ce5f. E2E e xUnit permanecem lacunas operacionais (credenciais E2E ausentes e dotnet indisponivel); nenhum deploy autorizado nesta rodada.
 
+## [2026-09-22] - Codex - fluxo de criacao, sprint e subtarefa
+
+- Aprovacao: PO autorizou diretamente nesta conversa resolver este recorte. Historia `US-TASK-FLOW-UX-001` e spec `SPEC-TASK-FLOW-UX-001` foram criadas como `approved`, referenciando D4, D90 e as specs existentes. Sem decisao nova, sem migration, sem nova entidade.
+- Implementacao na worktree isolada `/home/dev/prisma-task-flow-ux-20260922`: o modal Kanban passa responsavel principal e adicionais pela criacao ja validada no backend; a gaveta permite planejar ou retirar a sprint pela API existente; e uma subtarefa criada ou selecionada abre no mesmo detalhe completo, preservando o modelo WorkItem D4 para anexos, descricao e horas.
+- Cobertura: Vitest focal `TaskDetailDrawer.test.tsx` 8/8; `tsc -b`, build e lint sem erros (12 warnings preexistentes). Playwright no container oficial `mcr.microsoft.com/playwright:v1.62.1-noble`: os dois novos cenarios passaram nos perfis desktop e mobile (4/4), com `--no-deps` e ambiente E2E isolado. A suite integrada completa foi deliberadamente deixada ao coordenador por contencao de CPU/memoria na VPS.
+- Rastreabilidade: a ref remota solicitada `origin/fix/invite-recovery-20260922` nao existe; a base foi a branch local homonima em `a85eb10`. Nenhum deploy ou alteracao de producao.
+
 ## [2026-09-22] - Codex - G-DEPLOY do lote de acesso e descrição
 
 - Autorização explícita do PO: "implementa em produção". Publicado o commit `cacbf22`, da branch `fix/invite-recovery-20260922`, usando a mesma imagem validada em QA (`prisma-access-hotfix:20260922`, digest `sha256:ccb7b245e70f08ce8c0bc30bdf824ee149af2b6bd906c0e9e8dcd1b6d6e8fe04`). Sem incluir a migration de colunas independentes.

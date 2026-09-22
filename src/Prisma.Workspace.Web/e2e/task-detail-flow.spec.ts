@@ -146,3 +146,22 @@ test('modal amplo, título editável por duplo clique e vários responsáveis pe
   await expect(popover).toHaveCount(0);
   await expect(dialog).toBeVisible();
 });
+
+test('subtarefa abre o detalhe completo com planejamento, anexos e horas', async ({ page, authenticatedGoto }) => {
+  const projectId = await resolveSeedProjectId(page);
+  await authenticatedGoto('/projects/' + projectId + '/backlog');
+  await page.getByRole('button', { name: /^Abrir detalhes de / }).first().click();
+  const dialog = page.locator("[role=dialog][aria-describedby^=task-description-]");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('combobox', { name: 'Sprint da tarefa' })).toBeVisible();
+  await expect(dialog.getByRole('combobox', { name: 'Sprint da tarefa' })).toContainText('Product Backlog');
+
+  await dialog.getByRole('button', { name: 'Subtarefas' }).click();
+  const title = 'Subtarefa E2E ' + Date.now();
+  await dialog.getByPlaceholder('Nova subtarefa (somente título)').fill(title);
+  await dialog.getByRole('button', { name: 'Adicionar' }).click();
+
+  await expect(dialog.getByTitle('Clique duas vezes para editar o título')).toHaveText(title);
+  await expect(dialog.getByRole('button', { name: 'Anexos' ,exact:true})).toBeVisible();
+  await expect(dialog.getByText('Apontamento de horas', { exact: true })).toBeVisible();
+});

@@ -278,4 +278,41 @@ describe('TaskDetailDrawer', () => {
     expect(screen.getByRole('heading', { name: 'Título novo' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Título' })).toHaveValue('Título novo');
   });
+
+  it('altera a sprint pelo detalhe usando o planejamento validado da API', async () => {
+    const details: WorkItemDetails = {
+      id: 'sprint-item', number: 21, reference: 'KAN-21', projectId: 'project-1', projectKey: 'KAN',
+      boardId: 'board', boardName: 'Produto', kind: 5, origin: 1, title: 'Planejar entrega', priority: 1,
+      sprintId: 'sprint-1', sprintName: 'Sprint atual', participants: [], createdAt: '2026-09-22T10:00:00Z', updatedAt: '2026-09-22T10:00:00Z',
+      realizedHours: 0, tags: [], isArchived: false, checklist: [], subtasks: [], attachmentsCount: 0, commentsCount: 0, followerIds: [], isFollowing: false, links: [], customFields: [], version: 'v1',
+    };
+    vi.spyOn(api, 'getToken').mockReturnValue('jwt');
+    vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
+    vi.spyOn(api, 'getProjectSprints').mockResolvedValue([{ id: 'sprint-1', name: 'Sprint atual', status: 2 }, { id: 'sprint-2', name: 'Próxima sprint', status: 1 }]);
+    vi.spyOn(api, 'getStages').mockResolvedValue([]); vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
+    vi.spyOn(api, 'getAttachments').mockResolvedValue([]); vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]); vi.spyOn(api, 'getTags').mockResolvedValue([]);
+    vi.spyOn(api, 'getComments').mockResolvedValue([]); vi.spyOn(api, 'getTaskEvents').mockResolvedValue([]);
+    const planSprint = vi.spyOn(api, 'planSprint').mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><ThemeProvider theme={theme}><TaskDetailDrawer projectKey='KAN' item={{ id: details.id, boardId: details.boardId, boardName: details.boardName, kind: details.kind, title: details.title, priority: details.priority, rank: 1 }} onOpenChange={vi.fn()} /></ThemeProvider></QueryClientProvider></MemoryRouter>);
+    const sprintSelect = await screen.findByRole('combobox', { name: 'Sprint da tarefa' });
+    fireEvent.change(sprintSelect, { target: { value: 'sprint-2' } });
+    await waitFor(() => expect(planSprint).toHaveBeenCalledWith('project-1', 'sprint-2', ['sprint-item']));
+  });
+
+  it('abre uma subtarefa no mesmo detalhe completo da WorkItem', async () => {
+    const details: WorkItemDetails = {
+      id: 'parent-item', number: 22, reference: 'KAN-22', projectId: 'project-1', projectKey: 'KAN', boardId: 'board', boardName: 'Produto', kind: 5, origin: 1, title: 'Tarefa pai', priority: 1, participants: [], createdAt: '2026-09-22T10:00:00Z', updatedAt: '2026-09-22T10:00:00Z', realizedHours: 0, tags: [], isArchived: false, checklist: [], subtasks: [{ id: 'child-item', number: 23, title: 'Subtarefa com detalhes', isArchived: false }], attachmentsCount: 0, commentsCount: 0, followerIds: [], isFollowing: false, links: [], customFields: [], version: 'v1',
+    };
+    vi.spyOn(api, 'getToken').mockReturnValue('jwt'); vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] }); vi.spyOn(api, 'getProjectSprints').mockResolvedValue([]);
+    vi.spyOn(api, 'getStages').mockResolvedValue([]); vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]); vi.spyOn(api, 'getAttachments').mockResolvedValue([]); vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]); vi.spyOn(api, 'getTags').mockResolvedValue([]); vi.spyOn(api, 'getComments').mockResolvedValue([]); vi.spyOn(api, 'getTaskEvents').mockResolvedValue([]);
+    const onOpenSubtask = vi.fn(); const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><ThemeProvider theme={theme}><TaskDetailDrawer projectKey='KAN' item={{ id: details.id, boardId: details.boardId, boardName: details.boardName, kind: details.kind, title: details.title, priority: details.priority, rank: 1 }} onOpenChange={vi.fn()} onOpenSubtask={onOpenSubtask} /></ThemeProvider></QueryClientProvider></MemoryRouter>);
+    await screen.findByRole('textbox', { name: 'Título' });
+    fireEvent.click(screen.getByRole('button', { name: 'Subtarefas' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir detalhes da subtarefa Subtarefa com detalhes' }));
+    expect(onOpenSubtask).toHaveBeenCalledWith('child-item');
+  });
 });

@@ -804,6 +804,17 @@ export const api = {
     estimatedHours?: number;
     dueDate?: string;
     position: number;
+    sprintId?: string | null;
+    remainingHours?: number;
+    teamId?: string | null;
+    responsibleId?: string | null;
+    participantIds?: string[];
+    origin?: number;
+    requesterId?: string | null;
+    requesterName?: string | null;
+    requesterEmail?: string | null;
+    startDate?: string;
+    acceptanceCriteria?: string | null;
   }) {
     return this.request('/api/WorkItems', {
       method: 'POST',

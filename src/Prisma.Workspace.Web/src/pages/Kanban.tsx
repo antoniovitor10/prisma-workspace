@@ -422,6 +422,8 @@ export const Kanban: React.FC = () => {
   const [newItemPriority, setNewItemPriority] = useState<number>(0);
   const [newItemHours, setNewItemHours] = useState<number | undefined>(undefined);
   const [newItemKind, setNewItemKind] = useState<number>(WorkItemKind.Task);
+  const [newItemResponsibleId, setNewItemResponsibleId] = useState('');
+  const [newItemParticipantIds, setNewItemParticipantIds] = useState<string[]>([]);
 
   // Timer persistido em TimeEntry.
   const [runningItemId, setRunningItemId] = useState<string | null>(null);
@@ -547,6 +549,7 @@ export const Kanban: React.FC = () => {
     api.getProjectSprints(projectId)
       .then((items: SprintOptionDto[]) => setBoardSprints(items.filter(item => item.status === 1 || item.status === 2)))
       .catch(() => setBoardSprints([]));
+    api.getAssignableUsers(projectId).then(setAssignableUsers).catch(() => setAssignableUsers([]));
   }, [selectedBoardId, boards, modoProjeto, urlProjectId]);
 
   const loadLeadTime = useCallback(async () => {
@@ -659,7 +662,6 @@ export const Kanban: React.FC = () => {
   useEffect(() => {
     fetchBoards();
     loadRunningTimer();
-    api.getAssignableUsers().then(setAssignableUsers).catch(() => undefined);
   }, [fetchBoards, loadRunningTimer]);
 
   useEffect(() => {
@@ -808,6 +810,8 @@ export const Kanban: React.FC = () => {
         estimatedHours: newItemHours,
         position: nextPos,
         kind: newItemKind,
+        responsibleId: newItemResponsibleId || undefined,
+        participantIds: newItemParticipantIds.filter(id => id !== newItemResponsibleId),
       });
 
       // Reset
@@ -817,6 +821,8 @@ export const Kanban: React.FC = () => {
       setNewItemPriority(0);
       setNewItemHours(undefined);
       setNewItemKind(WorkItemKind.Task);
+      setNewItemResponsibleId('');
+      setNewItemParticipantIds([]);
       setShowItemModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
@@ -1875,6 +1881,34 @@ export const Kanban: React.FC = () => {
                   />
                 </div>
               </FormRow>
+              <FormRow>
+                <div>
+                  <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Responsável principal</label>
+                  <Select
+                    aria-label='Responsável principal da nova tarefa'
+                    style={{ width: '100%' }}
+                    value={newItemResponsibleId}
+                    onChange={e => setNewItemResponsibleId(e.target.value)}
+                    required
+                  >
+                    <option value=''>Selecione uma pessoa...</option>
+                    {assignableUsers.map(user => <option key={user.id} value={user.id}>{getUserLabel(user)}</option>)}
+                  </Select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Responsáveis adicionais</label>
+                  <Select
+                    aria-label='Responsáveis adicionais da nova tarefa'
+                    style={{ width: '100%', minHeight: 86 }}
+                    multiple
+                    value={newItemParticipantIds}
+                    onChange={e => setNewItemParticipantIds(Array.from(e.currentTarget.selectedOptions, option => option.value))}
+                  >
+                    {assignableUsers.filter(user => user.id !== newItemResponsibleId).map(user => <option key={user.id} value={user.id}>{getUserLabel(user)}</option>)}
+                  </Select>
+                </div>
+              </FormRow>
+              <p style={{ margin: '0', color: '#64748B', fontSize: '12px' }}>Somente pessoas com acesso ao projeto aparecem nesta lista.</p>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowItemModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Criar Card</SubmitButton>
@@ -1914,6 +1948,7 @@ export const Kanban: React.FC = () => {
         projectKey={projectKey}
         onOpenChange={open=>{if(!open){setSelectedItem(null);if(selectedBoardId)void loadBoardData(selectedBoardId);}}}
         onItemUpdated={()=>{if(selectedBoardId)void loadBoardData(selectedBoardId);}}
+        onOpenSubtask={workItemId=>{void api.getWorkItemDetails(workItemId).then(details=>setSelectedItem(details as unknown as WorkItem));}}
       />
 
       {showLeadTimeModal && (

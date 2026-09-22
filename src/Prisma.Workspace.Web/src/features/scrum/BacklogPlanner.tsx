@@ -1255,6 +1255,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         projectKey={project.key}
         sprintName={sprintQuery.data?.find((sprint) => sprint.id === selectedItem?.sprintId)?.name}
         onOpenChange={(open) => { if (!open) closeItem(); }}
+        onOpenSubtask={(workItemId) => { void api.getWorkItemDetails(workItemId).then((details) => { const child = details as unknown as BacklogItem; setItems((current) => current.some((item) => item.id === child.id) ? current : [...current, child]); openItem(child); }); }}
       />
     </Page>
   );

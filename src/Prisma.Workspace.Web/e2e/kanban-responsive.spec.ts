@@ -67,7 +67,6 @@ test.describe('Kanban responsivo e acessível', () => {
     });
 });
 
-
 test('column card sorting stays local to each board column', async ({
   page, authenticatedGoto, resolveSeedProject,
 }) => {
@@ -88,4 +87,13 @@ test('column card sorting stays local to each board column', async ({
     await selectors.nth(1).selectOption("title");
     await expect(selectors.first()).toHaveValue("priority");
   }
+});
+
+test('criação de tarefa escolhe responsáveis elegíveis no projeto', async ({ page, authenticatedGoto, resolveSeedProject }) => {
+  const project = await resolveSeedProject();
+  await authenticatedGoto('/boards/' + project.boards[0].id);
+  await page.getByRole('button', { name: 'Novo Card' }).first().click();
+  await expect(page.getByRole('combobox', { name: 'Responsável principal da nova tarefa' })).toBeVisible();
+  await expect(page.getByRole('listbox', { name: 'Responsáveis adicionais da nova tarefa' })).toBeVisible();
+  await expect(page.getByText('Somente pessoas com acesso ao projeto aparecem nesta lista.')).toBeVisible();
 });

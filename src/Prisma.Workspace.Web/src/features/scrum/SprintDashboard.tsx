@@ -722,7 +722,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
             </Suspense>
           )}
 
-          <TaskDetailDrawer item={selectedItem} projectKey={project.key} sprintName={selectedSprint.name} onOpenChange={(open) => { if (!open) setSelectedItem(null); }} />
+          <TaskDetailDrawer item={selectedItem} projectKey={project.key} sprintName={selectedSprint.name} onOpenChange={(open) => { if (!open) setSelectedItem(null); }} onOpenSubtask={(workItemId) => { void api.getWorkItemDetails(workItemId).then((details) => setSelectedItem(details as unknown as BacklogItem)); }} />
         </>
       )}
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
