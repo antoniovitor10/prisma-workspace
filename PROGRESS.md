@@ -1,3 +1,12 @@
+## [2026-09-22] - Codex - G-DEPLOY do lote de acesso e descrição
+
+- Autorização explícita do PO: "implementa em produção". Publicado o commit `cacbf22`, da branch `fix/invite-recovery-20260922`, usando a mesma imagem validada em QA (`prisma-access-hotfix:20260922`, digest `sha256:ccb7b245e70f08ce8c0bc30bdf824ee149af2b6bd906c0e9e8dcd1b6d6e8fe04`). Sem incluir a migration de colunas independentes.
+- Proteção: backup SQL COPY_ONLY/CHECKSUM e RESTORE VERIFYONLY aprovados; cópia em `/home/dev/backups/prisma/20260922T104550Z/PrismaWorkspace_20260922T104550Z.bak`, SHA-256 `e2a0173d2bd69eab3e61d6d25221783f7d4ddf4cc13285dc8deb014f85b2133d`. Fontes/configuração anteriores preservadas em arquivo protegido na mesma pasta, junto com manifesto de hashes e diff do working tree.
+- Publicação: 51 arquivos do lote sincronizados para `/home/dev/painel-projects/prisma-workspace`; `.env`, `docker-compose.prod.yml` e mounts persistentes preservados. O container `prisma-workspace-api` foi recriado sem rebuild. As 25 migrations aplicadas antes e depois são idênticas.
+- Verificações: container healthy; HTTPS `/health` respondeu 200; agent-browser abriu a tela pública no domínio oficial e conferiu recuperação de convite inválido via "Ir para o login". Logs pós-deploy registram `/api/organizations/current/access` e `/api/me/work` respondendo 200. Não foram criadas contas ou tarefas de teste em produção. Validação autenticada funcional completa permanece a evidência de QA: .NET 157/157, E2E 93 aprovados e 6 condicionais pulados, sem falhas.
+- Rollback de aplicação: imagem `prisma-rollback:20260922T104550Z`; reetiquetar como `prisma-workspace-prisma-api` e recriar somente o serviço `prisma-api` com Compose, sem rebuild. Fontes anteriores recuperáveis pelo arquivo `production-source.tar.gz` do backup; não restaurar banco indiscriminadamente, pois este lote não alterou schema.
+- Pendente separado: completar a integração de colunas independentes em `/home/dev/prisma-qa-20260922`, ensaiar a migration em cópia restaurada e validar antes de qualquer promoção desse segundo lote. Não considerar todos os itens do PDF concluídos.
+
 ## [2026-09-22] - Codex - acesso antes da atribuição e homologação de interface
 
 - Aprovações humanas registradas: D89/spec de colunas independentes com G-MIGRATION/G-WORKFLOW para cópia por quadro, histórico preservado, backup verificado e ensaio; D90/spec de atribuição exige acesso prévio ao projeto, sem concessão automática.
