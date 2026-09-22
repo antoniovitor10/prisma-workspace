@@ -68,5 +68,5 @@ test('rich description edits, expands, pastes an image and persists on reopen', 
   await reopenedTextbox.click();
   await page.keyboard.press('ControlOrMeta+A');
   if (originalText) await page.keyboard.type(originalText);
-  await expect(reopened.getByRole('status')).toHaveText('Salvo', { timeout: 5000 });
+  await expect(reopened.getByText('Salvo', { exact: true })).toBeVisible({ timeout: 5000 });
 });

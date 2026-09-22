@@ -77,7 +77,7 @@ test('column card sorting stays local to each board column', async ({
   await expect(page.locator("[data-stage-id]").first()).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(/ordenar somente aquela coluna/)).toBeVisible();
 
-  const selectors = page.getByRole("combobox", { name: /Ordenar cartoes da coluna/ });
+  const selectors = page.getByRole("combobox", { name: /Ordenar cartões da coluna/ });
   await expect(selectors.first()).toBeVisible();
   await selectors.first().selectOption("priority");
   await expect(selectors.first()).toHaveValue("priority");

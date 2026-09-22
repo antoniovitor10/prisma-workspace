@@ -258,49 +258,14 @@ test('kanban abre na ordem manual e restaura a ordenação global escolhida', as
   }
 });
 
-test('workflow alterna entre personalizado e herdado da organização', async ({ page, authenticatedGoto }) => {
-  const organizationId = '11111111-1111-4111-8111-111111111111';
+test('configuração de fluxo direciona as colunas independentes para o Kanban', async ({ page, authenticatedGoto }) => {
   const projectId = await resolveSeedProjectId(page);
-  // As configuracoes do projeto passaram a ser por categoria; o fluxo tem endereco proprio.
   await authenticatedGoto(`/projects/${projectId}/settings?secao=fluxo`);
-  type Template = { id: string; name: string; isActive: boolean };
-  let templates = await appApi<Template[]>(page, `/api/organizations/${organizationId}/workflow-templates`);
-  let createdTemplateId = '';
-  if (!templates.some(template => template.isActive)) {
-    const created = await appApi<Template>(page, `/api/organizations/${organizationId}/workflow-templates`, {
-      method: 'POST',
-      body: {
-        name: 'Fluxo E2E', isDefault: false,
-        statuses: [
-          { key: 'todo', name: 'A fazer', color: '#64748B', position: 1000, category: 1, isInitial: true, isFinal: false },
-          { key: 'doing', name: 'Em andamento', color: '#1671B9', position: 2000, category: 2, isInitial: false, isFinal: false },
-          { key: 'done', name: 'Concluído', color: '#16834F', position: 3000, category: 4, isInitial: false, isFinal: true },
-        ],
-        transitions: [{ sourceKey: 'todo', targetKey: 'doing' }, { sourceKey: 'doing', targetKey: 'done' }],
-      },
-    });
-    createdTemplateId = created.id;
-    templates = [created];
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded');
-  }
-
-  const activeTemplate = templates.find(template => template.isActive)!;
-  const modePanel = page.getByRole('heading', { name: 'Status e fluxo' }).locator('..').locator('..');
-  if (await modePanel.getByText('Herdado da organização', { exact: true }).count()) {
-    await modePanel.getByRole('button', { name: 'Personalizar fluxo' }).click();
-    await expect(modePanel.getByText('Personalizado no projeto', { exact: true })).toBeVisible();
-  }
-  await modePanel.getByRole('combobox', { name: 'Template de workflow' }).selectOption(activeTemplate.id);
-  await modePanel.getByRole('button', { name: 'Herdar template' }).click();
-  await expect(modePanel.getByText('Herdado da organização', { exact: true })).toBeVisible();
-  await expect(modePanel.getByText(/sincronizado/)).toBeVisible();
-
-  await modePanel.getByRole('button', { name: 'Personalizar fluxo' }).click();
-  await expect(modePanel.getByText('Personalizado no projeto', { exact: true })).toBeVisible();
-  if (createdTemplateId) {
-    await appApi(page, `/api/organizations/${organizationId}/workflow-templates/${createdTemplateId}`, { method: 'DELETE' });
-  }
+  await expect(page.getByRole('heading', { name: 'Colunas dos quadros' })).toBeVisible();
+  await expect(page.getByText('Cada quadro possui suas próprias colunas.')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Template de workflow' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Configurar colunas no Kanban' }))
+    .toHaveAttribute('href', `/projects/${projectId}/boards`);
 });
 
 const isoHojeMais = (dias: number) => {

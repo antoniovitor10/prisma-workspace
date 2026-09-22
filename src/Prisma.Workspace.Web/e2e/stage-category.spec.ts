@@ -25,7 +25,7 @@ test('coluna criada pelo Kanban respeita a classificação escolhida',
       .selectOption({ label: 'Concluída' });
     const [response] = await Promise.all([
       page.waitForResponse(result => result.request().method() === 'POST'
-        && /\/api\/Stages(?:\?|$)/i.test(result.url())),
+        && /\/api\/Stages\/board\/[0-9a-f-]+(?:\?|$)/i.test(result.url())),
       page.getByRole('button', { name: 'Adicionar' }).click(),
     ]);
     expect(response.ok(), await response.text()).toBeTruthy();
