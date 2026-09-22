@@ -42,7 +42,7 @@ const MobileTitle = styled.div`
     padding: 3px 6px;
     border-radius: ${({ theme }) => theme.radius.sm};
     background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
-    color: ${({ theme }) => theme.color.accentBlue};
+    color: ${({ theme }) => theme.color.accentBlueAccessible};
     font-size: 11px;
   }
 `;
@@ -61,7 +61,7 @@ const MobileTab = styled(NavLink)`
   font-size: 13.5px;
   font-weight: 750;
   white-space: nowrap;
-  &.active { border-color: ${({ theme }) => theme.color.brand}; color: ${({ theme }) => theme.color.brand}; }
+  &.active { border-color: ${({ theme }) => theme.color.brandAccessible}; color: ${({ theme }) => theme.color.brandAccessible}; }
 `;
 
 /* breadcrumb row rendered inside ContextBar via portal */
@@ -70,7 +70,7 @@ const CrumbLink = styled(Link)`
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  &:hover { color: ${({ theme }) => theme.color.brand}; }
+  &:hover { color: ${({ theme }) => theme.color.brandAccessible}; }
 `;
 
 const CrumbSep = styled(ChevronRight)`
@@ -112,7 +112,7 @@ const ViewBtn = styled(NavLink)`
   &:hover { background: ${({ theme }) => theme.color.neutral[100]}; color: ${({ theme }) => theme.color.text}; }
   &.active {
     background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, transparent)`};
-    color: ${({ theme }) => theme.color.brand};
+    color: ${({ theme }) => theme.color.brandAccessible};
     font-weight: 800;
   }
 `;

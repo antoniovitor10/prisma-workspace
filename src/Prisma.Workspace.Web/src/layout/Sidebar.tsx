@@ -72,7 +72,7 @@ const Chave = styled.b`
   padding: 3px 6px;
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
-  color: ${({ theme }) => theme.color.accentBlue};
+  color: ${({ theme }) => theme.color.accentBlueAccessible};
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -108,13 +108,13 @@ const Aba = styled(NavLink)`
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.accentBlue};
+    outline: 2px solid ${({ theme }) => theme.color.accentBlueAccessible};
     outline-offset: 1px;
   }
 
   &.active {
     background: ${({ theme }) => `color-mix(in srgb, ${theme.color.brand} 10%, ${theme.color.surface})`};
-    color: ${({ theme }) => theme.color.brand};
+    color: ${({ theme }) => theme.color.brandAccessible};
     font-weight: 800;
   }
 `;

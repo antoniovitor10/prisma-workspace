@@ -97,8 +97,8 @@ export const ViewSwitcherButton = styled.button<{ $active?: boolean }>`
   padding: 8px 14px;
   font-size: 15px;
   font-weight: 700;
-  background: ${p => (p.$active ? '#1E7BD7' : '#fff')};
-  color: ${p => (p.$active ? '#fff' : '#64748B')};
+  background: ${p => (p.$active ? p.theme.color.brandControlBackground : p.theme.color.surface)};
+  color: ${p => (p.$active ? p.theme.color.onBrand : p.theme.color.textMutedAccessible)};
   border: none;
   cursor: pointer;
 
@@ -113,7 +113,7 @@ export const Select = styled.select`
   border: 1px solid ${props => props.theme.color.border};
   border-radius: ${props => props.theme.radius.md};
   padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]};
-  color: ${props => props.theme.color.text};
+  color: ${props => props.theme.color.textMutedAccessible};
   font-size: ${props => props.theme.fontSize.sm};
   outline: none;
   cursor: pointer;

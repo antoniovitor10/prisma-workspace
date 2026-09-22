@@ -34,6 +34,13 @@ function buildTheme(mode: 'light' | 'dark') {
     color: {
       brand: spectrum[1],
       accentBlue: spectrum[2],
+      // Tokens para texto e controles pequenos sobre superfícies claras.
+      // O espectro continua sendo usado em bordas, fundos e ilustrações;
+      // estes valores evitam contraste insuficiente em textos funcionais.
+      accentBlueAccessible: dark ? '#67E8F9' : '#0E7490',
+      brandAccessible: dark ? '#93C5FD' : '#1D4ED8',
+      brandControlBackground: '#1D4ED8',
+      textMutedAccessible: dark ? '#CBD5E1' : '#475569',
       accentGreen: '#10B981',
       accentAmber: spectrum[4],
       accentViolet: spectrum[0],
