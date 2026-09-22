@@ -1355,3 +1355,14 @@ Formato:
 - Artefato homologado: imagem `prisma-integrated-20260922-final:latest`, manifest list `sha256:b39695fc5b1c5d7e7436a7e6c1027e528f43f72256b0042fa73a2134c821573d`, executada somente na QA `127.0.0.1:55401`.
 - Próximo passo: abrir e aprovar `G-DEPLOY` antes de promover a imagem homologada e executar a migration em produção com backup e verificação pós-deploy.
 - Bloqueios: produção aguarda `G-DEPLOY`; não há bloqueio técnico na QA homologada.
+
+## [2026-09-22] - Codex - G-DEPLOY D89 aprovado e publicado em produção
+
+- Gate humano: o PO aprovou explicitamente o `G-DEPLOY` nesta sessão com a instrução de subir em produção.
+- Segurança: backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY`, arquivo-fonte completo, hashes, configuração e duas imagens de rollback foram preservados em `/home/dev/backups/prisma/20260922T150935Z`.
+- Publicação principal: imagem homologada promovida, 115 arquivos sincronizados e migration `20260922143000_Add_Independent_Board_Columns` aplicada. Pós-migration: 31 etapas legadas, 43 etapas vinculadas a quadros, zero tarefas em quadro/coluna incompatível, zero automações inválidas e zero formulários com etapa inicial incompatível. `DBCC CHECKCONSTRAINTS` e `DBCC CHECKDB` concluíram sem erro.
+- Ajuste pós-deploy: o `agent-browser` encontrou ausência de `h1` no workspace de projeto. O título do projeto foi corrigido semanticamente sem mudança visual, validado com 15 testes focados, build e nova suíte E2E completa: 101 aprovados, 6 condicionais ignorados e zero falhas em desktop/mobile.
+- Produção final: imagem `prisma-integrated-20260922-r2:latest`, digest `sha256:8cc5c26fc1ed0c5d55c622992b054aab02cf9ad74fd2b79341df9142f2e8ef4c`, domínio `https://prisma.nordevs.com.br` saudável. Login real, projetos, backlog e Kanban foram abertos com sucesso; console sem erros e auditoria axe com zero violações confirmadas.
+- Rollback: `prisma-rollback:20260922T150935Z` para o lote anterior à migration e `prisma-rollback:20260922T150935Z-r2` para o estado imediatamente anterior ao ajuste semântico.
+- Próximo passo: acompanhar logs e uso real da equipe; as dívidas de outbox/idempotência e retry SQL permanecem planejadas, sem bloquear esta release.
+- Bloqueios: nenhum.
