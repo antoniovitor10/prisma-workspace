@@ -1,3 +1,12 @@
+## [2026-09-22] - Codex - pendencias de usabilidade do quadro e tarefa
+
+- Pedido direto do PO tratado na worktree isolada /home/dev/prisma-usability-20260922, criada a partir de fix/invite-recovery-20260922. Sem migration, sem alteracao de schema e sem deploy.
+- Implementado ordenacao local por coluna (manual, prioridade, prazo, titulo ou recentes), criacao no topo da coluna e ajuda contextual curta no quadro. A ordenacao do quadro nao altera as demais colunas.
+- Timer passou a exibir estado, tempo decorrido e aviso explicito de que iniciar outra tarefa encerra o timer anterior pela regra atual. A adicao de membro agora informa sucesso/erro visualmente e usa nome funcional antes de e-mail.
+- Auditoria: criacao de sprint ja usava equipes do projeto; agora lista e aceita somente equipes ativas. A API de equipes ja retornava nomes funcionais; a UI deixou de exibir e-mail como primeira opcao. O seletor de subtarefa foi ajustado para ocupar a largura disponivel no mobile e nao sobrepor os controles.
+- Testes focais frontend aprovados: ordenacao/timer 5/5 e TaskDetailDrawer 6/6 antes do ultimo teste de feedback; npm run e2e bloqueado no setup por ausencia de E2E_TEST_USER_EMAIL e E2E_TEST_USER_PASSWORD. O ambiente VPS nao possui dotnet, portanto o xUnit nao pode ser executado nesta worktree.
+- Validacao final: typecheck e build frontend concluidos; Vitest de ordenacao/timer 5/5 e TaskDetailDrawer 6/6, incluindo feedback de membro; commit b30ce5f. E2E e xUnit permanecem lacunas operacionais (credenciais E2E ausentes e dotnet indisponivel); nenhum deploy autorizado nesta rodada.
+
 ## [2026-09-22] - Codex - G-DEPLOY do lote de acesso e descrição
 
 - Autorização explícita do PO: "implementa em produção". Publicado o commit `cacbf22`, da branch `fix/invite-recovery-20260922`, usando a mesma imagem validada em QA (`prisma-access-hotfix:20260922`, digest `sha256:ccb7b245e70f08ce8c0bc30bdf824ee149af2b6bd906c0e9e8dcd1b6d6e8fe04`). Sem incluir a migration de colunas independentes.

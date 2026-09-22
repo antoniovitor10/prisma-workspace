@@ -62,6 +62,13 @@ export const SelectorContainer = styled.div`
   max-width: 100%;
 `;
 
+export const BoardHelp = styled.p`
+  margin: -8px 0 0;
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 12.5px;
+  line-height: 1.45;
+`;
+
 export const BoardActions = styled.div`
   display: flex;
   flex-wrap: wrap;

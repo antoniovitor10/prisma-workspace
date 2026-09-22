@@ -50,7 +50,7 @@ public class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, IReadOn
             p.SettingsJson,
             p.CreatedAt, p.UpdatedAt,
             orderedBoards.Select(b => new ProjectBoardDto(b.Id, b.Name, b.TeamId)).ToList(),
-            p.Teams.OrderBy(t => t.Team.Name).Select(t => new ProjectTeamDto(t.TeamId, t.Team.Name)).ToList(),
+            p.Teams.Where(t => t.Team.IsActive).OrderBy(t => t.Team.Name).Select(t => new ProjectTeamDto(t.TeamId, t.Team.Name)).ToList(),
             Tags: p.Tags.OrderBy(t => t.Tag.Name)
                 .Select(t => new ProjectTagDto(t.TagId, t.Tag.Name, t.Tag.Color)).ToList(),
             CustomFields: p.CustomFields.OrderBy(x => x.Position)

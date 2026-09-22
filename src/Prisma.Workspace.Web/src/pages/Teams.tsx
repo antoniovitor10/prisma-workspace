@@ -13,7 +13,7 @@ interface Team {
   defaultWeeklyCapacityHours: number; totalWeeklyCapacityHours: number;
   projectIds: string[]; members: Member[];
 }
-interface UserDto { id: string; email?: string; userName?: string; }
+interface UserDto { id: string; displayName?: string; email?: string; userName?: string; }
 interface ProjectDto { id: string; key: string; name: string; teams: Array<{id:string;name:string}>; }
 
 const Page = styled.div`
@@ -70,14 +70,17 @@ const Projects = styled.div`
   >span{display:flex;align-items:center;gap:5px;font-weight:800;} label{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.pill};background:${({theme})=>theme.color.surface};max-width:100%;}
 `;
 const Message = styled.div`padding:50px;text-align:center;color:${({theme})=>theme.color.textMuted};`;
+const ActionFeedback = styled.p`margin:0;padding:0 17px 12px;color:${({theme})=>theme.color.success};font-size:12.5px;font-weight:700;`;
 
 function TeamCard({ team, users, projects, run }: {
-  team: Team; users: UserDto[]; projects: ProjectDto[]; run: (action: () => Promise<unknown>) => void;
+  team: Team; users: UserDto[]; projects: ProjectDto[]; run: (action: () => Promise<unknown>) => Promise<unknown>;
 }) {
   const [editing, setEditing] = useState(false);
   const [pick, setPick] = useState('');
+  const [memberFeedback, setMemberFeedback] = useState('');
   const [form, setForm] = useState({ name: team.name, leaderId: team.leaderId ?? '', defaultWeeklyCapacityHours: team.defaultWeeklyCapacityHours });
   const submit = (event:FormEvent) => { event.preventDefault(); run(() => api.updateTeam(team.id, {...form, leaderId:form.leaderId || null})); setEditing(false); };
+  const labelForUser = (user: UserDto) => user.displayName || user.email || user.userName || user.id;
   return <Card $inactive={!team.isActive}>
     <CardHeader><Users size={18}/><div><h2>{team.name} {!team.isActive && <Badge>Desativada</Badge>}</h2><p>{team.members.length} pessoas · {team.totalWeeklyCapacityHours}h de capacidade semanal{team.leaderName ? ` · Líder: ${team.leaderName}`:''}</p></div>
       <span><button onClick={() => setEditing(value => !value)} title="Configurar equipe"><Pencil size={15}/></button>{team.isActive ? <button onClick={() => run(() => api.setTeamActive(team.id,false))} title="Desativar equipe"><Archive size={15}/></button> : <button onClick={() => run(() => api.setTeamActive(team.id,true))} title="Reativar equipe"><RotateCcw size={15}/></button>}</span>
@@ -99,7 +102,26 @@ function TeamCard({ team, users, projects, run }: {
       </MemberRow>;
     })}
     {!team.members.length && <Message>Adicione pessoas para definir líder e capacidade.</Message>}
-    {team.isActive && <AddMember><select aria-label="Adicionar membro à equipe" value={pick} onChange={event=>setPick(event.target.value)}><option value="">Adicionar membro...</option>{users.filter(user=>!team.members.some(member=>member.userId===user.id)).map(user=><option key={user.id} value={user.id}>{user.email??user.userName??user.id}</option>)}</select><Button disabled={!pick} onClick={()=>{if(pick){run(()=>api.addTeamMember(team.id,pick,team.defaultWeeklyCapacityHours));setPick('');}}}><Plus size={14}/>Adicionar</Button></AddMember>}
+    {team.isActive && <>
+      <AddMember>
+        <select aria-label="Adicionar membro à equipe" value={pick} onChange={event=>setPick(event.target.value)}>
+          <option value="">Adicionar membro...</option>
+          {users.filter(user=>!team.members.some(member=>member.userId===user.id)).map(user=><option key={user.id} value={user.id}>{labelForUser(user)}</option>)}
+        </select>
+        <Button disabled={!pick} onClick={async()=>{
+          if(!pick) return;
+          setMemberFeedback('');
+          try {
+            await run(()=>api.addTeamMember(team.id,pick,team.defaultWeeklyCapacityHours));
+            setPick('');
+            setMemberFeedback('Membro adicionado à equipe.');
+          } catch {
+            setMemberFeedback('Não foi possível adicionar o membro.');
+          }
+        }}><Plus size={14}/>Adicionar</Button>
+      </AddMember>
+      {memberFeedback&&<ActionFeedback role="status">{memberFeedback}</ActionFeedback>}
+    </>}
     <Projects><span><FolderKanban size={13}/>Projetos</span>{projects.map(project => <label key={project.id}><input type="checkbox" checked={team.projectIds.includes(project.id)} onChange={event=>run(()=>event.target.checked?api.addProjectTeam(project.id,team.id):api.removeProjectTeam(project.id,team.id))}/>{project.key} · {project.name}</label>)}</Projects>
   </Card>;
 }
@@ -117,7 +139,7 @@ export function Teams() {
   return <Page>
     <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><Create onSubmit={submit}><input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create></Header>
     {action.error && <Message>{(action.error as Error).message}</Message>}
-    <Grid>{teamsQuery.data?.map(team=><TeamCard key={team.id} team={team} users={usersQuery.data??[]} projects={projectsQuery.data??[]} run={run=>action.mutate(run)}/>)}</Grid>
+    <Grid>{teamsQuery.data?.map(team=><TeamCard key={team.id} team={team} users={usersQuery.data??[]} projects={projectsQuery.data??[]} run={run=>action.mutateAsync(run)}/>)}</Grid>
     {!teamsQuery.isLoading && !teamsQuery.data?.length && <Message>Nenhuma equipe cadastrada.</Message>}
   </Page>;
 }

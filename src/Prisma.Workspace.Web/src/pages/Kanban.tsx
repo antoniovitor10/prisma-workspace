@@ -12,7 +12,7 @@ import { WorkItemKindSelector } from '../components/WorkItemKindSelector';
 import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { KanbanFilterBar } from '../features/board/KanbanFilterBar';
-import { compareNewestWorkItems } from '../features/board/kanbanOrdering';
+import { compareKanbanWorkItems, compareNewestWorkItems, type KanbanCardSort } from '../features/board/kanbanOrdering';
 import { AutomationManager } from '../features/board/AutomationManager';
 import { KanbanBulkToolbar } from '../features/board/KanbanBulkToolbar';
 import {
@@ -41,6 +41,7 @@ import {
   AppLayout,
   MainContent,
   BoardHeader,
+  BoardHelp,
   SelectorContainer,
   BoardActions,
   ViewSwitcher,
@@ -304,7 +305,8 @@ export const Kanban: React.FC = () => {
       : defaultKanbanFilters,
   );
   const [groupBy, setGroupBy] = useState('none');
-  const [cardSort, setCardSort] = useState('created');
+  const [cardSort, setCardSort] = useState<KanbanCardSort>('position');
+  const [columnSorts, setColumnSorts] = useState<Record<string, KanbanCardSort>>({});
   const [savedFilters, setSavedFilters] = useState<SavedFilterOption[]>([]);
   const [cardSettings, setCardSettings] = useState<KanbanCardSettings>(defaultCardSettings);
   const [projectMethodology, setProjectMethodology] = useState<number | null>(null);
@@ -792,7 +794,9 @@ export const Kanban: React.FC = () => {
     if (!newItemTitle.trim() || !selectedBoardId) return;
     try {
       const columnItems = workItems.filter(w => w.stageId === targetStageIdForNewItem);
-      const nextPos = columnItems.length > 0 ? Math.max(...columnItems.map(c => c.position)) + 100 : 100;
+      const nextPos = columnItems.length > 0
+        ? Math.max(0, Math.min(...columnItems.map(c => c.position)) - 100)
+        : 100;
 
       await api.createWorkItem({
         boardId: selectedBoardId,
@@ -1221,6 +1225,9 @@ export const Kanban: React.FC = () => {
             </BoardActions>
           )}
         </BoardHeader>
+        {canRenderBoard && boardView === 'kanban' && (
+          <BoardHelp>Arraste um cartão para outra coluna. Use o seletor no cabeçalho de cada coluna para ordenar somente aquela coluna; a ordem manual é a padrão compartilhada.</BoardHelp>
+        )}
 
         {canRenderBoard && boardView !== 'dashboard' && (
           <KanbanFilterBar
@@ -1232,11 +1239,11 @@ export const Kanban: React.FC = () => {
             groupBy={groupBy}
             onGroupBy={setGroupBy}
             sortBy={cardSort}
-            onSortBy={setCardSort}
+            onSortBy={value => setCardSort(value as KanbanCardSort)}
             savedFilters={savedFilters}
             onApplySaved={applySavedFilter}
             onSaveFilter={saveCurrentFilter}
-            onReset={() => { setFilters(defaultKanbanFilters); setGroupBy('none'); setCardSort('created'); }}
+            onReset={() => { setFilters(defaultKanbanFilters); setGroupBy('none'); setCardSort('position'); setColumnSorts({}); }}
             cardSettings={cardSettings}
             onCardSettings={setCardSettings}
             onSaveCardSettings={saveCardView}
@@ -1355,7 +1362,10 @@ export const Kanban: React.FC = () => {
         ) : canRenderBoard ? (
           <KanbanGrid>
             {stages.map(stage => {
-              const itemsInStage = visibleWorkItems.filter(w => w.stageId === stage.id);
+              const columnSort = columnSorts[stage.id] || 'position';
+              const itemsInStage = visibleWorkItems
+                .filter(w => w.stageId === stage.id)
+                .sort((a, b) => compareKanbanWorkItems(a, b, columnSort));
               return (
                 <Column
                   key={stage.id}
@@ -1365,6 +1375,18 @@ export const Kanban: React.FC = () => {
                 >
                   <ColumnHeader>
                     <ColumnTitle><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                      <select
+                        aria-label={`Ordenar cartões da coluna ${stage.name}`}
+                        value={columnSort}
+                        onChange={event => setColumnSorts(current => ({ ...current, [stage.id]: event.target.value as KanbanCardSort }))}
+                        style={{ maxWidth: 120, minHeight: 26, padding: '0 4px', border: '1px solid #CBD5E1', borderRadius: 5, color: '#64748B', fontSize: 11 }}
+                      >
+                        <option value="position">Ordem manual</option>
+                        <option value="priority">Prioridade</option>
+                        <option value="due">Prazo</option>
+                        <option value="title">Título</option>
+                        <option value="created">Mais recentes</option>
+                      </select>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CardCount>
                         {itemsInStage.length}

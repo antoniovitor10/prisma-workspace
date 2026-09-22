@@ -100,8 +100,8 @@ public class CreateSprintCommandHandler : IRequestHandler<CreateSprintCommand, G
     {
         await SprintAccessGuard.EnsureCanManageAsync(request.ProjectId, request.ActorId, _access, _permissions, ct);
         var project = await _projects.GetByIdAsync(request.ProjectId, ct) ?? throw new NaoEncontradoException("Projeto");
-        DomainException.Garantir(!request.TeamId.HasValue || project.Teams.Any(x => x.TeamId == request.TeamId),
-            "O time não pertence ao projeto.");
+        DomainException.Garantir(!request.TeamId.HasValue || project.Teams.Any(x => x.TeamId == request.TeamId && x.Team.IsActive),
+            "O time selecionado não pertence ao projeto ou está desativado.");
         var sprint = Sprint.Criar(request.ProjectId, request.TeamId, request.Name, request.StartDate, request.EndDate, request.Goal);
         await _sprints.AddAsync(sprint, ct);
         return sprint.Id;

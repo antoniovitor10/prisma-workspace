@@ -78,6 +78,23 @@ public class ProjectFeatureTests
     }
 
     [Fact]
+    public async Task ProjectList_ExposesOnlyActiveTeamsForSprintSelection()
+    {
+        var project = Project.Criar(
+            "TEAM", "Projeto com equipes", "owner-1", WorkNature.Project, WorkType.Development);
+        var active = Team.Criar("Equipe ativa");
+        var inactive = Team.Criar("Equipe arquivada");
+        inactive.DefinirAtiva(false);
+        project.Teams.Add(new ProjectTeam { ProjectId = project.Id, TeamId = active.Id, Team = active });
+        project.Teams.Add(new ProjectTeam { ProjectId = project.Id, TeamId = inactive.Id, Team = inactive });
+
+        var handler = new GetProjectsQueryHandler(new ProjectRepositoryStub(project));
+        var result = await handler.Handle(new GetProjectsQuery("owner-1"), default);
+
+        Assert.Equal(["Equipe ativa"], Assert.Single(result).Teams.Select(team => team.Name));
+    }
+
+    [Fact]
     public void ProjectValidators_RejectMissingClassification()
     {
         var result = new CreateProjectCommandValidator().Validate(new CreateProjectCommand(

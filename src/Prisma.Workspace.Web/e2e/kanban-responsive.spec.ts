@@ -66,3 +66,26 @@ test.describe('Kanban responsivo e acessível', () => {
       expect(unnamed, 'Botões sem nome acessível no quadro').toBe(0);
     });
 });
+
+
+test('column card sorting stays local to each board column', async ({
+  page, authenticatedGoto, resolveSeedProject,
+}) => {
+  const project = await resolveSeedProject();
+  const board = project.boards[0];
+
+  await authenticatedGoto("/boards/" + board.id);
+  await expect(page.locator("[data-stage-id]").first()).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/ordenar somente aquela coluna/)).toBeVisible();
+
+  const selectors = page.getByRole("combobox", { name: /Ordenar cartoes da coluna/ });
+  await expect(selectors.first()).toBeVisible();
+  await selectors.first().selectOption("priority");
+  await expect(selectors.first()).toHaveValue("priority");
+
+  if (await selectors.count() > 1) {
+    await expect(selectors.nth(1)).toHaveValue("position");
+    await selectors.nth(1).selectOption("title");
+    await expect(selectors.first()).toHaveValue("priority");
+  }
+});

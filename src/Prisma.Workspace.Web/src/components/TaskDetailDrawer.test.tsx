@@ -172,6 +172,7 @@ describe('TaskDetailDrawer', () => {
     fireEvent.submit(screen.getByRole('form', { name: 'Adicionar responsável' }));
     await waitFor(() => expect(assignUser).toHaveBeenCalledWith('multi-item', 'bruno'));
     expect(await screen.findByRole('button', { name: 'Remover responsável Bruno Lima' })).toBeInTheDocument();
+    expect(screen.getByText('Responsável adicionado.', { exact: true })).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Novo responsável' }), { target: { value: 'carla' } });
     fireEvent.submit(screen.getByRole('form', { name: 'Adicionar responsável' }));
