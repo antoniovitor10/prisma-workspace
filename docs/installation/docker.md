@@ -1,13 +1,29 @@
 # Instalação local com Docker
 
-Este quickstart cria a aplicação, o SQL Server e dois volumes persistentes sem depender da infraestrutura da Nordevs.
+Este quickstart cria a aplicação, o SQL Server e três volumes persistentes (banco, anexos e chaves de proteção)
+sem depender da infraestrutura da Nordevs. Não é necessário instalar .NET ou Node.js no host para este caminho.
 
 ## Pré-requisitos
 
-- Docker Desktop ou Docker Engine com Docker Compose v2;
+- Git e Docker Desktop ou Docker Engine com Docker Compose v2, com o daemon iniciado;
+- host Linux x86-64/AMD64, ou Windows x86-64 com Docker Desktop em containers Linux;
 - pelo menos 4 GB de memória disponíveis para os containers;
 - PowerShell 7/Windows PowerShell ou shell POSIX com OpenSSL;
 - porta 8080 livre, ou outra porta definida em `.env`.
+
+O SQL Server usado neste Compose requer x86-64. Macs com Apple Silicon/ARM não são um ambiente validado
+para este conjunto; use uma máquina/VM x86-64 para o banco e valide a configuração antes de começar.
+
+## Baixar o projeto
+
+```bash
+git clone https://github.com/antoniovitor10/prisma-workspace.git
+cd prisma-workspace
+docker info
+docker compose version
+```
+
+Execute os próximos comandos na raiz clonada. Uma cópia nova usa dados locais vazios, sem contas ou dados de produção.
 
 ## Licença do banco
 
@@ -70,6 +86,18 @@ docker compose start
 
 `docker compose down` remove os containers e a rede, mas preserva os volumes. Não use `down --volumes` se quiser
 manter o banco e os anexos.
+
+## Aplicar alterações locais no código
+
+O Compose empacota o código na imagem e não oferece hot reload. Depois de editar ou atualizar o código:
+
+```bash
+docker compose up -d --build --wait app
+```
+
+Não execute novamente o script de setup quando `.env` já existir. Ele recusa sobrescrever as credenciais.
+Atualizações podem aplicar migrations; faça backup do seu banco local antes de experimentar mudanças de schema.
+Para conferir a aplicação, abra `/health` no mesmo endereço e entre com a conta criada no setup.
 
 ## Limitações desta etapa
 

@@ -1,3 +1,12 @@
+## [2026-09-22] - Codex - limpeza de distribuição e guia da equipe
+
+- PO confirmou publicação do repositório e solicitou limpeza antes do push, mantendo CI automático. Trabalho em `chore/repository-onboarding-cleanup`, a partir de `adeec99`, candidato já homologado e publicado; sem mudança de código do produto, banco ou produção.
+- Retirados da árvore atual dois relatórios transitórios (`HANDOFF-V2.md` e `browser-qa-20260922.md`) e 12 capturas antigas do Context Explorer sem referências de consumo. Recuperação disponível pelo histórico Git. Specs, decisões, migrations, testes e o arquivo OmniRoute consumido pela ferramenta foram preservados.
+- Ignore do Git e do Docker ampliado para temporários de agentes, cache Python e documentos exportados. README atualizado para visibilidade pública sem inventar licença; guia Docker esclarece clone, requisitos, três volumes, primeiro acesso, rebuild e preservação de dados. PDF de colaboração entregue separadamente e não versionado.
+- Verificações: gitleaks no intervalo `origin/main..HEAD` sem achados; auditoria do snapshot com 841 arquivos sem achados; `git diff --check` limpo. Context Explorer ainda falha por contagem canônica antiga (40 specs contra 47 atuais) e histórias ausentes no catálogo; falha anterior não causada pela remoção de screenshots. Não declarar CI verde.
+- Duas alterações remotas de múltiplos responsáveis em `origin/integration/all-specs-v2` permanecem preservadas naquela branch; não foram reaplicadas sobre a implementação já homologada de D90. Exigem comparação funcional dedicada antes de eventual integração.
+- Próximo: revisar PR de consolidação e alinhar os contratos de governança antes do merge em main. CI automático mantido; nenhum deploy faz parte deste push.
+
 ## [2026-09-22] - Codex - pendencias de usabilidade do quadro e tarefa
 
 - Pedido direto do PO tratado na worktree isolada /home/dev/prisma-usability-20260922, criada a partir de fix/invite-recovery-20260922. Sem migration, sem alteracao de schema e sem deploy.

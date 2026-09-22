@@ -40,3 +40,10 @@ tools/context-explorer/web/vite-output*.txt
 *.nupkg
 .DS_Store
 Thumbs.db
+**/__pycache__
+**/*.pyc
+.tmp-*
+remote_*
+.codex-remote-stage
+output
+tools/context-explorer/web/screenshots

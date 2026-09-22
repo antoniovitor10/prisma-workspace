@@ -2,12 +2,19 @@
 
 Plataforma open source de gestão ágil para equipes que trabalham com projetos, melhorias e sustentação.
 
-> Este repositório está em preparação privada para a primeira distribuição da Community Edition. A instalação
-> pública ainda não foi liberada; os passos atuais podem depender do ambiente de desenvolvimento.
+> Repositório público em preparação para a primeira release da Community Edition. A licença de distribuição
+> ainda está pendente; a visibilidade pública não substitui uma licença de uso.
 
 ## Quickstart local
 
-Com Docker e Docker Compose v2 instalados, execute no PowerShell:
+Com Git, Docker e Docker Compose v2 instalados, baixe o projeto:
+
+```bash
+git clone https://github.com/antoniovitor10/prisma-workspace.git
+cd prisma-workspace
+```
+
+Execute no PowerShell:
 
 ```powershell
 .\scripts\setup-docker.ps1 -AcceptSqlServerEula
@@ -42,8 +49,8 @@ O plano completo está em [`docs/OPEN-SOURCE-PLAN.md`](docs/OPEN-SOURCE-PLAN.md)
 - [Governança](GOVERNANCE.md)
 - [Integração contínua](docs/maintenance/continuous-integration.md)
 
-A licença ainda é uma decisão humana pendente. Até que um arquivo `LICENSE` seja aprovado e o repositório seja tornado
-público, este código não deve ser tratado como uma distribuição open source publicada.
+A licença ainda é uma decisão humana pendente. Até que um arquivo `LICENSE` seja aprovado, este código não deve
+ser tratado como uma distribuição open source licenciada.
 
 ## Segurança
 

@@ -49,3 +49,12 @@ tools/context-explorer/web/vite-output*.txt
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Artefatos locais de agentes e documentação exportada
+__pycache__/
+*.pyc
+/.tmp-*
+/remote_*
+/.codex-remote-stage/
+/output/
+/tools/context-explorer/web/screenshots/
