@@ -50,21 +50,17 @@ public class UpdateStageCommandHandler : IRequestHandler<UpdateStageCommand>
             stage.Category = request.Category.Value;
         }
 
-        if (stage.WorkflowStatusId.HasValue && _workflow is not null)
+        DomainException.Garantir(stage.BoardId.HasValue, "Colunas históricas não podem ser alteradas.");
+        // Não altera WorkflowStatus compartilhado por clones ou histórico.
+        if (request.Color is not null || stage.WorkflowStatusId.HasValue)
         {
-            var status = await _workflow.GetStatusAsync(stage.WorkflowStatusId.Value, cancellationToken);
-            if (status is not null && status.ProjectId == stage.ProjectId)
-            {
-                var targetCategory = request.Category ?? status.Category;
-                status.Update(
-                    request.Name.Trim(),
-                    request.Color ?? status.Color,
-                    status.Position,
-                    targetCategory,
-                    status.IsInitial,
-                    targetCategory == StageCategory.Done);
-                await _workflow.SaveAsync(cancellationToken);
-            }
+            var current = stage.WorkflowStatusId.HasValue && _workflow is not null
+                ? await _workflow.GetStatusAsync(stage.WorkflowStatusId.Value, cancellationToken) : null;
+            var isolatedStatus = WorkflowStatus.Create(stage.ProjectId, stage.Name,
+                request.Color ?? current?.Color ?? "#64748B", stage.Position, stage.Category, false,
+                stage.Category == StageCategory.Done);
+            stage.WorkflowStatusId = isolatedStatus.Id;
+            stage.WorkflowStatus = isolatedStatus;
         }
 
         await _stageRepository.UpdateAsync(stage, cancellationToken);

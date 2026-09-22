@@ -366,10 +366,10 @@ export const api = {
     return this.request(`/api/Boards/${id}`);
   },
 
-  async createBoard(name: string, projectId?: string, teamId?: string) {
+  async createBoard(name: string, projectId?: string, teamId?: string, copyStagesFromBoardId?: string) {
     return this.request('/api/Boards', {
       method: 'POST',
-      body: JSON.stringify({ name, projectId, teamId })
+      body: JSON.stringify({ name, projectId, teamId, copyStagesFromBoardId })
     });
   },
 
@@ -676,13 +676,17 @@ export const api = {
   },
 
   // Stages (fluxo do projeto — D83)
+  async getBoardStages(boardId: string) {
+    return this.request(`/api/Stages/board/${boardId}`);
+  },
+
   async getStages(projectId: string) {
     return this.request(`/api/Stages/project/${projectId}`);
   },
 
   async createStage(
     projectId: string, name: string, position: number,
-    options?: { workflowStatusId?: string; category?: number; color?: string }
+    options?: { boardId?: string; workflowStatusId?: string; category?: number; color?: string }
   ) {
     return this.request('/api/Stages', {
       method: 'POST',
@@ -692,7 +696,7 @@ export const api = {
 
   async updateStage(
     stageId: string,
-    data: { name: string; category?: number; color?: string }
+    data: { name: string; category?: number; color?: string; confirmCategoryChange?: boolean }
   ) {
     return this.request(`/api/Stages/${stageId}`, {
       method: 'PUT',
@@ -822,13 +826,21 @@ export const api = {
     });
   },
 
-  async deleteBoard(id: string, destinationBoardId?: string) {
-    const query = destinationBoardId ? `?destinationBoardId=${encodeURIComponent(destinationBoardId)}` : '';
+  async deleteBoard(id: string, destinationBoardId?: string, destinationStageId?: string) {
+    const query = destinationBoardId ? `?destinationBoardId=${encodeURIComponent(destinationBoardId)}&destinationStageId=${encodeURIComponent(destinationStageId ?? '')}` : '';
     return this.request(`/api/Boards/${id}${query}`, { method: 'DELETE' });
   },
 
+  async transferWorkItem(workItemId: string, destinationBoardId: string, destinationStageId: string) {
+    return this.request(`/api/workitems/${workItemId}/transfer`, { method: 'POST', body: JSON.stringify({ destinationBoardId, destinationStageId }) });
+  },
+
+  async deleteStage(stageId: string, destinationStageId?: string) {
+    return this.request(`/api/Stages/${stageId}${destinationStageId ? `?destinationStageId=${destinationStageId}` : ''}`, { method: 'DELETE' });
+  },
+
   async reorderStages(projectId: string, orderedStageIds: string[]) {
-    return this.request(`/api/Stages/project/${projectId}/order`, {
+    return this.request(`/api/Stages/board/${projectId}/order`, {
       method: 'PUT',
       body: JSON.stringify(orderedStageIds)
     });

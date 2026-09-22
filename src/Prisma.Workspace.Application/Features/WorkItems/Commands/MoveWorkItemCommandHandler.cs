@@ -70,10 +70,12 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
             destStage = await _stageRepository.GetByIdAsync(request.DestinationStageId.Value, cancellationToken);
             if (destStage is null)
                 throw new ArgumentException("A etapa de destino não existe.");
-            if (destStage.ProjectId != workItem.Board.ProjectId)
-                throw new ArgumentException(
-                    "A etapa de destino não pertence ao projeto da tarefa.");
+            if (destStage.ProjectId != workItem.Board.ProjectId || destStage.BoardId != workItem.BoardId)
+                throw new DomainException(
+                    "A coluna de destino pertence a outro quadro. Use a transferência com quadro e coluna explícitos.");
         }
+
+        DomainException.Garantir(destStage is not null, "Escolha uma coluna de destino do quadro.");
 
         var stageChanged = workItem.StageId != request.DestinationStageId;
         var previousStageId = workItem.StageId;

@@ -32,11 +32,12 @@ public class WorkItemStageUpdateTests
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-    private static Stage CriarStage(Guid projectId, string nome, StageCategory categoria, Guid? statusId = null)
+    private static Stage CriarStage(Board board, string nome, StageCategory categoria, Guid? statusId = null)
         => new()
         {
             Id = Guid.NewGuid(),
-            ProjectId = projectId,
+            ProjectId = board.ProjectId,
+            BoardId = board.Id,
             Name = nome,
             Category = categoria,
             WorkflowStatusId = statusId,
@@ -101,8 +102,8 @@ public class WorkItemStageUpdateTests
     public async Task Update_AoMudarEtapa_GravaEtapaEConclusao()
     {
         var board = CriarBoard();
-        var emAndamento = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
-        var concluido = CriarStage(board.ProjectId, "Concluído", StageCategory.Done);
+        var emAndamento = CriarStage(board, "Em andamento", StageCategory.InProgress);
+        var concluido = CriarStage(board, "Concluído", StageCategory.Done);
         var item = CriarItem(board, emAndamento);
 
         var handler = CriarHandler(item, emAndamento, concluido);
@@ -116,8 +117,8 @@ public class WorkItemStageUpdateTests
     public async Task Update_AoSairDaConclusao_LimpaCompletedAt()
     {
         var board = CriarBoard();
-        var backlog = CriarStage(board.ProjectId, "Backlog", StageCategory.Ready);
-        var concluido = CriarStage(board.ProjectId, "Concluído", StageCategory.Done);
+        var backlog = CriarStage(board, "Backlog", StageCategory.Ready);
+        var concluido = CriarStage(board, "Concluído", StageCategory.Done);
         var item = CriarItem(board, backlog);
 
         var handler = CriarHandler(item, backlog, concluido);
@@ -137,7 +138,7 @@ public class WorkItemStageUpdateTests
     public async Task Update_SemTrocarResponsavelPreservaVinculoLegadoSemRevalidarAcesso()
     {
         var board = CriarBoard();
-        var stage = CriarStage(board.ProjectId, "Backlog", StageCategory.Ready);
+        var stage = CriarStage(board, "Backlog", StageCategory.Ready);
         var item = CriarItem(board, stage);
         item.ResponsibleId = "legacy-inactive";
         var access = new FakeProjectAccess();
@@ -198,6 +199,12 @@ public class WorkItemStageUpdateTests
             => Task.FromResult(stages.FirstOrDefault(s => s.Id == id));
         public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Stage>>(stages.Where(s => s.ProjectId == projectId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Stage> list = stages.Where(s => s.BoardId == boardId).ToList();
+            return Task.FromResult(list);
+        }
+
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default) => Task.FromResult(stage);
         public Task UpdateAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;

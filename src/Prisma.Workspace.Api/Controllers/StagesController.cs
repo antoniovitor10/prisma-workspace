@@ -1,4 +1,5 @@
 using Prisma.Workspace.Application.Features.Stages.Commands;
+using Prisma.Workspace.Application.Features.Boards;
 using Prisma.Workspace.Application.Features.Stages.Dtos;
 using Prisma.Workspace.Application.Features.Stages.Queries;
 using MediatR;
@@ -37,11 +38,15 @@ public class StagesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("board/{boardId:guid}")]
+    public async Task<IActionResult> GetByBoardId(Guid boardId, CancellationToken cancellationToken)
+        => Ok(await _mediator.Send(new GetStagesByBoardIdQuery(boardId, UserId), cancellationToken));
+
     /// <summary>
     /// Reordena as etapas de um projeto.
     /// O corpo é um array JSON de GUIDs na nova ordem.
     /// </summary>
-    [HttpPut("project/{projectId:guid}/order")]
+    [HttpPut("board/{projectId:guid}/order")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Reorder(
@@ -49,8 +54,15 @@ public class StagesController : ControllerBase
         [FromBody] Guid[] orderedStageIds,
         CancellationToken cancellationToken)
     {
-        var command = new ReorderStagesCommand(projectId, orderedStageIds, UserId);
+        var command = new ReorderBoardStagesCommand(projectId, orderedStageIds, UserId);
         await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{stageId:guid}")]
+    public async Task<IActionResult> Delete(Guid stageId, [FromQuery] Guid? destinationStageId, CancellationToken ct)
+    {
+        await _mediator.Send(new RemoveBoardStageCommand(stageId, destinationStageId, UserId), ct);
         return NoContent();
     }
 
@@ -71,6 +83,14 @@ public class StagesController : ControllerBase
         return CreatedAtAction(nameof(GetByProjectId), new { projectId = request.ProjectId }, stageId);
     }
 
+    [HttpPost("board/{boardId:guid}")]
+    public async Task<IActionResult> CreateForBoard(Guid boardId, [FromBody] CreateStageRequest request, CancellationToken cancellationToken)
+    {
+        var id = await _mediator.Send(new CreateStageCommand(request.ProjectId, request.Name, request.Position,
+            request.WorkflowStatusId, request.Category, request.Color, UserId, boardId), cancellationToken);
+        return CreatedAtAction(nameof(GetByBoardId), new { boardId }, id);
+    }
+
     /// <summary>
     /// Atualiza uma coluna/etapa existente do fluxo do projeto.
     /// </summary>
@@ -83,8 +103,8 @@ public class StagesController : ControllerBase
         [FromBody] UpdateStageRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateStageCommand(
-            stageId, request.Name, request.Category, request.Color, UserId);
+        var command = new UpdateBoardStageCommand(
+            stageId, request.Name, request.Category, request.Color, request.ConfirmCategoryChange, UserId);
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -105,4 +125,5 @@ public record CreateStageRequest(
 public record UpdateStageRequest(
     string Name,
     StageCategory? Category = null,
-    string? Color = null);
+    string? Color = null,
+    bool ConfirmCategoryChange = false);

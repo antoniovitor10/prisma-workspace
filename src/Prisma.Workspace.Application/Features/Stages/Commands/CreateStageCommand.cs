@@ -13,4 +13,5 @@ public record CreateStageCommand(
     Guid? WorkflowStatusId = null,
     StageCategory Category = StageCategory.InProgress,
     string Color = "#64748B",
-    string? ActorId = null) : IRequest<Guid>;
+    string? ActorId = null,
+    Guid? BoardId = null) : IRequest<Guid>;

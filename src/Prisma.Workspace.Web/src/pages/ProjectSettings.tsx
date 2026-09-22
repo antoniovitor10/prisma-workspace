@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, Check, Clock3, FolderCog, Globe, Plus, RotateCcw, Route, Tags, Trash2, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import type { ProjectSummary } from './Projects';
 import { workNatureOptions, workTypeOptions } from './projectClassification';
-import { ProjectWorkflowSettings } from '../features/workflow/ProjectWorkflowSettings';
 import { ExternalPortalSettings } from '../features/portal/ExternalPortalSettings';
 import { Page as BasePage } from '../components/PageLayout';
 
@@ -205,7 +204,7 @@ export function ProjectSettings() {
     </>}
 
     {secao==='fluxo'&&<>
-    <ProjectWorkflowSettings projectId={project.id}/>
+    <Section><h2>Colunas dos quadros</h2><p>Cada quadro possui suas próprias colunas. Abra o Kanban para criar, editar, ordenar ou excluir uma coluna.</p><Link to={`/projects/${project.id}/boards`}>Configurar colunas no Kanban</Link></Section>
     </>}
 
     {secao==='portal'&&<>

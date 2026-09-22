@@ -66,23 +66,17 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
         }
 
         // 2. Localizar a etapa Backlog no fluxo do projeto (nome exato primeiro, depois Category Ready)
-        var projectStages = await _stageRepository.GetByProjectIdAsync(homeBoard.ProjectId, cancellationToken);
-        var homeBacklog = projectStages.FirstOrDefault(s =>
-                string.Equals(s.Name.Trim(), "Backlog", StringComparison.OrdinalIgnoreCase))
-            ?? projectStages.FirstOrDefault(s =>
-                s.Name.Contains("backlog", StringComparison.OrdinalIgnoreCase))
-            ?? projectStages.OrderBy(s => s.Position)
-                .FirstOrDefault(s => s.Category is StageCategory.Ready or StageCategory.Backlog)
-            ?? throw new ArgumentException(
-                $"O projeto do quadro '{homeBoard.Name}' não possui uma etapa 'Backlog'. " +
-                "Crie uma etapa com nome 'Backlog' e categoria Ready antes de adicionar itens.");
+        var projectStages = await _stageRepository.GetByBoardIdAsync(homeBoard.Id, cancellationToken);
+        var homeBacklog = request.StageId.HasValue ? null : projectStages.OrderBy(s => s.Position)
+            .FirstOrDefault(s => s.Category != StageCategory.Done)
+            ?? throw new ArgumentException("Escolha uma coluna de destino antes de adicionar itens.");
 
         // 3. Coluna de destino explícita (se informada) — deve pertencer ao projeto da tarefa
         Stage? selectedStage = homeBacklog;
         if (request.StageId.HasValue)
         {
             selectedStage = await _stageRepository.GetByIdAsync(request.StageId.Value, cancellationToken);
-            if (selectedStage is null || selectedStage.ProjectId != homeBoard.ProjectId)
+            if (selectedStage is null || selectedStage.ProjectId != homeBoard.ProjectId || selectedStage.BoardId != homeBoard.Id)
                 throw new ArgumentException("A etapa especificada não pertence ao projeto da tarefa.");
             // Limite de WIP removido do produto pela D83.
         }
@@ -165,6 +159,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             BacklogRank = Convert.ToDecimal(request.Position),
             CreatedBy = request.CreatedBy,
             CreatedAt = now,
+            CompletedAt = selectedStage?.Category == StageCategory.Done ? now : null,
             UpdatedAt = now
         };
 

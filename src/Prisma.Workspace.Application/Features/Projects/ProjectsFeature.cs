@@ -149,7 +149,7 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
 
         // Fluxo do projeto: colunas espelham status ativos do template (ou Backlog mínimo).
         // Criar quadro NÃO cria mais colunas (D83).
-        EnsureProjectStages(project);
+        // D89: as colunas nascem somente na criação explícita de um quadro.
 
         project.Events.Add(ProjectEvent.Register(
             project.Id, request.OwnerId, "created",

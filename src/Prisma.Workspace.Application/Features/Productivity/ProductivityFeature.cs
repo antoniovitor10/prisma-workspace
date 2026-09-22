@@ -303,7 +303,7 @@ public static class AutomationRuleGuard
         var trigger = await repository.GetStageAsync(triggerStageId, ct);
         var board = await repository.GetBoardAsync(boardId, ct);
         DomainException.Garantir(board is not null, "Quadro não encontrado.");
-        DomainException.Garantir(trigger is not null && trigger.ProjectId == board.ProjectId,
+        DomainException.Garantir(trigger is not null && trigger.ProjectId == board.ProjectId && trigger.BoardId == boardId,
             "A etapa de disparo não pertence ao projeto do quadro.");
 
         string normalized;
@@ -318,7 +318,7 @@ public static class AutomationRuleGuard
                 DomainException.Garantir(Guid.TryParse(actionValue, out var destinationId),
                     "A etapa de destino é inválida.");
                 var destination = await repository.GetStageAsync(destinationId, ct);
-                DomainException.Garantir(destination is not null && destination.ProjectId == board.ProjectId,
+                DomainException.Garantir(destination is not null && destination.ProjectId == board.ProjectId && destination.BoardId == boardId,
                     "A etapa de destino não pertence ao projeto do quadro.");
                 DomainException.Garantir(destinationId != triggerStageId,
                     "A automação não pode mover uma tarefa para a própria etapa de disparo.");
@@ -507,7 +507,7 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
             case BulkActionType.Move:
                 DomainException.Garantir(targetId.HasValue, "Etapa de destino obrigatória.");
                 stage = await _repository.GetStageAsync(targetId!.Value, ct);
-                DomainException.Garantir(stage is not null && stage.ProjectId == board.ProjectId,
+                DomainException.Garantir(stage is not null && stage.ProjectId == board.ProjectId && stage.BoardId == board.Id,
                     "Etapa de destino inválida.");
                 foreach (var item in items.Where(x => x.StageId != stage.Id))
                     await WorkflowMoveGuard.EnsureAllowedAsync(item, stage, _workflow, ct);

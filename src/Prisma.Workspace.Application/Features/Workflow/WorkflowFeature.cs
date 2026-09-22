@@ -232,6 +232,7 @@ public sealed class UpdateWorkflowStageCommandHandler : IRequestHandler<UpdateWo
         DomainException.Garantir(!string.IsNullOrWhiteSpace(request.Name), "Nome da coluna obrigatorio.");
         DomainException.Garantir(request.Position >= 0, "Posicao da coluna invalida.");
 
+        DomainException.Garantir(false, "Configure as colunas independentes no próprio quadro; colunas históricas são somente leitura.");
         var changedStatus = stage.WorkflowStatusId != status.Id;
         stage.Name = request.Name.Trim();
         stage.Position = request.Position;
@@ -258,6 +259,7 @@ public sealed class DeleteWorkflowStageCommandHandler : IRequestHandler<DeleteWo
         DomainException.Garantir(stage.ProjectId == request.ProjectId, "A coluna nao pertence ao projeto.");
         DomainException.Garantir(await _workflow.CountActiveItemsInStageAsync(stage.Id, ct: ct) == 0,
             "Mova ou arquive as tarefas antes de excluir a coluna.");
+        DomainException.Garantir(false, "Exclua a coluna pelo quadro, informando destino quando ocupada.");
         _workflow.DeleteStage(stage);
         await _workflow.SaveAsync(ct);
     }

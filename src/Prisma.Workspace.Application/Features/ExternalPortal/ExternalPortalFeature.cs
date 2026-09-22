@@ -424,15 +424,16 @@ public class CreateExternalRequestCommandHandler
 
         var initialStatus = portal.Project.WorkflowStatuses
             .OrderBy(x => x.Position).FirstOrDefault(x => x.IsInitial);
-        var initialStage = portal.Project.Stages.OrderBy(x => x.Position)
+        var initialStage = portal.Project.Stages.Where(x => x.BoardId == portal.BoardId).OrderBy(x => x.Position)
             .FirstOrDefault(x => initialStatus == null || x.WorkflowStatusId == initialStatus.Id)
-            ?? portal.Project.Stages.OrderBy(x => x.Position).FirstOrDefault();
+            ?? portal.Project.Stages.Where(x => x.BoardId == portal.BoardId).OrderBy(x => x.Position).FirstOrDefault();
+        DomainException.Garantir(initialStage is not null, "Configure uma coluna no quadro de entrada do portal.");
         var now = DateTimeOffset.UtcNow;
         var backlogRank = await _portals.GetNextBacklogRankAsync(portal.BoardId, ct);
         var workItem = new WorkItem
         {
             Id = Guid.NewGuid(), BoardId = portal.BoardId, TeamId = portal.Board.TeamId,
-            StageId = initialStage?.Id, WorkflowStatusId = initialStatus?.Id,
+            StageId = initialStage!.Id, WorkflowStatusId = initialStage.WorkflowStatusId,
             Title = request.Title.Trim(),
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             Priority = Priority.Medium, Kind = WorkItemKind.Request, Origin = WorkItemOrigin.ExternalPortal,

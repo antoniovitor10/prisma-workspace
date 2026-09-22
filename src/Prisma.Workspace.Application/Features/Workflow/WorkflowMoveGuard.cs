@@ -12,6 +12,8 @@ public static class WorkflowMoveGuard
         IWorkflowRepository workflow,
         CancellationToken ct)
     {
+        // D89/D65: a categoria explícita da coluna governa o estado. Fluxos de projeto são legado.
+        if (destination.BoardId.HasValue) return;
         if (destination.WorkflowStatusId.HasValue)
         {
             var destinationStatus = await workflow.GetStatusAsync(destination.WorkflowStatusId.Value, ct);

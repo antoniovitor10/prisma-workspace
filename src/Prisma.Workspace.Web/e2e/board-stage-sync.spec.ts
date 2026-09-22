@@ -15,7 +15,7 @@ test('concluir pela gaveta move o card no quadro e a mudança sobrevive ao recar
     const board = project.boards[0];
 
     // D83: o fluxo pertence ao projeto, nao ao quadro.
-    const stages = await authenticatedApiGet<Stage[]>(page, `/api/Stages/project/${project.id}`);
+    const stages = await authenticatedApiGet<Stage[]>(page, `/api/Stages/board/${board.id}`);
     const concluido = stages.find((stage) => /conclu/i.test(stage.name));
     expect(concluido, `O quadro ${board.name} precisa de uma etapa de conclusão.`).toBeTruthy();
 

@@ -50,7 +50,7 @@ describe('TaskDetailDrawer', () => {
     };
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
-    vi.spyOn(api, 'getStages').mockResolvedValue([{
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([{
       id: 'stage-1', name: 'Desenvolvimento', workflowStatusId: 'status-1', statusName: 'Em andamento',
     }]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
@@ -104,7 +104,7 @@ describe('TaskDetailDrawer', () => {
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
     vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
-    vi.spyOn(api, 'getStages').mockResolvedValue([]);
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
     vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
     vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]);
@@ -148,7 +148,7 @@ describe('TaskDetailDrawer', () => {
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockImplementation(async () => ({ ...details, participants: [...participants] }));
     vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
-    vi.spyOn(api, 'getStages').mockResolvedValue([]);
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue(people);
     vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
     vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]);
@@ -199,7 +199,7 @@ describe('TaskDetailDrawer', () => {
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockImplementation(async () => ({ ...details, participants: [...participants] }));
     vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
-    vi.spyOn(api, 'getStages').mockResolvedValue([]);
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue(people);
     vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
     vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]);
@@ -250,7 +250,7 @@ describe('TaskDetailDrawer', () => {
     const server = { ...details };
     vi.spyOn(api, 'getWorkItemDetails').mockImplementation(async () => ({ ...server }));
     vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
-    vi.spyOn(api, 'getStages').mockResolvedValue([]);
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
     vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
     vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]);

@@ -32,6 +32,7 @@ public static class InfrastructureServiceExtensions
 
         // ─── Repositórios ─────────────────────────────────────────────────
         services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<IBoardStructureRepository, BoardStructureRepository>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();
         services.AddScoped<IWorkItemManagementRepository, WorkItemManagementRepository>();
         services.AddScoped<IWorkItemSearchRepository, WorkItemManagementRepository>();

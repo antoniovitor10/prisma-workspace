@@ -323,6 +323,8 @@ export const Kanban: React.FC = () => {
   const [showStageModal, setShowStageModal] = useState(false);
   const [showEditStageModal, setShowEditStageModal] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
+  const [deleteStageDestination, setDeleteStageDestination] = useState('');
+  const [confirmCategoryChange, setConfirmCategoryChange] = useState(false);
   const [editStageName, setEditStageName] = useState('');
   const [editStageCategory, setEditStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
   const [editStagePending, setEditStagePending] = useState(false);
@@ -408,6 +410,15 @@ export const Kanban: React.FC = () => {
 
   // Form values
   const [newBoardName, setNewBoardName] = useState('');
+  const [copyBoardId, setCopyBoardId] = useState('');
+  const [deleteBoardStageId, setDeleteBoardStageId] = useState('');
+  const [destinationStages, setDestinationStages] = useState<Stage[]>([]);
+  useEffect(() => {
+    setDeleteBoardStageId(''); setDestinationStages([]);
+    let active = true;
+    if (deleteBoardDestId) api.getBoardStages(deleteBoardDestId).then(data => { if (active) setDestinationStages(data); }).catch(() => { if (active) setDeleteBoardError('Não foi possível carregar as colunas de destino.'); });
+    return () => { active = false; };
+  }, [deleteBoardDestId]);
   // Equipe do quadro: existia na tela que apenas listava quadros e foi trazida para cá
   // junto com a criação, para a capacidade não se perder ao remover aquela tela.
   const [newBoardTeamId, setNewBoardTeamId] = useState('');
@@ -464,8 +475,8 @@ export const Kanban: React.FC = () => {
   }, [selectedBoardId, modoProjeto, urlProjectId]);
 
   const loadBoardData = useCallback(async (boardId: string) => {
-    if (!boardId && !modoProjeto) return;
-    const contextKey = modoProjeto ? `project:${urlProjectId}` : `board:${boardId}`;
+    if (!boardId) return;
+    const contextKey = `board:${boardId}`;
     const contextChanged = loadedBoardContextRef.current !== contextKey;
     const requestId = ++boardDataRequestRef.current;
     if (contextChanged) {
@@ -483,8 +494,8 @@ export const Kanban: React.FC = () => {
         throw new Error('O quadro selecionado não está disponível para seu acesso.');
       }
       const [stageData, itemData] = await Promise.all([
-        api.getStages(projectId),
-        modoProjeto ? api.getWorkItemsByProject(projectId) : api.getWorkItems(boardId)
+        api.getBoardStages(boardId),
+        api.getWorkItems(boardId)
       ]);
       if (requestId !== boardDataRequestRef.current) return;
       setStages(stageData);
@@ -695,7 +706,7 @@ export const Kanban: React.FC = () => {
     setCreateBoardError('');
     try {
       const result = await api.createBoard(
-        newBoardName.trim(), currentProjectId ?? undefined, newBoardTeamId || undefined);
+        newBoardName.trim(), currentProjectId ?? undefined, newBoardTeamId || undefined, copyBoardId || undefined);
       const newBoardId: string = typeof result === 'string' ? result : (result as { id?: string })?.id ?? String(result);
       setCreateBoardSuccessId(newBoardId);
       await fetchBoards();
@@ -711,7 +722,7 @@ export const Kanban: React.FC = () => {
     setDeleteBoardPending(true);
     setDeleteBoardError('');
     try {
-      await api.deleteBoard(selectedBoardId, deleteBoardDestId || undefined);
+      await api.deleteBoard(selectedBoardId, deleteBoardDestId || undefined, deleteBoardStageId || undefined);
       setShowDeleteBoardModal(false);
       setDeleteBoardDestId('');
       await fetchBoards();
@@ -738,7 +749,7 @@ export const Kanban: React.FC = () => {
     try {
       const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
       if (!projectId) throw new Error('Projeto do quadro não encontrado.');
-      await api.reorderStages(projectId, newStages.map(s => s.id));
+      await api.reorderStages(selectedBoardId, newStages.map(s => s.id));
     } catch (err) {
       setStages(stages);
       alert((err as Error).message || 'Erro ao reordenar colunas.');
@@ -752,7 +763,7 @@ export const Kanban: React.FC = () => {
       const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
       if (!projectId) throw new Error('Projeto do quadro não encontrado.');
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(projectId, newStageName, nextPos, { category: newStageCategory });
+      await api.createStage(projectId, newStageName, nextPos, { category: newStageCategory, boardId: selectedBoardId });
       setNewStageName('');
       setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);
@@ -764,6 +775,8 @@ export const Kanban: React.FC = () => {
 
   const handleOpenEditStage = (stage: Stage) => {
     setEditingStage(stage);
+    setConfirmCategoryChange(false);
+    setDeleteStageDestination('');
     setEditStageName(stage.name);
     setEditStageCategory(stage.category ?? StageCategory.InProgress);
     setEditStageError('');
@@ -779,6 +792,7 @@ export const Kanban: React.FC = () => {
       await api.updateStage(editingStage.id, {
         name: editStageName.trim(),
         category: editStageCategory,
+        confirmCategoryChange,
       });
       setShowEditStageModal(false);
       setEditingStage(null);
@@ -1692,6 +1706,11 @@ export const Kanban: React.FC = () => {
                     ))}
                   </Select>
                 )}
+                <label htmlFor="board-structure">Estrutura de colunas</label>
+                <Select id="board-structure" value={copyBoardId} onChange={e => setCopyBoardId(e.target.value)}>
+                  <option value="">Estrutura básica</option>
+                  {visibleBoards.filter(b => b.projectId === (urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId)).map(b => <option key={b.id} value={b.id}>Copiar colunas de {b.name}</option>)}
+                </Select>
                 {createBoardError && (
                   <p style={{ color: '#D92D20', fontSize: 13.5, marginTop: 4 }}>{createBoardError}</p>
                 )}
@@ -1727,12 +1746,17 @@ export const Kanban: React.FC = () => {
                   disabled={deleteBoardPending}
                   style={{ width: '100%' }}
                 >
-                  {visibleBoards.filter(b => b.id !== selectedBoardId).map(b => (
+                  <option value="">Escolha o quadro de destino</option>
+                  {visibleBoards.filter(b => b.id !== selectedBoardId && b.projectId === (urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId)).map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </Select>
               </div>
             )}
+            {deleteBoardDestId && <Select aria-label="Coluna de destino" value={deleteBoardStageId} onChange={e => setDeleteBoardStageId(e.target.value)}>
+              <option value="">Escolha a coluna de destino</option>
+              {destinationStages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+            </Select>}
             {deleteBoardError && (
               <p style={{ color: '#D92D20', fontSize: 13.5, marginBottom: 8 }}>{deleteBoardError}</p>
             )}
@@ -1804,6 +1828,18 @@ export const Kanban: React.FC = () => {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </Select>
+              {editingStage.category !== editStageCategory && <label><input type="checkbox" checked={confirmCategoryChange} onChange={e=>setConfirmCategoryChange(e.target.checked)}/>Confirmo alterar o estado das tarefas desta coluna</label>}
+              <label htmlFor="remove-stage-destination">Ao excluir, transferir tarefas para</label>
+              <Select id="remove-stage-destination" value={deleteStageDestination} onChange={e=>setDeleteStageDestination(e.target.value)}>
+                <option value="">Escolha uma coluna de destino</option>
+                {stages.filter(stage=>stage.id!==editingStage.id).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
+              </Select>
+              <button type="button" disabled={editStagePending} onClick={async()=>{
+                setEditStagePending(true);setEditStageError('');
+                try { await api.deleteStage(editingStage.id,deleteStageDestination||undefined);setShowEditStageModal(false);setEditingStage(null);setDeleteStageDestination('');await loadBoardData(selectedBoardId); }
+                catch(error) { setEditStageError((error as Error).message); }
+                finally { setEditStagePending(false); }
+              }}>Excluir coluna</button>
               {editStageError && (
                 <div style={{ color: '#EF4444', fontSize: '13px', marginTop: '4px' }}>
                   {editStageError}

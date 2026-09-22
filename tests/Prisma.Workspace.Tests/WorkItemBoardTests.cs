@@ -16,20 +16,20 @@ public class WorkItemBoardTests
     private static Board CriarBoard(Guid? projectId = null)
         => new() { Id = Guid.NewGuid(), ProjectId = projectId ?? Guid.NewGuid(), Name = "Quadro", CreatedAt = DateTimeOffset.UtcNow };
 
-    private static Stage CriarBacklog(Guid projectId)
-        => new() { Id = Guid.NewGuid(), ProjectId = projectId, Name = "Backlog", Category = StageCategory.Ready, Position = 100, CreatedAt = DateTimeOffset.UtcNow };
+    private static Stage CriarBacklog(Board board)
+        => new() { Id = Guid.NewGuid(), ProjectId = board.ProjectId, BoardId = board.Id, Name = "Backlog", Category = StageCategory.Ready, Position = 100, CreatedAt = DateTimeOffset.UtcNow };
 
-    private static Stage CriarStage(Guid projectId, string nome, StageCategory cat, Guid? statusId = null)
-        => new() { Id = Guid.NewGuid(), ProjectId = projectId, Name = nome, Category = cat, WorkflowStatusId = statusId, Position = 200, CreatedAt = DateTimeOffset.UtcNow };
+    private static Stage CriarStage(Board board, string nome, StageCategory cat, Guid? statusId = null)
+        => new() { Id = Guid.NewGuid(), ProjectId = board.ProjectId, BoardId = board.Id, Name = nome, Category = cat, WorkflowStatusId = statusId, Position = 200, CreatedAt = DateTimeOffset.UtcNow };
 
     // ── CreateWorkItemCommandHandler ────────────────────────────────────────
 
     [Fact]
-    public async Task CreateWorkItem_SemBacklogNoBoard_LancaArgumentException()
+    public async Task CreateWorkItem_ColunaComNomeLivreNaoExigeBacklog()
     {
         var board = CriarBoard();
         // Nenhuma stage Backlog — só InProgress
-        var stage = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
+        var stage = CriarStage(board, "Em andamento", StageCategory.InProgress);
 
         var repo = new FakeWorkItemRepo();
         var handler = new CreateWorkItemCommandHandler(
@@ -47,10 +47,9 @@ public class WorkItemBoardTests
             Priority: Priority.Low, EstimatedHours: null, DueDate: null,
             Position: 0, CreatedBy: "u1");
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            handler.Handle(command, CancellationToken.None));
+        await handler.Handle(command, CancellationToken.None);
 
-        Assert.Null(repo.AddedItem);
+        Assert.Equal(stage.Id, Assert.IsType<WorkItem>(repo.AddedItem).StageId);
         Assert.Equal(0, repo.UpdateCount);
     }
 
@@ -64,7 +63,7 @@ public class WorkItemBoardTests
         var handler = new CreateWorkItemCommandHandler(
             repo,
             new FakeBoardRepo(board),
-            new FakeStageRepo(CriarBacklog(board.ProjectId)),
+            new FakeStageRepo(CriarBacklog(board)),
             new FakeProjectRepo(project),
             new FakeTeamRepo(),
             new FakeUserDirectory(),
@@ -86,8 +85,8 @@ public class WorkItemBoardTests
     public async Task MoveWorkItem_AtualizaEtapaEPosicaoDoItem()
     {
         var board = CriarBoard();
-        var source = CriarStage(board.ProjectId, "A fazer", StageCategory.Ready);
-        var destination = CriarStage(board.ProjectId, "Em andamento", StageCategory.InProgress);
+        var source = CriarStage(board, "A fazer", StageCategory.Ready);
+        var destination = CriarStage(board, "Em andamento", StageCategory.InProgress);
         var item = new WorkItem
         {
             Id = Guid.NewGuid(), BoardId = board.Id, Board = board, StageId = source.Id,
@@ -207,6 +206,8 @@ public class WorkItemBoardTests
             => Task.FromResult(_stages.FirstOrDefault(s => s.Id == id));
         public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(s => s.ProjectId == projectId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(s => s.BoardId == boardId).ToList());
         public Task<Stage> AddAsync(Stage stage, CancellationToken ct = default) => Task.FromResult(stage);
         public Task UpdateAsync(Stage stage, CancellationToken ct = default) => Task.CompletedTask;
         public Task DeleteAsync(Stage stage, CancellationToken ct = default) => Task.CompletedTask;

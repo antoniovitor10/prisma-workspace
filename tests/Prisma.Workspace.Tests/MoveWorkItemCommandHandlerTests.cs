@@ -40,6 +40,7 @@ public class MoveWorkItemCommandHandlerTests
         {
             Id = destinationStageId,
             ProjectId = projectId,
+            BoardId = boardId,
             Name = "Destino",
             Position = 200,
             CreatedAt = DateTimeOffset.UtcNow
@@ -190,6 +191,12 @@ public class MoveWorkItemCommandHandlerTests
         public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid boardId, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Stage> list = _stage.BoardId == boardId ? [_stage] : [];
+            return Task.FromResult(list);
         }
 
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default)

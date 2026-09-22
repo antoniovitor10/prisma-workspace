@@ -58,7 +58,7 @@ function renderRota(rota: string) {
 
 beforeEach(() => {
   vi.spyOn(api, 'getBoards').mockResolvedValue(quadros);
-  vi.spyOn(api, 'getStages').mockResolvedValue(etapas);
+  vi.spyOn(api, 'getBoardStages').mockResolvedValue(etapas);
   vi.spyOn(api, 'getWorkItemsByProject').mockResolvedValue(cartoes);
   vi.spyOn(api, 'getWorkItems').mockResolvedValue([cartoes[0]]);
   vi.spyOn(api, 'getProject').mockResolvedValue({
@@ -94,8 +94,8 @@ describe('Kanban do projeto abre direto', () => {
     renderRota(`/projects/${PROJETO}/boards`);
 
     // Era isto que a tela intermediária exigia: escolher um quadro antes de ver qualquer coisa.
-    await waitFor(() => expect(api.getStages).toHaveBeenCalledWith(PROJETO));
-    await waitFor(() => expect(api.getWorkItemsByProject).toHaveBeenCalledWith(PROJETO));
+    await waitFor(() => expect(api.getBoardStages).toHaveBeenCalledWith('board-1'));
+    await waitFor(() => expect(api.getWorkItems).toHaveBeenCalledWith('board-1'));
     expect(await screen.findByText('A fazer')).toBeInTheDocument();
   });
 
@@ -113,15 +113,15 @@ describe('Kanban do projeto abre direto', () => {
     expect(await screen.findByText('Planejamento')).toBeInTheDocument();
   });
 
-  it('mostra cartões de todos os quadros do projeto, não só de um', async () => {
+  it('mostra somente cartões do quadro selecionado do projeto', async () => {
     renderRota(`/projects/${PROJETO}/boards`);
 
     // O título do cartão é renderizado em dois nós ("#1 · " e o título), então a âncora
     // estável é o rótulo acessível da caixa de seleção do cartão.
     expect(await screen.findByRole('checkbox',
       { name: 'Selecionar #1 Cartão do quadro um' })).toBeInTheDocument();
-    expect(await screen.findByRole('checkbox',
-      { name: 'Selecionar #2 Cartão do quadro dois' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox',
+      { name: 'Selecionar #2 Cartão do quadro dois' })).not.toBeInTheDocument();
   });
 
   it('no modo quadro segue buscando por quadro, sem alargar o escopo', async () => {
@@ -145,7 +145,7 @@ describe('Kanban do projeto abre direto', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
     await waitFor(() => expect(createBoard).toHaveBeenCalledWith(
-      'Atendimento digital', PROJETO, 'team-1'));
+      'Atendimento digital', PROJETO, 'team-1', undefined));
   });
 
   it('permite editar o nome e classificação da coluna pelo botão de editar no cabeçalho', async () => {

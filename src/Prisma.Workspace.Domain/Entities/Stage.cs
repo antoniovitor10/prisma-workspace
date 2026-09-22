@@ -3,7 +3,8 @@ using Prisma.Workspace.Domain.Enums;
 namespace Prisma.Workspace.Domain.Entities;
 
 /// <summary>
-/// Etapa (coluna) do fluxo do projeto. O quadro é só visão; as colunas pertencem ao projeto (D83).
+/// Etapa (coluna) independente de um quadro. Etapas legadas mantêm <see cref="BoardId"/>
+/// nulo apenas para preservar o histórico anterior à migração de colunas por quadro.
 /// </summary>
 public class Stage
 {
@@ -12,6 +13,15 @@ public class Stage
 
     /// <summary>Projeto ao qual esta etapa pertence.</summary>
     public Guid ProjectId { get; set; }
+
+    /// <summary>Quadro ao qual a etapa operacional pertence. Nulo somente em etapa legada histórica.</summary>
+    public Guid? BoardId { get; set; }
+
+    /// <summary>
+    /// Etapa compartilhada de origem da qual esta etapa foi clonada na migração.
+    /// Nulo em etapas legadas e em etapas criadas após a migração.
+    /// </summary>
+    public Guid? LegacyStageId { get; set; }
 
     /// <summary>Status de negócio representado por esta coluna.</summary>
     public Guid? WorkflowStatusId { get; set; }
@@ -32,6 +42,12 @@ public class Stage
 
     /// <summary>Projeto ao qual esta etapa pertence.</summary>
     public Project Project { get; set; } = null!;
+
+    /// <summary>Quadro proprietário da etapa operacional.</summary>
+    public Board? Board { get; set; }
+
+    /// <summary>Etapa compartilhada preservada como referência históica.</summary>
+    public Stage? LegacyStage { get; set; }
 
     public WorkflowStatus? WorkflowStatus { get; set; }
 

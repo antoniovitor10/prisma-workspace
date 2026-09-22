@@ -47,6 +47,9 @@ public class Board : IOrganizationOwned
     /// <summary>Itens cujo quadro home ainda aponta para este quadro (compatibilidade).</summary>
     public ICollection<WorkItem> WorkItems { get; set; } = new List<WorkItem>();
 
+    /// <summary>Colunas operacionais independentes deste quadro.</summary>
+    public ICollection<Stage> Stages { get; set; } = new List<Stage>();
+
     /// <summary>Vincula cliente e descrição ao projeto (nulos limpam o vínculo).</summary>
     public void VincularCliente(Guid? clientId, string? descricao)
     {

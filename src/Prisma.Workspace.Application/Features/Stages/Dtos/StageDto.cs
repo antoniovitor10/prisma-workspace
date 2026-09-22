@@ -9,6 +9,7 @@ public class StageDto
 {
     public Guid Id { get; set; }
     public Guid ProjectId { get; set; }
+    public Guid? BoardId { get; set; }
     public string Name { get; set; } = string.Empty;
     public double Position { get; set; }
     public Guid? WorkflowStatusId { get; set; }

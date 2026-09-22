@@ -28,6 +28,39 @@ public class BoardProjectionCommandTests
     }
 
     [Fact]
+    public async Task CreateBoard_CriaColunasBasicasNoNovoQuadro()
+    {
+        var project = new Project { Id=Guid.NewGuid(), Name="Projeto", Key="PRJ", OwnerId="admin" };
+        var boards = new BoardRepositoryFake(); var stages = new StageRepositoryFake();
+        var handler = new CreateBoardCommandHandler(boards, new ProjectRepositoryFake(project), new ProjectAccessFake(), stages: stages);
+        var id = await handler.Handle(new CreateBoardCommand("Opera??o", "admin", project.Id), CancellationToken.None);
+        Assert.Equal(3, Assert.Single(boards.Added).Stages.Count);
+        Assert.All(Assert.Single(boards.Added).Stages, stage => Assert.Equal(id, stage.BoardId));
+        Assert.Equal(new[] { StageCategory.Backlog, StageCategory.InProgress, StageCategory.Done }, Assert.Single(boards.Added).Stages.Select(x=>x.Category));
+    }
+
+    [Fact]
+    public async Task CreateBoard_CopiaSomenteColunasDoMesmoProjeto()
+    {
+        var project = new Project { Id=Guid.NewGuid(), Name="Projeto", Key="PRJ", OwnerId="admin" };
+        var source = NewBoard(project.Id); var sourceStage = NewStage(project.Id, 100); sourceStage.BoardId=source.Id;
+        var boards = new BoardRepositoryFake(source); var stages = new StageRepositoryFake(sourceStage);
+        var handler = new CreateBoardCommandHandler(boards, new ProjectRepositoryFake(project), new ProjectAccessFake(), stages: stages);
+        var id = await handler.Handle(new CreateBoardCommand("C?pia", "admin", project.Id, CopyStagesFromBoardId: source.Id), CancellationToken.None);
+        var clone = Assert.Single(Assert.Single(boards.Added).Stages); Assert.Equal(id, clone.BoardId); Assert.NotEqual(sourceStage.Id, clone.Id); Assert.Equal(sourceStage.Name, clone.Name);
+    }
+
+    [Fact]
+    public async Task CreateBoard_RejeitaCopiaDeOutroProjeto()
+    {
+        var project = new Project { Id=Guid.NewGuid(), Name="Projeto", Key="PRJ", OwnerId="admin" };
+        var foreign = NewBoard(Guid.NewGuid()); var boards = new BoardRepositoryFake(foreign); var stages = new StageRepositoryFake();
+        var handler = new CreateBoardCommandHandler(boards, new ProjectRepositoryFake(project), new ProjectAccessFake(), stages: stages);
+        await Assert.ThrowsAsync<ArgumentException>(() => handler.Handle(new CreateBoardCommand("C?pia", "admin", project.Id, CopyStagesFromBoardId: foreign.Id), CancellationToken.None));
+        Assert.Empty(stages.Added);
+    }
+
+    [Fact]
     public async Task CreateBoard_SemAcessoAoProjeto_RejeitaAntesDePersistir()
     {
         var projectId = Guid.NewGuid();
@@ -150,6 +183,12 @@ public class BoardProjectionCommandTests
         public List<Stage> Updated { get; } = [];
         public Task<Stage?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(_stages.FirstOrDefault(stage => stage.Id == id));
         public Task<IReadOnlyList<Stage>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Stage>>(_stages.Where(stage => stage.ProjectId == projectId).ToList());
+        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Stage> list = _stages.Where(s => s.BoardId == boardId).ToList();
+            return Task.FromResult(list);
+        }
+
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default) { Added.Add(stage); _stages.Add(stage); return Task.FromResult(stage); }
         public Task UpdateAsync(Stage stage, CancellationToken cancellationToken = default) { Updated.Add(stage); return Task.CompletedTask; }
         public Task DeleteAsync(Stage stage, CancellationToken cancellationToken = default) => Task.CompletedTask;

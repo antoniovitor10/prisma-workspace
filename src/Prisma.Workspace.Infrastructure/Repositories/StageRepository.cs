@@ -28,10 +28,14 @@ public class StageRepository : IStageRepository
         return await _context.Stages
             .Include(s => s.WorkflowStatus)
             .AsNoTracking()
-            .Where(s => s.ProjectId == projectId)
+            .Where(s => s.ProjectId == projectId && s.BoardId != null)
             .OrderBy(s => s.Position)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        => await _context.Stages.Include(s => s.WorkflowStatus).AsNoTracking()
+            .Where(s => s.BoardId == boardId).OrderBy(s => s.Position).ToListAsync(cancellationToken);
 
     public async Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default)
     {
@@ -42,6 +46,8 @@ public class StageRepository : IStageRepository
 
     public async Task UpdateAsync(Stage stage, CancellationToken cancellationToken = default)
     {
+        if (stage.WorkflowStatus is not null && _context.Entry(stage.WorkflowStatus).State == EntityState.Detached)
+            _context.WorkflowStatuses.Add(stage.WorkflowStatus);
         _context.Stages.Update(stage);
         await _context.SaveChangesAsync(cancellationToken);
     }

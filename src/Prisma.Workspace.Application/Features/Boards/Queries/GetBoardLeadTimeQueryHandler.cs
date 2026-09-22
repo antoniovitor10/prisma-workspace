@@ -37,7 +37,7 @@ public class GetBoardLeadTimeQueryHandler : IRequestHandler<GetBoardLeadTimeQuer
         var board = await _boardRepository.GetByIdAsync(request.BoardId, cancellationToken)
             ?? throw new ArgumentException("O quadro especificado não existe.");
 
-        var stages = await _stageRepository.GetByProjectIdAsync(board.ProjectId, cancellationToken);
+        var stages = await _stageRepository.GetByBoardIdAsync(board.Id, cancellationToken);
         var histories = await _stageHistoryRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
 
         var leadTimes = new List<StageLeadTimeDto>();
@@ -45,7 +45,7 @@ public class GetBoardLeadTimeQueryHandler : IRequestHandler<GetBoardLeadTimeQuer
         foreach (var stage in stages)
         {
             var stageHistories = histories
-                .Where(h => h.StageId == stage.Id && h.LeftAt.HasValue)
+                .Where(h => (h.StageId == stage.Id || h.StageId == stage.LegacyStageId) && h.LeftAt.HasValue)
                 .ToList();
 
             double avgSecs = 0;

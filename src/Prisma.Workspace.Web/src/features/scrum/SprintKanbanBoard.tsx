@@ -20,6 +20,7 @@ import { kindNames } from '../../types/scrum';
 
 interface Stage {
   id: string;
+  boardId?: string;
   projectId?: string;
   name: string;
   position: number;
@@ -247,6 +248,7 @@ export default function SprintKanbanBoard({ projectId, sprint, items, onOpenItem
     <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
       {boards.map((board) => {
         const loading = stagesQuery.isLoading;
+        const boardStages = stages.filter(stage => stage.boardId === board.boardId);
         return (
           <Section key={board.boardId} aria-label={`Quadro ${board.boardName}`}>
             <header>
@@ -256,14 +258,14 @@ export default function SprintKanbanBoard({ projectId, sprint, items, onOpenItem
             </header>
             {loading ? <Empty>Carregando etapas...</Empty> : (
               <Columns>
-                {[...stages].sort((left, right) => left.position - right.position).map((stage) => (
-                  <SprintColumn key={stage.id} boardId={board.boardId} stage={stage} stages={stages}
+                {[...boardStages].sort((left, right) => left.position - right.position).map((stage) => (
+                  <SprintColumn key={stage.id} boardId={board.boardId} stage={stage} stages={boardStages}
                     items={board.items.filter((item) => item.stageId === stage.id)}
                     disabled={readOnly || moveMutation.isPending} showPoints={showPoints} onOpen={onOpenItem}
                     onNativeDrop={(workItemId, targetStage) => moveItemToStage(
                       items.find(item => item.id === workItemId), targetStage, board.boardId)} />
                 ))}
-                {stages.length === 0 && <Empty>Este projeto ainda não possui etapas.</Empty>}
+                {boardStages.length === 0 && <Empty>Este projeto ainda não possui etapas.</Empty>}
               </Columns>
             )}
           </Section>

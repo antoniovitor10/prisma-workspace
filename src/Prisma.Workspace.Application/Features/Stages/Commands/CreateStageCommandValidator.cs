@@ -9,6 +9,8 @@ public class CreateStageCommandValidator : AbstractValidator<CreateStageCommand>
 {
     public CreateStageCommandValidator()
     {
+        RuleFor(s => s.BoardId).NotEmpty().WithMessage("O quadro da coluna é obrigatório.");
+        RuleFor(s => s.Category).IsInEnum();
         RuleFor(s => s.ProjectId)
             .NotEmpty().WithMessage("O identificador do projeto é obrigatório.");
 

@@ -226,8 +226,7 @@ test('criar projeto usa o padrão interno sem criar sprint implicitamente', asyn
     expect(project.workType).toBe(6);
     expect(sprints).toEqual([]);
     const stages = await appApi<Array<{ name: string }>>(page, `/api/Stages/project/${createdProjectId}`);
-    expect(stages.length).toBeGreaterThan(0);
-    expect(new Set(stages.map(stage => stage.name.toLowerCase())).size).toBe(stages.length);
+    expect(stages).toEqual([]); // D89: sem quadro criado, não existe coluna operacional.
 
     await page.getByRole('link', { name: 'Sprints' }).click();
     await expect(page.getByText('Nenhuma sprint planejada para este projeto.')).toBeVisible();

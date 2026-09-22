@@ -197,6 +197,8 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const [draft,setDraft]=useState<Draft|null>(null);
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'|'error'>('idle');
   const [assigneeId,setAssigneeId]=useState('');
+  const [transferBoardId,setTransferBoardId]=useState('');
+  const [transferStageId,setTransferStageId]=useState('');
   const [assigneeOpen,setAssigneeOpen]=useState(false);
   const [assigneeSearch,setAssigneeSearch]=useState('');
   const [assigneeFeedback,setAssigneeFeedback]=useState('');
@@ -224,7 +226,9 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
   const detailsQuery=useQuery<WorkItemDetails>({queryKey:['work-item',item?.id],queryFn:()=>api.getWorkItemDetails(item!.id),enabled:Boolean(item)&&realMode,retry:false});
   const details=detailsQuery.data??fallback;
-  const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.projectId],queryFn:()=>api.getStages(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
+  const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.boardId],queryFn:()=>api.getBoardStages(details!.boardId!),enabled:Boolean(details?.boardId)&&realMode});
+  const transferBoards=useQuery<Array<{id:string;name:string;projectId:string}>>({queryKey:['boards'],queryFn:()=>api.getBoards(),enabled:Boolean(details)&&realMode});
+  const transferStages=useQuery<StageOption[]>({queryKey:['stages',transferBoardId],queryFn:()=>api.getBoardStages(transferBoardId),enabled:Boolean(transferBoardId)&&realMode});
   const usersQuery=useQuery<AssignableUser[]>({queryKey:['assignable-users',details?.projectId],queryFn:()=>api.getAssignableUsers(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
@@ -311,6 +315,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
     },
   });
   const archive=useMutation({mutationFn:()=>details!.isArchived?api.reactivateWorkItem(details!.id):api.archiveWorkItem(details!.id),onSuccess:async()=>{await invalidate();onOpenChange(false);}});
+  const transfer=useMutation({mutationFn:()=>api.transferWorkItem(details!.id,transferBoardId,transferStageId),onSuccess:async()=>{setTransferBoardId('');setTransferStageId('');await invalidate();},onError:()=>setSaveState('error')});
   const duplicate=useMutation({mutationFn:()=>api.duplicateWorkItem(details!.id),onSuccess:async()=>{setSaveState('saved');await invalidate();}});
 
   const onUpload=(event:ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(file)upload.mutate(file);event.target.value='';};
@@ -403,6 +408,19 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Meta><MetaChip aria-label="Coluna atual"><CircleDot size={12}/>{stagesQuery.data?.find(stage=>stage.id===draft.stageId)?.name||details.stageName||'Sem coluna'}</MetaChip><MetaChip><Target size={12}/>{priorityNames[draft.priority]??'Média'}</MetaChip><MetaChip><FolderKanban size={12}/>{details.boardName}</MetaChip>{(details.sprintName||sprintName)&&<MetaChip><GitBranch size={12}/>{details.sprintName||sprintName}</MetaChip>}</Meta>
       {detailsQuery.error&&<ErrorBox>{(detailsQuery.error as Error).message}. Exibindo os dados disponíveis na tela atual.</ErrorBox>}
 
+      {realMode && <details>
+        <summary>Transferir tarefa para outro quadro</summary>
+        <select aria-label="Quadro de destino" value={transferBoardId} onChange={e=>{setTransferBoardId(e.target.value);setTransferStageId('');}}>
+          <option value="">Escolha o quadro de destino</option>
+          {(transferBoards.data??[]).filter(board=>board.projectId===details.projectId&&board.id!==details.boardId).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}
+        </select>
+        <select aria-label="Coluna de destino" value={transferStageId} onChange={e=>setTransferStageId(e.target.value)}>
+          <option value="">Escolha a coluna de destino</option>
+          {(transferStages.data??[]).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
+        </select>
+        <button type="button" disabled={!transferBoardId||!transferStageId||transfer.isPending} onClick={()=>transfer.mutate()}>Transferir tarefa</button>
+        {transfer.isError&&<p role="alert">{(transfer.error as Error).message}</p>}
+      </details>}
       <Tabs aria-label="Seções da tarefa">
         <Tab $active={activeTab==='description'} onClick={()=>setActiveTab('description')}>Descrição</Tab>
         <Tab $active={activeTab==='comments'} onClick={()=>setActiveTab('comments')}>Comentários</Tab>
@@ -417,7 +435,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Section><h2><Save size={14}/>Dados principais</h2><FormGrid>
         <Field $wide>Título<input value={draft.title} maxLength={500} onChange={e=>change('title',e.target.value)} onBlur={()=>draft.title.trim()&&commit({...draft,title:draft.title.trim()})}/></Field>
         <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)} title={kindMeta(draft.kind).description}>{kindDisplayOrder.map(id=><option key={id} value={id} title={workItemKinds[id].description}>{workItemKinds[id].label} — {workItemKinds[id].description}</option>)}</select></Field>
-        <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="">Sem coluna</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></Field>
+        <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="" disabled>Escolha uma coluna</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></Field>
         <Field>Prioridade<select value={draft.priority} onChange={e=>change('priority',Number(e.target.value),true)}><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></Field>
         <Field>Responsável principal<select aria-label="Responsável principal" value={draft.responsibleId} onChange={e=>change('responsibleId',e.target.value,true)}><option value="">Não atribuído</option>{draft.responsibleId&&!currentResponsibleIsEligible&&<option value={draft.responsibleId} disabled>{currentResponsibleLabel} (sem acesso atual)</option>}{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field>
         <Field>Equipe<select value={draft.teamId} onChange={e=>change('teamId',e.target.value,true)}><option value="">Herdar do quadro</option>{projectQuery.data?.teams.map(team=><option key={team.id} value={team.id}>{team.name}</option>)}</select></Field>

@@ -24,6 +24,12 @@ public class UpdateStageCommandHandlerTests
             return Task.FromResult(list);
         }
 
+        public Task<IReadOnlyList<Stage>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Stage> list = Stages.Values.Where(s => s.BoardId == boardId).ToList();
+            return Task.FromResult(list);
+        }
+
         public Task<Stage> AddAsync(Stage stage, CancellationToken cancellationToken = default)
         {
             Stages[stage.Id] = stage;
@@ -53,6 +59,7 @@ public class UpdateStageCommandHandlerTests
         {
             Id = stageId,
             ProjectId = projectId,
+            BoardId = Guid.NewGuid(),
             Name = "Ideias",
             Category = StageCategory.Backlog,
             Position = 100,

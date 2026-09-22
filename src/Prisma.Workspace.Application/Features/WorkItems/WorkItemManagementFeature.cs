@@ -283,11 +283,12 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
             ?? UserDisplayName.Resolve(request.ActorId, null, request.ActorName, null);
 
         Stage? destinationStage = null;
+        DomainException.Garantir(request.StageId.HasValue, "Escolha uma coluna do quadro da tarefa.");
         if (request.StageId.HasValue)
         {
             destinationStage = await _stages.GetByIdAsync(request.StageId.Value, ct)
                 ?? throw new NaoEncontradoException("Etapa");
-            DomainException.Garantir(destinationStage.ProjectId == item.Board.ProjectId,
+            DomainException.Garantir(destinationStage.ProjectId == item.Board.ProjectId && destinationStage.BoardId == item.BoardId,
                 "A etapa nao pertence ao projeto da tarefa.");
             if (item.StageId != request.StageId && _workflow is not null)
                 await WorkflowMoveGuard.EnsureAllowedAsync(item, destinationStage, _workflow, ct);

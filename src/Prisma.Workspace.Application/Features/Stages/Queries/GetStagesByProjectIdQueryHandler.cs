@@ -33,6 +33,7 @@ public class GetStagesByProjectIdQueryHandler : IRequestHandler<GetStagesByProje
         {
             Id = s.Id,
             ProjectId = s.ProjectId,
+            BoardId = s.BoardId,
             Name = s.Name,
             Position = s.Position,
             WorkflowStatusId = s.WorkflowStatusId,

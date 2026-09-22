@@ -137,7 +137,7 @@ describe('configurações do projeto por categoria', () => {
 
   it('mantém fluxo de trabalho e portal externo em categorias próprias', () => {
     renderSettings('/projects/project-1/settings?secao=fluxo');
-    expect(screen.getByRole('heading', { name: 'Fluxo do projeto' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Colunas dos quadros' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Portal do cidadão' })).not.toBeInTheDocument();
 
     cleanup();
