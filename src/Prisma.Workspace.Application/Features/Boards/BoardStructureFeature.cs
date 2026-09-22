@@ -4,14 +4,15 @@ using Prisma.Workspace.Domain.Enums;
 
 namespace Prisma.Workspace.Application.Features.Boards;
 
-public record UpdateBoardStageCommand(Guid StageId, string Name, StageCategory? Category, string? Color, bool ConfirmCategoryChange, string ActorId) : IRequest;
+public record UpdateBoardStageCommand(Guid StageId, string Name, StageCategory? Category, string? Color, bool ConfirmCategoryChange, string ActorId, bool ConfirmDescendants = false, string? ImpactToken = null) : IRequest;
+public record GetBoardStageImpactQuery(Guid StageId, StageCategory Category, string ActorId) : IRequest<BoardStageImpactDto>;
 public record ReorderBoardStagesCommand(Guid BoardId, IReadOnlyList<Guid> StageIds, string ActorId) : IRequest;
 public record RemoveBoardStageCommand(Guid StageId, Guid? DestinationStageId, string ActorId) : IRequest;
 public record RemoveBoardCommand(Guid BoardId, Guid? DestinationBoardId, Guid? DestinationStageId, string ActorId) : IRequest;
 public record TransferBoardWorkItemCommand(Guid WorkItemId, Guid DestinationBoardId, Guid DestinationStageId, string ActorId) : IRequest;
 
 public sealed class BoardStructureHandler :
-    IRequestHandler<UpdateBoardStageCommand>, IRequestHandler<ReorderBoardStagesCommand>, IRequestHandler<RemoveBoardStageCommand>,
+    IRequestHandler<GetBoardStageImpactQuery, BoardStageImpactDto>, IRequestHandler<UpdateBoardStageCommand>, IRequestHandler<ReorderBoardStagesCommand>, IRequestHandler<RemoveBoardStageCommand>,
     IRequestHandler<RemoveBoardCommand>, IRequestHandler<TransferBoardWorkItemCommand>
 {
     private readonly IBoardStructureRepository _structure;
@@ -28,7 +29,15 @@ public sealed class BoardStructureHandler :
         var stage = await _stages.GetByIdAsync(request.StageId, ct) ?? throw new ArgumentException("Coluna não encontrada.");
         if (!stage.BoardId.HasValue) throw new ArgumentException("Colunas históricas não podem ser alteradas.");
         await _access.EnsureAsync(stage.BoardId.Value, request.ActorId, PlatformPermission.Edit, ProjectRole.ProjectAdmin, ct);
-        await _structure.UpdateStageAsync(request.StageId, request.Name, request.Category, request.Color, request.ConfirmCategoryChange, request.ActorId, ct);
+        await _structure.UpdateStageAsync(request.StageId, request.Name, request.Category, request.Color, request.ConfirmCategoryChange, request.ActorId, ct, request.ConfirmDescendants, request.ImpactToken);
+    }
+
+    public async Task<BoardStageImpactDto> Handle(GetBoardStageImpactQuery request, CancellationToken ct)
+    {
+        var stage = await _stages.GetByIdAsync(request.StageId, ct) ?? throw new ArgumentException("Coluna não encontrada.");
+        if (!stage.BoardId.HasValue) throw new ArgumentException("Coluna histórica não pode ser reclassificada.");
+        await _access.EnsureAsync(stage.BoardId.Value, request.ActorId, PlatformPermission.Edit, ProjectRole.ProjectAdmin, ct);
+        return await _structure.GetStageImpactAsync(stage.Id, request.Category, ct);
     }
 
     public async Task Handle(ReorderBoardStagesCommand request, CancellationToken ct)

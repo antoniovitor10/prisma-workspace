@@ -325,6 +325,8 @@ export const Kanban: React.FC = () => {
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
   const [deleteStageDestination, setDeleteStageDestination] = useState('');
   const [confirmCategoryChange, setConfirmCategoryChange] = useState(false);
+  const [confirmDescendants, setConfirmDescendants] = useState(false);
+  const [stageImpact, setStageImpact] = useState<Awaited<ReturnType<typeof api.getStageImpact>> | null>(null);
   const [editStageName, setEditStageName] = useState('');
   const [editStageCategory, setEditStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
   const [editStagePending, setEditStagePending] = useState(false);
@@ -773,6 +775,17 @@ export const Kanban: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    let active = true;
+    setStageImpact(null);setConfirmCategoryChange(false);setConfirmDescendants(false);
+    if (showEditStageModal && editingStage && editingStage.category !== editStageCategory) {
+      api.getStageImpact(editingStage.id, editStageCategory).then(impact => {
+        if (active) setStageImpact(impact);
+      }).catch(error => { if (active) setEditStageError((error as Error).message || 'Erro ao carregar impacto'); });
+    }
+    return () => { active = false; };
+  }, [showEditStageModal, editingStage, editStageCategory]);
+
   const handleOpenEditStage = (stage: Stage) => {
     setEditingStage(stage);
     setConfirmCategoryChange(false);
@@ -786,6 +799,11 @@ export const Kanban: React.FC = () => {
   const handleUpdateStage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStage || !editStageName.trim()) return;
+    if (editingStage.category !== editStageCategory
+      && (!stageImpact || (stageImpact.totalItems > 0 && !confirmCategoryChange)
+        || (stageImpact.openDescendants > 0 && !confirmDescendants))) {
+      setEditStageError('Revise o impacto e confirme explicitamente as alterações.');return;
+    }
     setEditStagePending(true);
     setEditStageError('');
     try {
@@ -793,6 +811,8 @@ export const Kanban: React.FC = () => {
         name: editStageName.trim(),
         category: editStageCategory,
         confirmCategoryChange,
+        confirmDescendants,
+        impactToken: stageImpact?.snapshotToken,
       });
       setShowEditStageModal(false);
       setEditingStage(null);
@@ -800,6 +820,11 @@ export const Kanban: React.FC = () => {
     } catch (err: unknown) {
       console.error(err);
       setEditStageError((err as Error)?.message || 'Erro ao atualizar coluna');
+      setConfirmCategoryChange(false);setConfirmDescendants(false);
+      if (editingStage.category !== editStageCategory) {
+        try { setStageImpact(await api.getStageImpact(editingStage.id, editStageCategory)); }
+        catch { setStageImpact(null); }
+      }
     } finally {
       setEditStagePending(false);
     }
@@ -1831,7 +1856,13 @@ export const Kanban: React.FC = () => {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </Select>
-              {editingStage.category !== editStageCategory && <label><input type="checkbox" checked={confirmCategoryChange} onChange={e=>setConfirmCategoryChange(e.target.checked)}/>Confirmo alterar o estado das tarefas desta coluna</label>}
+              {editingStage.category !== editStageCategory && <div aria-label="Impacto da reclassificação">
+                {stageImpact ? <>
+                  <p>{editingStage.name}: {editStageCategory === StageCategory.Done ? 'concluir' : 'reabrir'}. {stageImpact.totalItems} tarefa(s) na coluna; {stageImpact.changedItems} terão o estado alterado; {stageImpact.openDescendants} descendente(s) aberto(s) fora da coluna.</p>
+                  {stageImpact.totalItems > 0 && <label><input type="checkbox" checked={confirmCategoryChange} onChange={e=>setConfirmCategoryChange(e.target.checked)}/>Confirmo alterar o estado das tarefas desta coluna</label>}
+                  {stageImpact.openDescendants > 0 && <label><input type="checkbox" checked={confirmDescendants} onChange={e=>setConfirmDescendants(e.target.checked)}/>Aceito concluir também todos os {stageImpact.openDescendants} descendentes abertos, sem movê-los</label>}
+                </> : <p>Carregando impacto da alteração...</p>}
+              </div>}
               <label htmlFor="remove-stage-destination">Ao excluir, transferir tarefas para</label>
               <Select id="remove-stage-destination" value={deleteStageDestination} onChange={e=>setDeleteStageDestination(e.target.value)}>
                 <option value="">Escolha uma coluna de destino</option>

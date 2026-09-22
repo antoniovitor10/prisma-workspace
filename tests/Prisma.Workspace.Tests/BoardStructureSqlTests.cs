@@ -66,8 +66,9 @@ public class BoardStructureSqlTests
         await Assert.ThrowsAsync<DomainException>(() => fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id,
             "Conclusão", StageCategory.Done, null, false, "test", default));
         fixture.Context.ChangeTracker.Clear();
+        var impact = await fixture.Repository.GetStageImpactAsync(fixture.SourceStage.Id, StageCategory.Done, default);
         await fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id,
-            "Conclusão", StageCategory.Done, null, true, "test", default);
+            "Conclusão", StageCategory.Done, null, true, "test", default, impactToken: impact.SnapshotToken);
         fixture.Context.ChangeTracker.Clear();
         Assert.NotNull((await fixture.Context.WorkItems.SingleAsync(x => x.Id == fixture.Item.Id)).CompletedAt);
         Assert.Equal(StageCategory.Backlog, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.TargetStage.Id)).Category);
@@ -141,6 +142,64 @@ public class BoardStructureSqlTests
         Assert.Null(items.Single(x => x.Id == fixture.Item.Id).CompletedAt);
         Assert.Null(items.Single(x => x.Id == grandchild.Id).CompletedAt);
         Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => ids.Contains(x.WorkItemId)));
+    }
+
+    [Fact]
+    public async Task Reclassify_RequiresRecursiveConsentAndReopensOnlyColumnWithoutDuplicateHistory()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var child = await fixture.AddChildAsync(fixture.Item.Id, archived: true);
+        child.StageId = fixture.TargetStage.Id;
+        child.BoardId = fixture.Target.Id;
+        var grandchild = await fixture.AddChildAsync(child.Id);
+        grandchild.StageId = fixture.TargetStage.Id;
+        grandchild.BoardId = fixture.Target.Id;
+        var doneChild = await fixture.AddChildAsync(fixture.Item.Id);
+        doneChild.StageId = fixture.TargetStage.Id;doneChild.BoardId = fixture.Target.Id;
+        doneChild.CompletedAt = DateTimeOffset.UtcNow;
+        await fixture.Context.SaveChangesAsync();
+        var ids = new[] { fixture.Item.Id, child.Id, grandchild.Id, doneChild.Id };
+        var impact = await fixture.Repository.GetStageImpactAsync(fixture.SourceStage.Id, StageCategory.Done, default);
+        Assert.Equal(1, impact.TotalItems);Assert.Equal(1, impact.ChangedItems);Assert.Equal(2, impact.OpenDescendants);
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id,
+            "Concluída", StageCategory.Done, null, true, "test", default, impactToken: impact.SnapshotToken));
+        fixture.Context.ChangeTracker.Clear();
+        Assert.Equal(StageCategory.Backlog, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.SourceStage.Id)).Category);
+        Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => ids.Contains(x.WorkItemId)));
+
+        await fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id, "Concluída", StageCategory.Done, null,
+            true, "test", default, true, impact.SnapshotToken);
+        fixture.Context.ChangeTracker.Clear();
+        var items = await fixture.Context.WorkItems.IgnoreQueryFilters().Where(x => ids.Contains(x.Id)).ToListAsync();
+        Assert.All(items, item => Assert.NotNull(item.CompletedAt));
+        Assert.Equal(fixture.TargetStage.Id, items.Single(x => x.Id == child.Id).StageId);
+        Assert.Equal(fixture.Target.Id, items.Single(x => x.Id == grandchild.Id).BoardId);
+        Assert.True(items.Single(x => x.Id == child.Id).IsArchived);
+        Assert.Equal(3, await fixture.Context.TaskEvents.CountAsync(x => ids.Contains(x.WorkItemId)));
+        Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => x.WorkItemId == doneChild.Id));
+
+        var reopen = await fixture.Repository.GetStageImpactAsync(fixture.SourceStage.Id, StageCategory.Backlog, default);
+        Assert.Equal(0, reopen.OpenDescendants);
+        await fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id, "Aberta", StageCategory.Backlog, null,
+            true, "test", default, impactToken: reopen.SnapshotToken);
+        fixture.Context.ChangeTracker.Clear();
+        Assert.Null((await fixture.Context.WorkItems.SingleAsync(x => x.Id == fixture.Item.Id)).CompletedAt);
+        Assert.NotNull((await fixture.Context.WorkItems.SingleAsync(x => x.Id == child.Id)).CompletedAt);
+        Assert.Equal(4, await fixture.Context.TaskEvents.CountAsync(x => ids.Contains(x.WorkItemId)));
+    }
+
+    [Fact]
+    public async Task Reclassify_RejectsStaleImpactWithoutPartialChanges()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var impact = await fixture.Repository.GetStageImpactAsync(fixture.SourceStage.Id, StageCategory.Done, default);
+        await fixture.AddChildAsync(fixture.Item.Id);
+        await Assert.ThrowsAsync<DomainException>(() => fixture.Repository.UpdateStageAsync(fixture.SourceStage.Id,
+            "Conclusão", StageCategory.Done, null, true, "test", default, true, impact.SnapshotToken));
+        fixture.Context.ChangeTracker.Clear();
+        Assert.Equal(StageCategory.Backlog, (await fixture.Context.Stages.SingleAsync(x => x.Id == fixture.SourceStage.Id)).Category);
+        Assert.Null((await fixture.Context.WorkItems.SingleAsync(x => x.Id == fixture.Item.Id)).CompletedAt);
+        Assert.False(await fixture.Context.TaskEvents.AnyAsync(x => x.WorkItemId == fixture.Item.Id));
     }
 
     private sealed class Fixture : IAsyncDisposable

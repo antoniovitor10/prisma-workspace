@@ -1,4 +1,6 @@
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Prisma.Workspace.Application.Interfaces;
@@ -24,17 +26,21 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
         });
     }
 
-    public Task UpdateStageAsync(Guid stageId, string name, StageCategory? category, string? color, bool confirmCategoryChange, string actorId, CancellationToken ct) => AtomicAsync(async () =>
+    public Task UpdateStageAsync(Guid stageId, string name, StageCategory? category, string? color, bool confirmCategoryChange, string actorId, CancellationToken ct, bool confirmDescendants = false, string? impactToken = null) => AtomicAsync(async () =>
     {
         DomainException.Garantir(!string.IsNullOrWhiteSpace(name) && name.Trim().Length <= 200, "Informe um nome de coluna de até 200 caracteres.");
         DomainException.Garantir(!category.HasValue || Enum.IsDefined(category.Value), "Classificação de coluna inválida.");
         var stage = await context.Stages.Include(x => x.WorkflowStatus).SingleAsync(x => x.Id == stageId && x.BoardId != null, ct);
         var oldCategory = stage.Category;
         var targetCategory = category ?? oldCategory;
-        var items = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
-            .Where(x => x.StageId == stage.Id && x.BoardId == stage.BoardId).ToListAsync(ct);
-        DomainException.Garantir(targetCategory == oldCategory || items.Count == 0 || confirmCategoryChange,
+        var (items, descendants, impact) = await LoadImpactAsync(stage, targetCategory, ct);
+        var reclassifying = targetCategory != oldCategory;
+        DomainException.Garantir(!reclassifying || items.Count == 0 || confirmCategoryChange,
             $"A alteração afeta {items.Count} tarefa(s). Confirme a mudança de classificação.");
+        DomainException.Garantir((!reclassifying || items.Count == 0) && impactToken == null || impactToken == impact.SnapshotToken,
+            "O impacto da classificação mudou. Recarregue as contagens e confirme novamente.");
+        DomainException.Garantir(!reclassifying || impact.OpenDescendants == 0 || confirmDescendants,
+            $"Confirme separadamente a conclusão de {impact.OpenDescendants} descendente(s) aberto(s).");
         stage.Name = name.Trim();
         stage.Category = targetCategory;
         var status = WorkflowStatus.Create(stage.ProjectId, stage.Name, color ?? stage.WorkflowStatus?.Color ?? "#64748B",
@@ -42,8 +48,75 @@ public sealed class BoardStructureRepository(AppDbContext context, IUserDirector
         context.WorkflowStatuses.Add(status);
         stage.WorkflowStatus = status;
         stage.WorkflowStatusId = status.Id;
-        if (targetCategory != oldCategory) await MoveAsync(items, stage, actorId, ct);
+        if (reclassifying)
+        {
+            var toDone = targetCategory == StageCategory.Done;
+            var affected = items.Where(x => (x.CompletedAt != null) != toDone)
+                .Concat(toDone ? descendants.Where(x => x.CompletedAt == null) : [])
+                .DistinctBy(x => x.Id).ToList();
+            var names = await users.GetDisplayNamesAsync([actorId], ct);
+            var actorName = names.GetValueOrDefault(actorId);
+            var now = DateTimeOffset.UtcNow;
+            foreach (var item in affected)
+            {
+                // D62: descendentes conservam quadro e coluna; somente seu estado muda.
+                item.CompletedAt = toDone ? now : null;
+                item.UpdatedAt = now;
+                if (item.StageId == stage.Id) item.WorkflowStatusId = stage.WorkflowStatusId;
+                foreach (var entry in item.StageHistories.Where(x => x.LeftAt == null)) entry.LeftAt = now;
+                context.StageHistories.Add(new StageHistory { Id=Guid.NewGuid(), WorkItemId=item.Id,
+                    StageId=item.StageId!.Value, EnteredAt=now, ActorId=actorId, ActorName=actorName });
+                context.TaskEvents.Add(new TaskEvent { Id=Guid.NewGuid(), WorkItemId=item.Id, ActorId=actorId,
+                    Kind="stage_reclassified", CreatedAt=now, Payload=JsonSerializer.Serialize(new {
+                        reason="column_reclassification", reclassifiedStageId=stage.Id, stageName=stage.Name,
+                        completed=toDone, recursive=item.StageId != stage.Id, actorId, actorName }) });
+            }
+        }
     }, ct);
+
+    public async Task<BoardStageImpactDto> GetStageImpactAsync(Guid stageId, StageCategory category, CancellationToken ct)
+    {
+        BoardStageImpactDto? result = null;
+        await AtomicAsync(async () =>
+        {
+            var stage = await context.Stages.SingleAsync(x => x.Id == stageId && x.BoardId != null, ct);
+            (_, _, result) = await LoadImpactAsync(stage, category, ct);
+        }, ct);
+        return result!;
+    }
+
+    private async Task<(List<WorkItem> Items, List<WorkItem> Descendants, BoardStageImpactDto Impact)> LoadImpactAsync(
+        Stage stage, StageCategory target, CancellationToken ct)
+    {
+        DomainException.Garantir(Enum.IsDefined(target), "Classificação de coluna inválida.");
+        var items = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
+            .Where(x => x.StageId == stage.Id && x.BoardId == stage.BoardId).ToListAsync(ct);
+        var toDone = target == StageCategory.Done;
+        var changed = items.Where(x => (x.CompletedAt != null) != toDone).ToList();
+        var descendants = new List<WorkItem>();
+        var itemIds = items.Select(x => x.Id).ToHashSet();
+        var visited = changed.Select(x => x.Id).ToHashSet();
+        var organizationId = await context.Boards.Where(x => x.Id == stage.BoardId).Select(x => x.OrganizationId).SingleAsync(ct);
+        var frontier = toDone ? changed.Select(x => x.Id).ToList() : [];
+        while (frontier.Count > 0)
+        {
+            var children = await context.WorkItems.IgnoreQueryFilters().Include(x => x.Board).Include(x => x.StageHistories)
+                .Where(x => x.ParentId.HasValue && frontier.Contains(x.ParentId.Value)).ToListAsync(ct);
+            DomainException.Garantir(children.All(x => x.Board.ProjectId == stage.ProjectId
+                && x.Board.OrganizationId == organizationId),
+                "A descendência contém vínculo fora do projeto ou organização.");
+            var next = children.Where(x => visited.Add(x.Id)).ToList();
+            descendants.AddRange(next.Where(x => !itemIds.Contains(x.Id)));
+            frontier = next.Select(x => x.Id).ToList();
+        }
+        var snapshot = JsonSerializer.Serialize(new { stage.Id, stage.Name, stage.Category, target,
+            stage.BoardId, stage.Position, stage.WorkflowStatusId,
+            Items = items.Concat(descendants).OrderBy(x => x.Id).Select(x => new {
+                x.Id, x.ParentId, x.StageId, x.BoardId, x.CompletedAt, x.IsArchived, x.RowVersion }) });
+        var token = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)));
+        return (items, descendants, new BoardStageImpactDto(stage.Id, stage.Name, items.Count, changed.Count,
+            descendants.Count(x => x.CompletedAt == null), token));
+    }
 
     public Task ReorderAsync(Guid boardId, IReadOnlyList<Guid> stageIds, CancellationToken ct) => AtomicAsync(async () =>
     {

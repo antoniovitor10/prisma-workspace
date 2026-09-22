@@ -79,6 +79,42 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('confirmação D62 por quadro', () => {
+  it('exige consentimento separado da descendência e envia a fotografia do impacto', async () => {
+    vi.spyOn(api, 'getStageImpact').mockResolvedValue({
+      stageId:'stage-1', name:'A fazer', totalItems:1, changedItems:1, openDescendants:2, snapshotToken:'snapshot-1'
+    });
+    const update = vi.spyOn(api, 'updateStage').mockResolvedValue(undefined);
+    renderRota('/boards/board-1');
+    fireEvent.click(await screen.findByRole('button', {name:'Editar coluna A fazer'}));
+    fireEvent.change(screen.getByLabelText('Classificação da coluna'), {target:{value:'4'}});
+    expect(await screen.findByText(/1 tarefa\(s\) na coluna; 1 terão o estado alterado; 2 descendente/)).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Confirmo alterar o estado das tarefas desta coluna'));
+    fireEvent.click(screen.getByRole('button', {name:'Salvar'}));
+    expect(update).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText('Aceito concluir também todos os 2 descendentes abertos, sem movê-los'));
+    fireEvent.click(screen.getByRole('button', {name:'Salvar'}));
+    await waitFor(()=>expect(update).toHaveBeenCalledWith('stage-1', {
+      name:'A fazer', category:4, confirmCategoryChange:true, confirmDescendants:true, impactToken:'snapshot-1'
+    }));
+  });
+
+  it('recarrega impacto obsoleto e exige nova confirmação', async () => {
+    const impact = vi.spyOn(api, 'getStageImpact')
+      .mockResolvedValueOnce({stageId:'stage-1',name:'A fazer',totalItems:1,changedItems:1,openDescendants:0,snapshotToken:'old'})
+      .mockResolvedValue({stageId:'stage-1',name:'A fazer',totalItems:2,changedItems:2,openDescendants:0,snapshotToken:'new'});
+    vi.spyOn(api, 'updateStage').mockRejectedValue(new Error('O impacto da classificação mudou.'));
+    renderRota('/boards/board-1');
+    fireEvent.click(await screen.findByRole('button', {name:'Editar coluna A fazer'}));
+    fireEvent.change(screen.getByLabelText('Classificação da coluna'), {target:{value:'4'}});
+    fireEvent.click(await screen.findByLabelText('Confirmo alterar o estado das tarefas desta coluna'));
+    fireEvent.click(screen.getByRole('button', {name:'Salvar'}));
+    await waitFor(()=>expect(impact).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Confirmo alterar o estado das tarefas desta coluna')).not.toBeChecked();
+    expect(await screen.findByText(/2 tarefa\(s\) na coluna/)).toBeInTheDocument();
+  });
+});
+
 describe('Kanban do projeto abre direto', () => {
   it('mantém a alternância Backlog ↔ Quadro, que vinha da tela removida', async () => {
     renderRota(`/projects/${PROJETO}/boards`);

@@ -59,6 +59,10 @@ public class StagesController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{stageId:guid}/impact")]
+    public async Task<IActionResult> Impact(Guid stageId, [FromQuery] StageCategory category, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetBoardStageImpactQuery(stageId, category, UserId), ct));
+
     [HttpDelete("{stageId:guid}")]
     public async Task<IActionResult> Delete(Guid stageId, [FromQuery] Guid? destinationStageId, CancellationToken ct)
     {
@@ -104,7 +108,7 @@ public class StagesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateBoardStageCommand(
-            stageId, request.Name, request.Category, request.Color, request.ConfirmCategoryChange, UserId);
+            stageId, request.Name, request.Category, request.Color, request.ConfirmCategoryChange, UserId, request.ConfirmDescendants, request.ImpactToken);
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -126,4 +130,6 @@ public record UpdateStageRequest(
     string Name,
     StageCategory? Category = null,
     string? Color = null,
-    bool ConfirmCategoryChange = false);
+    bool ConfirmCategoryChange = false,
+    bool ConfirmDescendants = false,
+    string? ImpactToken = null);

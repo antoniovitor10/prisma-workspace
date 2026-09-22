@@ -688,15 +688,19 @@ export const api = {
     projectId: string, name: string, position: number,
     options?: { boardId?: string; workflowStatusId?: string; category?: number; color?: string }
   ) {
-    return this.request('/api/Stages', {
+    return this.request(options?.boardId ? `/api/Stages/board/${options.boardId}` : '/api/Stages', {
       method: 'POST',
       body: JSON.stringify({ projectId, name, position, ...options })
     });
   },
 
+  async getStageImpact(stageId: string, category: number): Promise<{stageId:string; name:string; totalItems:number; changedItems:number; openDescendants:number; snapshotToken:string}> {
+    return this.request(`/api/Stages/${stageId}/impact?category=${category}`);
+  },
+
   async updateStage(
     stageId: string,
-    data: { name: string; category?: number; color?: string; confirmCategoryChange?: boolean }
+    data: { name: string; category?: number; color?: string; confirmCategoryChange?: boolean; confirmDescendants?: boolean; impactToken?: string }
   ) {
     return this.request(`/api/Stages/${stageId}`, {
       method: 'PUT',

@@ -23,6 +23,14 @@
 ## [2026-09-22] - Codex - D89: transferência preserva a árvore inteira
 
 - Correção da revisão independente: TransferAsync carrega recursivamente todos os descendentes com IgnoreQueryFilters, revalida projeto/organização e transfere a árvore em uma única transação Serializable, preservando ParentId, arquivamento e histórico/evento individual.
+## [2026-09-22] - Codex - D62: impacto e consentimento recursivo na reclassificação
+
+- Reclassificação por quadro agora possui GET de impacto com nome, total da coluna, estados alterados, descendentes abertos externos e token SHA-256 da fotografia (IDs/vínculos, estado, arquivamento e RowVersion). UPDATE revalida a fotografia dentro da transação Serializable; mudança concorrente cancela integralmente.
+- Consentimento da coluna e consentimento recursivo são separados. Aberta para Done conclui somente itens efetivamente abertos e descendentes consentidos, sem mover descendentes externos; Done para aberta reabre somente itens da coluna. Arquivados são incluídos, cada estado alterado recebe história/evento individual e itens já no estado final não recebem duplicata.
+- UI apresenta direção e contagens, bloqueia submissão sem consentimentos e recarrega o impacto após rejeição. Corrigida também a rota de criação de coluna para o endpoint por quadro já existente.
+- Validação focal: SQL BoardStructureSqlTests 9/9; typecheck frontend aprovado; ProjectKanbanDirect 10/10, incluindo recusa sem consentimento da árvore e renovação de confirmação obsoleta. Sem suíte completa, rebuild de imagem ou deploy. Runtime continua no checkpoint anterior até validação integrada.
+- Referências: D62 e SPEC-BOARDS-STAGES-WIP regras 13–24, preservando o escopo projeto/quadro vigente da D89.
+
 - Destino Done não conclui descendentes abertos implicitamente: a transferência inteira é recusada antes de escrever quando não há consentimento D62. Nesta base WorkItem possui IsArchived, mas não campos de soft-delete; a consulta sem filtros inclui todos os registros retidos disponíveis.
 - Testes SQL focais BoardStructureSqlTests: 7/7, incluindo pai, filho aberto, filho arquivado, neto, auditoria individual e recusa atômica Done com descendente aberto/arquivado. Sem rebuild de imagem, suíte completa ou deploy.
 - Próximo: revisão D62 da reclassificação, backfills de referências de automações e formulários; checkpoints separados.
