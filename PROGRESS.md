@@ -29,6 +29,13 @@
 ## [2026-09-22] - Codex - D89: referências de automações no backfill
 
 - Migration candidata remapeia AutomationRules.TriggerStageId e ActionValue de MoveToStage por BoardId + LegacyStageId, antes de liberar colunas operacionais. Referências inexistentes/ambíguas abortam antes das clones; contagens de regras e destinos são verificadas.
+## [2026-09-22] - Codex - D89: formulários legados apontam para clones do quadro
+
+- Backfill incremental remapeia ExternalForms.InitialStageId e StageId/stageId nas AssignmentRulesJson por ExternalForm.ExternalPortal.BoardId + LegacyStageId (o modelo não possui BoardId diretamente em ExternalForm).
+- JSON_MODIFY preserva propriedades desconhecidas, caixa das chaves e ordem das regras. JSON malformado, regra não objeto, chaves StageId duplicadas e coluna fora do mapeamento abortam antes das clones; contagens de formulários/regras/referências são verificadas. Down imediato reverte referências iniciais e JSON junto das tarefas/automações.
+- Testes SQL reais em tabelas temporárias: migration 10/10, incluindo formulário em dois quadros, rejeições, preservação de campo desconhecido e reversão. O teste chama também SubmitExternalFormCommandHandler com o JSON já migrado e confirma seleção da clone do quadro.
+- Falhas de teste corrigidas: comparação de OPENJSON usa collation BIN2 explícita; fixture de submissão agora informa a descrição obrigatória. Nenhuma migration foi reaplicada ao runtime ou produção.
+
 - Down imediato reverte ambas as referências para o legado dentro das guardas históricas já existentes. Esta revisão não foi reaplicada ao banco de runtime nem à produção; o SQL da migration foi executado apenas em tabelas temporárias de teste.
 - Exclusão de coluna referenciada por automação, mesmo inativa, retorna erro de domínio orientando reconfigurar/excluir a regra antes da coluna. Nenhuma tarefa/história muda no bloqueio.
 - SQL focal: 17/17 entre BoardStructureSqlTests e IndependentBoardColumnsMigrationTests; inclui gatilho/destino em dois quadros, reversão imediata, referências inválidas e bloqueio sem escrita parcial.

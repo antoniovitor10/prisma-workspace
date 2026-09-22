@@ -47,6 +47,8 @@ public partial class Add_Independent_Board_Columns : Migration
             DECLARE @stageHistoryCount bigint = (SELECT COUNT_BIG(*) FROM StageHistories);
             DECLARE @taskEventCount bigint = (SELECT COUNT_BIG(*) FROM TaskEvents);
             DECLARE @legacyStageCount bigint = (SELECT COUNT_BIG(*) FROM Stages);
+            DECLARE @formCount bigint = (SELECT COUNT_BIG(*) FROM ExternalForms);
+            DECLARE @initialStageCount bigint = (SELECT COUNT_BIG(*) FROM ExternalForms WHERE InitialStageId IS NOT NULL);
             DECLARE @automationCount bigint = (SELECT COUNT_BIG(*) FROM AutomationRules);
             DECLARE @moveActionCount bigint = (SELECT COUNT_BIG(*) FROM AutomationRules WHERE ActionType = 2);
 
@@ -89,6 +91,40 @@ public partial class Add_Independent_Board_Columns : Migration
                 WHERE r.ActionType = 2 AND (LEN(r.ActionValue) <> 36 OR m.CloneStageId IS NULL))
                 THROW 50022, 'Automação MoveToStage com destino inválido/ambíguo no quadro; abortando backfill.', 1;
 
+            IF EXISTS (SELECT 1 FROM ExternalForms WHERE ISJSON(AssignmentRulesJson) <> 1
+                OR AssignmentRulesJson IS NULL OR LEFT(LTRIM(AssignmentRulesJson), 1) <> '[')
+                THROW 50025, 'Formulário com regras JSON inválidas; abortando backfill.', 1;
+            IF EXISTS (SELECT 1 FROM ExternalForms f CROSS APPLY OPENJSON(f.AssignmentRulesJson) r WHERE r.type <> 5)
+                THROW 50025, 'Regras do formulário devem ser objetos JSON; abortando backfill.', 1;
+            IF EXISTS (
+                SELECT 1 FROM ExternalForms f LEFT JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+                LEFT JOIN Boards b ON b.Id=p.BoardId
+                LEFT JOIN @stageMap m ON m.BoardId=p.BoardId AND m.LegacyStageId=f.InitialStageId
+                WHERE b.Id IS NULL OR (f.InitialStageId IS NOT NULL AND m.CloneStageId IS NULL))
+                THROW 50026, 'Formulário com portal/quadro/coluna inicial incompatível; abortando backfill.', 1;
+            IF EXISTS (
+                SELECT f.Id, r.[key] FROM ExternalForms f CROSS APPLY OPENJSON(f.AssignmentRulesJson) r
+                CROSS APPLY OPENJSON(r.value) property WHERE LOWER(property.[key]) = 'stageid'
+                GROUP BY f.Id, r.[key] HAVING COUNT(*) > 1)
+                THROW 50027, 'Regra JSON possui propriedades StageId duplicadas/ambíguas; abortando backfill.', 1;
+            IF EXISTS (
+                SELECT 1 FROM ExternalForms f JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+                CROSS APPLY OPENJSON(f.AssignmentRulesJson) r CROSS APPLY OPENJSON(r.value) property
+                LEFT JOIN @stageMap m ON m.BoardId=p.BoardId AND m.LegacyStageId=TRY_CONVERT(uniqueidentifier, property.value)
+                WHERE LOWER(property.[key]) = 'stageid' AND property.type <> 0
+                    AND (property.type <> 1 OR LEN(property.value) <> 36 OR m.CloneStageId IS NULL))
+                THROW 50028, 'Regra de formulário com coluna inválida/ambígua no quadro; abortando backfill.', 1;
+
+            DECLARE @formRuleCount bigint = (SELECT COUNT_BIG(*) FROM ExternalForms f CROSS APPLY OPENJSON(f.AssignmentRulesJson) r);
+            DECLARE @formStageMap TABLE(FormId uniqueidentifier, RuleIndex int, PropertyName nvarchar(128),
+                CloneStageId uniqueidentifier, PRIMARY KEY(FormId, RuleIndex));
+            INSERT INTO @formStageMap
+            SELECT f.Id, CONVERT(int,r.[key]), property.[key], m.CloneStageId
+            FROM ExternalForms f JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+            CROSS APPLY OPENJSON(f.AssignmentRulesJson) r CROSS APPLY OPENJSON(r.value) property
+            JOIN @stageMap m ON m.BoardId=p.BoardId AND m.LegacyStageId=TRY_CONVERT(uniqueidentifier,property.value)
+            WHERE LOWER(property.[key])='stageid' AND property.type=1;
+
             INSERT INTO Stages
                 (Id, BoardId, LegacyStageId, ProjectId, WorkflowStatusId, Name, Position, Category, CreatedAt)
             SELECT m.CloneStageId, m.BoardId, m.LegacyStageId, s.ProjectId, s.WorkflowStatusId,
@@ -114,6 +150,36 @@ public partial class Add_Independent_Board_Columns : Migration
             WHERE r.ActionType = 2;
             IF @@ROWCOUNT <> @moveActionCount OR (SELECT COUNT_BIG(*) FROM AutomationRules) <> @automationCount
                 THROW 50024, 'A contagem de automações/destinos divergiu; abortando.', 1;
+
+            UPDATE f SET f.InitialStageId=m.CloneStageId
+            FROM ExternalForms f JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+            JOIN @stageMap m ON m.BoardId=p.BoardId AND m.LegacyStageId=f.InitialStageId;
+            IF @@ROWCOUNT <> @initialStageCount
+                THROW 50029, 'A contagem de colunas iniciais remapeadas divergiu; abortando.', 1;
+
+            DECLARE @formId uniqueidentifier, @ruleIndex int, @propertyName nvarchar(128), @formClone uniqueidentifier;
+            DECLARE form_stage_cursor CURSOR LOCAL FAST_FORWARD FOR
+                SELECT FormId, RuleIndex, PropertyName, CloneStageId FROM @formStageMap;
+            OPEN form_stage_cursor;
+            FETCH NEXT FROM form_stage_cursor INTO @formId, @ruleIndex, @propertyName, @formClone;
+            WHILE @@FETCH_STATUS = 0
+            BEGIN
+                UPDATE ExternalForms SET AssignmentRulesJson=JSON_MODIFY(AssignmentRulesJson,
+                    '$['+CONVERT(varchar(12),@ruleIndex)+']."'+@propertyName+'"', CONVERT(nvarchar(36),@formClone))
+                WHERE Id=@formId;
+                FETCH NEXT FROM form_stage_cursor INTO @formId, @ruleIndex, @propertyName, @formClone;
+            END;
+            CLOSE form_stage_cursor;
+            DEALLOCATE form_stage_cursor;
+            IF (SELECT COUNT_BIG(*) FROM ExternalForms) <> @formCount
+                OR (SELECT COUNT_BIG(*) FROM ExternalForms f CROSS APPLY OPENJSON(f.AssignmentRulesJson) r) <> @formRuleCount
+                THROW 50030, 'A contagem de formulários/regras mudou durante o backfill; abortando.', 1;
+            IF EXISTS (
+                SELECT 1 FROM @formStageMap m JOIN ExternalForms f ON f.Id=m.FormId
+                CROSS APPLY OPENJSON(f.AssignmentRulesJson) r CROSS APPLY OPENJSON(r.value) property
+                WHERE CONVERT(int,r.[key])=m.RuleIndex AND property.[key]=m.PropertyName COLLATE Latin1_General_BIN2
+                    AND TRY_CONVERT(uniqueidentifier,property.value) <> m.CloneStageId)
+                THROW 50031, 'Uma regra do formulário não foi remapeada corretamente; abortando.', 1;
 
             IF (SELECT COUNT_BIG(*) FROM WorkItems) <> @workItemCount
                 THROW 50012, 'A contagem de WorkItems mudou durante o backfill; abortando.', 1;
@@ -174,6 +240,12 @@ public partial class Add_Independent_Board_Columns : Migration
                 WHERE s.BoardId IS NOT NULL)
                 THROW 50018, 'Rollback bloqueado: há histórico associado a colunas independentes. Restaure backup coordenado.', 1;
 
+            IF EXISTS (SELECT 1 FROM ExternalForms WHERE ISJSON(AssignmentRulesJson) <> 1
+                OR AssignmentRulesJson IS NULL OR LEFT(LTRIM(AssignmentRulesJson),1) <> '[')
+                THROW 50032, 'Rollback bloqueado: regras JSON de formulário inválidas.', 1;
+            IF EXISTS (SELECT 1 FROM ExternalForms f CROSS APPLY OPENJSON(f.AssignmentRulesJson) r WHERE r.type <> 5)
+                THROW 50032, 'Rollback bloqueado: regras de formulário inválidas.', 1;
+
             UPDATE wi
             SET wi.StageId = s.LegacyStageId
             FROM WorkItems wi
@@ -187,6 +259,30 @@ public partial class Add_Independent_Board_Columns : Migration
             FROM AutomationRules r JOIN Stages s
                 ON s.Id = TRY_CONVERT(uniqueidentifier, r.ActionValue) AND s.BoardId = r.BoardId
             WHERE r.ActionType = 2 AND s.BoardId IS NOT NULL;
+
+            UPDATE f SET f.InitialStageId=s.LegacyStageId
+            FROM ExternalForms f JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+            JOIN Stages s ON s.Id=f.InitialStageId AND s.BoardId=p.BoardId
+            WHERE s.BoardId IS NOT NULL;
+
+            DECLARE @formId uniqueidentifier, @ruleIndex int, @propertyName nvarchar(128), @legacyStage uniqueidentifier;
+            DECLARE form_stage_down_cursor CURSOR LOCAL FAST_FORWARD FOR
+                SELECT f.Id, CONVERT(int,r.[key]), property.[key], s.LegacyStageId
+                FROM ExternalForms f JOIN ExternalPortals p ON p.Id=f.ExternalPortalId
+                CROSS APPLY OPENJSON(f.AssignmentRulesJson) r CROSS APPLY OPENJSON(r.value) property
+                JOIN Stages s ON s.Id=TRY_CONVERT(uniqueidentifier,property.value) AND s.BoardId=p.BoardId
+                WHERE LOWER(property.[key])='stageid' AND property.type=1 AND s.BoardId IS NOT NULL;
+            OPEN form_stage_down_cursor;
+            FETCH NEXT FROM form_stage_down_cursor INTO @formId, @ruleIndex, @propertyName, @legacyStage;
+            WHILE @@FETCH_STATUS = 0
+            BEGIN
+                UPDATE ExternalForms SET AssignmentRulesJson=JSON_MODIFY(AssignmentRulesJson,
+                    '$['+CONVERT(varchar(12),@ruleIndex)+']."'+@propertyName+'"', CONVERT(nvarchar(36),@legacyStage))
+                WHERE Id=@formId;
+                FETCH NEXT FROM form_stage_down_cursor INTO @formId, @ruleIndex, @propertyName, @legacyStage;
+            END;
+            CLOSE form_stage_down_cursor;
+            DEALLOCATE form_stage_down_cursor;
 
             DELETE FROM Stages WHERE BoardId IS NOT NULL;
             """);
