@@ -834,8 +834,9 @@ export const api = {
     return this.request(`/api/WorkItems/${parentId}/subitems`);
   },
 
-  async getAssignableUsers() {
-    return this.request('/api/Users/assignable');
+  async getAssignableUsers(projectId?: string) {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return this.request(`/api/Users/assignable${query}`);
   },
 
   async getAssignees(workItemId: string) {

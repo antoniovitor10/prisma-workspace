@@ -21,6 +21,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Search,
   Send,
   Target,
   Trash2,
@@ -28,7 +29,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
 import { DependencyAutocomplete } from '../features/task/DependencyAutocomplete';
@@ -81,14 +82,14 @@ const Overlay = styled(Dialog.Overlay)`
   position:fixed;inset:0;z-index:40;
   background:${({theme})=>`color-mix(in srgb, ${theme.color.neutral[900]} 40%, transparent)`};
 `;
-/* centered modal — wide, max 92vh height, internal scroll */
+/* centered modal — wide, max 94vh height, internal scroll */
 const Sheet = styled(Dialog.Content)`
   position:fixed;
   left:50%;top:50%;
   transform:translate(-50%,-50%);
   z-index:41;
-  width:min(900px,95vw);
-  max-height:92vh;
+  width:min(1200px,95vw);
+  max-height:94vh;
   display:flex;flex-direction:column;
   border-radius:${({theme})=>theme.radius.card};
   background:${({theme})=>theme.color.surface};
@@ -101,20 +102,40 @@ const Sheet = styled(Dialog.Content)`
     width:100%;max-height:96vh;
     border-radius:${({theme})=>theme.radius.card} ${({theme})=>theme.radius.card} 0 0;
   }
+  &:has([data-description-expanded=true]){
+    inset:0;transform:none;width:100vw;height:100dvh;max-height:100dvh;border-radius:0;
+    >header,>[role=alert]{display:none;}
+  }
 `;
 const Header = styled.header`flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:0 22px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({theme})=>theme.color.surface};`;
 const HeaderGroup = styled.div`display:flex;align-items:center;gap:9px;color:${({theme})=>theme.color.textMuted};font-size:13px;font-weight:750;`;
-const HeaderAssignee = styled.label`
+const AssigneeWrap = styled.div`position:relative;`;
+/* chip do header: botao que abre o popover de responsaveis */
+const HeaderAssignee = styled.button`
   display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 8px 0 4px;
   border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.pill};
   background:${({theme})=>theme.color.neutral[50]};color:${({theme})=>theme.color.textMuted};cursor:pointer;
-  select{border:0;background:transparent;color:${({theme})=>theme.color.text};font:inherit;font-size:12.5px;font-weight:700;max-width:140px;outline:none;}
+  &:hover,&[aria-expanded="true"]{border-color:${({theme})=>theme.color.accentBlue};background:${({theme})=>theme.color.surface};}
+  >span.count{color:${({theme})=>theme.color.text};font-size:12.5px;font-weight:700;white-space:nowrap;}
 `;
+const AvatarStack = styled.span`display:inline-flex;align-items:center;>span{box-shadow:0 0 0 2px ${({theme})=>theme.color.surface};}>span+span{margin-left:-8px;}`;
+const AssigneePopover = styled.div`
+  position:absolute;right:0;top:calc(100% + 6px);z-index:5;width:min(320px,calc(100vw - 32px));
+  display:grid;gap:8px;padding:12px;
+  border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.lg};
+  background:${({theme})=>theme.color.surface};box-shadow:${({theme})=>theme.shadow.lg};
+  text-align:left;
+`;
+const PopoverTitle = styled.p`display:flex;align-items:center;justify-content:space-between;color:${({theme})=>theme.color.neutral[700]};font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;small{color:${({theme})=>theme.color.textMuted};font-weight:700;text-transform:none;}`;
+const PopoverList = styled.div<{ $scroll?:boolean }>`display:grid;gap:2px;${({$scroll})=>$scroll?'max-height:220px;overflow-y:auto;':''}`;
+const PopoverRow = styled.div`display:flex;align-items:center;gap:8px;min-height:36px;padding:2px 4px;border-radius:${({theme})=>theme.radius.md};color:${({theme})=>theme.color.text};font-size:13px;font-weight:600;>span.name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`;
+const PopoverOption = styled.button`display:flex;width:100%;align-items:center;gap:8px;min-height:36px;padding:2px 6px;border-radius:${({theme})=>theme.radius.md};color:${({theme})=>theme.color.text};font-size:13px;font-weight:600;text-align:left;>span.name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}>svg{color:${({theme})=>theme.color.textMuted};}&:hover{background:${({theme})=>theme.color.neutral[50]};}&:disabled{opacity:.5;}`;
+const PopoverSearch = styled.label`display:flex;align-items:center;gap:6px;min-height:34px;padding:0 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};color:${({theme})=>theme.color.textMuted};input{flex:1;min-width:0;border:0;background:transparent;color:${({theme})=>theme.color.text};font:inherit;font-size:13px;outline:none;}&:focus-within{border-color:${({theme})=>theme.color.accentBlue};}`;
 const SaveState = styled.span<{ $error?: boolean }>`display:inline-flex;align-items:center;gap:4px;color:${({theme,$error})=>$error?theme.color.danger:theme.color.success};font-size:12px;`;
 const IconButton = styled.button<{ $danger?: boolean }>`display:grid;width:32px;height:32px;place-items:center;border-radius:${({theme})=>theme.radius.md};color:${({theme,$danger})=>$danger?theme.color.danger:theme.color.textMuted};&:hover{background:${({theme})=>theme.color.neutral[100]};}`;
 const Close = styled(Dialog.Close)`display:grid;width:34px;height:34px;place-items:center;border-radius:${({theme})=>theme.radius.md};color:${({theme})=>theme.color.textMuted};&:hover{background:${({theme})=>theme.color.neutral[100]};}`;
 /* scrollable body — fills remaining modal height */
-const Body = styled.div`flex:1;overflow-y:auto;padding:20px 26px 40px;@media(max-width:600px){padding:16px 16px 36px;}`;
+const Body = styled.div`flex:1;overflow-y:auto;padding:20px 26px 40px;@media(max-width:600px){padding:16px 16px 36px;}&:has([data-description-expanded=true]){padding:0;overflow:hidden;> *:not(:has([data-description-expanded=true])){display:none;} >section{margin:0;padding:0;>h2{display:none;}}}`;
 const Tabs = styled.nav`position:sticky;top:0;z-index:2;flex:0 0 auto;display:flex;gap:4px;overflow-x:auto;margin:16px -26px 0;padding:8px 26px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({theme})=>theme.color.surface};@media(max-width:600px){margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;}`;
 const Tab = styled.button<{ $active:boolean }>`flex:0 0 auto;min-height:34px;padding:0 11px;border-radius:${({theme})=>theme.radius.md};background:${({theme,$active})=>$active?theme.color.brand:theme.color.neutral[50]};color:${({theme,$active})=>$active?theme.color.onBrand:theme.color.textMuted};font-size:13px;font-weight:800;`;
 const TypeLine = styled.div`display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px;`;
@@ -122,23 +143,28 @@ const TypeLine = styled.div`display:flex;flex-wrap:wrap;align-items:center;gap:8
 const TypeBadge = styled.span<{ $kind:number }>`display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border-radius:${({theme})=>theme.radius.sm};background:${({$kind})=>kindMeta($kind).color};color:white;font-size:12px;font-weight:800;text-transform:uppercase;`;
 const OriginBadge = styled.span<{ $external?:boolean }>`display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;background:${({theme,$external})=>`color-mix(in srgb, ${$external?theme.color.warning:theme.color.neutral[400]} 14%, white)`};color:${({theme,$external})=>$external?theme.color.neutral[800]:theme.color.textMuted};font-size:12px;font-weight:750;`;
 const ItemCode = styled.span`color:${({theme})=>theme.color.textMuted};font-size:13px;font-weight:750;`;
-const Title = styled(Dialog.Title)`color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.display};font-size:clamp(20px,3vw,27px);font-weight:800;line-height:1.2;overflow-wrap:anywhere;`;
+/* titulo: duplo clique abre edicao inline */
+const Title = styled(Dialog.Title)`margin:0 -6px;padding:2px 6px;border-radius:${({theme})=>theme.radius.md};color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.display};font-size:clamp(20px,3vw,27px);font-weight:800;line-height:1.2;overflow-wrap:anywhere;cursor:text;&:hover{background:${({theme})=>theme.color.neutral[50]};}`;
+const TitleInput = styled.input`display:block;width:calc(100% + 12px);margin:0 -6px;padding:2px 6px;border:1px solid ${({theme})=>theme.color.accentBlue};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.display};font-size:clamp(20px,3vw,27px);font-weight:800;line-height:1.2;outline:none;box-shadow:0 0 0 2px color-mix(in srgb, ${({theme})=>theme.color.accentBlue} 12%, transparent);`;
 const Meta = styled.div`display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;`;
 const MetaChip = styled.span`display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:0 9px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.neutral[50]};color:${({theme})=>theme.color.neutral[700]};font-size:13px;font-weight:700;`;
 const Section = styled.section`margin-top:24px;padding-top:4px;>h2{display:flex;align-items:center;gap:7px;margin-bottom:10px;color:${({theme})=>theme.color.neutral[700]};font-size:13.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}`;
 const FormGrid = styled.div`display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;@media(max-width:540px){grid-template-columns:1fr;}`;
 const Field = styled.label<{ $wide?:boolean }>`display:grid;grid-column:${({$wide})=>$wide?'1/-1':'auto'};gap:5px;color:${({theme})=>theme.color.textMuted};font-size:12px;font-weight:800;text-transform:uppercase;input,textarea,select{width:100%;min-height:37px;padding:8px 9px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.body};font-size:14px;font-weight:500;text-transform:none;outline:none;&:focus{border-color:${({theme})=>theme.color.accentBlue};box-shadow:0 0 0 2px color-mix(in srgb, ${({theme})=>theme.color.accentBlue} 12%, transparent);}}textarea{min-height:86px;resize:vertical;line-height:1.5;}select[multiple]{min-height:92px;}`;
 const Button = styled.button<{ $secondary?:boolean; $danger?:boolean }>`display:inline-flex;min-height:34px;align-items:center;justify-content:center;gap:6px;padding:0 11px;border:1px solid ${({theme,$danger,$secondary})=>$danger?theme.color.danger:$secondary?theme.color.border:'transparent'};border-radius:${({theme})=>theme.radius.md};background:${({theme,$danger,$secondary})=>$danger?'transparent':$secondary?theme.color.surface:theme.color.brand};color:${({theme,$danger,$secondary})=>$danger?theme.color.danger:$secondary?theme.color.text:theme.color.onBrand};font-size:13px;font-weight:800;&:disabled{opacity:.5;}`;
-const InlineForm = styled.form`display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:9px;input,select{min-height:34px;padding:0 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}input{flex:1;min-width:170px;}`;
+const InlineForm = styled.form`display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:9px;input,select{min-height:34px;padding:0 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}input{flex:1 1 220px;min-width:min(220px,100%);}.kind-selector{flex:0 1 140px;min-width:140px;}button{flex:0 0 auto;max-width:100%;}@media(max-width:560px){> *{flex:1 1 100%;min-width:0;}.kind-selector{min-width:0;}}`;
 const List = styled.div`display:grid;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.lg};overflow:hidden;`;
 const Row = styled.div`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;min-height:48px;padding:8px 11px;border-bottom:1px solid ${({theme})=>theme.color.neutral[100]};&:last-child{border-bottom:0;}strong{display:block;font-size:13.5px;}small{display:block;margin-top:2px;color:${({theme})=>theme.color.textMuted};font-size:12px;}`;
 const AvatarRow = styled.div`display:flex;flex-wrap:wrap;gap:7px;align-items:center;`;
 const Person = styled.span`display:inline-flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid ${({theme})=>theme.color.border};border-radius:999px;color:${({theme})=>theme.color.text};font-size:13px;button{display:grid;place-items:center;color:${({theme})=>theme.color.textMuted};}`;
+const PrimaryLabel = styled.small`padding:2px 5px;border-radius:999px;background:${({theme})=>theme.color.neutral[100]};color:${({theme})=>theme.color.textMuted};font-size:10px;font-weight:800;text-transform:uppercase;`;
+const SectionHelp = styled.p`margin:-3px 0 10px;color:${({theme})=>theme.color.textMuted};font-size:13px;line-height:1.45;`;
 const Avatar = styled.span`display:grid;width:24px;height:24px;place-items:center;border-radius:999px;background:${({theme})=>theme.color.brand};color:white;font-size:11px;font-weight:800;`;
 const Empty = styled.p`padding:14px;color:${({theme})=>theme.color.textMuted};font-size:13px;text-align:center;`;
 const ActionBar = styled.div`display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding-top:18px;border-top:1px solid ${({theme})=>theme.color.border};`;
 const Progress = styled.div`display:grid;min-height:230px;place-items:center;color:${({theme})=>theme.color.textMuted};font-size:13.5px;`;
-const ErrorBox = styled.div`margin-top:12px;padding:9px 11px;border:1px solid color-mix(in srgb, ${({theme})=>theme.color.danger} 35%, white);border-radius:${({theme})=>theme.radius.md};background:color-mix(in srgb, ${({theme})=>theme.color.danger} 7%, white);color:${({theme})=>theme.color.danger};font-size:13px;`;
+const ErrorBox = styled.div.attrs({role:'alert'})`margin-top:12px;padding:12px 14px;border:1px solid color-mix(in srgb, ${({theme})=>theme.color.danger} 50%, ${({theme})=>theme.color.surface});border-radius:${({theme})=>theme.radius.md};background:color-mix(in srgb, ${({theme})=>theme.color.danger} 10%, ${({theme})=>theme.color.surface});color:${({theme})=>theme.color.text};font-size:13px;line-height:1.5;`;
+const TaskError = styled(ErrorBox)`flex:0 0 auto;margin:12px 22px 0;`;
 const VisibilityNote = styled.p`margin-bottom:9px;padding:9px 11px;border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.neutral[50]};color:${({theme})=>theme.color.textMuted};font-size:13px;line-height:1.5;`;
 const PublicConversation = styled.div`display:grid;gap:7px;max-height:250px;overflow:auto;margin-bottom:9px;`;
 const PublicMessage = styled.article<{ $requester?:boolean }>`justify-self:${({$requester})=>$requester?'start':'end'};max-width:88%;padding:9px 11px;border-radius:${({theme})=>theme.radius.lg};background:${({theme,$requester})=>$requester?theme.color.neutral[100]:theme.color.brand};color:${({theme,$requester})=>$requester?theme.color.text:theme.color.onBrand};strong{display:block;font-size:12px}p{margin:3px 0;font-size:13.5px;line-height:1.45;white-space:pre-wrap}small{font-size:11px;opacity:.72}`;
@@ -168,7 +194,13 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const realMode=Boolean(api.getToken())&&!previewMode;
   const [draft,setDraft]=useState<Draft|null>(null);
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'|'error'>('idle');
-  const [participantId,setParticipantId]=useState('');
+  const [assigneeId,setAssigneeId]=useState('');
+  const [assigneeOpen,setAssigneeOpen]=useState(false);
+  const [assigneeSearch,setAssigneeSearch]=useState('');
+  const assigneeWrapRef=useRef<HTMLDivElement>(null);
+  const [editingTitle,setEditingTitle]=useState(false);
+  const titleBeforeEditRef=useRef('');
+  const editingTitleRef=useRef(false);
   const [subtaskTitle,setSubtaskTitle]=useState('');
   const [subtaskKind,setSubtaskKind]=useState<number>(WorkItemKind.Subtask);
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
@@ -190,13 +222,20 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const detailsQuery=useQuery<WorkItemDetails>({queryKey:['work-item',item?.id],queryFn:()=>api.getWorkItemDetails(item!.id),enabled:Boolean(item)&&realMode,retry:false});
   const details=detailsQuery.data??fallback;
   const stagesQuery=useQuery<StageOption[]>({queryKey:['stages',details?.projectId],queryFn:()=>api.getStages(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
-  const usersQuery=useQuery<AssignableUser[]>({queryKey:['assignable-users'],queryFn:()=>api.getAssignableUsers(),enabled:realMode});
+  const usersQuery=useQuery<AssignableUser[]>({queryKey:['assignable-users',details?.projectId],queryFn:()=>api.getAssignableUsers(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
   const showStoryPoints=Boolean(projectQuery.data)&&projectQuery.data?.methodology!==1;
 
   useEffect(()=>{if(details){setDraft(toDraft(details));setCustomValues(Object.fromEntries(details.customFields.map(field=>[field.fieldId,field.value??''])));}},[details]);
-  useEffect(()=>setActiveTab('description'),[item?.id]);
+  useEffect(()=>{setActiveTab('description');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
+  // fecha o popover de responsaveis ao clicar fora dele
+  useEffect(()=>{
+    if(!assigneeOpen)return;
+    const onPointerDown=(event:PointerEvent)=>{if(!assigneeWrapRef.current?.contains(event.target as Node))setAssigneeOpen(false);};
+    document.addEventListener('pointerdown',onPointerDown);
+    return()=>document.removeEventListener('pointerdown',onPointerDown);
+  },[assigneeOpen]);
 
   const invalidate=async()=>Promise.all([
     queryClient.invalidateQueries({queryKey:['work-item',item?.id]}),
@@ -241,7 +280,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
     await update.mutateAsync(next);
   },[draft,update]);
 
-  const participants=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onSuccess:async()=>{setParticipantId('');await invalidate();}});
+  const assignees=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onSuccess:async()=>{setAssigneeId('');await invalidate();}});
   const subtask=useMutation({mutationFn:()=>api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),onSuccess:async()=>{setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();}});
   const link=useMutation({mutationFn:()=>api.addWorkItemLink(details!.id,linkForm.targetWorkItemId,linkForm.type),onSuccess:async()=>{setLinkForm({targetWorkItemId:'',type:1});await invalidate();}});
   const removeLink=useMutation({mutationFn:(linkId:string)=>api.removeWorkItemLink(details!.id,linkId),onSuccess:invalidate});
@@ -264,9 +303,36 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&realMode)subtask.mutate();};
   const submitLink=(event:FormEvent)=>{event.preventDefault();if(linkForm.targetWorkItemId&&realMode)link.mutate();};
   const availableUsers=usersQuery.data?.filter(user=>!details?.participants.some(person=>person.userId===user.id))??[];
+  const currentResponsibleIsEligible=Boolean(draft?.responsibleId&&usersQuery.data?.some(user=>user.id===draft.responsibleId));
+  const currentResponsibleLabel=details?.responsibleName
+    || details?.participants.find(person=>person.userId===draft?.responsibleId)?.displayName
+    || (draft?.responsibleId ? `Usuário ${draft.responsibleId.slice(0,8)}` : '');
   const userLabel=(id:string)=>{const user=usersQuery.data?.find(current=>current.id===id);return user?userDisplayLabel(user):`Usuário ${id.slice(0,8)}`;};
+  const participantLabel=(person:{userId:string;displayName?:string})=>person.displayName||userLabel(person.userId);
+  const searchTerm=assigneeSearch.trim().toLocaleLowerCase('pt-BR');
+  const searchableUsers=searchTerm?availableUsers.filter(user=>userDisplayLabel(user).toLocaleLowerCase('pt-BR').includes(searchTerm)):availableUsers;
+  // responsavel principal primeiro na pilha de avatares do header
+  const stackedAssignees=details?[...details.participants].sort((a,b)=>Number(b.userId===draft?.responsibleId)-Number(a.userId===draft?.responsibleId)).slice(0,3):[];
 
-  return <Dialog.Root open={Boolean(item)} onOpenChange={onOpenChange}><Dialog.Portal><Overlay/>{item&&<Sheet aria-describedby={`task-description-${item.id}`}>
+  // ref espelha o estado para blur/Escape nao dispararem duas vezes no mesmo ciclo
+  const startTitleEdit=()=>{if(!draft)return;titleBeforeEditRef.current=draft.title;editingTitleRef.current=true;setEditingTitle(true);};
+  const finishTitleEdit=()=>{
+    if(!editingTitleRef.current||!draft)return;
+    editingTitleRef.current=false;setEditingTitle(false);
+    const trimmed=draft.title.trim();
+    if(!trimmed){change('title',titleBeforeEditRef.current);return;}
+    if(trimmed!==titleBeforeEditRef.current)commit({...draft,title:trimmed});else if(trimmed!==draft.title)change('title',trimmed);
+  };
+  const cancelTitleEdit=()=>{if(!editingTitleRef.current)return;editingTitleRef.current=false;setEditingTitle(false);change('title',titleBeforeEditRef.current);};
+  const onTitleKeyDown=(event:KeyboardEvent<HTMLInputElement>)=>{if(event.key==='Enter'){event.preventDefault();finishTitleEdit();}};
+
+  // Escape fecha primeiro o popover / a edicao do titulo; so depois o modal
+  const onEscapeKeyDown=(event:globalThis.KeyboardEvent)=>{
+    if(assigneeOpen){event.preventDefault();setAssigneeOpen(false);return;}
+    if(editingTitleRef.current){event.preventDefault();cancelTitleEdit();}
+  };
+
+  return <Dialog.Root open={Boolean(item)} onOpenChange={onOpenChange}><Dialog.Portal><Overlay/>{item&&<Sheet aria-describedby={`task-description-${item.id}`} onEscapeKeyDown={onEscapeKeyDown}>
     <Header>
       <HeaderGroup>
         <GitBranch size={13}/>Item de trabalho
@@ -276,27 +342,40 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </HeaderGroup>
       <div style={{display:'flex',gap:4,alignItems:'center'}}>
         {details&&draft&&(
-          <HeaderAssignee title="Responsável principal">
-            <Avatar>{initials(userLabel(draft.responsibleId||details.responsibleId||'—')||'—')}</Avatar>
-            <select
-              aria-label="Adicionar ou alterar responsável"
-              value={draft.responsibleId}
-              onChange={e=>change('responsibleId',e.target.value,true)}
-            >
-              <option value="">Sem responsável</option>
-              {usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}
-            </select>
-            <UserPlus size={14}/>
-          </HeaderAssignee>
+          <AssigneeWrap ref={assigneeWrapRef}>
+            <HeaderAssignee type="button" aria-haspopup="dialog" aria-expanded={assigneeOpen} aria-controls={`task-assignees-${item.id}`} title="Clique para adicionar ou remover responsáveis" onClick={()=>setAssigneeOpen(open=>!open)}>
+              <AvatarStack aria-hidden>{stackedAssignees.length===0?<Avatar>—</Avatar>:stackedAssignees.map(person=><Avatar key={person.userId}>{initials(participantLabel(person))||'—'}</Avatar>)}</AvatarStack>
+              <span className="count">{details.participants.length} {details.participants.length===1?'responsável':'responsáveis'}</span>
+              <UserPlus size={14}/>
+            </HeaderAssignee>
+            {assigneeOpen&&<AssigneePopover id={`task-assignees-${item.id}`} role="dialog" aria-label="Gerenciar responsáveis">
+              <PopoverTitle>Responsáveis<small>{details.participants.length} alocado(s)</small></PopoverTitle>
+              <PopoverList>
+                {details.participants.map(person=>{const label=participantLabel(person);const primary=person.userId===draft.responsibleId;return <PopoverRow key={person.userId} data-user-id={person.userId}><Avatar>{initials(label)||'—'}</Avatar><span className="name">{label}</span>{primary?<PrimaryLabel>Principal</PrimaryLabel>:realMode&&<IconButton $danger aria-label={`Remover ${label} dos responsáveis`} disabled={assignees.isPending} onClick={()=>assignees.mutate({userId:person.userId,add:false})}><X size={13}/></IconButton>}</PopoverRow>;})}
+                {details.participants.length===0&&<Empty>Nenhum responsável alocado.</Empty>}
+              </PopoverList>
+              {realMode&&<>
+                <PopoverSearch><Search size={13}/><input autoFocus aria-label="Buscar pessoa para adicionar" placeholder="Buscar pessoa para adicionar..." value={assigneeSearch} onChange={e=>setAssigneeSearch(e.target.value)}/></PopoverSearch>
+                <PopoverList $scroll aria-label="Pessoas disponíveis">
+                  {searchableUsers.map(user=>{const label=userDisplayLabel(user);return <PopoverOption key={user.id} data-user-id={user.id} type="button" disabled={assignees.isPending} aria-label={`Adicionar ${label} como responsável`} onClick={()=>assignees.mutate({userId:user.id,add:true})}><Avatar>{initials(label)||'—'}</Avatar><span className="name">{label}</span><Plus size={13}/></PopoverOption>;})}
+                  {searchableUsers.length===0&&<Empty>{availableUsers.length===0?'Todas as pessoas já estão alocadas.':'Nenhuma pessoa encontrada.'}</Empty>}
+                </PopoverList>
+              </>}
+            </AssigneePopover>}
+          </AssigneeWrap>
         )}
         {details&&<IconButton title={details.isFollowing?'Deixar de seguir':'Seguir tarefa'} onClick={()=>realMode&&following.mutate()}>{details.isFollowing?<EyeOff size={16}/>:<Eye size={16}/>}</IconButton>}
         <Close aria-label="Fechar modal"><X size={18}/></Close>
       </div>
     </Header>
+    {(update.error||assignees.error||link.error||customFields.error)&&<TaskError>{((update.error||assignees.error||link.error||customFields.error) as Error).message}</TaskError>}
     {!details||!draft?<Progress>{detailsQuery.isLoading?'Carregando detalhes...':'Preparando tarefa...'}</Progress>:<Body>
       <TypeLine><TypeBadge $kind={draft.kind} title={kindMeta(draft.kind).description}>{kindMeta(draft.kind).label}</TypeBadge><ItemCode>{details.reference}</ItemCode><OriginBadge $external={draft.origin===2}>{originNames[draft.origin]??'Origem não informada'}</OriginBadge>{details.isArchived&&<OriginBadge>Arquivada</OriginBadge>}</TypeLine>
-      <Title>{draft.title}</Title><span id={`task-description-${item.id}`} style={{position:'absolute',width:1,height:1,overflow:'hidden'}}>Detalhes editáveis da tarefa {draft.title}.</span>
-      <Meta><MetaChip><CircleDot size={12}/>{details.completedAt?'Concluído':details.workflowStatusName||details.stageName||'Backlog'}</MetaChip><MetaChip><Target size={12}/>{priorityNames[draft.priority]??'Média'}</MetaChip><MetaChip><FolderKanban size={12}/>{details.boardName}</MetaChip>{(details.sprintName||sprintName)&&<MetaChip><GitBranch size={12}/>{details.sprintName||sprintName}</MetaChip>}</Meta>
+      {editingTitle
+        ?<><Dialog.Title style={{position:'absolute',width:1,height:1,overflow:'hidden'}}>{draft.title}</Dialog.Title><TitleInput autoFocus aria-label="Editar título" maxLength={500} value={draft.title} onChange={e=>change('title',e.target.value)} onBlur={finishTitleEdit} onKeyDown={onTitleKeyDown} onFocus={e=>e.currentTarget.select()}/></>
+        :<Title title="Clique duas vezes para editar o título" onDoubleClick={startTitleEdit}>{draft.title}</Title>}
+      <span id={`task-description-${item.id}`} style={{position:'absolute',width:1,height:1,overflow:'hidden'}}>Detalhes editáveis da tarefa {draft.title}.</span>
+      <Meta><MetaChip aria-label="Coluna atual"><CircleDot size={12}/>{stagesQuery.data?.find(stage=>stage.id===draft.stageId)?.name||details.stageName||'Sem coluna'}</MetaChip><MetaChip><Target size={12}/>{priorityNames[draft.priority]??'Média'}</MetaChip><MetaChip><FolderKanban size={12}/>{details.boardName}</MetaChip>{(details.sprintName||sprintName)&&<MetaChip><GitBranch size={12}/>{details.sprintName||sprintName}</MetaChip>}</Meta>
       {detailsQuery.error&&<ErrorBox>{(detailsQuery.error as Error).message}. Exibindo os dados disponíveis na tela atual.</ErrorBox>}
 
       <Tabs aria-label="Seções da tarefa">
@@ -313,9 +392,9 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Section><h2><Save size={14}/>Dados principais</h2><FormGrid>
         <Field $wide>Título<input value={draft.title} maxLength={500} onChange={e=>change('title',e.target.value)} onBlur={()=>draft.title.trim()&&commit({...draft,title:draft.title.trim()})}/></Field>
         <Field>Tipo<select value={draft.kind} onChange={e=>change('kind',Number(e.target.value),true)} title={kindMeta(draft.kind).description}>{kindDisplayOrder.map(id=><option key={id} value={id} title={workItemKinds[id].description}>{workItemKinds[id].label} — {workItemKinds[id].description}</option>)}</select></Field>
-        <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="">Backlog / sem etapa</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.statusName&&stage.statusName!==stage.name?`${stage.statusName} — ${stage.name}`:stage.statusName||stage.name}</option>)}</select></Field>
+        <Field>Status<select value={draft.stageId} onChange={e=>change('stageId',e.target.value,true)}><option value="">Sem coluna</option>{stagesQuery.data?.map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></Field>
         <Field>Prioridade<select value={draft.priority} onChange={e=>change('priority',Number(e.target.value),true)}><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></Field>
-        <Field>Responsável<select value={draft.responsibleId} onChange={e=>change('responsibleId',e.target.value,true)}><option value="">Não atribuído</option>{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field>
+        <Field>Responsável principal<select aria-label="Responsável principal" value={draft.responsibleId} onChange={e=>change('responsibleId',e.target.value,true)}><option value="">Não atribuído</option>{draft.responsibleId&&!currentResponsibleIsEligible&&<option value={draft.responsibleId} disabled>{currentResponsibleLabel} (sem acesso atual)</option>}{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field>
         <Field>Equipe<select value={draft.teamId} onChange={e=>change('teamId',e.target.value,true)}><option value="">Herdar do quadro</option>{projectQuery.data?.teams.map(team=><option key={team.id} value={team.id}>{team.name}</option>)}</select></Field>
         <Field>Origem<select value={draft.origin} onChange={e=>change('origin',Number(e.target.value),true)}>{Object.entries(originNames).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></Field>
       </FormGrid></Section>
@@ -336,11 +415,11 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
         <Field $wide>ID interno do solicitante<input value={draft.requesterId} onChange={e=>change('requesterId',e.target.value)} onBlur={()=>commit(draft)} placeholder="Opcional para usuários internos"/></Field>
       </FormGrid></Section>}
 
-      <Section><h2><UserRound size={14}/>Participantes</h2><AvatarRow>{details.participants.map(person=>{const label=person.displayName||userLabel(person.userId);return <Person key={person.userId}><Avatar>{initials(label)}</Avatar>{label}{person.userId!==draft.responsibleId&&realMode&&<button aria-label={`Remover ${label}`} onClick={()=>participants.mutate({userId:person.userId,add:false})}><X size={11}/></button>}</Person>;})}{details.participants.length===0&&<Empty>Nenhum participante.</Empty>}</AvatarRow>{realMode&&<InlineForm onSubmit={event=>{event.preventDefault();if(participantId)participants.mutate({userId:participantId,add:true});}}><select value={participantId} onChange={e=>setParticipantId(e.target.value)}><option value="">Adicionar participante...</option>{availableUsers.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select><Button disabled={!participantId||participants.isPending}><UserPlus size={12}/>Adicionar</Button></InlineForm>}</Section>
+      <Section><h2><UserRound size={14}/>Responsáveis da tarefa</h2><SectionHelp>Adicione quantas pessoas forem necessárias. O responsável principal continua identificado como accountable da entrega.</SectionHelp><AvatarRow>{details.participants.map(person=>{const label=person.displayName||userLabel(person.userId);const primary=person.userId===draft.responsibleId;return <Person key={person.userId}><Avatar>{initials(label)}</Avatar>{label}{primary&&<PrimaryLabel>Principal</PrimaryLabel>}{!primary&&realMode&&<button aria-label={`Remover responsável ${label}`} onClick={()=>assignees.mutate({userId:person.userId,add:false})}><X size={11}/></button>}</Person>;})}{details.participants.length===0&&<Empty>Nenhum responsável alocado.</Empty>}</AvatarRow>{realMode&&<InlineForm aria-label="Adicionar responsável" onSubmit={event=>{event.preventDefault();if(assigneeId)assignees.mutate({userId:assigneeId,add:true});}}><select aria-label="Novo responsável" value={assigneeId} onChange={e=>setAssigneeId(e.target.value)}><option value="">Selecionar pessoa...</option>{availableUsers.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select><Button disabled={!assigneeId||assignees.isPending}><UserPlus size={12}/>Adicionar responsável</Button></InlineForm>}</Section>
 
       {realMode&&<Section><h2><TagsIcon/>Classificação</h2><TaskTaxonomyPanel workItemId={details.id} taskTypeId={details.taskTypeId} points={details.points} tagIds={details.tags.map(tag=>tag.id)} showPoints={showStoryPoints} onChanged={invalidate}/></Section>}
       </>}
-      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]} style={{ width: 140 }}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
+      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]} style={{ width: 140 }}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
 
       {activeTab==='attachments'&&<Section><h2><Paperclip size={14}/>Anexos</h2><List>{attachmentsQuery.data?.map(attachment=><Row key={attachment.id}><div><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)} · {attachment.mimeType||'arquivo'}</small></div><div style={{display:'flex',gap:4}}><IconButton aria-label={`Baixar ${attachment.fileName}`} onClick={()=>downloadAttachment(attachment)}><Download size={14}/></IconButton>{realMode&&<IconButton $danger aria-label={`Remover ${attachment.fileName}`} disabled={removeAttachment.isPending} onClick={()=>{if(window.confirm(`Remover o anexo "${attachment.fileName}"?`))removeAttachment.mutate(attachment.id);}}><Trash2 size={14}/></IconButton>}</div></Row>)}{!attachmentsQuery.data?.length&&<Empty>Nenhum anexo.</Empty>}</List>{realMode&&<label style={{display:'inline-flex',marginTop:9}}><input type="file" hidden onChange={onUpload}/><Button as="span"><FileUp size={12}/>{upload.isPending?'Enviando...':'Adicionar anexo'}</Button></label>}</Section>}
 
@@ -354,7 +433,6 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       {details.externalCommunication&&<Section><h2><MessageSquareText size={14}/>Resposta pública ao solicitante</h2><VisibilityNote>Esta conversa é visível no acompanhamento do protocolo {details.externalCommunication.protocol}. Comentários internos e apontamentos de horas nunca aparecem aqui.</VisibilityNote><PublicConversation>{details.externalCommunication.messages.map(message=><PublicMessage key={message.id} $requester={message.authorType===1}><strong>{message.authorName}</strong><p>{message.content}</p><small>{new Date(message.createdAt).toLocaleString('pt-BR')}</small></PublicMessage>)}{details.externalCommunication.messages.length===0&&<Empty>Nenhuma mensagem pública.</Empty>}</PublicConversation>{realMode&&<PublicReply onSubmit={event=>{event.preventDefault();if(publicReply.trim())publicResponse.mutate();}}><textarea maxLength={4000} required value={publicReply} onChange={event=>setPublicReply(event.target.value)} placeholder="Escreva uma resposta que ficará visível ao solicitante."/><Button disabled={!publicReply.trim()||publicResponse.isPending}><Send size={12}/>Enviar resposta pública</Button></PublicReply>}{publicResponse.error&&<ErrorBox>{(publicResponse.error as Error).message}</ErrorBox>}</Section>}
 
       <ActionBar><Button $secondary onClick={()=>realMode&&following.mutate()}>{details.isFollowing?<EyeOff size={13}/>:<Eye size={13}/>} {details.isFollowing?'Deixar de seguir':'Seguir tarefa'}</Button><Button $secondary onClick={()=>realMode&&duplicate.mutate()} disabled={duplicate.isPending}><Copy size={13}/>Duplicar</Button><Button $danger onClick={()=>realMode&&archive.mutate()} disabled={archive.isPending}>{details.isArchived?<RotateCcw size={13}/>:<Archive size={13}/>} {details.isArchived?'Reativar':'Arquivar'}</Button></ActionBar>
-      {(update.error||participants.error||link.error||customFields.error)&&<ErrorBox>{((update.error||participants.error||link.error||customFields.error) as Error).message}</ErrorBox>}
       {realMode&&details.projectId&&<TaskWikiPages projectId={details.projectId} workItemId={details.id} onNavigate={()=>onOpenChange(false)}/>}
       <Section><h2><Clock3 size={14}/>Auditoria</h2><Meta><MetaChip>Criada em {new Date(details.createdAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>Atualizada em {new Date(details.updatedAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>{details.commentsCount} comentário(s)</MetaChip><MetaChip>{details.attachmentsCount} anexo(s)</MetaChip></Meta></Section>
       </>}

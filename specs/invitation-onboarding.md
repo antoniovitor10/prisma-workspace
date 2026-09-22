@@ -11,6 +11,7 @@
 - Convite válido comprova posse do e-mail, dispensando o segundo e-mail de confirmação apenas neste fluxo. Cadastro público normal permanece inalterado. Esta exceção especializa a confirmação da SPEC-AUTH-001.
 - Conta nova, confirmação, associação e consumo do convite ocorrem atomicamente; concorrência/replay não podem consumir duas vezes. Token continua armazenado só como hash.
 - Conta existente exige sua senha atual, nunca troca senha pelo convite. A prova do convite pode confirmar a identidade existente após validação da senha. Preservar papel de associação já existente e não reativar membro desativado por convite antigo.
+- Cadastro público **não confirmado** e sem membership não conta como conta existente no preview. O aceite com `createAccount=true` substitui essa identidade fantasma (e-mail já comprovado pelo token) e não pede a senha do cadastro abandonado. Conta confirmada ou com membership continua recusando o cadastro duplicado.
 - Recusar associação a outra organização para usuário comum, organização inativa, token inválido/cancelado/expirado/usado e senha incorreta. Não emitir sessão nessas falhas.
 - Após concluir, emitir sessão pelo mecanismo existente, selecionar a organização, limpar convite pendente e abrir a aplicação.
 - Erros de cadastro duplicado e senha divergente em português. Não registrar senhas ou tokens.

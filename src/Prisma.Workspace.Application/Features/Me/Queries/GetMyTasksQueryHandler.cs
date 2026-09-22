@@ -7,15 +7,22 @@ namespace Prisma.Workspace.Application.Features.Me.Queries;
 public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, IReadOnlyList<MeTaskDto>>
 {
     private readonly IWorkItemRepository _workItems;
+    private readonly IProjectAccessService _projectAccess;
 
-    public GetMyTasksQueryHandler(IWorkItemRepository workItems)
+    public GetMyTasksQueryHandler(IWorkItemRepository workItems, IProjectAccessService projectAccess)
     {
         _workItems = workItems;
+        _projectAccess = projectAccess;
     }
 
     public async Task<IReadOnlyList<MeTaskDto>> Handle(GetMyTasksQuery request, CancellationToken cancellationToken)
     {
         var items = await _workItems.GetAssignedToUserAsync(request.UserId, cancellationToken);
+        var accessibleProjectIds = await _projectAccess.GetAccessibleProjectIdsAsync(
+            items.Where(x => x.Board is not null).Select(x => x.Board.ProjectId),
+            request.UserId, cancellationToken);
+        items = items.Where(x => x.Board is not null
+            && accessibleProjectIds.Contains(x.Board.ProjectId)).ToList();
         var now = DateTimeOffset.UtcNow;
 
         return items

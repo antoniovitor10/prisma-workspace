@@ -67,9 +67,11 @@ public sealed class GetMyWorkDashboardQueryHandler
     private readonly IMyWorkRepository _myWork;
     private readonly IApprovalRepository _approvals;
     private readonly IUserDirectory _users;
+    private readonly IProjectAccessService _projectAccess;
     public GetMyWorkDashboardQueryHandler(
-        IMyWorkRepository myWork, IApprovalRepository approvals, IUserDirectory users)
-        => (_myWork, _approvals, _users) = (myWork, approvals, users);
+        IMyWorkRepository myWork, IApprovalRepository approvals, IUserDirectory users,
+        IProjectAccessService projectAccess)
+        => (_myWork, _approvals, _users, _projectAccess) = (myWork, approvals, users, projectAccess);
 
     public async Task<MyWorkDashboardDto> Handle(GetMyWorkDashboardQuery request, CancellationToken ct)
     {
@@ -84,6 +86,19 @@ public sealed class GetMyWorkDashboardQueryHandler
 
         var projetos = await _myWork.GetActiveProjectsAsync(request.UserId, ct);
         var sprints = await _myWork.GetSprintsAsync(request.UserId, ct);
+        var projectIds = tasks.Select(x => x.Board.ProjectId)
+            .Concat(projetos.Select(x => x.Id))
+            .Concat(sprints.Select(x => x.ProjectId))
+            .Concat(comments.Select(x => x.WorkItem.Board.ProjectId))
+            .Concat(approvals.Select(x => x.WorkItem.Board.ProjectId))
+            .Distinct()
+            .ToArray();
+        var accessible = await _projectAccess.GetAccessibleProjectIdsAsync(projectIds, request.UserId, ct);
+        tasks = tasks.Where(x => accessible.Contains(x.Board.ProjectId)).ToList();
+        projetos = projetos.Where(x => accessible.Contains(x.Id)).ToList();
+        sprints = sprints.Where(x => accessible.Contains(x.ProjectId)).ToList();
+        comments = comments.Where(x => accessible.Contains(x.WorkItem.Board.ProjectId)).ToList();
+        approvals = approvals.Where(x => accessible.Contains(x.WorkItem.Board.ProjectId)).ToList();
 
         var mappedTasks = tasks.Select(item => MapTask(item, request.UserId, today, weekEnd, upcomingEnd)).ToList();
         var mappedComments = comments.Select(x => new MyWorkCommentDto(

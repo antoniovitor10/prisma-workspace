@@ -163,8 +163,8 @@ public class ApplyExternalRequestTriageCommandHandler
             case ExternalRequestTriageAction.ResponsibleChanged:
                 if (!string.IsNullOrWhiteSpace(request.ResponsibleId))
                 {
-                    DomainException.Garantir(currentProject.Members.Any(x => x.UserId == request.ResponsibleId)
-                        || currentProject.OwnerId == request.ResponsibleId,
+                    var responsibleRole = await _access.GetRoleAsync(currentProject.Id, request.ResponsibleId, ct);
+                    DomainException.Garantir(responsibleRole is not null,
                         "O responsável precisa ser membro do projeto.");
                     DomainException.Garantir(await _users.GetByIdAsync(request.ResponsibleId, ct) is not null,
                         "Responsável não encontrado.");

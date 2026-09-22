@@ -6,6 +6,7 @@ using Prisma.Workspace.Application.Features.TimeEntries;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
+using Prisma.Workspace.Domain.Exceptions;
 
 namespace Prisma.Workspace.Tests;
 
@@ -38,7 +39,11 @@ public class CanonicalPersonNameTests
             new UserSummary("actor", "gestor@detran.se.gov.br", "gestor@detran.se.gov.br", "Gestora Ana"),
             new UserSummary("target", "dev@detran.se.gov.br", "dev.legado", "Dev Bruno"));
         var handler = new AssignUserCommandHandler(
-            new WorkItemsFake(new WorkItem { Id = workItemId }), users, feed, new AccessFake());
+            new WorkItemsFake(new WorkItem
+            {
+                Id = workItemId,
+                Board = new Board { ProjectId = Guid.NewGuid() }
+            }), users, feed, new AccessFake(), new ProjectAccessFake());
 
         await handler.Handle(new AssignUserCommand(
             workItemId, "target", "actor", "gestor@detran.se.gov.br"), default);
@@ -46,6 +51,27 @@ public class CanonicalPersonNameTests
         using var payload = JsonDocument.Parse(feed.Event!.Payload!);
         Assert.Equal("Gestora Ana", payload.RootElement.GetProperty("actorName").GetString());
         Assert.Equal("Dev Bruno", payload.RootElement.GetProperty("target").GetString());
+    }
+
+    [Fact]
+    public async Task Assignment_RejectsTargetWithoutProjectAccess()
+    {
+        var workItemId = Guid.NewGuid();
+        var workItems = new WorkItemsFake(new WorkItem
+        {
+            Id = workItemId,
+            Board = new Board { ProjectId = Guid.NewGuid() }
+        });
+        var users = Directory(
+            new UserSummary("actor", "gestor@detran.se.gov.br", "gestor", "Gestora Ana"),
+            new UserSummary("target", "dev@detran.se.gov.br", "dev", "Dev Bruno"));
+        var handler = new AssignUserCommandHandler(
+            workItems, users, new FeedFake(), new AccessFake(), new ProjectAccessFake(false));
+
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new AssignUserCommand(workItemId, "target", "actor", "Gestora Ana"), default));
+
+        Assert.Equal(0, workItems.AddAssigneeCount);
     }
 
     [Fact]
@@ -159,12 +185,17 @@ public class CanonicalPersonNameTests
 
     private sealed class WorkItemsFake(WorkItem item) : IWorkItemRepository
     {
+        public int AddAssigneeCount { get; private set; }
         public IReadOnlyList<WorkItemAssignee> Assignees { get; init; } = [];
         public Task<WorkItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult<WorkItem?>(item);
         public Task<IReadOnlyList<WorkItemAssignee>> GetAssigneesAsync(Guid workItemId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Assignees);
-        public Task AddAssigneeAsync(Guid workItemId, string userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AddAssigneeAsync(Guid workItemId, string userId, CancellationToken cancellationToken = default)
+        {
+            AddAssigneeCount++;
+            return Task.CompletedTask;
+        }
         public Task RemoveAssigneeAsync(Guid workItemId, string userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<WorkItem?> GetForMoveAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<WorkItem>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -178,5 +209,15 @@ public class CanonicalPersonNameTests
         public Task UpdatePersonalPrioritiesAsync(string userId, IReadOnlyList<Guid> orderedWorkItemIds, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<WorkItem>> GetExclusiveToBoardAsync(Guid boardId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<WorkItem>>(new List<WorkItem>());
+    }
+
+    private sealed class ProjectAccessFake : IProjectAccessService
+    {
+        private readonly bool _allow;
+        public ProjectAccessFake(bool allow = true) => _allow = allow;
+        public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<ProjectRole?>(_allow ? ProjectRole.Member : null);
+        public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

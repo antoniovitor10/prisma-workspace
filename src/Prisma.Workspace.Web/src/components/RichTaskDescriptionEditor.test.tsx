@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../styles/theme';
 import { RichTaskDescriptionEditor } from './RichTaskDescriptionEditor';
 
-afterEach(cleanup);
+afterEach(() => { vi.restoreAllMocks(); cleanup(); });
 
 function renderEditor() {
   const onSave = vi.fn();
@@ -46,5 +46,12 @@ describe('RichTaskDescriptionEditor', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.getByRole('button', { name: 'Expandir editor' })).toBeInTheDocument();
+  });
+
+  it('recusa URLs inseguras sem perder o foco da edição', () => {
+    renderEditor();
+    vi.spyOn(window, 'prompt').mockReturnValue('javascript:alert(1)');
+    fireEvent.click(screen.getByRole('button', { name: 'Inserir imagem por endereço' }));
+    expect(screen.getByRole('status')).toHaveTextContent('http:// ou https://');
   });
 });

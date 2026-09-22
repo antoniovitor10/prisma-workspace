@@ -303,11 +303,16 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
                 "A equipe nao esta associada ao projeto.");
         }
 
-        if (!string.IsNullOrWhiteSpace(request.ResponsibleId))
+        if (!string.IsNullOrWhiteSpace(request.ResponsibleId)
+            && !string.Equals(item.ResponsibleId, request.ResponsibleId, StringComparison.Ordinal))
         {
-            var responsible = await _users.GetDisplayNamesAsync([request.ResponsibleId], ct);
-            DomainException.Garantir(responsible.ContainsKey(request.ResponsibleId),
+            var responsible = await _users.GetByIdsAsync(
+                [request.ResponsibleId], includeInactive: false, ct);
+            DomainException.Garantir(responsible.Any(x => x.Id == request.ResponsibleId),
                 "O responsavel informado nao existe.");
+            var role = await _projectAccess.GetRoleAsync(item.Board.ProjectId, request.ResponsibleId, ct);
+            DomainException.Garantir(role is not null,
+                "Conceda acesso ao projeto antes de atribuir a tarefa.");
             if (item.Assignees.All(x => x.UserId != request.ResponsibleId))
                 item.Assignees.Add(new WorkItemAssignee
                 {

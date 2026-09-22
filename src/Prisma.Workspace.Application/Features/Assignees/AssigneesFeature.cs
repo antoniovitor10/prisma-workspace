@@ -76,12 +76,14 @@ public class AssignUserCommandHandler : IRequestHandler<AssignUserCommand>
     private readonly ITaskFeedRepository _feed;
     private readonly IWorkItemAccessService _access;
     private readonly IPlatformNotificationPublisher? _notifications;
+    private readonly IProjectAccessService _projectAccess;
 
     public AssignUserCommandHandler(
         IWorkItemRepository workItems,
         IUserDirectory users,
         ITaskFeedRepository feed,
         IWorkItemAccessService access,
+        IProjectAccessService projectAccess,
         IPlatformNotificationPublisher? notifications = null)
     {
         _workItems = workItems;
@@ -89,6 +91,7 @@ public class AssignUserCommandHandler : IRequestHandler<AssignUserCommand>
         _feed = feed;
         _access = access;
         _notifications = notifications;
+        _projectAccess = projectAccess;
     }
 
     public async Task Handle(AssignUserCommand request, CancellationToken cancellationToken)
@@ -96,11 +99,18 @@ public class AssignUserCommandHandler : IRequestHandler<AssignUserCommand>
         await _access.EnsureAsync(
             request.WorkItemId, request.ActorId, PlatformPermission.Assign,
             ProjectRole.Member, cancellationToken);
+        var target = (await _users.GetByIdsAsync(
+            [request.TargetUserId], includeInactive: false, cancellationToken)).FirstOrDefault();
+        DomainException.Garantir(target is not null, "Usuário informado não existe.");
         var nomes = await _users.GetDisplayNamesAsync(new[] { request.TargetUserId }, cancellationToken);
         DomainException.Garantir(nomes.ContainsKey(request.TargetUserId), "Usuário informado não existe.");
 
         var item = await _workItems.GetByIdAsync(request.WorkItemId, cancellationToken)
             ?? throw new NaoEncontradoException("Tarefa");
+        var role = await _projectAccess.GetRoleAsync(
+            item.Board.ProjectId, request.TargetUserId, cancellationToken);
+        DomainException.Garantir(role is not null,
+            "Conceda acesso ao projeto antes de atribuir a tarefa.");
         var actor = (await _users.GetByIdsAsync(
             [request.ActorId], includeInactive: true, cancellationToken)).FirstOrDefault();
         var actorName = actor?.DisplayName

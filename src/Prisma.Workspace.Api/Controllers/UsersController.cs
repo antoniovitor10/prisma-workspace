@@ -23,10 +23,10 @@ public class UsersController : ControllerBase
 
     [HttpGet("assignable")]
     [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAssignable(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAssignable([FromQuery] Guid? projectId, CancellationToken cancellationToken)
     {
         var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         return Ok(await _mediator.Send(
-            new GetAssignableUsersQuery(actorId), cancellationToken));
+            new GetAssignableUsersQuery(actorId, projectId), cancellationToken));
     }
 }

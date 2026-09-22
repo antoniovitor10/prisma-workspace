@@ -23,6 +23,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
     private readonly IWorkflowRepository? _workflow;
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IPlatformNotificationPublisher? _notifications;
+    private readonly IProjectAccessService _projectAccess;
 
     public CreateWorkItemCommandHandler(
         IWorkItemRepository workItemRepository,
@@ -31,6 +32,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
         IProjectRepository projectRepository,
         ITeamRepository teamRepository,
         IUserDirectory users,
+        IProjectAccessService projectAccess,
         IPermissionService? permissions = null,
         IWorkflowRepository? workflow = null,
         IBoardRealtimeNotifier? realtime = null,
@@ -46,6 +48,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
         _workflow = workflow;
         _realtime = realtime;
         _notifications = notifications;
+        _projectAccess = projectAccess;
     }
 
     public async Task<Guid> Handle(CreateWorkItemCommand request, CancellationToken cancellationToken)
@@ -118,9 +121,18 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
             .ToList();
         if (participantIds.Count > 0)
         {
-            var users = await _users.GetDisplayNamesAsync(participantIds, cancellationToken);
+            if (_permissions is not null && !string.IsNullOrWhiteSpace(request.CreatedBy))
+                await _permissions.EnsureAsync(request.CreatedBy, PlatformPermission.Assign,
+                    PermissionScope.Project, homeBoard.ProjectId, cancellationToken);
+            var users = await _users.GetByIdsAsync(participantIds, includeInactive: false, cancellationToken);
             if (users.Count != participantIds.Count)
                 throw new ArgumentException("Um ou mais participantes nao existem.");
+            foreach (var participantId in participantIds)
+            {
+                var role = await _projectAccess.GetRoleAsync(homeBoard.ProjectId, participantId, cancellationToken);
+                DomainException.Garantir(role is not null,
+                    "Conceda acesso ao projeto antes de atribuir a tarefa.");
+            }
         }
 
         var now = DateTimeOffset.UtcNow;

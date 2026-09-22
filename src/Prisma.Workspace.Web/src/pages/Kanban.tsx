@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTheme } from 'styled-components';
 import { api } from '../services/api';
 import { Fragment, useMemo } from 'react';
 import { BoardCalendar } from '../features/board/BoardCalendar';
@@ -281,8 +282,11 @@ export const Kanban: React.FC = () => {
   const modoProjeto = Boolean(urlProjectId);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string>(urlBoardId ?? '');
+  const [boardsStatus, setBoardsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [boardsError, setBoardsError] = useState('');
   // O seletor mostra só os quadros do mesmo projeto do quadro atual (não os da org toda).
   const visibleBoards = useMemo(() => {
     const current = boards.find(b => b.id === selectedBoardId);
@@ -290,6 +294,8 @@ export const Kanban: React.FC = () => {
   }, [boards, selectedBoardId]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [boardDataStatus, setBoardDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [boardDataError, setBoardDataError] = useState('');
   const [boardView, setBoardView] = useState<'kanban' | 'lista' | 'calendario' | 'gantt' | 'dashboard'>('kanban');
   const [listSort, setListSort] = useState<{ key: string; dir: 1 | -1 }>({ key: 'title', dir: 1 });
   const [filters, setFilters] = useState<KanbanFilterState>(
@@ -384,6 +390,8 @@ export const Kanban: React.FC = () => {
     isDragging: boolean;
   } | null>(null);
   const suppressNextCardClickRef = useRef(false);
+  const boardDataRequestRef = useRef(0);
+  const loadedBoardContextRef = useRef<string | null>(null);
 
   // TASK-026: estado do modal de criar quadro
   const [createBoardPending, setCreateBoardPending] = useState(false);
@@ -419,9 +427,12 @@ export const Kanban: React.FC = () => {
   const [activeTime, setActiveTime] = useState<number>(0);
 
   const fetchBoards = useCallback(async () => {
+    setBoardsStatus('loading');
+    setBoardsError('');
     try {
       const data = await api.getBoards();
       setBoards(data);
+      setBoardsStatus('ready');
       if (modoProjeto) {
         // Escolhe sozinho um quadro do projeto, em vez de pedir que a pessoa escolha.
         const doProjeto = (data as Board[]).filter((b) => b.projectId === urlProjectId);
@@ -438,31 +449,56 @@ export const Kanban: React.FC = () => {
         }
       }
     } catch (e) {
-      console.error(e);
+      setBoards([]);
+      setSelectedBoardId('');
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+      setBoardsStatus('error');
+      setBoardsError('Não foi possível carregar os quadros disponíveis para seu acesso. Tente novamente.');
     }
   }, [selectedBoardId, modoProjeto, urlProjectId]);
 
   const loadBoardData = useCallback(async (boardId: string) => {
     if (!boardId && !modoProjeto) return;
+    const contextKey = modoProjeto ? `project:${urlProjectId}` : `board:${boardId}`;
+    const contextChanged = loadedBoardContextRef.current !== contextKey;
+    const requestId = ++boardDataRequestRef.current;
+    if (contextChanged) {
+      setBoardDataStatus('loading');
+      setBoardDataError('');
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+    }
     try {
       const board = boards.find(b => b.id === boardId);
       const projectId = urlProjectId ?? board?.projectId;
       if (!projectId) {
-        console.error('Sem projeto resolvido — não é possível carregar o fluxo.');
-        return;
+        if (boardsStatus === 'loading') { setBoardDataStatus('idle'); return; }
+        throw new Error('O quadro selecionado não está disponível para seu acesso.');
       }
       const [stageData, itemData] = await Promise.all([
         api.getStages(projectId),
         modoProjeto ? api.getWorkItemsByProject(projectId) : api.getWorkItems(boardId)
       ]);
+      if (requestId !== boardDataRequestRef.current) return;
       setStages(stageData);
       setWorkItems(itemData);
       const currentIds = new Set((itemData as WorkItem[]).map(item => item.id));
-      setSelectedItemIds(current => new Set([...current].filter(id => currentIds.has(id))));
+      if (contextChanged) setSelectedItemIds(new Set());
+      else setSelectedItemIds(current => new Set([...current].filter(id => currentIds.has(id))));
+      loadedBoardContextRef.current = contextKey;
+      setBoardDataStatus('ready');
     } catch (e) {
-      console.error(e);
+      if (requestId !== boardDataRequestRef.current) return;
+      setStages([]);
+      setWorkItems([]);
+      setSelectedItemIds(new Set());
+      setBoardDataStatus('error');
+      setBoardDataError((e as Error).message || 'Não foi possível carregar este quadro. Tente novamente.');
     }
-  }, [boards, modoProjeto, urlProjectId]);
+  }, [boards, boardsStatus, modoProjeto, urlProjectId]);
 
   const refreshRealtimeBoard = useCallback(() => {
     if (selectedBoardId || modoProjeto) loadBoardData(selectedBoardId);
@@ -932,11 +968,6 @@ export const Kanban: React.FC = () => {
         return;
       }
 
-      if (runningItemId && runningItemId !== itemId) {
-        alert('Pare o timer atual antes de iniciar outro card.');
-        return;
-      }
-
       const started = await api.startTimer(itemId) as TimeEntry;
       setRunningItemId(started.workItemId);
       setRunningStartedAt(started.startedAt);
@@ -1101,6 +1132,8 @@ export const Kanban: React.FC = () => {
     } catch (error) { alert((error as Error).message); }
   };
 
+  const canRenderBoard = Boolean(selectedBoardId) && boardDataStatus === 'ready';
+
   return (
     <AppLayout>
       <MainContent>
@@ -1109,9 +1142,13 @@ export const Kanban: React.FC = () => {
             <Select
               value={selectedBoardId}
               onChange={e => setSelectedBoardId(e.target.value)}
-              disabled={boards.length === 0}
+              disabled={boardsStatus !== 'ready' || boards.length === 0}
             >
-              {visibleBoards.length === 0 ? (
+              {boardsStatus === 'loading' ? (
+                <option>Carregando quadros...</option>
+              ) : boardsStatus === 'error' ? (
+                <option>Quadros indisponíveis</option>
+              ) : visibleBoards.length === 0 ? (
                 <option>Nenhum quadro disponível</option>
               ) : (
                 visibleBoards.map(b => (
@@ -1130,7 +1167,7 @@ export const Kanban: React.FC = () => {
               <span>Novo Quadro</span>
             </ActionButton>
 
-            {visibleBoards.length > 1 && selectedBoardId && (
+            {canRenderBoard && visibleBoards.length > 1 && selectedBoardId && (
               <ActionButton
                 onClick={() => {
                   const others = visibleBoards.filter(b => b.id !== selectedBoardId);
@@ -1151,7 +1188,7 @@ export const Kanban: React.FC = () => {
             </ActionButton>
           </SelectorContainer>
 
-          {selectedBoardId && (
+          {canRenderBoard && (
             <BoardActions>
               <ViewSwitcher role="group" aria-label="Visão do quadro">
                 {([['kanban', 'Kanban'], ['lista', 'Lista'], ['calendario', 'Calendário'], ['gantt', 'Gantt'], ['dashboard', 'Dashboard']] as const).map(([key, label]) => (
@@ -1185,7 +1222,7 @@ export const Kanban: React.FC = () => {
           )}
         </BoardHeader>
 
-        {selectedBoardId && boardView !== 'dashboard' && (
+        {canRenderBoard && boardView !== 'dashboard' && (
           <KanbanFilterBar
             items={workItems}
             resultCount={visibleWorkItems.length}
@@ -1207,7 +1244,7 @@ export const Kanban: React.FC = () => {
           />
         )}
 
-        {selectedBoardId && (boardView === 'kanban' || boardView === 'lista') && (
+        {canRenderBoard && (boardView === 'kanban' || boardView === 'lista') && (
           <KanbanBulkToolbar
             selectedCount={selectedItemIds.size}
             visibleCount={visibleWorkItems.length}
@@ -1224,20 +1261,34 @@ export const Kanban: React.FC = () => {
           />
         )}
 
-        {selectedBoardId && boardView === 'calendario' ? (
+        {boardsStatus === 'loading' ? (
+          <div role="status" aria-live="polite" style={{ padding: '48px 16px', textAlign: 'center', color: theme.color.textMuted }}>Carregando quadros disponíveis...</div>
+        ) : boardsStatus === 'error' ? (
+          <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
+            <p>{boardsError}</p>
+            <button type="button" onClick={() => void fetchBoards()}>Tentar carregar os quadros novamente</button>
+          </div>
+        ) : boardDataStatus === 'loading' ? (
+          <div role="status" aria-live="polite" style={{ padding: '48px 16px', textAlign: 'center', color: theme.color.textMuted }}>Carregando quadro...</div>
+        ) : boardDataStatus === 'error' ? (
+          <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
+            <p>{boardDataError}</p>
+            <button type="button" onClick={() => void loadBoardData(selectedBoardId)}>Tentar carregar o quadro novamente</button>
+          </div>
+        ) : canRenderBoard && boardView === 'calendario' ? (
           <BoardCalendar
             items={visibleWorkItems}
             onOpen={id => { const it = visibleWorkItems.find(w => w.id === id); if (it) handleCardClick(it); }}
           />
-        ) : selectedBoardId && boardView === 'gantt' ? (
+        ) : canRenderBoard && boardView === 'gantt' ? (
           <BoardGantt
             items={visibleWorkItems}
             stages={stages}
             onOpen={id => { const it = visibleWorkItems.find(w => w.id === id); if (it) handleCardClick(it); }}
           />
-        ) : selectedBoardId && boardView === 'dashboard' ? (
+        ) : canRenderBoard && boardView === 'dashboard' ? (
           <BoardDashboard boardId={selectedBoardId} />
-        ) : selectedBoardId && boardView === 'lista' ? (
+        ) : canRenderBoard && boardView === 'lista' ? (
           (() => {
             const stageName = (id: string | null) => stages.find(s => s.id === id)?.name || '—';
             const sorted = [...visibleWorkItems].sort((a, b) => {
@@ -1301,7 +1352,7 @@ export const Kanban: React.FC = () => {
               </div>
             );
           })()
-        ) : selectedBoardId ? (
+        ) : canRenderBoard ? (
           <KanbanGrid>
             {stages.map(stage => {
               const itemsInStage = visibleWorkItems.filter(w => w.stageId === stage.id);

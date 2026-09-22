@@ -30,8 +30,13 @@ public sealed class InvitationOnboardingService(AppDbContext db, UserManager<Ide
         var invite = await db.OrganizationInvitations.IgnoreQueryFilters().AsNoTracking()
             .Include(i => i.Organization).SingleOrDefaultAsync(i => i.TokenHash == hash, ct);
         ValidateInvitation(invite);
-        return new(invite!.Email, invite.Organization.Name,
-            await users.FindByEmailAsync(invite.Email) is not null);
+        var existing = await users.FindByEmailAsync(invite!.Email);
+        // Cadastro público sem confirmação não é conta utilizável: o convite
+        // deve oferecer o mesmo fluxo de criação, não pedir uma senha que a
+        // pessoa nunca chegou a usar.
+        var accountExists = existing is not null && (existing.EmailConfirmed
+            || await db.OrganizationMembers.IgnoreQueryFilters().AnyAsync(m => m.UserId == existing.Id, ct));
+        return new(invite.Email, invite.Organization.Name, accountExists);
     }
 
     public async Task<InvitationCompletion> CompleteAsync(CompleteInvitationCommand request, CancellationToken ct)
@@ -56,8 +61,18 @@ public sealed class InvitationOnboardingService(AppDbContext db, UserManager<Ide
         var user = await users.FindByEmailAsync(invite!.Email);
         if (request.CreateAccount)
         {
-            DomainException.Garantir(user is null, "Este e-mail já está cadastrado. Entre na sua conta.");
-            user = new IdentityUser { UserName = invite.Email.Trim(), Email = invite.Email.Trim(), EmailConfirmed = true };
+            if (user is not null)
+            {
+                var hasMembership = await db.OrganizationMembers.IgnoreQueryFilters()
+                    .AnyAsync(m => m.UserId == user.Id, ct);
+                DomainException.Garantir(!user.EmailConfirmed && !hasMembership,
+                    "Este e-mail já está cadastrado. Entre na sua conta.");
+                var deleted = await users.DeleteAsync(user);
+                DomainException.Garantir(deleted.Succeeded,
+                    string.Join(" ", deleted.Errors.Select(e => e.Description)));
+                user = null;
+            }
+            user = new IdentityUser { UserName = invite!.Email.Trim(), Email = invite.Email.Trim(), EmailConfirmed = true };
             var created = await users.CreateAsync(user, request.Password);
             DomainException.Garantir(created.Succeeded, string.Join(" ", created.Errors.Select(e => e.Description)));
         }

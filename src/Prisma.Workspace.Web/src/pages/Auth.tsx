@@ -507,9 +507,9 @@ const Alert = styled.div<{ $tone?: 'error' | 'info' }>`
   border: 1px solid ${({ theme, $tone }) => ($tone === 'error' ? theme.color.danger : theme.color.accentBlue)};
   background: ${({ theme, $tone }) =>
     $tone === 'error'
-      ? `color-mix(in srgb, ${theme.color.danger} 8%, white)`
-      : `color-mix(in srgb, ${theme.color.accentBlue} 8%, white)`};
-  color: ${({ theme, $tone }) => ($tone === 'error' ? theme.color.danger : theme.color.text)};
+      ? `color-mix(in srgb, ${theme.color.danger} 8%, ${theme.color.surface})`
+      : `color-mix(in srgb, ${theme.color.accentBlue} 8%, ${theme.color.surface})`};
+  color: ${({ theme }) => theme.color.text};
   font-size: 13.5px;
   line-height: 1.45;
 `;
@@ -526,8 +526,9 @@ export const Auth: React.FC = () => {
   const { mode, toggleMode } = useThemeMode();
   const initialParams = new URLSearchParams(window.location.search);
   const initialMode = initialParams.get('mode');
-  const [inviteToken] = useState(() => initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
+  const [inviteToken, setInviteToken] = useState(() => initialParams.get('invite') ?? localStorage.getItem('pendingInvite'));
   const hasInvite = Boolean(inviteToken);
+  const [inviteFailed, setInviteFailed] = useState(false);
   const [invite, setInvite] = useState<{ email: string; organizationName: string; accountExists: boolean } | null>(null);
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -551,15 +552,32 @@ export const Auth: React.FC = () => {
   const [ssoNotice, setSsoNotice] = useState<string | null>(null);
   const [setupAvailable, setSetupAvailable] = useState(false);
 
+  const continueWithoutInvitation = () => {
+    localStorage.removeItem('pendingInvite');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('invite');
+    url.searchParams.delete('mode');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    setInviteToken(null);
+    setInvite(null);
+    setInviteFailed(false);
+    setIsRegister(false);
+    setFlow('login');
+    setError(null);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
   useEffect(() => {
     if (!inviteToken) return;
+    setInviteFailed(false);
     let active = true;
     api.previewInvitation(inviteToken).then(data => {
       if (!active) return;
       setInvite(data);
       setEmail(data.email);
       setIsRegister(!data.accountExists);
-    }).catch(err => { if (active) setError(err instanceof Error ? err.message : 'Convite indisponível.'); });
+    }).catch(err => { if (active) { setInviteFailed(true); setError(err instanceof Error ? err.message : 'Convite indisponível.'); } });
     return () => { active = false; };
   }, [inviteToken]);
 
@@ -709,7 +727,7 @@ export const Auth: React.FC = () => {
             <FormTitle>{heading}</FormTitle>
             <FormSubtitle>{subtitle}</FormSubtitle>
 
-            {hasInvite && (
+            {hasInvite && !inviteFailed && (
               <Alert $tone="info">
                 <Info size={16} />
                 <span>
@@ -719,6 +737,10 @@ export const Auth: React.FC = () => {
               </Alert>
             )}
             {error && <Alert $tone="error"><Info size={16} /><span>{error}</span></Alert>}
+            {hasInvite && inviteFailed && <div>
+              <p>Se você já tem conta, entre normalmente. Para aceitar um convite indisponível, peça um novo link ao administrador.</p>
+              <SecondaryButton type="button" onClick={continueWithoutInvitation}>Ir para o login</SecondaryButton>
+            </div>}
             {notice && <Alert $tone="info"><Info size={16} /><span>{notice}</span></Alert>}
             {ssoNotice && <Alert $tone="info"><Shield size={16} /><span>{ssoNotice}</span></Alert>}
 

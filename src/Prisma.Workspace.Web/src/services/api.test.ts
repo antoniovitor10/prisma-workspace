@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 
 describe('api tenant context', () => {
-  afterEach(() => localStorage.clear());
+  afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); });
 
   it('envia a organização ativa em todas as requisições autenticadas', () => {
     api.setToken('header.payload.signature');
@@ -12,6 +12,12 @@ describe('api tenant context', () => {
       Authorization: 'Bearer header.payload.signature',
       'X-Organization-Id': '11111111-1111-4111-8111-111111111111',
     });
+  });
+
+  it('consulta responsáveis elegíveis no projeto informado', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('[]', { status: 200 }));
+    await api.getAssignableUsers('project/with spaces');
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('/api/Users/assignable?projectId=project%2Fwith%20spaces');
   });
 });
 

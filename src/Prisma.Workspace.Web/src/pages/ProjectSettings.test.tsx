@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OrganizationStateContext, type OrganizationSummary } from '../features/organizations/OrganizationState';
 import { api } from '../services/api';
 import { theme } from '../styles/theme';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettings, translateProjectHistoryKind } from './ProjectSettings';
 import type { ProjectSummary } from './Projects';
 
 vi.mock('../features/workflow/ProjectWorkflowSettings', () => ({
@@ -71,6 +71,7 @@ beforeEach(() => {
   vi.spyOn(api, 'getTags').mockResolvedValue([]);
   vi.spyOn(api, 'getTeams').mockResolvedValue([]);
   vi.spyOn(api, 'getProjectHistory').mockResolvedValue([]);
+  vi.spyOn(api, 'saveProjectCustomField').mockRejectedValue(new Error('Sem permissão para alterar campos.'));
 });
 
 afterEach(() => {
@@ -79,6 +80,25 @@ afterEach(() => {
 });
 
 describe('configurações do projeto por categoria', () => {
+  it('traduz eventos conhecidos e mantém fallback legível sem alterar o valor armazenado', () => {
+    expect(translateProjectHistoryKind('archived')).toBe('Projeto arquivado');
+    expect(translateProjectHistoryKind('member_added')).toBe('Membro adicionado');
+    expect(translateProjectHistoryKind('new_unknown_event')).toBe('New Unknown Event');
+    expect(translateProjectHistoryKind('')).toBe('Alteração administrativa');
+  });
+
+  it('mostra erro de ação e limpa o alerta após nova tentativa bem-sucedida', async () => {
+    renderSettings('/projects/project-1/settings?secao=classificacao');
+    fireEvent.change(screen.getByPlaceholderText('Nome do campo'), { target: { value: 'Código interno' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sem permissão para alterar campos.');
+
+    vi.mocked(api.saveProjectCustomField).mockResolvedValueOnce({ id: 'field-1' } as never);
+    fireEvent.change(screen.getByPlaceholderText('Nome do campo'), { target: { value: 'Código interno' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
   it('abre em Geral e mostra apenas as seções dessa categoria', () => {
     renderSettings();
 

@@ -45,7 +45,8 @@ public class MyWorkHubTests
         var handler = new GetMyWorkDashboardQueryHandler(
             new MyWorkRepositoryFake(tarefas, projetos, sprints),
             new ApprovalRepositoryFake(),
-            new UserDirectoryFake());
+            new UserDirectoryFake(),
+            new ProjectAccessFake());
         return handler.Handle(new GetMyWorkDashboardQuery(Eu), default).GetAwaiter().GetResult();
     }
 
@@ -265,5 +266,14 @@ public class MyWorkHubTests
             => Task.FromResult<UserSummary?>(null);
         public Task<UserSummary?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
             => Task.FromResult<UserSummary?>(null);
+    }
+
+    private sealed class ProjectAccessFake : IProjectAccessService
+    {
+        public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<ProjectRole?>(ProjectRole.Member);
+
+        public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

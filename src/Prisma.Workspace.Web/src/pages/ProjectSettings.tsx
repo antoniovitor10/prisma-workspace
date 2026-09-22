@@ -61,10 +61,12 @@ const List = styled.div`display:grid;`;
 const Row = styled.div`display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; min-height:52px; padding:9px 16px; border-bottom:1px solid ${({theme})=>theme.color.neutral[100]}; strong{display:block;font-size:13.5px;} small{color:${({theme})=>theme.color.textMuted};font-size:12px;} select{min-height:32px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}`;
 const Chips = styled.div`display:flex;flex-wrap:wrap;gap:7px;padding:16px;`;
 const Chip = styled.button<{ $on?: boolean; $color?: string }>`padding:5px 9px;border:1px solid ${({$color,theme})=>$color||theme.color.border};border-radius:999px;background:${({$on,$color})=>$on?($color||'#2563EB'):'transparent'};color:${({$on,$color,theme})=>$on?'white':($color||theme.color.textMuted)};font-size:13px;font-weight:750;`;
-const InlineForm = styled.form`display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid ${({theme})=>theme.color.border};input,select{min-height:34px;padding:0 9px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}input{flex:1;min-width:160px;}`;
+const InlineForm = styled.form`display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid ${({theme})=>theme.color.border};input,select{min-height:34px;padding:0 9px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}input{flex:1;min-width:160px;}input[type="checkbox"]{flex:0 0 16px;min-width:16px;max-width:16px;min-height:16px;width:16px;height:16px;padding:0;border:0;}`;
 const Empty = styled.p`padding:18px;color:${({theme})=>theme.color.textMuted};font-size:13px;text-align:center;`;
+const CheckboxLabel = styled.label`display:flex;align-items:center;gap:6px;line-height:1.2;white-space:nowrap;color:${({theme})=>theme.color.textMuted};font-size:13px;font-weight:800;input{width:16px;height:16px;margin:0;flex:0 0 auto;accent-color:${({theme})=>theme.color.brand};};`;
 const History = styled.div`display:grid;max-height:330px;overflow:auto;`;
 const Event = styled.div`padding:11px 16px;border-bottom:1px solid ${({theme})=>theme.color.neutral[100]};font-size:13px;strong{display:block;margin-bottom:3px;}small{color:${({theme})=>theme.color.textMuted};}`;
+const ActionError = styled.div`grid-column:1/-1;padding:11px 14px;border:1px solid ${({theme})=>theme.color.danger};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.danger};font-size:13px;font-weight:700;`;
 
 /** Ordem em que as categorias aparecem no menu. A chave vai para a URL. */
 const categorias: readonly [string, string, LucideIcon][] = [
@@ -80,6 +82,13 @@ const chavesValidas = new Set(categorias.map(([chave])=>chave));
 const statusOptions = [[1,'Planejamento'],[2,'Ativo'],[3,'Pausado'],[4,'Concluído'],[5,'Cancelado']] as const;
 const projectRoles = [[1,'Visualizador'],[2,'Membro'],[3,'Scrum Master'],[4,'Product Owner'],[5,'Administrador']] as const;
 const fieldTypes = [[1,'Texto'],[2,'Número'],[3,'Data'],[4,'Sim/não'],[5,'Seleção'],[6,'Seleção múltipla'],[7,'Texto longo'],[8,'Percentual'],[9,'Data e hora'],[10,'Usuário'],[11,'Equipe'],[12,'URL']] as const;
+
+export function translateProjectHistoryKind(kind: string): string {
+  const labels: Record<string,string> = { created:'Projeto criado', updated:'Projeto atualizado', archived:'Projeto arquivado', reactivated:'Projeto reativado', member_added:'Membro adicionado', member_removed:'Membro removido', team_added:'Equipe adicionada', team_removed:'Equipe removida', custom_field_created:'Campo personalizado criado', custom_field_deleted:'Campo personalizado desativado' };
+  const normalized = kind.trim().toLowerCase();
+  const fallback = normalized.replace(/[_-]+/g,' ').split(' ').filter(Boolean).map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
+  return labels[normalized] ?? (fallback || 'Alteração administrativa');
+}
 
 export function ProjectSettings() {
   const { project } = useOutletContext<{project: ProjectSummary}>();
@@ -110,6 +119,9 @@ export function ProjectSettings() {
   const teamsQuery = useQuery<TeamSummary[]>({queryKey:['teams'],queryFn:()=>api.getTeams(),enabled:!previewMode,initialData:previewMode?project.teams:undefined});
   const historyQuery = useQuery<ProjectHistory[]>({queryKey:['project-history',project.id],queryFn:()=>api.getProjectHistory(project.id),enabled:!previewMode});
   const memberNames = useMemo(()=>new Map(membersQuery.data?.map(item=>[item.userId,item.name])??[]),[membersQuery.data]);
+  const [actionError,setActionError] = useState('');
+  const clearActionError = () => setActionError('');
+  const reportActionError = (error: unknown) => setActionError(error instanceof Error && error.message ? error.message : 'Não foi possível concluir a alteração. Tente novamente.');
 
   useEffect(()=>{
     const fallbackOwner=project.ownerId||project.members?.find(item=>item.role===5)?.userId||membersQuery.data?.find(item=>item.isActive)?.userId||'';
@@ -124,27 +136,30 @@ export function ProjectSettings() {
   const save=useMutation({
     mutationFn:()=>previewMode?Promise.resolve():api.updateProjectDetails(project.id,{...form,description:form.description||null,startDate:form.startDate||null,dueDate:form.dueDate||null,settingsJson:project.settingsJson??null}),
     onMutate:async()=>{
+      clearActionError();
       await queryClient.cancelQueries({queryKey:['project',project.id]});
       const previous=queryClient.getQueryData<ProjectSummary>(['project',project.id]);
       queryClient.setQueryData<ProjectSummary>(['project',project.id],current=>current?{...current,...form,description:form.description||undefined}:current);
       return {previous};
     },
-    onSuccess:async()=>{setSavedAt(new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));await refresh();},
-    onError:(_error,_variables,context)=>{
+    onSuccess:async()=>{clearActionError();setSavedAt(new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));await refresh();},
+    onError:(error,_variables,context)=>{
       if(context?.previous)queryClient.setQueryData(['project',project.id],context.previous);
+      reportActionError(error);
     },
   });
-  const lifecycle=useMutation({mutationFn:(archive:boolean)=>previewMode?Promise.resolve():archive?api.archiveProject(project.id):api.reactivateProject(project.id),onSuccess:refresh});
-  const saveMember=useMutation({mutationFn:(value:{userId:string;role:number})=>api.setProjectMember(project.id,value.userId,value.role),onSuccess:refresh});
-  const removeMember=useMutation({mutationFn:(userId:string)=>api.removeProjectMember(project.id,userId),onSuccess:refresh});
-  const setTeam=useMutation({mutationFn:({teamId,on}:{teamId:string;on:boolean})=>on?api.addProjectTeam(project.id,teamId):api.removeProjectTeam(project.id,teamId),onSuccess:refresh});
-  const saveField=useMutation({mutationFn:()=>api.saveProjectCustomField(project.id,null,{name:field.name,type:field.type,isRequired:field.isRequired,optionsJson:field.type===5||field.type===6?JSON.stringify(field.options.split(',').map(value=>value.trim()).filter(Boolean)):null,position:(project.customFields?.length??0)*100}),onSuccess:async()=>{setField({name:'',type:1,isRequired:false,options:''});await refresh();}});
-  const disableField=useMutation({mutationFn:(id:string)=>api.deleteProjectCustomField(project.id,id),onSuccess:refresh});
+  const lifecycle=useMutation({mutationFn:(archive:boolean)=>previewMode?Promise.resolve():archive?api.archiveProject(project.id):api.reactivateProject(project.id),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
+  const saveMember=useMutation({mutationFn:(value:{userId:string;role:number})=>api.setProjectMember(project.id,value.userId,value.role),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
+  const removeMember=useMutation({mutationFn:(userId:string)=>api.removeProjectMember(project.id,userId),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
+  const setTeam=useMutation({mutationFn:({teamId,on}:{teamId:string;on:boolean})=>on?api.addProjectTeam(project.id,teamId):api.removeProjectTeam(project.id,teamId),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
+  const saveField=useMutation({mutationFn:()=>api.saveProjectCustomField(project.id,null,{name:field.name,type:field.type,isRequired:field.isRequired,optionsJson:field.type===5||field.type===6?JSON.stringify(field.options.split(',').map(value=>value.trim()).filter(Boolean)):null,position:(project.customFields?.length??0)*100}),onMutate:clearActionError,onSuccess:async()=>{clearActionError();setField({name:'',type:1,isRequired:false,options:''});await refresh();},onError:reportActionError});
+  const disableField=useMutation({mutationFn:(id:string)=>api.deleteProjectCustomField(project.id,id),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
   const submit=(event:FormEvent)=>{event.preventDefault();if(form.ownerId)save.mutate();};
   const submitMember=(event:FormEvent)=>{event.preventDefault();if(member.userId){saveMember.mutate(member);setMember({userId:'',role:2});}};
   const submitField=(event:FormEvent)=>{event.preventDefault();if(field.name.trim())saveField.mutate();};
 
   return <Page><Layout>
+    {actionError&&<ActionError role="alert">{actionError}</ActionError>}
     <Menu aria-label="Categorias de configuração">
       {categorias.map(([chave, rotulo, Icone]) => (
         <MenuItem
@@ -186,7 +201,7 @@ export function ProjectSettings() {
 
     {secao==='classificacao'&&<>
     <Section><header><Tags size={16}/><h2>Etiquetas do projeto</h2></header><Chips>{tagsQuery.data?.map(tag=><Chip type="button" key={tag.id} $on={form.tagIds.includes(tag.id)} $color={tag.color} onClick={()=>setForm({...form,tagIds:form.tagIds.includes(tag.id)?form.tagIds.filter(id=>id!==tag.id):[...form.tagIds,tag.id]})}>{tag.name}</Chip>)}</Chips><Empty>As etiquetas selecionadas são salvas junto com os dados gerais.</Empty></Section>
-    <Section><header><Plus size={16}/><h2>Campos personalizados</h2></header><List>{project.customFields?.filter(item=>item.isActive).map(item=><Row key={item.id}><div><strong>{item.name}</strong><small>{fieldTypes.find(([id])=>id===item.type)?.[1]}{item.isRequired?' · obrigatório':''}</small></div><Button $danger aria-label="Desativar campo" onClick={()=>disableField.mutate(item.id)}><Trash2 size={12}/></Button></Row>)}{!project.customFields?.some(item=>item.isActive)&&<Empty>Nenhum campo personalizado.</Empty>}</List><InlineForm onSubmit={submitField}><input required placeholder="Nome do campo" value={field.name} onChange={e=>setField({...field,name:e.target.value})}/><select aria-label="Tipo do campo personalizado" value={field.type} onChange={e=>setField({...field,type:Number(e.target.value)})}>{fieldTypes.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>{(field.type===5||field.type===6)&&<input required placeholder="Opções separadas por vírgula" value={field.options} onChange={e=>setField({...field,options:e.target.value})}/>}<label style={{display:'flex',alignItems:'center',gap:5,fontSize:13}}><input type="checkbox" checked={field.isRequired} onChange={e=>setField({...field,isRequired:e.target.checked})}/>Obrigatório</label><Button><Plus size={13}/>Criar</Button></InlineForm></Section>
+    <Section><header><Plus size={16}/><h2>Campos personalizados</h2></header><List>{project.customFields?.filter(item=>item.isActive).map(item=><Row key={item.id}><div><strong>{item.name}</strong><small>{fieldTypes.find(([id])=>id===item.type)?.[1]}{item.isRequired?' · obrigatório':''}</small></div><Button $danger aria-label="Desativar campo" onClick={()=>disableField.mutate(item.id)}><Trash2 size={12}/></Button></Row>)}{!project.customFields?.some(item=>item.isActive)&&<Empty>Nenhum campo personalizado.</Empty>}</List><InlineForm onSubmit={submitField}><input required placeholder="Nome do campo" value={field.name} onChange={e=>setField({...field,name:e.target.value})}/><select aria-label="Tipo do campo personalizado" value={field.type} onChange={e=>setField({...field,type:Number(e.target.value)})}>{fieldTypes.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>{(field.type===5||field.type===6)&&<input required placeholder="Opções separadas por vírgula" value={field.options} onChange={e=>setField({...field,options:e.target.value})}/>}<CheckboxLabel><input type="checkbox" checked={field.isRequired} onChange={e=>setField({...field,isRequired:e.target.checked})}/>Obrigatório</CheckboxLabel><Button><Plus size={13}/>Criar</Button></InlineForm></Section>
     </>}
 
     {secao==='fluxo'&&<>
@@ -198,7 +213,7 @@ export function ProjectSettings() {
     </>}
 
     {secao==='historico'&&<>
-    <Section><header><Clock3 size={16}/><h2>Histórico do projeto</h2></header><History>{historyQuery.data?.map(item=><Event key={item.id}><strong>{item.kind.replaceAll('_',' ')}</strong><small>{new Date(item.createdAt).toLocaleString('pt-BR')} · {memberNames.get(item.actorId)??item.actorId}</small></Event>)}{!historyQuery.data?.length&&<Empty>Nenhuma alteração administrativa registrada.</Empty>}</History></Section>
+    <Section><header><Clock3 size={16}/><h2>Histórico do projeto</h2></header><History>{historyQuery.data?.map(item=><Event key={item.id}><strong>{translateProjectHistoryKind(item.kind)}</strong><small>{new Date(item.createdAt).toLocaleString('pt-BR')} · {memberNames.get(item.actorId)??item.actorId}</small></Event>)}{!historyQuery.data?.length&&<Empty>Nenhuma alteração administrativa registrada.</Empty>}</History></Section>
     </>}
     </Grid>
   </Layout></Page>;

@@ -1,5 +1,9 @@
 # DECISIONS — decisões travadas (ADR-lite)
 
+- **D89** - Em 2026-09-22, o PO escolheu explicitamente "Mudar para colunas independentes por quadro" ao comparar o relatório de testes com D83. Sucede a direção de fluxo compartilhado por projeto da D83. Não autoriza apagar dados nem reativar WIP ou quadros transversais. Contrato em `specs/independent-board-columns.md` (`approved`). O PO aprovou G-MIGRATION/G-WORKFLOW com "Aprovo a migration e esse fluxo seguro": cópia incremental das colunas por quadro, tarefas mantidas no quadro atual, IDs históricos preservados, backup verificado e ensaio antes de produção. Exclusão de estrutura ocupada exige destino explícito. Aprovação não significa migração aplicada nem dispensa validação.
+
+- **D90** - Em 2026-09-22, o PO escolheu "Exigir acesso ao projeto antes de atribuir a tarefa". Atribuição não concede acesso. Responsável principal e adicionais devem ser pessoas ativas da organização com acesso efetivo ao projeto; a interface oferece elegíveis e a API revalida todas as entradas. Atribuições legadas inconsistentes não são apagadas nem liberam visibilidade em Meu Trabalho. Contrato aprovado em `specs/project-assignment-access.md`; não exige alteração de schema.
+
 Uma linha por decisão. Pra mudar: não apague, marque ~~riscado~~ e adicione a nova abaixo.
 Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 

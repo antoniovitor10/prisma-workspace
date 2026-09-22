@@ -33,10 +33,10 @@ test.describe('ciclo de vida da sprint', () => {
 
       // Três sprints do mesmo projeto: passada, corrente e futura.
       const criar = (nome: string, inicio: string, fim: string) => page.evaluate(
-        async ({ projectId, nome, inicio, fim }) => {
+        async ({ projectId, nome, inicio, fim, apiUrl }) => {
           const token = localStorage.getItem('prisma_workspace_token');
           const org = localStorage.getItem('prisma_workspace_organization');
-          const resposta = await fetch(`http://127.0.0.1:5400/api/projects/${projectId}/sprints`, {
+          const resposta = await fetch(`${apiUrl}/api/projects/${projectId}/sprints`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ test.describe('ciclo de vida da sprint', () => {
           if (!resposta.ok) throw new Error(`${resposta.status} ${await resposta.text()}`);
           return resposta.json();
         },
-        { projectId: project.id, nome, inicio, fim });
+        { projectId: project.id, nome, inicio, fim, apiUrl: process.env.E2E_API_URL ?? 'http://127.0.0.1:5400' });
 
       const marca = Date.now();
       await authenticatedGoto(`/projects/${project.id}/sprints`);

@@ -38,7 +38,8 @@ public class WorkItemBoardTests
             new FakeStageRepo(stage),
             new FakeProjectRepo(),
             new FakeTeamRepo(),
-            new FakeUserDirectory());
+            new FakeUserDirectory(),
+            new ProjectAccessFake());
 
         var command = new CreateWorkItemCommand(
             BoardId: board.Id, StageId: null, ParentId: null,
@@ -66,7 +67,8 @@ public class WorkItemBoardTests
             new FakeStageRepo(CriarBacklog(board.ProjectId)),
             new FakeProjectRepo(project),
             new FakeTeamRepo(),
-            new FakeUserDirectory());
+            new FakeUserDirectory(),
+            new ProjectAccessFake());
 
         var command = new CreateWorkItemCommand(
             Guid.Empty, null, null, "Default board", null, null, Priority.Medium,
@@ -274,6 +276,14 @@ public class WorkItemBoardTests
         public Task<IReadOnlyList<StageHistory>> GetStageHistoriesAsync(Guid workItemId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<StageHistory>>(new List<StageHistory>());
         public Task AddEventAsync(TaskEvent taskEvent, CancellationToken ct = default)
+            => Task.CompletedTask;
+    }
+    private sealed class ProjectAccessFake : IProjectAccessService
+    {
+        public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<ProjectRole?>(ProjectRole.Member);
+
+        public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
     }
 }

@@ -130,7 +130,8 @@ test('participantes e histórico usam nome funcional e nunca e-mail como rótulo
   await page.waitForLoadState('domcontentloaded');
   await page.locator(`[data-work-item-id="${workItemId}"]`).getByRole('button', { name: /^Abrir detalhes de / }).click();
   const dialog = page.getByRole('dialog');
-  const participants = dialog.getByRole('heading', { name: 'Participantes' }).locator('..');
+  // Seção renomeada de "Participantes" para "Responsáveis da tarefa" (SPEC-WORK-ITEM-ASSIGNEES).
+  const participants = dialog.getByRole('heading', { name: 'Responsáveis da tarefa' }).locator('..');
   await expect(participants).toContainText('Gabriel Tavares E2E');
   if (target.email) await expect(participants.getByText(target.email, { exact: true })).toHaveCount(0);
 

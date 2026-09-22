@@ -179,7 +179,10 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
     {
         var user = await _userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null || !user.EmailConfirmed) return Accepted(new RecoveryAcceptedResponse());
+        // SPEC-AUTH-001: usuário não confirmado pode solicitar recuperação.
+        // O e-mail de reset prova a posse da caixa; o login continua bloqueado
+        // até a confirmação (ou até o aceite de um convite válido).
+        if (user is null) return Accepted(new RecoveryAcceptedResponse());
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var link = BuildFrontendLink("reset-password", user.Id, token);
         await _emailSender.SendAsync(user.Email!, "Recuperação de senha — Prisma WorkSpace",

@@ -133,6 +133,25 @@ public class WorkItemStageUpdateTests
 
     // ── fakes ──────────────────────────────────────────────────────────────
 
+    [Fact]
+    public async Task Update_SemTrocarResponsavelPreservaVinculoLegadoSemRevalidarAcesso()
+    {
+        var board = CriarBoard();
+        var stage = CriarStage(board.ProjectId, "Backlog", StageCategory.Ready);
+        var item = CriarItem(board, stage);
+        item.ResponsibleId = "legacy-inactive";
+        var access = new FakeProjectAccess();
+        var handler = new UpdateWorkItemCommandHandler(
+            new FakeManagementRepo(item), access, new FakePermissions(),
+            new FakeStages([stage]), new FakeTeams(), new FakeUsers(), new FakeFeed());
+
+        await handler.Handle(Comando(item, stage.Id) with { Title = "Título editado", ResponsibleId = item.ResponsibleId },
+            CancellationToken.None);
+
+        Assert.Equal("legacy-inactive", item.ResponsibleId);
+        Assert.Equal(0, access.RoleChecks);
+    }
+
     private sealed class FakeManagementRepo(WorkItem item) : IWorkItemManagementRepository
     {
         public Task<WorkItem?> GetDetailedAsync(Guid id, CancellationToken cancellationToken = default)
@@ -153,8 +172,12 @@ public class WorkItemStageUpdateTests
 
     private sealed class FakeProjectAccess : IProjectAccessService
     {
+        public int RoleChecks { get; private set; }
         public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
-            => Task.FromResult<ProjectRole?>(ProjectRole.ProjectAdmin);
+        {
+            RoleChecks++;
+            return Task.FromResult<ProjectRole?>(ProjectRole.ProjectAdmin);
+        }
         public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
     }

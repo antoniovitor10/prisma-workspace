@@ -374,6 +374,12 @@ setup foi validada contra SQL Server real. `G-SPEC` e `G-MIGRATION` foram aprova
 
 ## [~] Fase 14 - Programa Prisma WorkSpace v2
 
+Recorte aprovado em 2026-09-22: colunas independentes por quadro (D89), contrato em `specs/independent-board-columns.md` (`approved`). G-SPEC/G-MIGRATION/G-WORKFLOW aprovados pelo PO; implementação, ensaio com backup restaurado e validação completa ainda pendentes. Não reintroduzir Sprint/Projeto N:N.
+
+Recorte de acesso aprovado em 2026-09-22 (D90): exigir acesso ao projeto antes de atribuir responsável principal ou adicional, sem concessão automática. Implementar seleção elegível, validação da API e filtragem de Meu Trabalho conforme `specs/project-assignment-access.md`.
+
+Recorte aprovado em 2026-09-21: múltiplos responsáveis por tarefa, preservando o responsável principal, conforme `specs/multiple-task-assignees.md`. Sem migration.
+
 Recorte aprovado em 2026-09-21: descrição rica e ampla da tarefa, conforme `specs/rich-task-description.md`, sem edição com IA e sem migration.
 
 Recorte aprovado em 2026-09-19: onboarding direto pelo convite (`specs/invitation-onboarding.md`), nome completo, senha com confirmação, aceite e sessão automáticos; conta existente autentica sem redefinir senha. G-SPEC e G-DEPLOY autorizados diretamente pelo PO. Sem migration.

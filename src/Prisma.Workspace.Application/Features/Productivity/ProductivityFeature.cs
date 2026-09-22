@@ -517,6 +517,9 @@ public sealed class BulkWorkItemsCommandHandler : IRequestHandler<BulkWorkItemsC
                     "Usuário de destino obrigatório.");
                 DomainException.Garantir(await _users.GetByIdAsync(request.TargetValue, ct) is not null,
                     "Usuário de destino inválido.");
+                var targetRole = await _access.GetRoleAsync(board.ProjectId, request.TargetValue, ct);
+                DomainException.Garantir(targetRole is not null,
+                    "Conceda acesso ao projeto antes de atribuir a tarefa.");
                 break;
             case BulkActionType.Unassign:
                 DomainException.Garantir(!string.IsNullOrWhiteSpace(request.TargetValue),

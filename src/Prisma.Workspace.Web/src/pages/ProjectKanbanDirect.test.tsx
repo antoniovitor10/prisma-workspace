@@ -69,6 +69,8 @@ beforeEach(() => {
   vi.spyOn(api, 'getSavedFilters').mockResolvedValue([]);
   vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
   vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);
+  vi.spyOn(api, 'getRunningTimeEntry').mockResolvedValue(null);
+  vi.spyOn(api, 'startTimer').mockResolvedValue({ id: 'timer-default', workItemId: 'item-1', startedAt: '2026-09-22T10:00:00Z' } as never);
   vi.spyOn(api, 'getBoardLeadTime').mockResolvedValue([]);
 });
 
@@ -95,6 +97,20 @@ describe('Kanban do projeto abre direto', () => {
     await waitFor(() => expect(api.getStages).toHaveBeenCalledWith(PROJETO));
     await waitFor(() => expect(api.getWorkItemsByProject).toHaveBeenCalledWith(PROJETO));
     expect(await screen.findByText('A fazer')).toBeInTheDocument();
+  });
+
+  it('mostra erro ao carregar quadros e permite tentar novamente sem dados incorretos', async () => {
+    const getBoards = vi.mocked(api.getBoards);
+    getBoards.mockReset();
+    getBoards.mockRejectedValueOnce(new Error('Falha temporária ao carregar quadros')).mockResolvedValueOnce(quadros);
+    renderRota(`/projects/${PROJETO}/boards`);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Não foi possível carregar os quadros disponíveis');
+    expect(screen.queryByText('Planejamento')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar carregar os quadros novamente' }));
+    await waitFor(() => expect(getBoards).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Planejamento')).toBeInTheDocument();
   });
 
   it('mostra cartões de todos os quadros do projeto, não só de um', async () => {
@@ -151,5 +167,22 @@ describe('Kanban do projeto abre direto', () => {
       'stage-1',
       expect.objectContaining({ name: 'Ideias Novas' })
     ));
+  });
+
+  it('permite iniciar outro cronometro e delega o encerramento do anterior a API', async () => {
+    vi.spyOn(api, 'getRunningTimeEntry').mockResolvedValue({
+      id: 'timer-1', workItemId: 'item-2', startedAt: '2026-09-22T10:00:00Z',
+    } as never);
+    const startTimer = vi.spyOn(api, 'startTimer').mockResolvedValue({
+      id: 'timer-2', workItemId: 'item-1', startedAt: '2026-09-22T10:05:00Z',
+    } as never);
+
+    renderRota('/boards/board-1');
+
+    await screen.findByRole('checkbox', { name: /Selecionar #1 Cart/i });
+    const start = await screen.findByRole('button', { name: /Iniciar cron/i });
+    fireEvent.click(start);
+
+    await waitFor(() => expect(startTimer).toHaveBeenCalledWith('item-1'));
   });
 });
