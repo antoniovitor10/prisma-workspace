@@ -1,3 +1,10 @@
+## [2026-09-22] - Codex - ambiente local com atualização automática
+
+- PO solicitou explicitamente instalação por comandos, banco Docker, atualização ao editar e guia simplificado; confirmou manter SQL Server no container. Solução: `npm run dev` na raiz, Compose separado com banco, SDK .NET 8/dotnet watch e Vite, credenciais aleatórias em `.env.dev`, volumes persistentes e portas loopback 5400/5450. `npm run dev:stop` preserva os dados.
+- Instalação não exige SDK .NET no host, configuração manual de SQL nem testes. CI automático preservado; execução de testes backend retirada do job por pedido explícito do PO, mantendo restore/build. Testes permanecem no código. Falha de governança do PR permanece independente desta alteração.
+- Verificação em clone isolado na VPS, pois Docker Desktop local estava desligado: instalação com banco vazio, migrations automáticas, banco healthy, `/health` saudável, `/api/setup/status` com setup disponível e frontend HTTP 200. Edição temporária de App.tsx confirmada na resposta do Vite e no log HMR; watcher .NET confirmou detecção de Program.cs. Arquivo de prova restaurado. Não houve mudança de código de produto ou produção.
+- Guia local em `docs/installation/development.md`; PDF externo atualizado para três páginas. Validação visual das três páginas concluída. A branch de instalação ainda deve ser selecionada até merge do PR #17.
+
 ## [2026-09-22] - Codex - limpeza de distribuição e guia da equipe
 
 - PO confirmou publicação do repositório e solicitou limpeza antes do push, mantendo CI automático. Trabalho em `chore/repository-onboarding-cleanup`, a partir de `adeec99`, candidato já homologado e publicado; sem mudança de código do produto, banco ou produção.

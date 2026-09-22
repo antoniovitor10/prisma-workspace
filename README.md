@@ -7,6 +7,12 @@ Plataforma open source de gestão ágil para equipes que trabalham com projetos,
 
 ## Quickstart local
 
+Para **desenvolver com atualização automática**, instale Git, Node.js e Docker, clone este repositório e rode
+`npm run dev` na raiz. Abra http://localhost:5450. O [guia local](docs/installation/development.md)
+explica o primeiro acesso. Banco, API e frontend são iniciados automaticamente; testes não são necessários para iniciar.
+
+O caminho abaixo empacota a aplicação e serve para experimentar a instalação, sem hot reload.
+
 Com Git, Docker e Docker Compose v2 instalados, baixe o projeto:
 
 ```bash

@@ -1,0 +1,67 @@
+name: prisma-workspace-dev
+
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Use npm run dev}"
+    volumes:
+      - dev_database:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /workspace
+    command: dotnet watch --project src/Prisma.Workspace.Api/Prisma.Workspace.Api.csproj --non-interactive run --no-launch-profile
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5400
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
+      DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "true"
+      ConnectionStrings__DefaultConnection: "Server=database,1433;Database=PrismaWorkspace_Dev;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      Jwt__Key: "${PRISMA_JWT_KEY:?Use npm run dev}"
+      Jwt__Issuer: PrismaWorkspaceApi
+      Jwt__Audience: PrismaWorkspaceClients
+      Setup__Enabled: "true"
+      Setup__Token: "${PRISMA_SETUP_TOKEN:?Use npm run dev}"
+      Seed__DemoEnabled: "false"
+      FrontendBaseUrl: http://localhost:5450
+      Cors__AllowedOrigins__0: http://localhost:5450
+    ports:
+      - "127.0.0.1:5400:5400"
+    volumes:
+      - .:/workspace
+      - dev_nuget:/root/.nuget/packages
+      - dev_keys:/root/.aspnet/DataProtection-Keys
+      - dev_attachments:/workspace/src/Prisma.Workspace.Api/App_Data
+
+  web:
+    image: node:20-alpine
+    working_dir: /workspace/src/Prisma.Workspace.Web
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5450 --strictPort"
+    environment:
+      VITE_API_URL: http://localhost:5400
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "127.0.0.1:5450:5450"
+    volumes:
+      - .:/workspace
+      - dev_node_modules:/workspace/src/Prisma.Workspace.Web/node_modules
+
+volumes:
+  dev_database:
+  dev_nuget:
+  dev_keys:
+  dev_attachments:
+  dev_node_modules:

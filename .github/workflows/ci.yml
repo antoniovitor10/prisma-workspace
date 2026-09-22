@@ -28,8 +28,7 @@ jobs:
         run: dotnet restore Prisma.Workspace.sln
       - name: Build
         run: dotnet build Prisma.Workspace.sln --configuration Release --no-restore
-      - name: Test
-        run: dotnet test Prisma.Workspace.sln --configuration Release --no-build --verbosity normal
+      # Decisão do mantenedor: build automático; testes backend sob demanda.
 
   frontend:
     name: Frontend (Node 20)
