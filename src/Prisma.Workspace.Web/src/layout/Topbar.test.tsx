@@ -88,6 +88,17 @@ describe('Topbar', () => {
       expect(within(nav).getByRole('link', { name: 'Relatórios' })).toBeInTheDocument());
   });
 
+  it('mantém Equipes identificável e ativa sem depender do espaço disponível para o texto', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [1, 10] });
+    renderTopbar(['/teams']);
+
+    const nav = await screen.findByRole('navigation', { name: 'Navegação principal' });
+    const teams = await within(nav).findByRole('link', { name: 'Equipes' });
+    expect(teams).toHaveAttribute('title', 'Equipes');
+    expect(teams).toHaveAttribute('aria-current', 'page');
+    expect(teams).toHaveTextContent('Equipes');
+  });
+
   it('oculta o espaço de trabalho do solicitante externo (papel 8)', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 8, allowedPermissions: [] });
     renderTopbar(['/requests'], { ...organizations[0], role: 8 });

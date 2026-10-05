@@ -1,3 +1,147 @@
+## [2026-10-05] - Codex - resumo de tempo e controles das colunas
+
+- Aprovação: o PO enviou três evidências solicitando tempo geral por responsável com detalhe exclusivo no log, melhor visualização dos botões do editor de coluna e melhor apresentação da ordenação por coluna.
+- O detalhe da tarefa agora agrupa apontamentos por pessoa, mostra primeiro início, último fim ou estado em andamento e total; os intervalos individuais ficam no `Log de apontamentos`, recolhido por padrão.
+- Cada coluna ganhou duas faixas: contexto e ações no topo, ordenação temporária rotulada abaixo. O editor reúne excluir, cancelar e salvar em um rodapé, mantendo a ação destrutiva separada visualmente.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de permissão.
+- Validação: testes focais 14/14 e suíte Vitest completa 122/122; build frontend aprovado; lint sem erros e com 12 avisos preexistentes. Playwright não foi executado porque as credenciais E2E locais continuam ausentes.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-10-05] - Codex - tarefa direta e menu contextual recolhível
+
+- Aprovação: o PO solicitou abrir diretamente a tarefa ao clicar em `Meu trabalho` e implementar o menu recolhível do projeto.
+- Cada linha da fila agora abre a gaveta completa por clique, Enter ou Espaço, sem perder filtros; Kanban e timer permanecem ações independentes.
+- O menu contextual do projeto pode ser recolhido para 64 px, preserva ícones, nomes acessíveis, tooltip e rota ativa, e lembra a escolha localmente. No mobile continua oculto em favor da navegação responsiva existente.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de permissão.
+- Validação: testes focais da tarefa, menu contextual e navegação superior 11/11 e suíte Vitest completa 121/121; build frontend aprovado; lint sem erros e com 12 avisos preexistentes. O build mantém avisos conhecidos de anotação do SignalR e tamanho de chunk. Playwright não foi executado porque as credenciais E2E locais continuam ausentes.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - navegação superior sem item cortado
+
+- Aprovação: o PO enviou a evidência “Sugestão de Melhoria de Interface”, destacando `Equipes` parcialmente cortado na barra superior.
+- A navegação desktop deixou de encolher com overflow interno. Em notebooks, marca, busca, organização e timer ficam compactos para preservar os rótulos; em larguras menores, os destinos passam a ícones completos antes do menu mobile.
+- Cada destino mantém `aria-label`, tooltip e `aria-current`, portanto `Equipes` continua identificável e com estado ativo mesmo no modo compacto.
+- Escopo técnico: frontend, teste e documentação; sem entidade, migration, endpoint, dependência ou alteração de permissão.
+- Validação: incluída na consolidação desta rodada: testes focais da tarefa, menu contextual e navegação superior 11/11, suíte Vitest completa 121/121, build frontend aprovado e lint sem erros (12 avisos preexistentes).
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - vínculo pesquisável entre Wiki e tarefa
+
+- Aprovação: o PO enviou a sugestão da Wiki e pediu busca pelo título da tarefa e acesso à página relacionada a partir da tarefa vinculada.
+- O campo numérico foi substituído por autocomplete que pesquisa por título ou código dentro do projeto, exige seleção de um resultado e mantém o endpoint de vínculo existente.
+- O detalhe da tarefa agora apresenta `Visualizar` explicitamente em cada página da Wiki vinculada e navega diretamente para ela.
+- O autocomplete reutiliza a busca autorizada existente; resultados continuam limitados ao projeto e ao acesso efetivo do usuário.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de dados.
+- Validação: testes focais de busca/vínculo/navegação 5/5 e suíte Vitest completa 118/118; build frontend aprovado; lint sem erros e com 12 avisos preexistentes. O build mantém avisos externos já conhecidos de anotação do SignalR e tamanho de chunk. Playwright não foi executado porque as credenciais E2E locais continuam ausentes.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - alinhamento do Construtor de Relatório
+
+- Aprovação: o PO enviou a evidência “Bug de Interface no Construtor de Relatório” para correção.
+- Filtros e métricas agora usam um bloco compacto de duas linhas, sem a grade fixa de cinco colunas que fazia a lixeira ultrapassar o painel.
+- A ação de remover permanece dentro do bloco, ocupa uma coluna própria, possui estados de foco/hover e agrupamento acessível para cada filtro ou métrica.
+- Escopo técnico: frontend, teste e documentação; sem entidade, migration, endpoint, dependência ou alteração de regra funcional.
+- Validação: teste focal do Construtor de Relatório 2/2 e suíte Vitest completa 115/115; build frontend aprovado; lint sem erros e com 12 avisos preexistentes. O build mantém avisos externos já conhecidos de anotação do SignalR e tamanho de chunk. Playwright não foi executado porque as credenciais E2E locais continuam ausentes.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - Nova sprint condicionada à permissão
+
+- Aprovação: o PO solicitou explicitamente ocultar o botão `Nova sprint` de acordo com a permissão.
+- A API ganhou uma capacidade de acesso do projeto que resolve `ManageSprint` no escopo exato do projeto e exige, como o fluxo de escrita, ao menos o papel efetivo `Member`.
+- O dashboard agora exibe `Nova sprint` e monta seu diálogo somente após a API confirmar `canManageSprint`; carregamento, falha ou negação mantêm a ação oculta.
+- A autoridade continua no backend: ocultar o botão reduz uma ação inválida na interface, mas não substitui a proteção dos comandos de sprint.
+- Escopo técnico: frontend, Application, API, testes e documentação; sem entidade, migration, dependência ou alteração de dados.
+- Validação: teste focal de permissões do dashboard 2/2 e suíte Vitest completa 113/113; suíte .NET sem os testes SQL dependentes do ambiente 162/162; build frontend aprovado; lint sem erros e com 12 avisos preexistentes. Os testes SQL E2E e o Playwright não foram executados porque o banco e as credenciais locais continuam ausentes, conforme já registrado.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - papéis de projeto com efeito explícito
+
+- Aprovação: o PO enviou a evidência “Permissões que não alteram nada” e solicitou “corrija”.
+- O responsável principal agora exibe “Administrador · responsável” sem combobox, pois essa autoridade é estrutural. Perfis Administrador, Gestor e Gerente de projetos da organização exibem “Administrador · pela organização”, com a origem explicada.
+- Somente membros cujo papel local realmente participa da autorização mantêm o seletor. A atualização ganhou estado bloqueado durante o envio, atualização otimista, confirmação e rollback em caso de erro.
+- A API passou a rejeitar tentativas diretas de rebaixar o responsável principal, impedindo persistir um papel divergente do acesso efetivo.
+- Escopo técnico: frontend, Application, testes e documentação; sem entidade, migration, endpoint, dependência ou ampliação de autorização.
+- Validação: frontend focal 9/9 e suíte Vitest completa 111/111; backend focal 11/11 e suíte sem testes SQL dependentes de ambiente 161/161; build frontend e compilação .NET aprovados; lint sem erros e com 12 avisos preexistentes. A suíte backend integral aprovou 162 testes, mas 28 testes SQL ambientais falharam exclusivamente porque o banco E2E e `.env.e2e.connection` não estão configurados.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - correção do link do Portal Externo
+
+- Aprovação: o PO reapresentou a evidência “Link Externo não funciona” e solicitou “corrija”.
+- O status, o endereço exibido e as ações “Copiar” e “Abrir” agora derivam exclusivamente do portal salvo retornado pela API, impedindo a abertura de um slug local ainda inexistente.
+- Alterações locais mantêm o link publicado vigente e recebem aviso de que precisam ser salvas. Antes da primeira publicação persistida, nenhum link é oferecido.
+- O link “Abrir” agora é um elemento de navegação direto, com nome acessível e proteção `noopener noreferrer`.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: teste focal do Portal Externo 2/2 e suíte Vitest completa 110/110; build aprovado; lint sem erros e com 12 avisos preexistentes. E2E continua bloqueado pelas credenciais locais ausentes já registradas.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - painel visual de transferência de tarefa
+
+- Aprovação: o PO enviou a captura do controle sem estilo e solicitou melhorar a visualização de “Transferir tarefa”.
+- O bloco agora é um painel expansível alinhado ao design do detalhe da tarefa, com origem e destino visíveis, campos rotulados em grade responsiva, coluna bloqueada até escolher o quadro e ação com estado de carregamento.
+- A interface informa que tarefa, subtarefas e histórico são preservados, apresenta confirmação de sucesso e mantém erros em alerta destacado.
+- O comportamento e a API existentes foram preservados; nenhuma regra de transferência foi alterada.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: teste focal do detalhe 8/8 e suíte Vitest completa 108/108; build aprovado; lint sem erros e com 12 avisos preexistentes. O cenário Playwright foi atualizado, mas permanece sem execução local pelas credenciais E2E ausentes já registradas.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - reversão da ajuda contextual (S05)
+
+- Aprovação: o PO enviou novamente a evidência do S05 e solicitou explicitamente “desfaça essa alteração”.
+- Removidos os ícones e painéis de ajuda contextual das configurações, Portal Externo, navegação global, abas do projeto e abas do detalhe da tarefa, incluindo componente e testes exclusivos desse comportamento.
+- E03, E05, E20, S12, traduções do histórico, feedback de membros e alertas de Equipes foram preservados.
+- Spec, história e cenário E2E foram ajustados para não manter o S05 como requisito ativo.
+- Escopo técnico: reversão somente de frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: testes focais das quatro superfícies afetadas 24/24 e suíte Vitest completa 108/108; build aprovado; lint sem erros e com 12 avisos preexistentes. E2E continua bloqueado pelas credenciais locais ausentes.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - imagem remota renderizada na descrição (E20)
+
+- Aprovação: o PO enviou a evidência do E20 e solicitou renderizar a imagem, sem adicionar somente o link quando o endereço for de imagem.
+- O editor agora baixa URLs HTTPS, valida resposta `image/*` e limite de 10 MB, envia o arquivo pelo fluxo autenticado de anexos e renderiza a cópia interna. Falha ou timeout não insere elemento quebrado e exibe orientação útil.
+- “Inserir link” sem texto selecionado também reconhece extensões comuns de imagem e usa o mesmo fluxo de renderização. Links comuns e links aplicados a texto continuam inalterados.
+- A requisição usa política sem referenciador. Imagens externas exigem HTTPS, base64 continua desabilitado e nenhuma origem externa foi liberada na política global de conteúdo.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: testes focais do editor 7/7 e suíte Vitest completa 111/111; build aprovado; lint sem erros e com 12 avisos preexistentes. E2E permanece bloqueado pelas credenciais locais ausentes já registradas.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - ação visível de excluir coluna (E05)
+
+- Aprovação: o PO enviou a evidência do E05 e solicitou “colocar ícone de lixeira e aparecer a opção”.
+- Cada coluna agora exibe uma lixeira vermelha no cabeçalho. O acionamento abre diretamente o modal que contém a opção de exclusão, agora também destacada visualmente com ícone e estilo destrutivo.
+- O fluxo seguro foi preservado: coluna com cartões exige destino; a confirmação final informa nome, quantidade e destino antes de chamar a API.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: teste focal do Kanban 12/12; build aprovado; lint sem erros e com 12 avisos preexistentes. E2E continua bloqueado pelas credenciais locais ausentes já registradas no item anterior.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-24] - Codex - remoção da combobox ambígua na criação de coluna (E03)
+
+- Aprovação: o PO enviou a evidência visual do E03 e solicitou explicitamente “remova essa combo box”.
+- O modal “Criar Nova Coluna” agora pede somente o nome. A nova coluna é enviada como “Em andamento”, mantendo uma criação simples e determinística.
+- A classificação continua disponível apenas em “Editar Coluna”, fluxo que já calcula o impacto e exige as confirmações aplicáveis antes de reclassificar tarefas.
+- Cobertura atualizada em Vitest e Playwright para provar a ausência da combobox na criação, o valor padrão enviado à API e a reclassificação posterior pela edição.
+- Escopo técnico: frontend, testes e documentação; sem entidade, migration, endpoint, dependência ou alteração de autorização.
+- Validação: teste focal 12/12 e suíte Vitest completa 109/109; build aprovado; lint sem erros e com 12 avisos preexistentes. O Playwright focal foi iniciado no perfil desktop, mas o setup bloqueou antes do cenário porque `E2E_TEST_USER_EMAIL` e `E2E_TEST_USER_PASSWORD` não estão configurados; o E2E não deve ser declarado aprovado.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-23] - Codex - complementação visual E05, S05 e S12
+
+- Aprovação: após a releitura do relatório com as imagens identificar três atendimentos parciais, o PO respondeu “faça”. A história `US-TEST-REPORT-2026-09-21-001` e a spec aprovada foram ampliadas para o recorte objetivo autorizado.
+- E05: excluir coluna agora exige confirmação final. A mensagem informa a coluna e, quando há cartões, a quantidade e a coluna de destino; a interface impede continuar sem destino para uma coluna ocupada.
+- S05: a ajuda contextual já existente nas configurações foi ampliada para as áreas globais, as sete abas do projeto e as seis abas do detalhe da tarefa, em desktop e nas superfícies móveis correspondentes. Rotas, permissões e comportamento das abas foram preservados.
+- S12: o editor rico passou a aceitar imagens arrastadas, usando o mesmo upload autenticado, referência opaca e hidratação por Blob URL da colagem; o HTML continua sem base64.
+- Escopo técnico: somente frontend, testes e documentação. Nenhuma entidade, migration, dependência, endpoint, permissão ou configuração externa foi alterada.
+- Validação: Vitest completo 108/108; build aprovado; lint sem erros e com 12 avisos preexistentes. Playwright iniciou 111 cenários, mas parou no setup porque `E2E_TEST_USER_EMAIL` e `E2E_TEST_USER_PASSWORD` não estão configurados; 110 cenários não executaram e E2E não deve ser declarado aprovado.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
+## [2026-09-23] - Codex - lacunas residuais do relatório de testes de 21/09
+
+- PO solicitou explicitamente “aplique tudo que faltar”. Os 20 problemas e 13 sugestões do relatório foram comparados com `main`; itens já entregues foram preservados. A implementação inicial cobriu três lacunas objetivas e, após o PO esclarecer o S05 com a imagem e a frase “essa é ajuda”, passou a incluir também ajuda contextual nas configurações. Tudo foi registrado em `US-TEST-REPORT-2026-09-21-001` e `SPEC-TEST-REPORT-2026-09-21` como aprovado pela solicitação desta conversa.
+- Histórico de projeto agora traduz também `member_updated`, `custom_field_saved` e `custom_field_disabled`, mantendo aliases antigos e fallback legível. Inclusão/alteração de membro ganhou confirmação contextual acessível. Erros de criação e de ações de Equipes passaram a usar alertas junto do contexto, sem o espaçamento de estado vazio.
+- S05 implementado com componente reutilizável: as seis categorias e os principais blocos das configurações possuem ajuda clicável. O Portal Externo explica quadro de entrada, endereço público, modos de acesso, publicação, autenticação, campos e regras. O painel tem nomes acessíveis, estado expandido, fechamento explícito e tecla Escape, e usa posição fixa para não ser cortado em cartões ou no menu móvel.
+- Sem entidade, migration, endpoint, dependência ou mudança de autorização. Notificação de atribuição e troca automática de timer foram confirmadas no código atual; colunas independentes, fluxo de tarefa, imagens e demais correções do relatório já estavam integradas e não foram duplicadas.
+- Validação: ajuda contextual focal 11/11 e suíte completa 106/106; `npm run build` aprovado; `npm run lint` sem erros e com 12 avisos preexistentes fora dos arquivos desta entrega. Cenários Playwright focais adicionados, mas execução local bloqueada antes dos testes pela ausência do Chromium do Playwright; a instalação também não possui sessão/credenciais E2E locais. Não declarar E2E aprovado.
+- Branch local `codex/report-2026-09-21-gaps`; nenhum commit, push, PR ou deploy realizado.
+
 ## [2026-09-22] - Codex - ambiente local com atualização automática
 
 - PO solicitou explicitamente instalação por comandos, banco Docker, atualização ao editar e guia simplificado; confirmou manter SQL Server no container. Solução: `npm run dev` na raiz, Compose separado com banco, SDK .NET 8/dotnet watch e Vite, credenciais aleatórias em `.env.dev`, volumes persistentes e portas loopback 5400/5450. `npm run dev:stop` preserva os dados.

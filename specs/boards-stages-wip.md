@@ -132,6 +132,10 @@ quadros e filtrar o trabalho sem uma sidebar global persistente.
 - O topo contém seletor de quadros pesquisável e deixa claro qual quadro está ativo.
 - Alternar quadro usa navegação SPA, atualiza a URL e respeita voltar/avançar.
 - Ações administrativas de quadro e coluna aparecem somente com **Administrar quadros**.
+- O cabeçalho da coluna separa nome, contagem e ações da ordenação temporária dos cartões; o seletor de
+  ordenação tem rótulo visível e nome acessível específico para a coluna.
+- No editor da coluna, `Excluir coluna` fica visualmente separado como ação destrutiva, enquanto `Cancelar` e
+  `Salvar` permanecem agrupados como ações de saída e confirmação.
 - Ao trocar a classificação de uma coluna com tarefas em qualquer sentido, o editor mostra confirmação de
   impacto antes da ação final; na conclusão com descendentes abertos, o consentimento recursivo fica explícito.
 - O painel de filtros é lateral recolhível ou overlay, contextual ao Kanban; não reserva uma coluna fixa da
@@ -193,6 +197,8 @@ quadros e filtrar o trabalho sem uma sidebar global persistente.
 16. Somente administrador restaura o quadro e as tarefas arquivadas por ele, sem reativar tarefas já arquivadas.
 17. Ordem e movimentos sobrevivem ao reload e falhas não deixam estado parcial.
 18. O filtro abre em painel contextual recolhível/overlay sem recriar sidebar global persistente.
+19. Ordenação e ações de cada coluna permanecem legíveis sem sobreposição, e o editor distingue claramente
+    exclusão, cancelamento e salvamento.
 
 ## Testes futuros
 

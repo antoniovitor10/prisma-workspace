@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -184,17 +184,44 @@ describe('Kanban do projeto abre direto', () => {
       'Atendimento digital', PROJETO, 'team-1', undefined));
   });
 
+  it('cria coluna sem seletor ambíguo e usa a classificação operacional padrão', async () => {
+    const createStage = vi.spyOn(api, 'createStage').mockResolvedValue(undefined);
+    renderRota('/boards/board-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Nova Coluna' }));
+
+    expect(await screen.findByRole('heading', { name: 'Criar Nova Coluna' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Classificação da coluna' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Nome da Coluna'), {
+      target: { value: 'Validação externa' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
+
+    await waitFor(() => expect(createStage).toHaveBeenCalledWith(
+      PROJETO,
+      'Validação externa',
+      2100,
+      { category: 3, boardId: 'board-1' },
+    ));
+  });
+
   it('permite editar o nome e classificação da coluna pelo botão de editar no cabeçalho', async () => {
     const updateStage = vi.spyOn(api, 'updateStage').mockResolvedValue(undefined);
     renderRota(`/projects/${PROJETO}/boards`);
 
     await screen.findByText('A fazer');
+    const columnSort = screen.getByRole('combobox', { name: 'Ordenar cartões da coluna A fazer' });
+    expect(columnSort.closest('label')).toHaveTextContent('Ordenar');
     const editBtn = await screen.findByRole('button', { name: 'Editar coluna A fazer' });
     fireEvent.click(editBtn);
 
     expect(await screen.findByText('Editar Coluna')).toBeInTheDocument();
     const input = screen.getByPlaceholderText('Nome da Coluna');
     expect(input).toHaveValue('A fazer');
+    const actions = screen.getByRole('group', { name: 'Ações da coluna' });
+    expect(within(actions).getByRole('button', { name: 'Excluir coluna' })).toBeVisible();
+    expect(within(actions).getByRole('button', { name: 'Cancelar' })).toBeVisible();
+    expect(within(actions).getByRole('button', { name: 'Salvar' })).toBeVisible();
 
     fireEvent.change(input, { target: { value: 'Ideias Novas' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
@@ -203,6 +230,29 @@ describe('Kanban do projeto abre direto', () => {
       'stage-1',
       expect.objectContaining({ name: 'Ideias Novas' })
     ));
+  });
+
+  it('explica o impacto e exige confirmação antes de excluir uma coluna', async () => {
+    const removeStage = vi.spyOn(api, 'deleteStage').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderRota('/boards/board-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Excluir coluna A fazer' }));
+    expect(screen.getByRole('heading', { name: 'Editar Coluna' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Excluir coluna$/ })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: /^Excluir coluna$/ }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Escolha para qual coluna transferir 1 tarefa(s)');
+    expect(confirm).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Ao excluir, transferir tarefas para'), { target: { value: 'stage-2' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Excluir coluna$/ }));
+
+    expect(confirm).toHaveBeenCalledWith('Excluir a coluna "A fazer"? 1 tarefa(s) serão transferidas para "Concluído".');
+    expect(removeStage).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole('button', { name: /^Excluir coluna$/ }));
+    await waitFor(() => expect(removeStage).toHaveBeenCalledWith('stage-1', 'stage-2'));
   });
 
   it('permite iniciar outro cronometro e delega o encerramento do anterior a API', async () => {

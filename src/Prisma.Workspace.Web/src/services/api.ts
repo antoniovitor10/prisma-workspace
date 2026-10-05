@@ -382,6 +382,10 @@ export const api = {
     return this.request(`/api/projects/${id}`);
   },
 
+  async getProjectAccess(id: string): Promise<{ canManageSprint: boolean }> {
+    return this.request(`/api/projects/${id}/access`);
+  },
+
   async createProject(data: {
     key: string; name: string; description?: string; nature: number; workType: number; methodology?: number;
     startDate?: string; dueDate?: string;

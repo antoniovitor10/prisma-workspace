@@ -19,7 +19,8 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
 - Filtros atuais são parciais e não reproduzem integralmente o painel Runrun.it da spec de filtros.
 
 ### Desejado
-- A sidebar deixa de existir em desktop e mobile.
+- A sidebar global deixa de existir em desktop e mobile; a navegação contextual interna de um projeto não é
+  navegação global e pode ser recolhida conforme o requisito 21.
 - A área de conteúdo passa a usar toda a largura disponível.
 - Recursos globais da sidebar migram para a navegação superior.
 - O login direciona ao Kanban e o seletor superior permite passear somente pelos quadros vinculados ao usuário
@@ -36,13 +37,13 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
 - Integração inicial com Project Workspace, Product Backlog e Kanban.
 - Kanban como rota inicial autenticada e seletor superior de quadros.
 - Comportamento responsivo, teclado, leitor de tela e overflow.
-- Remoção do estado/localStorage de recolhimento da sidebar.
+- Remoção do estado/localStorage legado de recolhimento da antiga sidebar global.
 
 ## Out of Scope
 
 - Renomear módulos ou alterar permissões/RBAC.
 - Alterar contratos de busca, filtros ou criação de tarefas além das specs próprias.
-- Criar uma nova sidebar recolhível como substituição.
+- Criar uma nova sidebar global recolhível como substituição.
 - Manter duas navegações globais duplicadas.
 
 ## Functional Requirements
@@ -61,6 +62,8 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
    reorganizados por prioridade e sem competição visual com a navegação.
 5. No desktop, destinos globais frequentes ficam visíveis como links. Itens menos frequentes podem entrar em
    `Mais`, desde que o destino ativo nunca fique invisível sem indicação.
+   Em larguras intermediárias, os links podem reduzir-se a ícones, desde que mantenham nome acessível, tooltip e
+   indicação visual do destino ativo; nenhum rótulo pode ficar parcialmente cortado.
 6. Configurações e sair devem ficar no menu da conta ou em overflow claramente identificado, respeitando as
    permissões atuais.
 7. A barra contextual deve aceitar por rota:
@@ -87,8 +90,9 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
     menus/filtros inválidos abertos.
 16. A mudança deve preservar deep links, rotas, botões voltar/avançar e os atalhos existentes, incluindo
     `Ctrl/Cmd + K` para busca.
-17. `Sidebar.tsx`, o botão de recolher e `sidebar-collapsed` deixam de participar da experiência; dados legados
-    no localStorage podem ser ignorados ou removidos defensivamente.
+17. A antiga sidebar global, seu botão de recolher e a chave legada `sidebar-collapsed` deixam de participar da
+    experiência; dados legados no localStorage podem ser ignorados ou removidos defensivamente. A navegação
+    contextual do projeto prevista no requisito 21 é independente desse estado legado.
 18. Após autenticação, a rota inicial deve abrir o Kanban no último quadro autorizado usado. No primeiro acesso
     ou sem quadro anterior válido, não escolhe automaticamente: exibe `Nenhum quadro selecionado`, ação
     `Selecionar quadro` e, somente com **Administrar quadros**, `Criar quadro`.
@@ -96,6 +100,9 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
     quadro ativo na URL e permite alternância SPA com voltar/avançar.
 20. Acesso ao quadro concede acesso derivado aos projetos representados no mesmo nível de permissão do quadro,
     conforme D52; o shell não deve mostrar projetos ou quadros fora desse conjunto.
+21. A navegação contextual interna de `/projects/:projectId` pode ser recolhida no desktop para ampliar o
+    conteúdo. Recolhida, mantém todos os destinos como ícones com nome acessível, tooltip, estado ativo e
+    preferência local; isso não recria uma navegação global lateral.
 
 ## Information Architecture
 
@@ -145,9 +152,15 @@ quadro ativo e os controles contextuais, enquanto filtros avançados abrem em pa
 - **Given** timer ativo e notificações disponíveis
   **When** a largura diminui
   **Then** os recursos permanecem acessíveis por rótulo, ícone com nome acessível ou overflow, sem corte.
+- **Given** `Equipes` como destino ativo em um notebook
+  **When** busca, timer e criação rápida ocupam a mesma barra
+  **Then** o destino permanece inteiro e identificável, sem recorte horizontal do texto.
 - **Given** navegação entre Backlog e Quadro
   **When** a rota muda
   **Then** a barra contextual troca seus controles sem reload e preserva contexto/filtros válidos.
+- **Given** o menu contextual de um projeto aberto no desktop
+  **When** a pessoa seleciona `Recolher`
+  **Then** o conteúdo ganha espaço, todas as áreas continuam acessíveis por ícone e a preferência é lembrada.
 
 ## Test Gate Mapping
 

@@ -7,10 +7,13 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { HeaderLead, Page, PageHeader, SearchControl } from '../components/PageLayout';
+import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
+import type { BacklogItem } from '../types/scrum';
 
 interface MyWorkTask {
   id:string;number:number;title:string;boardId:string;boardName:string;projectKey?:string|null;
   stageName?:string|null;statusColor?:string|null;priority:number;origin:number;
+  kind:number;
   teamName?:string|null;requesterName?:string|null;dueDate?:string|null;completedAt?:string|null;
   assigned:boolean;created:boolean;following:boolean;today:boolean;thisWeek:boolean;
   overdue:boolean;blocked:boolean;externalRequest:boolean;upcomingDeadline:boolean;tags:string[];
@@ -48,7 +51,7 @@ const PanelHeader=styled.header`min-height:56px;padding:11px 16px;display:flex;a
 const Tabs=styled.div`display:flex;gap:5px;overflow:auto;padding:10px 12px;border-bottom:1px solid ${({theme})=>theme.color.neutral[100]};`;
 const Tab=styled.button<{ $active?:boolean }>`white-space:nowrap;padding:6px 9px;border-radius:7px;background:${({$active,theme})=>$active?theme.color.brand:theme.color.neutral[50]};color:${({$active,theme})=>$active?theme.color.onBrand:theme.color.textMuted};font-size:12px;font-weight:800;`;
 const TaskList=styled.div`display:grid;`;
-const Task=styled.article<{ $late?:boolean;$blocked?:boolean }>`display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:12px;padding:14px 16px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({$late,theme})=>$late?`color-mix(in srgb, ${theme.color.danger} 4%, ${theme.color.surface})`:'transparent'};&:hover{background:${({theme})=>theme.color.surfaceSubtle};}`;
+const Task=styled.article<{ $late?:boolean;$blocked?:boolean }>`display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:12px;padding:14px 16px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({$late,theme})=>$late?`color-mix(in srgb, ${theme.color.danger} 4%, ${theme.color.surface})`:'transparent'};cursor:pointer;&:hover{background:${({theme})=>theme.color.surfaceSubtle};}&:focus-visible{outline:2px solid ${({theme})=>theme.color.accentBlueAccessible};outline-offset:-3px;}`;
 const StatusBar=styled.span<{ $color?:string }>`width:5px;border-radius:999px;background:${({$color})=>$color||'#94A3B8'};`;
 const TaskCenter=styled.div`min-width:0;display:grid;gap:5px;h3{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}p{font-size:12px;color:${({theme})=>theme.color.textMuted};}.meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}`;
 const Badge=styled.span<{ $tone?:string }>`display:inline-flex;align-items:center;gap:3px;padding:3px 6px;border-radius:999px;background:${({$tone})=>$tone?`${$tone}18`:'#F1F5F9'};color:${({$tone,theme})=>$tone||theme.color.textMuted};font-size:11px;font-weight:800;`;
@@ -83,6 +86,7 @@ export const MinhasTarefas:React.FC=()=>{
   const [error,setError]=useState('');
   const [timer,setTimer]=useState<ActiveTimer|null>(null);
   const [elapsed,setElapsed]=useState(0);
+  const [selectedTask,setSelectedTask]=useState<MyWorkTask|null>(null);
 
   const load=useCallback(async()=>{setLoading(true);setError('');try{const [dashboard,active]=await Promise.all([api.getMyWork(),api.getMyActiveTimer()]);setData(dashboard);setTimer(active);}catch(e){setError((e as Error).message);}finally{setLoading(false);}},[]);
   useEffect(()=>{load();},[load]);
@@ -102,7 +106,7 @@ export const MinhasTarefas:React.FC=()=>{
     </Metrics>
     <Layout><Panel><PanelHeader><ListChecks size={15}/><h2>Fila de atenção</h2><small>{tasks.length} item(ns)</small></PanelHeader><Tabs>{filters.map(item=><Tab key={item.id} $active={filter===item.id} onClick={()=>setFilter(item.id)}>{item.label}</Tab>)}</Tabs>
       {loading?<Empty>Carregando seu trabalho...</Empty>:tasks.length===0?<Empty>Nenhuma tarefa neste recorte.</Empty>:<TaskList>{tasks.map(task=>{
-        const running=timer?.workItemId===task.id;return <Task key={task.id} $late={task.overdue} $blocked={task.blocked}><StatusBar $color={task.statusColor??undefined}/><TaskCenter><p>{task.projectKey?`${task.projectKey} · `:''}{task.boardName}{task.stageName?` / ${task.stageName}`:''}</p><h3>#{task.number} · {task.title}</h3><div className="meta">{task.priority>=2&&<Badge $tone="#D92D20"><Flag size={9}/>{task.priority===3?'Crítica':'Alta'}</Badge>}{task.blocked&&<Badge $tone="#D97706"><Link2 size={9}/>Bloqueada</Badge>}{task.externalRequest&&<Badge $tone="#2563EB"><Users size={9}/>Portal externo</Badge>}{task.teamName&&<Badge><UserCheck size={9}/>{task.teamName}</Badge>}{task.tags.slice(0,3).map(tag=><Badge key={tag}>{tag}</Badge>)}</div></TaskCenter><TaskRight><KanbanLink title="Ver no Kanban do projeto, filtrado nas suas tarefas" onClick={()=>navigate(`/boards/${task.boardId}?assignee=${userId??''}`)}><Columns3 size={12}/>Kanban</KanbanLink>{task.dueDate&&<small style={{color:task.overdue?'#D92D20':undefined}}><CalendarDays size={11}/> {dueLabel(task.dueDate)}</small>}{(()=>{const total=(task.userTimeSeconds??0)+(running?elapsed:0);const fmt=`${String(Math.floor(total/3600)).padStart(2,'0')}:${String(Math.floor((total%3600)/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;return running?<small>{fmt}</small>:total>0?<small style={{opacity:.65}} title="Tempo que você já gastou nesta tarefa">{fmt}</small>:null;})()}{task.assigned&&<TimerButton $running={running} title={running?'Parar timer':'Iniciar timer'} onClick={()=>toggleTimer(task.id)}>{running?<Square size={12} fill="white"/>:<Play size={12} fill="white"/>}</TimerButton>}</TaskRight></Task>})}</TaskList>}
+        const running=timer?.workItemId===task.id;return <Task key={task.id} $late={task.overdue} $blocked={task.blocked} role="button" tabIndex={0} aria-label={`Abrir tarefa ${task.number}: ${task.title}`} onClick={()=>setSelectedTask(task)} onKeyDown={event=>{if(event.currentTarget!==event.target)return;if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedTask(task);}}}><StatusBar $color={task.statusColor??undefined}/><TaskCenter><p>{task.projectKey?`${task.projectKey} · `:''}{task.boardName}{task.stageName?` / ${task.stageName}`:''}</p><h3>#{task.number} · {task.title}</h3><div className="meta">{task.priority>=2&&<Badge $tone="#D92D20"><Flag size={9}/>{task.priority===3?'Crítica':'Alta'}</Badge>}{task.blocked&&<Badge $tone="#D97706"><Link2 size={9}/>Bloqueada</Badge>}{task.externalRequest&&<Badge $tone="#2563EB"><Users size={9}/>Portal externo</Badge>}{task.teamName&&<Badge><UserCheck size={9}/>{task.teamName}</Badge>}{task.tags.slice(0,3).map(tag=><Badge key={tag}>{tag}</Badge>)}</div></TaskCenter><TaskRight><KanbanLink title="Ver no Kanban do projeto, filtrado nas suas tarefas" onClick={event=>{event.stopPropagation();navigate(`/boards/${task.boardId}?assignee=${userId??''}`);}}><Columns3 size={12}/>Kanban</KanbanLink>{task.dueDate&&<small style={{color:task.overdue?'#D92D20':undefined}}><CalendarDays size={11}/> {dueLabel(task.dueDate)}</small>}{(()=>{const total=(task.userTimeSeconds??0)+(running?elapsed:0);const fmt=`${String(Math.floor(total/3600)).padStart(2,'0')}:${String(Math.floor((total%3600)/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;return running?<small>{fmt}</small>:total>0?<small style={{opacity:.65}} title="Tempo que você já gastou nesta tarefa">{fmt}</small>:null;})()}{task.assigned&&<TimerButton $running={running} title={running?'Parar timer':'Iniciar timer'} onClick={event=>{event.stopPropagation();void toggleTimer(task.id);}}>{running?<Square size={12} fill="white"/>:<Play size={12} fill="white"/>}</TimerButton>}</TaskRight></Task>})}</TaskList>}
     </Panel><Rail>
       <Panel><PanelHeader><Bell size={14}/><h2>Importante</h2><small>{data?.importantNotifications.length??0}</small></PanelHeader><RailList>{data?.importantNotifications.slice(0,10).map((item,index)=><RailItem key={`${item.type}-${item.workItemId}-${index}`}><strong>{item.severity==='danger'?<AlertCircle size={11} color="#D92D20"/>:<Bell size={11}/>} {item.title}</strong><p>{item.message}</p></RailItem>)}{!data?.importantNotifications.length&&<Empty>Sem alertas importantes.</Empty>}</RailList></Panel>
 
@@ -134,5 +138,11 @@ export const MinhasTarefas:React.FC=()=>{
         </RailItem>
       </RailList></Panel>
     </Rail></Layout>
+    <TaskDetailDrawer
+      item={selectedTask?({id:selectedTask.id,number:selectedTask.number,boardId:selectedTask.boardId,boardName:selectedTask.boardName,stageName:selectedTask.stageName??undefined,kind:selectedTask.kind,title:selectedTask.title,priority:selectedTask.priority,origin:selectedTask.origin,rank:0,dueDate:selectedTask.dueDate??undefined} satisfies BacklogItem):null}
+      projectKey={selectedTask?.projectKey??'ITEM'}
+      onOpenChange={open=>{if(!open)setSelectedTask(null);}}
+      onItemUpdated={()=>{void load();}}
+    />
   </WorkPage>;
 };

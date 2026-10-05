@@ -20,6 +20,11 @@ const Row = styled.button`
   span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   svg:last-child { color: ${({ theme }) => theme.color.textMuted}; }
 `;
+const OpenLabel = styled.small`
+  color: ${({ theme }) => theme.color.accentBlue};
+  font-size: 12px;
+  font-weight: 750;
+`;
 const Empty = styled.p`color: ${({ theme }) => theme.color.textMuted}; font-size: 13.5px;`;
 
 export function TaskWikiPages({ projectId, workItemId, onNavigate }: { projectId: string; workItemId: string; onNavigate: () => void }) {
@@ -36,8 +41,8 @@ export function TaskWikiPages({ projectId, workItemId, onNavigate }: { projectId
       {pages.length === 0
         ? <Empty>Nenhuma página do wiki vinculada a esta tarefa.</Empty>
         : pages.map((page) => (
-          <Row key={page.pageId} onClick={() => open(page.pageId)}>
-            <BookText size={13} /><span>{page.title}</span><ChevronRight size={14} />
+          <Row key={page.pageId} aria-label={`Visualizar página da Wiki ${page.title}`} onClick={() => open(page.pageId)}>
+            <BookText size={13} /><span>{page.title}</span><OpenLabel>Visualizar</OpenLabel><ChevronRight size={14} />
           </Row>
         ))}
     </Wrap>

@@ -251,6 +251,8 @@ pausada.
 - Alternância clara entre catálogo preparado, dashboards e construtor declarativo.
 - Indicadores exibem definição, unidade, período e última atualização.
 - Filtros ativos permanecem visíveis e são preservados durante drill-down e exportação.
+- Linhas de filtros e métricas permanecem contidas no painel em desktop e mobile; a ação de remoção fica
+  alinhada ao bloco correspondente, sem sobrepor ou escapar do construtor.
 - Estados de carregamento, vazio, erro e correção pendente são distintos.
 - Relatórios e indicadores ocultos não aparecem em menus, catálogo, construtor ou exportação.
 - Cores não são o único meio de comunicar estado ou variação.
