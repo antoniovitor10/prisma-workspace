@@ -6,7 +6,7 @@ authority_hierarchy:
   - "2. AGENTS.md / DECISIONS.md / ROADMAP.md"
   - "3. Histórias de usuário em stories/"
   - "4. Especificações em specs/*.md (status: approved)"
-  - "5. Grafo de Workflow (workflows/feature.yaml) e Perfil de Execução (profiles/runrun-loop.yaml)"
+  - "5. Grafo de Workflow (workflows/feature.yaml) e Perfil de Execução (profiles/prisma-loop.yaml)"
   - "6. Agent Contracts (agents/*.yaml) e saídas do loop engine"
 
 story_catalog: "stories/catalog.json"

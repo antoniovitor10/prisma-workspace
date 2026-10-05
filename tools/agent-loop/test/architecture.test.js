@@ -8,7 +8,7 @@ const path = require('node:path');
 const { STATES, GATES, DEFAULT_MAX_ATTEMPTS } = require('../lib/constants');
 
 const FEATURE_YAML_PATH = path.join(__dirname, '..', '..', '..', 'workflows', 'feature.yaml');
-const PROFILE_YAML_PATH = path.join(__dirname, '..', '..', '..', 'profiles', 'runrun-loop.yaml');
+const PROFILE_YAML_PATH = path.join(__dirname, '..', '..', '..', 'profiles', 'prisma-loop.yaml');
 
 const featureYaml = fs.readFileSync(FEATURE_YAML_PATH, 'utf8');
 const profileYaml = fs.readFileSync(PROFILE_YAML_PATH, 'utf8');
@@ -138,7 +138,7 @@ test('37 every graph node appears in engine_mapping', () => {
 
 test('38 G-COMPLETION is declared in graph, profile and engine', () => {
   assert.ok(featureYaml.includes('G-COMPLETION'), 'G-COMPLETION missing from feature.yaml');
-  assert.ok(profileYaml.includes('G-COMPLETION'), 'G-COMPLETION missing from runrun-loop.yaml');
+  assert.ok(profileYaml.includes('G-COMPLETION'), 'G-COMPLETION missing from prisma-loop.yaml');
   assert.equal(GATES.G_COMPLETION, 'G-COMPLETION');
 });
 
@@ -146,7 +146,7 @@ test('39 all seven human gates are declared in profile and graph', () => {
   const expectedGates = ['G-SPEC', 'G-MIGRATION', 'G-WORKFLOW', 'G-HISTORY', 'G-DEPLOY', 'G-SCOPE', 'G-COMPLETION'];
   for (const gate of expectedGates) {
     assert.ok(featureYaml.includes(gate), `"${gate}" missing from feature.yaml`);
-    assert.ok(profileYaml.includes(gate), `"${gate}" missing from runrun-loop.yaml`);
+    assert.ok(profileYaml.includes(gate), `"${gate}" missing from prisma-loop.yaml`);
   }
   assert.deepEqual(Object.values(GATES).sort(), expectedGates.sort());
 });

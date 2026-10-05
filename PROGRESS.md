@@ -1,3 +1,15 @@
+## [2026-10-05] — Codex — organização local pelo Maestri (D92)
+
+- PO aprovou reunir aplicação e landing num monorepo e remover cópias locais Prisma/Runrun.
+- Base main `9d48f1d`, branch `chore/maestri-workspace`; aplicação na raiz, landing em `apps/landing`.
+- Recuperação privada verificada antes de remoção: arquivos não reconstruíveis, pendências, patches e bundles Git.
+- Perfil operacional renomeado para `profiles/prisma-loop.yaml`; antigos catálogos/contagens de governança reconciliados.
+- Histórias/spec IA recuperadas como draft; colisão D90 reconciliada para D91, sem aprovar gates de implementação.
+- Sem publicação, alteração de banco, hooks ou agentes novos. Plano/equipe/limitações em `docs/workspace/README.md`.
+- Os cinco andares agora contêm duas notas cada, espelhadas em `docs/workspace/floors`; terminais de shell
+  usados somente para colocar notas foram removidos. Nenhuma sessão de IA nova foi iniciada.
+- Validação e relatório final em `docs/workspace/validation.md`; próximo passo é selecionar a frente executável.
+
 ## [2026-09-22] - Codex - ambiente local com atualização automática
 
 - PO solicitou explicitamente instalação por comandos, banco Docker, atualização ao editar e guia simplificado; confirmou manter SQL Server no container. Solução: `npm run dev` na raiz, Compose separado com banco, SDK .NET 8/dotnet watch e Vite, credenciais aleatórias em `.env.dev`, volumes persistentes e portas loopback 5400/5450. `npm run dev:stop` preserva os dados.
@@ -247,7 +259,7 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 ## [2026-09-10] — Codex — login conforme referência HTML e preparação de publicação
 - **Fiz:** apliquei ao login real o prisma SVG do HTML fornecido, wordmark leve com A espectral, composição central, pilares maiores e botão azul/violeta/laranja. Preservados cadastro, confirmação, recuperação, tema e autenticação. Mobile mantém formulário prioritário sem painel decorativo extenso.
 - **Validação:** build com `tsc -b` aprovado; Vitest 81/81; suíte existente 65 E2E aprovados/4 skips condicionais; novo teste de layout e recuperação aprovado em desktop/mobile. Capturas locais inspecionadas. Testes .NET 141/141 no checkpoint de integração anterior.
-- **Publicação concluída:** commit `b1b8ad4` publicado via `ssh vps` em `https://prisma.nordevs.com.br`. Backup SQL com RESTORE VERIFYONLY aprovado: `/home/dev/backups/prisma/20260910T143234Z/PrismaWorkspace.bak`; imagem anterior preservada como `prisma-rollback:20260910T143234Z`. Verificação pública Chromium: HTTP 200, prisma carregado, desktop/mobile sem overflow, navegação à recuperação de senha funcional e zero pageerrors; `/health` healthy. Não foi enviado e-mail nem executada a suíte mutável em produção. Extensão Codex/Chrome indisponível nesta sessão; sem Orca.
+- **Publicação concluída:** commit `b1b8ad4` publicado via `ssh vps` em `https://prisma.nordevs.com.br`. Backup SQL com RESTORE VERIFYONLY aprovado: `/home/dev/backups/prisma/20260910T143234Z/PrismaWorkspace.bak`; imagem anterior preservada como `prisma-rollback:20260910T143234Z`. Verificação pública Chromium: HTTP 200, prisma carregado, desktop/mobile sem overflow, navegação à recuperação de senha funcional e zero pageerrors; `/health` healthy. Não foi enviado e-mail nem executada a suíte mutável em produção. Extensão Codex/Chrome indisponível nesta sessão; sem orquestrador anterior.
 - **Escopo preservado:** alternativa `feat/trilho-projetos` não integrada; convite por projeto permanece pendente.
 
 ## [2026-09-10] — Codex — retomada da integração e regressões Stage→Project
@@ -492,7 +504,7 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 - **Decisões novas:** D72 define `/home` como entrada autenticada orientada a dados reais. D73 define as três naturezas e exclui IA; a implementação da natureza continua condicionada a `G-SPEC` e `G-MIGRATION`, com `G-WORKFLOW` somente se etapas forem automatizadas.
 - **Testes:** frontend build aprovado; lint sem erros e com 8 avisos legados; Vitest **46/46**; Playwright E2E **37/37** desktop/mobile; Context Explorer **42/42**. Build Docker de produção aprovado; `/health`, `/`, bundle principal e `Home-BsOxAk8M.js` responderam 200, e o chunk publicado contém a nova mensagem da Home. Logs pós-deploy sem erros de inicialização.
 - **Próximo passo:** PO revisar e aprovar a `SPEC-WORK-NATURE` antes de qualquer alteração de domínio/schema; depois definir backfill e aprovar `G-MIGRATION`. A home pode ser homologada visualmente pela extensão do Codex no Chrome quando ela estiver exposta à sessão.
-- **Bloqueios:** a extensão do Codex no Chrome não está disponível nas ferramentas desta sessão; por orientação do PO, Orca não foi usado. Backup recuperável do frontend anterior: `/tmp/runrun-web-before-home-task039-20260903.tgz` no VPS.
+- **Bloqueios:** a extensão do Codex no Chrome não está disponível nas ferramentas desta sessão; por orientação do PO, orquestrador anterior não foi usado. Backup recuperável do frontend anterior: `/tmp/runrun-web-before-home-task039-20260903.tgz` no VPS.
 
 ## [2026-09-03] — Codex — Consultas segmentadas publicadas; revisão visual no Chrome pendente
 - **Fiz:** Registrei as aprovações humanas de `G-SCOPE` e `G-SPEC`, consolidei a D71 e implementei a aba `Itens` no workspace do projeto. A entrega segmenta Todos, Épicos, Features, Product backlog, Bugs e Tarefas; mostra contagens e propriedades; oferece compositor E/OU com busca, prioridade, quadro, etapa, agrupamento e ordenação; serializa a consulta na URL; permite salvar/excluir consultas pessoais reutilizando `SavedFilter`; e impede que essas definições apareçam no seletor de filtros do Kanban. Refinei também o login para se aproximar do mockup D68, com melhor ocupação vertical, prisma maior e ondas espectrais. O frontend foi sincronizado no VPS com preservação dos arquivos de ambiente, reconstruído e publicado em `https://runrun.nordevs.com.br`.
@@ -500,7 +512,7 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 - **Decisões novas:** D71 — primeira versão usa compositor visual, URL não sensível e consultas pessoais; linguagem textual, SQL, API/exportação e persistência nova ficam fora do escopo.
 - **Testes:** build local e Docker de produção aprovados; Vitest **45/45**; Playwright E2E **37/37** desktop/mobile; lint sem erros e apenas 8 avisos legados; HTTPS `/` e `/health` responderam 200; bundles publicados contêm `Compositor visual` e `Minhas consultas`. Backup recuperável do frontend anterior em `/tmp/runrun-web-before-task038-20260903.tgz` no VPS.
 - **Próximo passo:** conectar/ativar a extensão do Codex no Chrome, abrir a URL de produção e concluir a inspeção visual iterativa solicitada; só então encerrar TASK-038/Fase 10.
-- **Bloqueios:** a extensão do Codex no Chrome não foi exposta à sessão atual. Por solicitação do PO, Orca não será usado como substituto. A entrega permanece `in_progress` até essa inspeção visual final.
+- **Bloqueios:** a extensão do Codex no Chrome não foi exposta à sessão atual. Por solicitação do PO, orquestrador anterior não será usado como substituto. A entrega permanece `in_progress` até essa inspeção visual final.
 
 ## [2026-09-03] — Codex — Renovação visual Prisma concluída e validada
 - **Fiz:** Executei a `SPEC-PRISMA-VISUAL-SYSTEM` aprovada: consolidei tokens e primitivas reutilizáveis, refiz o login responsivo com a composição do mockup oficial, reforcei marca e tema claro/escuro e refinei topbar, contexto, Projetos, Meu trabalho, Kanban, Relatórios e Configurações. No mobile, preservei o seletor de organização em formato compacto e garanti nome acessível ao CTA de novo item. Incorporei padrões de densidade útil, troca de contexto e ações rápidas inspirados no ClickUp, sem copiar sua identidade. Também registrei o novo pedido funcional em `US-PROJECT-QUERIES-001`, `SPEC-PROJECT-WORK-ITEM-QUERIES` e TASK-038, mantida pausada para definição humana de escopo e aprovação da spec.
@@ -781,7 +793,7 @@ Formato:
 - **Próximo passo:** PO escolher se a árvore respeita a D36 ou aceita profundidade ilimitada; confirmar a composição integrada do detalhe; definir se a herança dinâmica de status parte da organização ou de configuração global única; depois promover as specs pelos respectivos G-SPEC/G-SCOPE. Representar o E2E condicional de D40 no profile exige G-WORKFLOW.
 - **Bloqueios:** TASK-001/002/003 concluídas. TASK-004 a TASK-016 continuam bloqueadas enquanto suas specs permanecerem `draft`. O executor local está funcional, mas ativar a política condicional de E2E no profile ainda requer G-WORKFLOW explícito.
 
-## [2026-08-20] — Codex + agentes Orca — Execução SDD orientada pelo documento de requisitos
+## [2026-08-20] — Codex + agentes orquestrador anterior — Execução SDD orientada pelo documento de requisitos
 - **Fiz:** Auditei visualmente as 7 páginas de `docs/ProjetoRunrun-Detran.docx.pdf`, confrontei requisitos, 21 specs, backlog e código com cinco agentes coordenados em paralelo. Pelo fluxo SDD, executei apenas tarefas cobertas pela `SPEC-PROJECT-STRUCTURE` aprovada: concluí a TASK-002, substituindo os rótulos visuais "Metodologia" por "Estrutura de Trabalho" e adicionando cobertura Vitest/Playwright; concluí a TASK-003 ao confirmar que projetos Kanban já não criam Sprint automaticamente e adicionar um teste de regressão EF Core. Corrigi o ambiente E2E local, seletores Playwright, isolamento Vitest, um teste .NET incompatível com a janela de tolerância de refresh token, paths reais do backlog e contadores canônicos do Context Explorer para as 21 specs. Atualizei specs/backlog apenas com inconsistências comprovadas; nenhuma spec foi autoaprovada, nenhuma migration foi criada e nenhum gate humano foi contornado.
 - **Arquivos tocados:** `backlog.md`, specs auditadas em `specs/`, `src/Detran.Kanban.Web/src/pages/Projects.tsx`, `src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx`, testes Vitest/Playwright/xUnit, configuração Playwright/Vitest, scripts E2E, scanner/testes do `tools/context-explorer` e `PROGRESS.md`.
 - **Decisões novas:** Nenhuma decisão de produto. A inclusão de XP continua bloqueada em G-SCOPE porque contradiz D20; as demais implementações continuam bloqueadas por G-SPEC nas specs em `draft` e por perguntas de escopo registradas nas próprias specs.

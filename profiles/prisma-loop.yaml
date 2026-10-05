@@ -1,5 +1,5 @@
 version: "1.0"
-name: "runrun-loop"
+name: "prisma-loop"
 description: "Perfil de execução do loop AI-Native com comandos reais e registro de gates ausentes"
 
 working_directories:

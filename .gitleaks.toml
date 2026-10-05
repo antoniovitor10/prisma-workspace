@@ -4,6 +4,7 @@ useDefault = true
 [allowlist]
 description = "Arquivos locais ignorados pelo Git e dependências reconstruíveis"
 paths = [
+  '''(^|[\\/])(\.local|\.maestri)([\\/]|$)''',
   '''(^|[\\/])\.env$''',
   '''(^|[\\/])node_modules([\\/]|$)''',
   '''(^|[\\/])(bin|obj|dist|coverage|test-results|playwright-report|blob-report)([\\/]|$)''',

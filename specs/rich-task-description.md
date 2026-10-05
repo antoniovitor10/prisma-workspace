@@ -1,4 +1,4 @@
-# SPEC-RICH-TASK-DESCRIPTION
+# SPEC-RICH-TASK-DESCRIPTION: Descrição rica da tarefa
 
 **Status:** approved
 **Aprovação humana:** pedido direto do PO em 2026-09-21 para criar a descrição como a referência, “bem grande, fácil de mexer e com essas funcionalidades”; ampliado pelo pedido direto de 2026-09-22: “preciso colar imagem também na parte de descrição, quero algo mais fluído”. Sem migration.
@@ -23,7 +23,7 @@
 - Outros pontos que exibem descrição como texto devem converter HTML para texto legível, sem renderização insegura.
 - Limite atual de 4.000 caracteres permanece vigente.
 
-## Validação
+## Critérios de aceite
 
 - Testes de componente cobrem formatação, salvamento e expansão.
 - E2E cobre edição, colagem e persistência da imagem após reabrir, anexos e viewport desktop/mobile.

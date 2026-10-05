@@ -120,7 +120,7 @@ Em caso de divergência ou ambiguidade, prevalece a seguinte cadeia estrita:
 2. `AGENTS.md` / `DECISIONS.md` / `ROADMAP.md`
 3. Histórias de usuário em `stories/` como intenção funcional humana rastreável
 4. Especificações em `specs/*.md` (status `approved`) como contrato funcional e técnico
-5. Grafo de Workflow (`workflows/feature.yaml`) e Perfil (`profiles/runrun-loop.yaml`)
+5. Grafo de Workflow (`workflows/feature.yaml`) e Perfil (`profiles/prisma-loop.yaml`)
 6. Agentes (`agents/*.yaml`) e saídas do loop engine
 
 ### 3. Spec-Driven Development (SDD)
@@ -159,7 +159,7 @@ Em caso de divergência ou ambiguidade, prevalece a seguinte cadeia estrita:
 - **Especificações Canônicas:** `specs/`
 - **Índice de Contexto:** `context/index.yaml`
 - **Grafo de Workflow:** `workflows/feature.yaml`
-- **Perfil de Execução do Loop:** `profiles/runrun-loop.yaml`
+- **Perfil de Execução do Loop:** `profiles/prisma-loop.yaml`
 - **Contratos de Agentes:** `agents/`
 - **Backlog Estruturado:** `backlog.md`
 - **Proposta de Arquitetura AI-Native:** `AI-NATIVE-V0.md`
@@ -190,4 +190,20 @@ O Context Explorer inclui um painel funcional para visualizar e aprovar Human Ga
    - `GET /api/model` — regenerar e retornar model.json
 
 ## Fase atual
-**Rebrand Prisma WorkSpace (D68) em andamento — MVP técnico preservado; próximo foco: open source, identidade e gaps do documento de análise (D69).** (Atualizar esta linha a cada fase.)
+Organização local pelo Maestri concluída em 2026-10-05. Estado e próximos resultados em
+`docs/workspace/README.md`; o plano histórico de release segue em `docs/OPEN-SOURCE-PLAN.md`.
+
+## Coordenação e memória
+- Workspace único: Prisma no Maestri. Reutilizar o terminal Planejador; não iniciar agentes sem demanda.
+- Raiz local: `C:\Users\Vitor\Desktop\prisma`. Landing: `apps/landing`, sem Git aninhado.
+- Uma entrega que afete API, frontend e landing permanece no mesmo andar.
+- Os andares de planejamento não têm isolamento; trabalhos simultâneos exigem branches/worktrees próprios.
+  Criar o isolamento somente quando a execução começar. Não editar a mesma raiz por dois agentes.
+- `.local/` contém recuperação privada. Nunca carregar seus arquivos em massa, versionar, publicar ou copiá-los
+  para andares. Manifesto e orientações em `.local/recovery/20261005/README.md`.
+- Garantir ai-memory ativo em `http://127.0.0.1:49374`; iniciar pelo script idempotente já instalado se necessário.
+- Escopo estável em `.ai-memory.toml`: workspace `default`, projeto `prisma-workspace`.
+  Consultar handoff e decisões no início; registrar o que foi feito, falhou e como continuar ao terminar.
+- Não modificar hooks do Codex/Claude Code. Não usar o orquestrador anterior para este projeto.
+- Não ler históricos de conversas antes de conferir nomes/identificadores com o PO. Não enviar mensagens externas.
+- Textos novos devem ser escritos sem emojis, ícones ou emoticons.

@@ -18,7 +18,7 @@ function parseScalar(rawValue) {
 }
 
 /**
- * Parses only the versioned execution contract used by runrun-loop.yaml.
+ * Parses only the versioned execution contract used by prisma-loop.yaml.
  * It intentionally is not a general-purpose YAML parser.
  */
 function parseExecutionProfile(text) {

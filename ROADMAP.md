@@ -1,3 +1,7 @@
+# Estado atual do workspace — 2026-10-05
+
+Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, spec draft, gates próprios pendentes. D92 autoriza somente a organização local.
+
 # ROADMAP - fases do projeto
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source

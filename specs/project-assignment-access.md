@@ -1,4 +1,4 @@
-# SPEC-PROJECT-ASSIGNMENT-ACCESS
+# SPEC-PROJECT-ASSIGNMENT-ACCESS: Acesso ao projeto para atribuição
 
 **Status:** approved
 **Aprovacao humana:** em 2026-09-22 o PO escolheu explicitamente "Exigir acesso ao projeto antes de atribuir a tarefa" para resolver E14.
@@ -13,7 +13,7 @@
 5. Minha Trabalho nao expoe itens sem acesso ao projeto. Vínculos antigos inconsistentes nao sao apagados automaticamente; ficam para revisao administrativa.
 6. Nao ampliar autorizacao de leitura de projetos/quadros como efeito da atribuicao. Sem migration nem exclusao de dados.
 
-## Testes
+## Critérios de aceite
 
 - Atribuicao a membro com acesso: aceita; sem acesso, outro tenant ou inativo: recusada.
 - Regra aplicada a responsavel principal e adicional, inclusive update/create/bulk/automacao quando houver atribuicao.

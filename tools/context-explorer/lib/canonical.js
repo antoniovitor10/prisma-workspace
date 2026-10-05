@@ -3,7 +3,7 @@
 // Constantes canonicas derivadas de:
 // - workflows/feature.yaml (processNodes, processEdges, humanGates)
 // - tools/agent-loop/lib/constants.js (engineStates, engineEdges)
-// - profiles/runrun-loop.yaml (maxAttempts, stopOnFirstGateFailure)
+// - profiles/prisma-loop.yaml (maxAttempts, stopOnFirstGateFailure)
 // - specs/*.md (canonicalSpecs, templateNotSpec)
 // - tools/agent-loop/test/*.test.js (loopEngineTests)
 module.exports = {
@@ -22,8 +22,8 @@ module.exports = {
   ],
   maxAttempts: 3,
   stopOnFirstGateFailure: true,
-  canonicalSpecs: 40,
-  canonicalTasks: 42,
+  canonicalSpecs: 48,
+  canonicalTasks: 108,
   templateNotSpec: true,
   loopEngineTests: 47
 };

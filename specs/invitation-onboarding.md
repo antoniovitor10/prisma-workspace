@@ -1,4 +1,4 @@
-# SPEC-INVITATION-ONBOARDING
+# SPEC-INVITATION-ONBOARDING: Convites e entrada na organização
 
 **Status:** approved
 **Aprovação humana:** PO em 2026-09-19: “pode implementar e apagar o usuario ai eu testo”, seguido de “pode colocar em produlção”. Aprova G-SPEC e G-DEPLOY deste recorte. Sem migration.
@@ -16,9 +16,9 @@
 - Após concluir, emitir sessão pelo mecanismo existente, selecionar a organização, limpar convite pendente e abrir a aplicação.
 - Erros de cadastro duplicado e senha divergente em português. Não registrar senhas ou tokens.
 
-## Validação
+## Critérios de aceite
 
-Testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação divergente, replay, expiração, cancelamento, organização inativa e concorrência. Preservar cadastro público e suíte E2E.
+- Testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação divergente, replay, expiração, cancelamento, organização inativa e concorrência. Preservar cadastro público e suíte E2E.
 
 ## Operação
 

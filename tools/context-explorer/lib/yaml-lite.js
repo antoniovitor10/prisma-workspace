@@ -3,7 +3,7 @@
 // Mini parser YAML (subset) - zero dependencias.
 //
 // Suporta apenas o subset realmente usado nos arquivos deste repositorio
-// (context/index.yaml, workflows/feature.yaml, profiles/runrun-loop.yaml,
+// (context/index.yaml, workflows/feature.yaml, profiles/prisma-loop.yaml,
 // agents/*.yaml):
 //   - Indentacao de exatamente 2 espacos por nivel (tabs NAO suportadas).
 //   - Mapas (`chave: valor` ou `chave:` seguido de bloco filho).

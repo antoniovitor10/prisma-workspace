@@ -47,3 +47,7 @@ remote_*
 .codex-remote-stage
 output
 tools/context-explorer/web/screenshots
+
+# Recuperação privada e isolamento local
+/.local/
+/.maestri/
