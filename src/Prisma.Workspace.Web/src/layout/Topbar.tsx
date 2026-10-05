@@ -66,7 +66,7 @@ const BrandLink = styled(Link)`
   text-decoration: none;
 
   > .label {
-    @media (max-width: 900px) { display: none; }
+    @media (max-width: 1320px) { display: none; }
   }
 
   > .label em {
@@ -99,11 +99,7 @@ const Nav = styled.nav`
   align-items: center;
   gap: 2px;
   min-width: 0;
-  flex: 0 1 auto;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar { display: none; }
+  flex: 0 0 auto;
 
   @media (max-width: 768px) { display: none; }
 `;
@@ -134,9 +130,18 @@ const NavItem = styled(NavLink)`
     font-weight: 800;
   }
 
-  /* Em telas médias o ícone some para caber mais rótulos no cabeçalho. */
-  @media (max-width: 1180px) {
+  /* Em notebooks, preserva todos os rótulos e recupera espaço ocultando os ícones. */
+  @media (max-width: 1320px) {
     > svg { display: none; }
+  }
+
+  /* Antes do menu mobile, cada destino vira um ícone com nome acessível e tooltip. */
+  @media (max-width: 1100px) {
+    width: 34px;
+    justify-content: center;
+    padding: 0;
+    > svg { display: block; }
+    > .nav-label { display: none; }
   }
 `;
 
@@ -170,7 +175,7 @@ const SearchButton = styled.button`
   }
 
   &:hover { border-color: ${({ theme }) => theme.color.borderStrong}; box-shadow: ${({ theme }) => theme.shadow.sm}; }
-  @media (max-width: 900px) { width: 34px; min-width: 34px; span, kbd { display: none; } }
+  @media (max-width: 1320px) { width: 34px; min-width: 34px; span, kbd { display: none; } }
 `;
 
 const OrganizationPicker = styled.label`
@@ -192,7 +197,7 @@ const OrganizationPicker = styled.label`
     font-weight: 750;
   }
 
-  @media (max-width: 860px) { svg { display: none; } select { width: 110px; } }
+  @media (max-width: 1320px) { svg { display: none; } select { width: 110px; } }
 
   @media (max-width: 600px) {
     position: relative;
@@ -241,7 +246,7 @@ const Primary = styled.button`
 
   box-shadow: 0 6px 16px rgba(79,70,229,.2);
   &:hover { transform: translateY(-1px); box-shadow: 0 9px 20px rgba(219,39,119,.24); }
-  @media (max-width: 480px) { padding: 0 9px; span { display: none; } }
+  @media (max-width: 1100px) { padding: 0 9px; span { display: none; } }
 `;
 
 
@@ -261,7 +266,7 @@ const ActiveTimer = styled.button`
   font-weight: 800;
 
   span { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  @media (max-width: 820px) { span { display: none; } }
+  @media (max-width: 1320px) { span { display: none; } }
   @media (max-width: 520px) { display: none; }
 `;
 
@@ -644,9 +649,9 @@ export function Topbar() {
         {/* desktop nav global (D88) */}
         <Nav aria-label="Navegação principal">
           {navItems.map(({ to, label, icon: Icone, end }) => (
-            <NavItem key={to} to={to} end={end}>
+            <NavItem key={to} to={to} end={end} aria-label={label} title={label}>
               <Icone size={14} />
-              {label}
+              <span className="nav-label">{label}</span>
             </NavItem>
           ))}
         </Nav>

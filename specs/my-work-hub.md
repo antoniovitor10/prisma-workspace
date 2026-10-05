@@ -47,6 +47,8 @@ Faixa de indicadores no topo, cada um clicável e levando à lista filtrada corr
 Lista principal, agrupável por **prazo**, **projeto** ou **sprint**, com a escolha lembrada por pessoa.
 
 - Cada linha mostra número, título, projeto, coluna atual, prioridade e prazo.
+- Clicar ou usar Enter/Espaço em uma linha abre imediatamente a gaveta completa da tarefa, sem sair de
+  `Meu trabalho`; ações próprias da linha, como Kanban e timer, continuam independentes.
 - Ordenação padrão: atrasadas primeiro, depois por prazo crescente, depois por prioridade.
 - Filtro rápido por projeto e por sprint.
 - A tarefa abre na gaveta de detalhe, sem sair da página.
@@ -103,6 +105,8 @@ apontamento nenhum. Atalho para a tela de tempo. Nunca exibe custo, valor-hora o
 - **Dado** que a pessoa participa de um projeto sem ser responsável por nenhuma tarefa, **então** o projeto
   aparece com contagem zero, e não some da lista.
 - **Dado** um agrupamento escolhido em "Minhas tarefas", **então** ele é lembrado na próxima visita.
+- **Dado** uma tarefa na fila, **quando** a pessoa clica na linha, **então** o detalhe completo abre na mesma
+  página e pode ser fechado sem perder o filtro atual.
 
 ## Contratos de API
 

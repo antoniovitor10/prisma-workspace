@@ -41,7 +41,7 @@ test('colunas independentes, transferência e exclusão preservam tarefa e hist�
   await page.getByRole('button', {name:'Abrir detalhes de ' + name + ' tarefa', exact:true}).click();
   const dialog = page.locator('[role="dialog"][aria-describedby^="task-description-"]');
   await expect(dialog).toBeVisible();
-  await dialog.getByText('Transferir tarefa para outro quadro', { exact:true }).click();
+  await dialog.locator('summary').getByText('Transferir tarefa', { exact:true }).click();
   await dialog.getByLabel('Quadro de destino', { exact:true }).selectOption(b.data);
   await dialog.getByLabel('Coluna de destino', { exact:true }).selectOption(bStages[0].id);
   await dialog.getByRole('button',{name:'Transferir tarefa',exact:true}).click();

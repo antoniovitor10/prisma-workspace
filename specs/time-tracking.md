@@ -146,6 +146,10 @@ Os endpoints necessários para corrigir e excluir apontamentos são gaps; seus c
 ## Interface
 
 - Deve oferecer cronômetro e lançamento manual.
+- No detalhe da tarefa, a visão principal consolida o tempo por responsável e informa o primeiro início, o
+  último fim ou estado em andamento e o total acumulado de cada pessoa.
+- Cada intervalo individual, sua observação e duração permanecem disponíveis no `Log de apontamentos`,
+  recolhido por padrão para não competir com o resumo operacional.
 - Deve permitir que o proprietário altere e exclua seus apontamentos e que administradores autorizados façam o mesmo dentro de seu escopo.
 - Deve permitir apontamentos em tarefas concluídas.
 - Deve comunicar claramente conflitos de sobreposição e estouro do limite diário.
@@ -183,6 +187,8 @@ Os endpoints necessários para corrigir e excluir apontamentos são gaps; seus c
 - **Dado** um usuário comum, **quando** tentar alterar ou excluir apontamento de terceiro, **então** a operação é negada sem vazamento de dados.
 - **Dado** uma tarefa concluída e acessível, **quando** houver lançamento ou correção de horas, **então** a operação segue as mesmas regras de uma tarefa aberta.
 - **Dado** um apontamento válido, **quando** for persistido, **então** ele é contabilizado imediatamente, sem aprovação.
+- **Dado** vários apontamentos da mesma pessoa na tarefa, **quando** o detalhe é aberto, **então** a visão
+  principal apresenta uma linha consolidada e o log preserva cada intervalo individual.
 - **Dado** um relatório ou agrupamento diário, **quando** os registros forem projetados, **então** os limites de dia seguem o horário de Brasília.
 
 ## Testes e evidências exigidos

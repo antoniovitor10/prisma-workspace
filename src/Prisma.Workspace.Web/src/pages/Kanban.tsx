@@ -35,6 +35,7 @@ import {
   BarChart2,
   Trash2,
   Pencil,
+  ArrowUpDown,
   ArrowRight as ArrowRightIcon
 } from 'lucide-react';
 import {
@@ -52,6 +53,10 @@ import {
   KanbanGrid,
   Column,
   ColumnHeader,
+  ColumnHeaderMain,
+  ColumnHeaderActions,
+  ColumnActionButton,
+  ColumnSortControl,
   ColumnTitle,
   CardCount,
   CardList,
@@ -76,6 +81,8 @@ import {
   Input,
   Textarea,
   ModalActions,
+  StageModalActions,
+  DangerButton,
   SubmitButton,
   CancelButton,
   TimerWrapper,
@@ -426,9 +433,6 @@ export const Kanban: React.FC = () => {
   const [newBoardTeamId, setNewBoardTeamId] = useState('');
   const [projectTeams, setProjectTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [newStageName, setNewStageName] = useState('');
-  // Sem escolha explícita, toda coluna nascia como "em andamento" — inclusive uma
-  // chamada "Concluído" — e as tarefas nela nunca eram contadas como concluídas.
-  const [newStageCategory, setNewStageCategory] = useState<StageCategoryValue>(StageCategory.InProgress);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemSubtitle, setNewItemSubtitle] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
@@ -765,9 +769,11 @@ export const Kanban: React.FC = () => {
       const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
       if (!projectId) throw new Error('Projeto do quadro não encontrado.');
       const nextPos = stages.length > 0 ? Math.max(...stages.map(s => s.position)) + 100 : 100;
-      await api.createStage(projectId, newStageName, nextPos, { category: newStageCategory, boardId: selectedBoardId });
+      // A criação é intencionalmente simples: toda nova coluna começa operacional.
+      // Caso represente outra etapa do fluxo, a reclassificação é feita em "Editar
+      // Coluna", onde a interface explica e confirma o impacto sobre as tarefas.
+      await api.createStage(projectId, newStageName, nextPos, { category: StageCategory.InProgress, boardId: selectedBoardId });
       setNewStageName('');
-      setNewStageCategory(StageCategory.InProgress);
       setShowStageModal(false);
       await loadBoardData(selectedBoardId);
     } catch {
@@ -1423,12 +1429,53 @@ export const Kanban: React.FC = () => {
                   $isDraggingAny={draggedItemId !== null}
                 >
                   <ColumnHeader>
-                    <ColumnTitle as="h2"><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                    <ColumnHeaderMain>
+                      <ColumnTitle as="h2"><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                      <ColumnHeaderActions>
+                        <CardCount>{itemsInStage.length}</CardCount>
+                        <ColumnActionButton
+                          type="button"
+                          title={`Editar coluna ${stage.name}`}
+                          aria-label={`Editar coluna ${stage.name}`}
+                          onClick={() => handleOpenEditStage(stage)}
+                        >
+                          <Pencil size={13} />
+                        </ColumnActionButton>
+                        <ColumnActionButton
+                          type="button"
+                          $danger
+                          title={`Excluir coluna ${stage.name}`}
+                          aria-label={`Excluir coluna ${stage.name}`}
+                          onClick={() => handleOpenEditStage(stage)}
+                        >
+                          <Trash2 size={13} />
+                        </ColumnActionButton>
+                        <ColumnActionButton
+                          type="button"
+                          title={`Mover coluna ${stage.name} para a esquerda`}
+                          aria-label={`Mover coluna ${stage.name} para a esquerda`}
+                          disabled={stages.indexOf(stage) === 0}
+                          onClick={() => handleMoveStage(stage.id, 'left')}
+                        >
+                          <ChevronLeft size={14} />
+                        </ColumnActionButton>
+                        <ColumnActionButton
+                          type="button"
+                          title={`Mover coluna ${stage.name} para a direita`}
+                          aria-label={`Mover coluna ${stage.name} para a direita`}
+                          disabled={stages.indexOf(stage) === stages.length - 1}
+                          onClick={() => handleMoveStage(stage.id, 'right')}
+                        >
+                          <ChevronRight size={14} />
+                        </ColumnActionButton>
+                      </ColumnHeaderActions>
+                    </ColumnHeaderMain>
+                    <ColumnSortControl>
+                      <span><ArrowUpDown size={13}/>Ordenar</span>
                       <select
                         aria-label={`Ordenar cartões da coluna ${stage.name}`}
                         value={columnSort}
                         onChange={event => setColumnSorts(current => ({ ...current, [stage.id]: event.target.value as KanbanCardSort }))}
-                        style={{ maxWidth: 120, minHeight: 26, padding: '0 4px', border: '1px solid #CBD5E1', borderRadius: 5, color: theme.color.textMutedAccessible, fontSize: 11 }}
                       >
                         <option value="position">Ordem manual</option>
                         <option value="priority">Prioridade</option>
@@ -1436,40 +1483,7 @@ export const Kanban: React.FC = () => {
                         <option value="title">Título</option>
                         <option value="created">Mais recentes</option>
                       </select>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CardCount>
-                        {itemsInStage.length}
-                      </CardCount>
-                      <button
-                        type="button"
-                        title={`Editar coluna ${stage.name}`}
-                        aria-label={`Editar coluna ${stage.name}`}
-                        onClick={() => handleOpenEditStage(stage)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        title={`Mover coluna ${stage.name} para a esquerda`}
-                        aria-label={`Mover coluna ${stage.name} para a esquerda`}
-                        disabled={stages.indexOf(stage) === 0}
-                        onClick={() => handleMoveStage(stage.id, 'left')}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === 0 ? 0.3 : 1 }}
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        title={`Mover coluna ${stage.name} para a direita`}
-                        aria-label={`Mover coluna ${stage.name} para a direita`}
-                        disabled={stages.indexOf(stage) === stages.length - 1}
-                        onClick={() => handleMoveStage(stage.id, 'right')}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, color: '#94A3B8', background: 'transparent', border: 'none', cursor: 'pointer', opacity: stages.indexOf(stage) === stages.length - 1 ? 0.3 : 1 }}
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
+                    </ColumnSortControl>
                   </ColumnHeader>
 
                   <CardList>
@@ -1817,15 +1831,6 @@ export const Kanban: React.FC = () => {
                 required
                 autoFocus
               />
-              <Select
-                aria-label="Classificação da coluna"
-                value={newStageCategory}
-                onChange={e => setNewStageCategory(Number(e.target.value) as StageCategoryValue)}
-              >
-                {stageCategoryOptions.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </Select>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowStageModal(false)}>Cancelar</CancelButton>
                 <SubmitButton type="submit">Adicionar</SubmitButton>
@@ -1865,22 +1870,38 @@ export const Kanban: React.FC = () => {
                 </> : <p>Carregando impacto da alteração...</p>}
               </div>}
               <label htmlFor="remove-stage-destination">Ao excluir, transferir tarefas para</label>
-              <Select id="remove-stage-destination" value={deleteStageDestination} onChange={e=>setDeleteStageDestination(e.target.value)}>
+              <Select id="remove-stage-destination" value={deleteStageDestination} onChange={e=>{setDeleteStageDestination(e.target.value);setEditStageError('');}}>
                 <option value="">Escolha uma coluna de destino</option>
                 {stages.filter(stage=>stage.id!==editingStage.id).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
               </Select>
-              <button type="button" disabled={editStagePending} onClick={async()=>{
+              {editStageError && (
+                <div role="alert" style={{ color: '#EF4444', fontSize: '13px', marginTop: '4px' }}>
+                  {editStageError}
+                </div>
+              )}
+              <StageModalActions role="group" aria-label="Ações da coluna">
+              <DangerButton
+                type="button"
+                disabled={editStagePending}
+                onClick={async()=>{
+                const affectedItems=workItems.filter(item=>item.stageId===editingStage.id);
+                const destination=stages.find(stage=>stage.id===deleteStageDestination);
+                if(affectedItems.length>0&&!destination){
+                  setEditStageError(`Escolha para qual coluna transferir ${affectedItems.length} tarefa(s) antes de excluir.`);
+                  return;
+                }
+                setEditStageError('');
+                const confirmed=window.confirm(affectedItems.length>0
+                  ? `Excluir a coluna "${editingStage.name}"? ${affectedItems.length} tarefa(s) serão transferidas para "${destination!.name}".`
+                  : `Excluir a coluna vazia "${editingStage.name}"? Esta ação não pode ser desfeita.`);
+                if(!confirmed)return;
                 setEditStagePending(true);setEditStageError('');
                 try { await api.deleteStage(editingStage.id,deleteStageDestination||undefined);setShowEditStageModal(false);setEditingStage(null);setDeleteStageDestination('');await loadBoardData(selectedBoardId); }
                 catch(error) { setEditStageError((error as Error).message); }
                 finally { setEditStagePending(false); }
-              }}>Excluir coluna</button>
-              {editStageError && (
-                <div style={{ color: '#EF4444', fontSize: '13px', marginTop: '4px' }}>
-                  {editStageError}
-                </div>
-              )}
-              <ModalActions>
+              }}
+              ><Trash2 size={15}/>Excluir coluna</DangerButton>
+              <div>
                 <CancelButton
                   type="button"
                   onClick={() => { setShowEditStageModal(false); setEditingStage(null); }}
@@ -1891,7 +1912,8 @@ export const Kanban: React.FC = () => {
                 <SubmitButton type="submit" disabled={editStagePending}>
                   {editStagePending ? 'Salvando…' : 'Salvar'}
                 </SubmitButton>
-              </ModalActions>
+              </div>
+              </StageModalActions>
             </ModalForm>
           </Modal>
         </ModalOverlay>

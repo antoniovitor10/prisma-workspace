@@ -92,12 +92,24 @@ const Mini = styled.button`
   font-weight: 750;
 `;
 
-const RowEditor = styled.div`
+const RowEditor = styled.div<{ $hasSecondaryValue?: boolean }>`
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) minmax(78px, .75fr) minmax(75px, 1fr) minmax(75px, .8fr) auto;
-  gap: 5px;
+  grid-template-areas: ${({ $hasSecondaryValue }) => $hasSecondaryValue
+    ? "'primary secondary remove' 'value secondary-value remove'"
+    : "'primary secondary remove' 'value value remove'"};
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+  gap: 6px;
   margin-top: 6px;
+  padding: 7px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.neutral[50]};
+  .editor-primary { grid-area: primary; }
+  .editor-secondary { grid-area: secondary; }
+  .editor-value { grid-area: value; }
+  .editor-secondary-value { grid-area: secondary-value; }
   select, input {
+    width: 100%;
     min-width: 0;
     min-height: 31px;
     padding: 0 7px;
@@ -107,8 +119,19 @@ const RowEditor = styled.div`
     color: ${({ theme }) => theme.color.text};
     font-size: 12px;
   }
-  button { color: ${({ theme }) => theme.color.danger}; }
-  @media (max-width: 560px) { grid-template-columns: 1fr 1fr; }
+  button {
+    display: inline-grid;
+    grid-area: remove;
+    width: 34px;
+    min-height: 100%;
+    place-items: center;
+    border: 1px solid ${({ theme }) => theme.color.danger}33;
+    border-radius: ${({ theme }) => theme.radius.sm};
+    background: ${({ theme }) => theme.color.surface};
+    color: ${({ theme }) => theme.color.danger};
+    &:hover { background: ${({ theme }) => theme.color.danger}0d; }
+    &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.danger}; outline-offset: 1px; }
+  }
 `;
 
 const Toggle = styled.label`
@@ -414,22 +437,22 @@ export function ReportBuilder({ projectId }: { projectId?: string }) {
         </label>)}</Columns>
 
         <SectionTitle>Filtros <Mini type="button" onClick={() => setDefinition(current => ({ ...current, filters: [...current.filters, { field: selectedSource?.fields[0]?.key ?? '', operator: 'eq', value: '' }] }))}><Plus size={11} />Adicionar</Mini></SectionTitle>
-        {definition.filters.map((filter, index) => <RowEditor key={index}>
-          <select aria-label="Campo do filtro" value={filter.field} onChange={event => updateFilter(index, { field: event.target.value })}>{selectedSource?.fields.map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select>
-          <select aria-label="Operador" value={filter.operator} onChange={event => updateFilter(index, { operator: event.target.value })}>{catalogQuery.data?.filterOperators.map(operator => <option key={operator} value={operator}>{operatorNames[operator] ?? operator}</option>)}</select>
-          <input aria-label="Valor do filtro" disabled={filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty'} value={filter.value ?? ''} onChange={event => updateFilter(index, { value: event.target.value })} placeholder={filter.operator === 'in' ? 'valor 1, valor 2' : 'valor'} />
-          {filter.operator === 'between' && <input aria-label="Valor final do filtro" value={filter.valueTo ?? ''} onChange={event => updateFilter(index, { valueTo: event.target.value })} placeholder="valor final" />}
+        {definition.filters.map((filter, index) => <RowEditor key={index} $hasSecondaryValue={filter.operator === 'between'} role="group" aria-label={`Filtro ${index + 1}`}>
+          <select className="editor-primary" aria-label="Campo do filtro" value={filter.field} onChange={event => updateFilter(index, { field: event.target.value })}>{selectedSource?.fields.map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select>
+          <select className="editor-secondary" aria-label="Operador" value={filter.operator} onChange={event => updateFilter(index, { operator: event.target.value })}>{catalogQuery.data?.filterOperators.map(operator => <option key={operator} value={operator}>{operatorNames[operator] ?? operator}</option>)}</select>
+          <input className="editor-value" aria-label="Valor do filtro" disabled={filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty'} value={filter.value ?? ''} onChange={event => updateFilter(index, { value: event.target.value })} placeholder={filter.operator === 'in' ? 'valor 1, valor 2' : 'valor'} />
+          {filter.operator === 'between' && <input className="editor-secondary-value" aria-label="Valor final do filtro" value={filter.valueTo ?? ''} onChange={event => updateFilter(index, { valueTo: event.target.value })} placeholder="valor final" />}
           <button type="button" aria-label="Remover filtro" onClick={() => setDefinition(current => ({ ...current, filters: current.filters.filter((_, currentIndex) => currentIndex !== index) }))}><Trash2 size={13} /></button>
         </RowEditor>)}
 
         <SectionTitle>Métricas <Mini type="button" onClick={() => setDefinition(current => ({ ...current, metrics: [...current.metrics, { operation: 1, label: 'Contagem' }] }))}><Plus size={11} />Adicionar</Mini></SectionTitle>
-        {definition.metrics.map((metric, index) => <RowEditor key={index}>
-          <select aria-label="Operação" value={metric.operation} onChange={event => {
+        {definition.metrics.map((metric, index) => <RowEditor key={index} role="group" aria-label={`Métrica ${index + 1}`}>
+          <select className="editor-primary" aria-label="Operação" value={metric.operation} onChange={event => {
             const operation = Number(event.target.value);
             updateMetric(index, { operation, field: operation === 1 || operation === 7 ? undefined : operation === 4 ? selectedSource?.fields[0]?.key : numericFields[0]?.key, label: metricNames[operation] });
           }}>{catalogQuery.data?.metrics.map(operation => <option key={operation} value={operation}>{metricNames[operation]}</option>)}</select>
-          <select aria-label="Campo da métrica" disabled={metric.operation === 1 || metric.operation === 7} value={metric.field ?? ''} onChange={event => updateMetric(index, { field: event.target.value })}>{(metric.operation === 4 ? selectedSource?.fields ?? [] : numericFields).map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select>
-          <input aria-label="Rótulo da métrica" value={metric.label} onChange={event => updateMetric(index, { label: event.target.value })} />
+          <select className="editor-secondary" aria-label="Campo da métrica" disabled={metric.operation === 1 || metric.operation === 7} value={metric.field ?? ''} onChange={event => updateMetric(index, { field: event.target.value })}>{(metric.operation === 4 ? selectedSource?.fields ?? [] : numericFields).map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select>
+          <input className="editor-value" aria-label="Rótulo da métrica" value={metric.label} onChange={event => updateMetric(index, { label: event.target.value })} />
           <button type="button" aria-label="Remover métrica" onClick={() => setDefinition(current => ({ ...current, metrics: current.metrics.filter((_, currentIndex) => currentIndex !== index) }))}><Trash2 size={13} /></button>
         </RowEditor>)}
 

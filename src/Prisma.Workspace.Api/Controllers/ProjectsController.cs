@@ -26,6 +26,10 @@ public class ProjectsController : ControllerBase
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
         => Ok(await _mediator.Send(new GetProjectQuery(id, UserId), ct));
 
+    [HttpGet("{id:guid}/access")]
+    public async Task<IActionResult> GetAccess(Guid id, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetProjectCapabilitiesQuery(id, UserId), ct));
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateProjectRequest request, CancellationToken ct)
     {

@@ -209,12 +209,75 @@ export const Column = styled.div<{ $isDropTarget?: boolean; $isDraggingAny?: boo
 `;
 
 export const ColumnHeader = styled.div`
-  min-height: 52px;
-  padding: 13px 15px;
+  min-height: 78px;
+  padding: 12px 13px;
   border-bottom: 1px solid ${props => props.theme.color.border};
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+`;
+
+export const ColumnHeaderMain = styled.div`
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+`;
+
+export const ColumnHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+`;
+
+export const ColumnActionButton = styled.button<{ $danger?: boolean }>`
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: ${props => props.theme.radius.md};
+  background: transparent;
+  color: ${props => props.$danger ? props.theme.color.danger : props.theme.color.textMuted};
+  cursor: pointer;
+
+  &:hover:not(:disabled), &:focus-visible {
+    border-color: ${props => props.$danger ? '#FECACA' : props.theme.color.border};
+    background: ${props => props.$danger ? '#FEF2F2' : props.theme.color.surface};
+    color: ${props => props.$danger ? '#B42318' : props.theme.color.text};
+  }
+
+  &:disabled { cursor: not-allowed; opacity: .32; }
+`;
+
+export const ColumnSortControl = styled.label`
+  display: grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: ${props => props.theme.color.textMuted};
+  font-size: 11px;
+  font-weight: ${props => props.theme.fontWeight.bold};
+
+  > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  > select {
+    width: 100%;
+    min-width: 0;
+    min-height: 30px;
+    padding: 0 26px 0 8px;
+    border: 1px solid ${props => props.theme.color.border};
+    border-radius: ${props => props.theme.radius.md};
+    background: ${props => props.theme.color.surface};
+    color: ${props => props.theme.color.text};
+    font-size: 12px;
+    font-weight: ${props => props.theme.fontWeight.medium};
+  }
+  > select:focus-visible { outline: 2px solid ${props => props.theme.color.accentBlueAccessible}; outline-offset: 1px; }
 `;
 
 export const ColumnTitle = styled.h3`
@@ -525,6 +588,38 @@ export const ModalActions = styled.div`
   justify-content: flex-end;
   gap: ${props => props.theme.space[3]};
   margin-top: ${props => props.theme.space[2]};
+`;
+
+export const StageModalActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${props => props.theme.space[3]};
+  margin-top: ${props => props.theme.space[2]};
+  padding-top: ${props => props.theme.space[4]};
+  border-top: 1px solid ${props => props.theme.color.border};
+
+  > div { display: flex; align-items: center; gap: ${props => props.theme.space[3]}; }
+  @media (max-width: 520px) { align-items: stretch; flex-direction: column-reverse; > div { display: grid; grid-template-columns:1fr 1fr; } }
+`;
+
+export const DangerButton = styled.button`
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]};
+  border: 1px solid #FECACA;
+  border-radius: ${props => props.theme.radius.md};
+  background: #FEF2F2;
+  color: #B42318;
+  font-size: ${props => props.theme.fontSize.sm};
+  font-weight: ${props => props.theme.fontWeight.bold};
+  transition: ${props => props.theme.transition};
+
+  &:hover:not(:disabled) { border-color: ${props => props.theme.color.danger}; background: #FEE2E2; }
+  &:disabled { cursor: not-allowed; opacity: .5; }
 `;
 
 export const SubmitButton = styled.button`
