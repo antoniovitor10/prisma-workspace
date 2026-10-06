@@ -8,6 +8,8 @@ O setup inicial concede a flag ao administrador que cria a instalação; instala
 explícita por operação administrativa no servidor. Não há concessão dessa flag por endpoints de tenant.
 **G-MIGRATION:** aprovado pelo PO em 2026-10-06 para `20261006134545_Add_AiAssistant_Foundation`,
 com validação primeiro no banco E2E dedicado. Publicação em produção é uma etapa posterior.
+**G-DEPLOY:** aprovado pelo PO em 2026-10-06 pelo pedido "e pode subir já", após a validação E2E.
+A mesma migration aditiva será promovida com backup verificado e manifesto autorizado atualizado.
 
 ## Objective
 Entregar a primeira fatia da D91: o Administrador da instalação conecta um modelo, as organizações ligam a IA, e

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-05T00:00:00.000Z",
+  "generatedAt": "2026-10-06T15:08:55.175008+00:00",
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
@@ -6487,5 +6487,5 @@
       "origin": "migrated_from_approved_spec"
     }
   ],
-  "reconciliationNote": "Catálogo anterior preservado; somente specs sem histórias receberam derivações. Intenção humana da fundação IA recuperada da fonte local de 2026-09-24; spec permanece draft."
+  "reconciliationNote": "Catálogo anterior preservado; somente specs sem histórias receberam derivações. Intenção humana da fundação IA recuperada da fonte local de 2026-09-24; SPEC-AI-001 aprovada pelo PO em 2026-10-06."
 }

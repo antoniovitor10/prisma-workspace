@@ -14,7 +14,7 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
   chat privado com fontes/streaming, mascaramento, painéis de configuração/consumo e cotas.
 - Migration `20261006134545_Add_AiAssistant_Foundation` aplicada somente ao SQL Server E2E.
   Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
-  Publicação e aplicação em produção ficam para G-DEPLOY próprio.
+  G-DEPLOY autorizado pelo PO em 2026-10-06; publicação em andamento pelo CI após migration com backup verificado.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source

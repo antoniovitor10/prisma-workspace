@@ -1,3 +1,10 @@
+## [2026-10-06] - Codex - preparação da publicação IA autorizada
+
+- PO autorizou publicar a fundação IA validada: "e pode subir já". G-DEPLOY registrado e G-MIGRATION estendido à promoção da mesma migration aditiva após E2E. Conta indicada pelo PO conferida no Identity para a promoção explícita da flag, sem derivá-la de perfis da organização.
+- Branch de release criada a partir da main `53d323b`, com produto IA e dependências de spec/história/contexto selecionados. Consolidação de workspace, landing, renomeação de profile e organização local D92 preservadas fora desta publicação.
+- Preflight de produção: aplicação saudável; banco e manifesto com 26 migrations. SQL idempotente da única migration nova gerado entre D89 e IA; manifesto candidato com 27. Operação usa o lock do deploy, backup `COPY_ONLY/CHECKSUM/RESTORE VERIFYONLY`, verificação de schema e atualização explícita do manifesto.
+- Código de produto é o mesmo já validado localmente com 250 testes backend, 126 frontend e 109 E2E aprovados (dois retries de mobile e seis skips condicionais). Governança desta composição de release: 42 testes aprovados. A pipeline validará e promoverá a imagem desta branch ao publicar na main; resultado da publicação será registrado após a execução.
+
 ## [2026-10-06] - Codex - fundação do assistente IA implementada e validada no E2E
 
 - SPEC-AI-001 implementada na branch local `feat/ai-assistant-foundation`, TASK-AI-001. PO aprovou G-SPEC, escolheu flag `AspNetUsers.IsPlatformAdministrator` independente dos perfis da organização (G-SCOPE/TASK-117) e autorizou G-MIGRATION para `20261006134545_Add_AiAssistant_Foundation`, primeiro no E2E. Aprovações humanas registradas no Context Explorer, atribuídas a Vitor. TASK-117 mantém seu restante de control plane fora deste recorte.
