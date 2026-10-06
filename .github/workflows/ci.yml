@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -11,7 +12,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   backend:
@@ -78,5 +79,82 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Test deployment guards
+        run: python3 -m unittest discover -s scripts/tests
       - name: Build image
-        run: docker build --tag prisma-workspace:ci .
+        run: docker build --label org.opencontainers.image.revision=${{ github.sha }} --tag prisma-workspace:${{ github.sha }} .
+      - name: Export candidate
+        run: |
+          mkdir -p image
+          docker save prisma-workspace:${{ github.sha }} | gzip -n > image/prisma-image.tar.gz
+          cd image
+          sha256sum prisma-image.tar.gz > prisma-image.sha256
+          python3 ../scripts/deployment-manifest.py > migrations.json
+      - name: Store candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: prisma-image-${{ github.sha }}
+          path: image/
+          compression-level: 0
+          retention-days: 3
+
+  e2e:
+    name: E2E (SQL Server, desktop e mobile)
+    needs: container
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Download candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: prisma-image-${{ github.sha }}
+          path: image/
+      - name: Validate and load candidate
+        run: |
+          cd image
+          sha256sum --check prisma-image.sha256
+          docker load --input prisma-image.tar.gz
+      - name: Test candidate
+        run: bash scripts/ci-e2e.sh prisma-workspace:${{ github.sha }}
+
+  deploy:
+    name: Deploy produção
+    needs: [backend, frontend, context-explorer, container, e2e]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://prisma.nordevs.com.br
+    concurrency:
+      group: prisma-production
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Download candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: prisma-image-${{ github.sha }}
+          path: image/
+      - name: Publish candidate
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_SSH_KEY" && test -n "$DEPLOY_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/prisma-deploy
+          chmod 600 ~/.ssh/prisma-deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          remote="/home/dev/prisma-deploy/incoming/$DEPLOY_SHA"
+          ssh -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "mkdir -p '$remote' && chmod 700 '$remote'"
+          scp -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes image/* scripts/deploy-production.py "$target:$remote/"
+          ssh -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "python3 '$remote/deploy-production.py' '$DEPLOY_SHA'"

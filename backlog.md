@@ -1,3 +1,5 @@
+> Estado atual e prioridades: [painel do workspace](docs/workspace/README.md). Os IDs e as 108 tarefas abaixo são preservados; nenhum status é concluído ou reaberto pela consolidação local. Conferir evidências mais recentes antes de executar.
+
 # Backlog Implementável - Prisma WorkSpace
 
 Este arquivo contém o backlog estruturado de tarefas derivadas das especificações técnicas do projeto.
@@ -1435,7 +1437,8 @@ A recomendação técnica é a Opção A. Nenhuma delas foi escolhida; o backfil
 
 ```yaml
 - id: TASK-BUG-001
-  spec: SPEC-WORKFLOW-STATUS (specs/workflow-status.md) + SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec: SPEC-WORKFLOW-STATUS (specs/workflow-status.md)
+  spec_reference_original: "SPEC-WORKFLOW-STATUS (specs/workflow-status.md) + SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)"
   requirement: Fazer a coluna ser a unica fonte funcional de status e de conclusao da tarefa, corrigindo o relato do PO de que concluir no Kanban nao atualiza.
   lote: core-domain-v2
   domain: workflow
@@ -1492,7 +1495,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
 
 ```yaml
 - id: TASK-100
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Expor Stage.Category nos contratos de leitura de coluna (StageDto e consumidores).
   dependencies: []
   risk: baixo
@@ -1506,7 +1510,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-101
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Permitir classificar a coluna como aberta ou concluida na gestao de colunas do Kanban.
   dependencies: [TASK-100]
   risk: medio
@@ -1520,7 +1525,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-102
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Fazer o Kanban enviar a classificacao ao criar coluna e eliminar o default silencioso InProgress.
   dependencies: [TASK-101]
   risk: medio
@@ -1534,7 +1540,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-103
-  spec: SPEC-WORKFLOW-STATUS
+  spec: SPEC-WORKFLOW-STATUS (specs/workflow-status.md)
+  spec_reference_original: "SPEC-WORKFLOW-STATUS"
   requirement: Usar exclusivamente o nome da coluna como status textual da tarefa em todas as superficies.
   dependencies: [TASK-100, TASK-BUG-001]
   risk: alto
@@ -1548,7 +1555,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-104
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Reclassificar coluna com confirmacao de impacto, conclusao atomica e descendencia recursiva (D62), nos dois sentidos.
   dependencies: [TASK-101, TASK-121]
   risk: alto
@@ -1562,7 +1570,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-105
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Produzir relatorio de colunas candidatas a concluida e, apos decisao humana, aplicar o backfill de Stage.Category.
   dependencies: [TASK-101]
   risk: alto
@@ -1576,7 +1585,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-106
-  spec: SPEC-WORKFLOW-STATUS
+  spec: SPEC-WORKFLOW-STATUS (specs/workflow-status.md)
+  spec_reference_original: "SPEC-WORKFLOW-STATUS"
   requirement: Retirar WorkflowStatus, templates e transicoes do governo do status, preservando dados e codigo como legado tecnico.
   dependencies: [TASK-103]
   risk: alto
@@ -1592,7 +1602,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-107
-  spec: SPEC-QUICK-CREATE-WORK-ITEM
+  spec: SPEC-QUICK-CREATE-WORK-ITEM (specs/quick-create-work-item.md)
+  spec_reference_original: "SPEC-QUICK-CREATE-WORK-ITEM"
   requirement: Exigir titulo, projeto, responsavel, quadro e coluna na criacao de tarefa, na API e na UI.
   dependencies: [TASK-101]
   risk: alto
@@ -1608,7 +1619,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-108
-  spec: SPEC-QUICK-CREATE-WORK-ITEM
+  spec: SPEC-QUICK-CREATE-WORK-ITEM (specs/quick-create-work-item.md)
+  spec_reference_original: "SPEC-QUICK-CREATE-WORK-ITEM"
   requirement: Remover BoardIds[] do contrato de criacao e consolidar a posicao operacional singular da D52.
   dependencies: [TASK-107]
   risk: alto
@@ -1623,7 +1635,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-109
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Adicionar IsArchived/ArchivedAt ao Board e arquivar o quadro junto com suas tarefas, com restauracao por administrador.
   dependencies: [TASK-110]
   risk: alto
@@ -1638,7 +1651,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-110
-  spec: SPEC-USER-ACCESS-PERMISSIONS
+  spec: SPEC-USER-ACCESS-PERMISSIONS (specs/user-access-permissions.md)
+  spec_reference_original: "SPEC-USER-ACCESS-PERMISSIONS"
   requirement: Criar a permissao configuravel Administrar quadros em PlatformPermission e aplica-la nas operacoes de quadro e coluna.
   dependencies: []
   risk: medio
@@ -1652,7 +1666,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-111
-  spec: SPEC-USER-ACCESS-PERMISSIONS
+  spec: SPEC-USER-ACCESS-PERMISSIONS (specs/user-access-permissions.md)
+  spec_reference_original: "SPEC-USER-ACCESS-PERMISSIONS"
   requirement: Adicionar o escopo Board a PermissionScope e implementar o acesso derivado Quadro para Projetos.
   dependencies: [TASK-110]
   risk: alto
@@ -1667,7 +1682,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-112
-  spec: SPEC-USER-ACCESS-PERMISSIONS
+  spec: SPEC-USER-ACCESS-PERMISSIONS (specs/user-access-permissions.md)
+  spec_reference_original: "SPEC-USER-ACCESS-PERMISSIONS"
   requirement: Reduzir OrganizationRole aos cinco perfis-base da D55, com mapeamento verificavel dos dez perfis atuais.
   dependencies: [TASK-111]
   risk: alto
@@ -1683,7 +1699,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-113
-  spec: SPEC-USER-ACCESS-PERMISSIONS
+  spec: SPEC-USER-ACCESS-PERMISSIONS (specs/user-access-permissions.md)
+  spec_reference_original: "SPEC-USER-ACCESS-PERMISSIONS"
   requirement: Eliminar a hierarquia fixa ProjectRole e migrar suas concessoes para o modelo de escopos.
   dependencies: [TASK-112]
   risk: alto
@@ -1697,7 +1714,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-114
-  spec: SPEC-USER-ACCESS-PERMISSIONS
+  spec: SPEC-USER-ACCESS-PERMISSIONS (specs/user-access-permissions.md)
+  spec_reference_original: "SPEC-USER-ACCESS-PERMISSIONS"
   requirement: Permitir perfis personalizados reutilizaveis por conjunto de permissoes, sem conceder autoridade que o criador nao possui.
   dependencies: [TASK-112]
   risk: alto
@@ -1711,7 +1729,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-115
-  spec: SPEC-PROJECT-MANAGEMENT
+  spec: SPEC-PROJECT-MANAGEMENT (specs/project-management.md)
+  spec_reference_original: "SPEC-PROJECT-MANAGEMENT"
   requirement: Reduzir ProjectStatus a Ativo e Arquivado com backfill dos cinco estados atuais.
   dependencies: []
   risk: alto
@@ -1727,7 +1746,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-116
-  spec: SPEC-PROJECT-MANAGEMENT
+  spec: SPEC-PROJECT-MANAGEMENT (specs/project-management.md)
+  spec_reference_original: "SPEC-PROJECT-MANAGEMENT"
   requirement: Arquivar e restaurar projeto com suas tarefas de forma transacional, sem arquivar os quadros transversais.
   dependencies: [TASK-115, TASK-109]
   risk: alto
@@ -1740,7 +1760,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-117
-  spec: SPEC-ORGANIZATIONS
+  spec: SPEC-ORGANIZATIONS (specs/organizations.md)
+  spec_reference_original: "SPEC-ORGANIZATIONS"
   requirement: Criar a autoridade de Administrador da plataforma fora dos perfis do tenant, com seletor de organizacoes exclusivo.
   dependencies: [TASK-112]
   risk: alto
@@ -1756,7 +1777,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-118
-  spec: SPEC-ORGANIZATIONS
+  spec: SPEC-ORGANIZATIONS (specs/organizations.md)
+  spec_reference_original: "SPEC-ORGANIZATIONS"
   requirement: Impor membership unica para usuario comum e ocultar o seletor de organizacao para quem nao e Administrador da plataforma.
   dependencies: [TASK-117]
   risk: alto
@@ -1769,7 +1791,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-119
-  spec: SPEC-ORGANIZATIONS
+  spec: SPEC-ORGANIZATIONS (specs/organizations.md)
+  spec_reference_original: "SPEC-ORGANIZATIONS"
   requirement: Arquivar e restaurar organizacao com leitura restrita ao control plane e bloqueio de escrita.
   dependencies: [TASK-117]
   risk: alto
@@ -1782,7 +1805,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-120
-  spec: SPEC-WORK-ITEM-MANAGEMENT
+  spec: SPEC-WORK-ITEM-MANAGEMENT (specs/work-item-management.md)
+  spec_reference_original: "SPEC-WORK-ITEM-MANAGEMENT"
   requirement: Criar lixeira de 7 dias do WorkItem distinta de arquivar, com escolha sobre subtarefas, reparenting a avo e restauracao familiar.
   dependencies: []
   risk: alto
@@ -1797,7 +1821,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P1
 
 - id: TASK-121
-  spec: SPEC-WORK-ITEM-MANAGEMENT
+  spec: SPEC-WORK-ITEM-MANAGEMENT (specs/work-item-management.md)
+  spec_reference_original: "SPEC-WORK-ITEM-MANAGEMENT"
   requirement: Condicionar a conclusao do pai a todas as subtarefas concluidas e oferecer acao atomica de concluir a familia.
   dependencies: [TASK-BUG-001]
   risk: alto
@@ -1810,7 +1835,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P0
 
 - id: TASK-122
-  spec: SPEC-PROJECT-KEY-AUTO-GENERATION
+  spec: SPEC-PROJECT-KEY-AUTO-GENERATION (specs/project-key-auto-generation.md)
+  spec_reference_original: "SPEC-PROJECT-KEY-AUTO-GENERATION"
   requirement: Remover o prefixo de chave tecnica das referencias de tarefa exibidas na interface, preservando o uso interno.
   dependencies: []
   risk: baixo
@@ -1823,7 +1849,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P2
 
 - id: TASK-123
-  spec: SPEC-PROJECT-METHODOLOGY-HIDDEN
+  spec: SPEC-PROJECT-METHODOLOGY-HIDDEN (specs/project-methodology-hidden.md)
+  spec_reference_original: "SPEC-PROJECT-METHODOLOGY-HIDDEN"
   requirement: Remover methodology dos contratos de leitura consumidos pela UI, mantendo a coluna por compatibilidade.
   dependencies: []
   risk: baixo
@@ -1837,7 +1864,8 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
   priority: P2
 
 - id: TASK-124
-  spec: SPEC-BOARDS-STAGES-WIP
+  spec: SPEC-BOARDS-STAGES-WIP (specs/boards-stages-wip.md)
+  spec_reference_original: "SPEC-BOARDS-STAGES-WIP"
   requirement: Completar a reordenacao de colunas com arraste, preservando os botoes acessiveis ja existentes.
   dependencies: [TASK-101]
   risk: baixo
@@ -1858,7 +1886,8 @@ antes da aprovação humana.
 
 ```yaml
 - id: TASK-200
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Criar SprintProject e Sprint.OrganizationId no dominio, na configuracao EF e nos indices.
   dependencies: []
   risk: alto
@@ -1873,7 +1902,8 @@ antes da aprovação humana.
   priority: P0
 
 - id: TASK-201
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Migration incremental com backfill idempotente e verificavel de Sprint.ProjectId para SprintProject.
   dependencies: [TASK-200]
   risk: alto
@@ -1887,7 +1917,8 @@ antes da aprovação humana.
   priority: P0
 
 - id: TASK-202
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Calcular o estado da sprint pelas datas, remover Iniciar sprint e a exclusividade de sprint ativa.
   dependencies: [TASK-201]
   risk: alto
@@ -1902,7 +1933,8 @@ antes da aprovação humana.
   priority: P0
 
 - id: TASK-203
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Endpoints de projetos participantes, com remocao exigindo destino atomico das tarefas vinculadas.
   dependencies: [TASK-201]
   risk: alto
@@ -1916,7 +1948,8 @@ antes da aprovação humana.
   priority: P0
 
 - id: TASK-204
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Validar que o projeto da tarefa participa da sprint antes de aceitar o vinculo.
   dependencies: [TASK-203]
   risk: medio
@@ -1930,7 +1963,8 @@ antes da aprovação humana.
   priority: P0
 
 - id: TASK-205
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Implementar DELETE de sprint transacional que remove somente o SprintId das tarefas.
   dependencies: [TASK-203]
   risk: medio
@@ -1944,7 +1978,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-206
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Trocar a autorizacao fixa por permissao configuravel avaliada em todos os projetos participantes.
   dependencies: [TASK-203, TASK-112, TASK-114]
   risk: alto
@@ -1958,7 +1993,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-207
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Metricas consolidadas e segmentaveis por projeto no dashboard e no quadro da sprint.
   dependencies: [TASK-204]
   risk: medio
@@ -1972,7 +2008,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-208
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Planejamento hierarquico atomico com criacao de sprint preservando a selecao atual.
   dependencies: [TASK-204]
   risk: medio
@@ -1986,7 +2023,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-209
-  spec: SPEC-S-003 v2
+  spec: SPEC-S-003 (specs/sprints.md)
+  spec_reference_original: "SPEC-S-003 v2"
   requirement: Encerramento da sprint exigindo destino explicito para as tarefas abertas, com rollback integral em falha.
   dependencies: [TASK-205]
   risk: alto
@@ -2000,7 +2038,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-210
-  spec: SPEC-KANBAN-VISUAL-ORDER
+  spec: SPEC-KANBAN-VISUAL-ORDER (specs/kanban-visual-order.md)
+  spec_reference_original: "SPEC-KANBAN-VISUAL-ORDER"
   requirement: Fazer a tarefa recem-criada entrar no topo da coluna escolhida, conforme D60.
   dependencies: []
   risk: baixo
@@ -2013,7 +2052,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-211
-  spec: SPEC-SEARCH-SAVED-FILTERS
+  spec: SPEC-SEARCH-SAVED-FILTERS (specs/search-saved-filters.md)
+  spec_reference_original: "SPEC-SEARCH-SAVED-FILTERS"
   requirement: Adicionar escopo Quadro atual ou Qualquer quadro acessivel ao SavedFilter.
   dependencies: []
   risk: medio
@@ -2027,7 +2067,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-212
-  spec: SPEC-SEARCH-SAVED-FILTERS
+  spec: SPEC-SEARCH-SAVED-FILTERS (specs/search-saved-filters.md)
+  spec_reference_original: "SPEC-SEARCH-SAVED-FILTERS"
   requirement: Revalidar criterios do filtro global por quadro e sinalizar por chip os criterios ignorados.
   dependencies: [TASK-211]
   risk: medio
@@ -2040,7 +2081,8 @@ antes da aprovação humana.
   priority: P1
 
 - id: TASK-213
-  spec: SPEC-B-001
+  spec: SPEC-B-001 (specs/backlog.md)
+  spec_reference_original: "SPEC-B-001"
   requirement: Serializar e restaurar filtros, item aberto, expansao e rolagem na URL do Product Backlog.
   dependencies: []
   risk: baixo
@@ -2060,7 +2102,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
 
 ```yaml
 - id: TASK-300
-  spec: SPEC-RESPONSIBLE-DISPLAY-NAME
+  spec: SPEC-RESPONSIBLE-DISPLAY-NAME (specs/responsible-display-name.md)
+  spec_reference_original: "SPEC-RESPONSIBLE-DISPLAY-NAME"
   requirement: Exigir nome completo no cadastro de novos usuarios, com fallback restrito a dados legados (D63).
   dependencies: []
   risk: medio
@@ -2074,7 +2117,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-301
-  spec: SPEC-RESPONSIBLE-DISPLAY-NAME
+  spec: SPEC-RESPONSIBLE-DISPLAY-NAME (specs/responsible-display-name.md)
+  spec_reference_original: "SPEC-RESPONSIBLE-DISPLAY-NAME"
   requirement: Garantir que novos snapshots historicos preservem o nome completo observado no momento do evento.
   dependencies: [TASK-300]
   risk: medio
@@ -2087,7 +2131,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P2
 
 - id: TASK-302
-  spec: SPEC-TASK-HISTORY
+  spec: SPEC-TASK-HISTORY (specs/task-history.md)
+  spec_reference_original: "SPEC-TASK-HISTORY"
   requirement: Substituir a aba Grafo de estados pela Linha do tempo textual das movimentacoes entre colunas (D61).
   dependencies: []
   risk: medio
@@ -2100,7 +2145,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-303
-  spec: SPEC-TASK-HISTORY
+  spec: SPEC-TASK-HISTORY (specs/task-history.md)
+  spec_reference_original: "SPEC-TASK-HISTORY"
   requirement: Remover TaskStateGraph e o endpoint de nos/arestas apos a Linha do tempo estar em producao.
   dependencies: [TASK-302]
   risk: baixo
@@ -2113,7 +2159,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P2
 
 - id: TASK-304
-  spec: SPEC-AUDIT-LEADTIME-HISTORY
+  spec: SPEC-AUDIT-LEADTIME-HISTORY (specs/audit-leadtime-history.md)
+  spec_reference_original: "SPEC-AUDIT-LEADTIME-HISTORY"
   requirement: Ocultar lead time e cycle time da interface, preservando a coleta interna.
   dependencies: []
   risk: baixo
@@ -2126,7 +2173,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-305
-  spec: SPEC-F-009
+  spec: SPEC-F-009 (specs/dependencies.md)
+  spec_reference_original: "SPEC-F-009"
   requirement: Ocultar dependencias, pre-requisitos e bloqueios da interface, sem apagar dados (D59).
   dependencies: []
   risk: medio
@@ -2140,7 +2188,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-306
-  spec: SPEC-F-009
+  spec: SPEC-F-009 (specs/dependencies.md)
+  spec_reference_original: "SPEC-F-009"
   requirement: Remover o efeito operacional de IsBlocked em filtros, badges, priorizacao, notificacoes, relatorios e automacoes.
   dependencies: [TASK-305]
   risk: alto
@@ -2154,7 +2203,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-307
-  spec: SPEC-TIME-TRACKING
+  spec: SPEC-TIME-TRACKING (specs/time-tracking.md)
+  spec_reference_original: "SPEC-TIME-TRACKING"
   requirement: Aplicar as regras aprovadas de precisao, jornada diaria, sobreposicao e timezone no apontamento.
   dependencies: []
   risk: medio
@@ -2167,7 +2217,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P1
 
 - id: TASK-308
-  spec: SPEC-TIME-TRACKING
+  spec: SPEC-TIME-TRACKING (specs/time-tracking.md)
+  spec_reference_original: "SPEC-TIME-TRACKING"
   requirement: Definir e implementar o comportamento do apontamento em tarefa concluida.
   dependencies: [TASK-307, TASK-BUG-001]
   risk: medio
@@ -2179,7 +2230,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P2
 
 - id: TASK-309
-  spec: SPEC-ATTACHMENTS
+  spec: SPEC-ATTACHMENTS (specs/attachments.md)
+  spec_reference_original: "SPEC-ATTACHMENTS"
   requirement: Implementar lixeira de 7 dias para anexos de tarefa, distinta da exclusao imediata atual.
   dependencies: []
   risk: medio
@@ -2193,7 +2245,8 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
   priority: P2
 
 - id: TASK-310
-  spec: SPEC-NOTIF-001
+  spec: SPEC-NOTIF-001 (specs/notifications-realtime.md)
+  spec_reference_original: "SPEC-NOTIF-001"
   requirement: Homologar notificacoes, preferencias por evento/canal e deduplicacao de lembretes.
   dependencies: []
   risk: baixo
@@ -2214,7 +2267,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
 
 ```yaml
 - id: TASK-400
-  spec: SPEC-GANTT-001
+  spec: SPEC-GANTT-001 (specs/gantt-planning.md)
+  spec_reference_original: "SPEC-GANTT-001"
   requirement: Ocultar Gantt e calendario do seletor de visoes do quadro, preservando componentes e dados.
   dependencies: []
   risk: baixo
@@ -2228,7 +2282,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-401
-  spec: SPEC-BULK-ACTIONS-AUTOMATIONS
+  spec: SPEC-BULK-ACTIONS-AUTOMATIONS (specs/bulk-actions-automations.md)
+  spec_reference_original: "SPEC-BULK-ACTIONS-AUTOMATIONS"
   requirement: Ocultar o editor de automacoes, preservando execucao, validacao e auditoria internas.
   dependencies: []
   risk: baixo
@@ -2241,7 +2296,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-402
-  spec: SPEC-BULK-ACTIONS-AUTOMATIONS
+  spec: SPEC-BULK-ACTIONS-AUTOMATIONS (specs/bulk-actions-automations.md)
+  spec_reference_original: "SPEC-BULK-ACTIONS-AUTOMATIONS"
   requirement: Definir o comportamento hierarquico das acoes em massa entre tarefa e subtarefa.
   dependencies: [TASK-121]
   risk: medio
@@ -2254,7 +2310,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P2
 
 - id: TASK-403
-  spec: SPEC-TOP-NAVIGATION-SHELL
+  spec: SPEC-TOP-NAVIGATION-SHELL (specs/top-navigation-shell.md)
+  spec_reference_original: "SPEC-TOP-NAVIGATION-SHELL"
   requirement: Remover layout/Sidebar.tsx, arquivo morto do shell anterior sem nenhum import.
   dependencies: []
   risk: baixo
@@ -2266,7 +2323,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P3
 
 - id: TASK-404
-  spec: SPEC-TEAMS
+  spec: SPEC-TEAMS (specs/teams.md)
+  spec_reference_original: "SPEC-TEAMS"
   requirement: Homologar equipes, lideranca, capacidade e desativacao logica com preservacao de vinculos.
   dependencies: []
   risk: baixo
@@ -2277,7 +2335,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P3
 
 - id: TASK-405
-  spec: SPEC-WIKI-001
+  spec: SPEC-WIKI-001 (specs/wiki-knowledge.md)
+  spec_reference_original: "SPEC-WIKI-001"
   requirement: Homologar wiki, anexos, organizacao de paginas, busca e restauracao de revisao.
   dependencies: []
   risk: baixo
@@ -2288,7 +2347,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P3
 
 - id: TASK-406
-  spec: SPEC-EXT-001 + SPEC-SLA-001
+  spec: SPEC-EXT-001 (specs/external-portal.md)
+  spec_reference_original: "SPEC-EXT-001 + SPEC-SLA-001"
   requirement: Homologar portal externo, protocolo, triagem, SLA e aprovacoes com dados reais.
   dependencies: []
   risk: medio
@@ -2299,7 +2359,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P3
 
 - id: TASK-407
-  spec: SPEC-DASHBOARDS-REPORTS
+  spec: SPEC-DASHBOARDS-REPORTS (specs/dashboards-reports.md)
+  spec_reference_original: "SPEC-DASHBOARDS-REPORTS"
   requirement: Homologar dashboards, construtor de relatorios e exportacao CSV sob autorizacao.
   dependencies: []
   risk: baixo
@@ -2310,7 +2371,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P3
 
 - id: TASK-408
-  spec: SPEC-PRISMA-VISUAL-SYSTEM + SPEC-AUTHENTICATED-HOME + SPEC-PROJECT-WORK-ITEM-QUERIES
+  spec: SPEC-PRISMA-VISUAL-SYSTEM (specs/prisma-visual-system.md)
+  spec_reference_original: "SPEC-PRISMA-VISUAL-SYSTEM + SPEC-AUTHENTICATED-HOME + SPEC-PROJECT-WORK-ITEM-QUERIES"
   requirement: Regressao visual e de acessibilidade das rotas principais depois das mudancas dos lotes anteriores.
   dependencies: [TASK-103, TASK-302, TASK-400, TASK-401]
   risk: medio
@@ -2325,7 +2387,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
 
 ```yaml
 - id: TASK-500
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Neutralizar os residuos institucionais Detran/runrun remanescentes em seed, documentacao e nomes visiveis.
   dependencies: []
   risk: medio
@@ -2336,7 +2399,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-501
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Escolher e aplicar a licenca do projeto; bloqueia a promocao publica.
   dependencies: []
   risk: alto
@@ -2348,7 +2412,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P0
 
 - id: TASK-502
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Corrigir o passivo npm de 5 altas e 28 moderadas em lotes testados, sem audit fix major automatico (D78).
   dependencies: []
   risk: medio
@@ -2359,7 +2424,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-503
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Fixar a dependencia transitiva moderada do NuGet (AngleSharp) na menor familia estavel compativel (D38).
   dependencies: []
   risk: baixo
@@ -2370,7 +2436,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P2
 
 - id: TASK-504
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Escrever e verificar a documentacao de instalacao, backup e restauracao da Community Edition.
   dependencies: []
   risk: medio
@@ -2381,7 +2448,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-505
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Gerar SBOM e proveniencia no CI, publicados junto aos artefatos.
   dependencies: [TASK-502, TASK-503]
   risk: baixo
@@ -2392,7 +2460,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P2
 
 - id: TASK-506
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Adotar SemVer e preparar a primeira release v0.1.0.
   dependencies: [TASK-501, TASK-505]
   risk: medio
@@ -2404,7 +2473,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-507
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Ensaiar instalacao limpa e upgrade em ambiente novo, comprovando preservacao de dados.
   dependencies: [TASK-504]
   risk: alto
@@ -2415,7 +2485,8 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   priority: P1
 
 - id: TASK-508
-  spec: D80
+  spec: D80 (DECISIONS.md)
+  spec_reference_original: "D80"
   requirement: Publicar o codigo do prisma-workspace em prisma.nordevs.com.br com backup previo, verificacao e rollback documentado.
   dependencies: [TASK-507]
   risk: alto
@@ -2436,7 +2507,8 @@ subindo com os dados preservados.
 
 ```yaml
 - id: TASK-600
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Inventariar as migrations aplicadas em producao e as criadas durante o programa, com hashes e ordem.
   dependencies: [TASK-508]
   risk: baixo
@@ -2447,7 +2519,8 @@ subindo com os dados preservados.
   priority: P1
 
 - id: TASK-601
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Definir a estrategia de consolidacao preservando __EFMigrationsHistory e os dados reais.
   dependencies: [TASK-600]
   risk: alto
@@ -2459,7 +2532,8 @@ subindo com os dados preservados.
   priority: P0
 
 - id: TASK-602
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Ensaiar a consolidacao em copia restaurada da base de producao, com verificacao de dados antes e depois.
   dependencies: [TASK-601]
   risk: alto
@@ -2470,7 +2544,8 @@ subindo com os dados preservados.
   priority: P0
 
 - id: TASK-603
-  spec: SPEC-OPEN-SOURCE-DISTRIBUTION
+  spec: SPEC-OPEN-SOURCE-DISTRIBUTION (specs/open-source-distribution.md)
+  spec_reference_original: "SPEC-OPEN-SOURCE-DISTRIBUTION"
   requirement: Aplicar a consolidacao com backup, verificacao pos-aplicacao e rollback documentado.
   dependencies: [TASK-602]
   risk: alto

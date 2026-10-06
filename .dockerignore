@@ -47,3 +47,6 @@ remote_*
 .codex-remote-stage
 output
 tools/context-explorer/web/screenshots
+
+# Recupera??o privada e worktrees locais
+.local/

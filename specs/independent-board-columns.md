@@ -1,4 +1,4 @@
-# SPEC-INDEPENDENT-BOARD-COLUMNS
+# SPEC-INDEPENDENT-BOARD-COLUMNS: Colunas independentes por quadro
 
 **Status:** approved
 
@@ -38,7 +38,7 @@ G-MIGRATION e G-WORKFLOW aprovados pelo PO em 2026-09-22: "Aprovo a migration e 
 - A migration falha antes de gravar quando encontra `WorkItem` sem quadro, etapa inexistente, ou etapa de projeto diferente do quadro; e falha se contagens de `WorkItems`, `StageHistories`, `TaskEvents` ou clones divergem do mapeamento calculado.
 - O `Down` é limitado ao rollback imediato sem novas colunas ou históricos nas clones. Depois de uso operacional, rollback exige restauração coordenada do backup; não se deve forçar uma reversão que descarte auditoria.
 
-## Validação
+## Critérios de aceite
 
 - .NET: isolamento de colunas, validação quadro/coluna/projeto/tenant, transferências atômicas, exclusão segura, concorrência e preservação do histórico.
 - React: quadro ativo claro, criação básica/cópia, coluna independente e destino explícito para movimentação.

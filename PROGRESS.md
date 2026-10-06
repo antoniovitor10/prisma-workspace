@@ -1,3 +1,11 @@
+## [2026-10-06] - Codex - publicação das melhorias e correção do deploy automático
+
+- PO solicitou publicar a main de 2026-10-05 (`7b519b7`) e corrigir o deploy automático antes do teste da IA. Trabalho isolado em `fix/automatic-deploy-20261006`; nenhuma spec de IA aprovada por esta entrega.
+- Causas: workflow só validava/buildava, sem etapa de publicação ou secrets SSH; governança falhava por contagens antigas, referências do backlog e catálogo incompleto. Correções reaproveitam a normalização local existente, preservando histórias humanas e acrescentando cobertura das specs atuais. Governança: 42/42 testes aprovados.
+- Pipeline: imagem por commit e checksum, E2E desktop/mobile em SQL Server descartável, deploy condicionado a todos os gates, chave SSH dedicada e verificação do host. Testes backend continuam sob demanda, conforme decisão anterior do PO.
+- Operação: preserva ambiente externo, rede, chaves, logs e anexos; backup SQL verificado antes de substituir; contêiner anterior mantido para rollback automático. Manifesto com 26 migrations comparado ao código de produção e às 26 migrations aplicadas; diferenças futuras bloqueiam a publicação sem G-MIGRATION.
+- Validação preparatória: actionlint aprovado, sintaxe Bash/Python aprovada, três testes de integridade/migrations/rollback aprovados. Próximo passo: execução real do CI/E2E e promoção da imagem somente se todos os gates passarem; evidência final será registrada no workspace e no ai-memory.
+
 ## [2026-10-05] - Codex - resumo de tempo e controles das colunas
 
 - Aprovação: o PO enviou três evidências solicitando tempo geral por responsável com detalhe exclusivo no log, melhor visualização dos botões do editor de coluna e melhor apresentação da ordenação por coluna.

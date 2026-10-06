@@ -22,8 +22,8 @@ module.exports = {
   ],
   maxAttempts: 3,
   stopOnFirstGateFailure: true,
-  canonicalSpecs: 40,
-  canonicalTasks: 42,
+  canonicalSpecs: 48,
+  canonicalTasks: 108,
   templateNotSpec: true,
   loopEngineTests: 47
 };

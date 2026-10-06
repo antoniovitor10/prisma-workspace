@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-06T00:41:21.603Z",
+  "generatedAt": "2026-10-06T11:36:10.504Z",
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
@@ -5651,6 +5651,780 @@
         "when": "a interface normal é usada",
         "then": "ela não oferece um segundo status capaz de divergir da coluna",
         "raw": "Dado configuração antiga de workflow quando a interface normal é usada então ela não oferece um segundo status capaz de divergir da coluna."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-001",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Abre a aba Kanban",
+      "narrative": "Como usuário, preciso que vê as colunas do projeto e suas tarefas, sem precisar criar quadro.",
+      "actor": "usuário",
+      "scenario": {
+        "given": "um projeto sem nenhuma visão salva",
+        "when": "o usuário abre a aba Kanban",
+        "then": "vê as colunas do projeto e suas tarefas, sem precisar criar quadro",
+        "raw": "Dado um projeto sem nenhuma visão salva, quando o usuário abre a aba Kanban, então vê as colunas do projeto e suas tarefas, sem precisar criar quadro."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-002",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Exclui todas",
+      "narrative": "Como usuário, preciso que o projeto continua operando e nenhuma tarefa muda de coluna ou posição.",
+      "actor": "usuário",
+      "scenario": {
+        "given": "um projeto com visões salvas",
+        "when": "o usuário exclui todas",
+        "then": "o projeto continua operando e nenhuma tarefa muda de coluna ou posição",
+        "raw": "Dado um projeto com visões salvas, quando o usuário exclui todas, então o projeto continua operando e nenhuma tarefa muda de coluna ou posição."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-003",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Ele é movido",
+      "narrative": "Como pessoa autorizada, preciso que a nova coluna e posição valem para todas as visões e para o detalhe da tarefa, sem divergência.",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "um card em qualquer visão",
+        "when": "ele é movido",
+        "then": "a nova coluna e posição valem para todas as visões e para o detalhe da tarefa, sem divergência",
+        "raw": "Dado um card em qualquer visão, quando ele é movido, então a nova coluna e posição valem para todas as visões e para o detalhe da tarefa, sem divergência."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-004",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado que a etapa foi alterada pela tela de detalhe, então o quadro reflete a mudança imediatamente e d…",
+      "narrative": "Como pessoa autorizada, preciso que dado que a etapa foi alterada pela tela de detalhe, então o quadro reflete a mudança imediatamente e depois de recarregar..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado que a etapa foi alterada pela tela de detalhe, então o quadro reflete a mudança imediatamente e depois de recarregar.",
+        "raw": "Dado que a etapa foi alterada pela tela de detalhe, então o quadro reflete a mudança imediatamente e depois de recarregar."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-005",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado que a coluna de destino é de categoria concluída, então CompletedAt é preenchido",
+      "narrative": "Como pessoa autorizada, preciso que dado que a coluna de destino é de categoria concluída, então CompletedAt é preenchido..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado que a coluna de destino é de categoria concluída, então CompletedAt é preenchido.",
+        "raw": "Dado que a coluna de destino é de categoria concluída, então CompletedAt é preenchido."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-BOARD-AS-VIEW-006",
+      "specId": "SPEC-BOARD-AS-VIEW",
+      "specTitle": "Quadro como visão opcional",
+      "specPath": "specs/board-as-view.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado qualquer tela do produto, então não existe configuração, aviso ou bloqueio de WIP",
+      "narrative": "Como pessoa autorizada, preciso que dado qualquer tela do produto, então não existe configuração, aviso ou bloqueio de WIP..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado qualquer tela do produto, então não existe configuração, aviso ou bloqueio de WIP.",
+        "raw": "Dado qualquer tela do produto, então não existe configuração, aviso ou bloqueio de WIP."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-001",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado que a pessoa não tem nenhuma tarefa, então cada bloco mostra seu estado vazio explicando o critér…",
+      "narrative": "Como pessoa autorizada, preciso que dado que a pessoa não tem nenhuma tarefa, então cada bloco mostra seu estado vazio explicando o critério, e nenhum indicador aparece como zero sem contexto..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado que a pessoa não tem nenhuma tarefa, então cada bloco mostra seu estado vazio explicando o critério, e nenhum indicador aparece como zero sem contexto.",
+        "raw": "Dado que a pessoa não tem nenhuma tarefa, então cada bloco mostra seu estado vazio explicando o critério, e nenhum indicador aparece como zero sem contexto."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-002",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado um projeto arquivado, então ele não aparece em \"Projetos vigentes\", mesmo com tarefas dela",
+      "narrative": "Como pessoa autorizada, preciso que dado um projeto arquivado, então ele não aparece em \"Projetos vigentes\", mesmo com tarefas dela..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado um projeto arquivado, então ele não aparece em \"Projetos vigentes\", mesmo com tarefas dela.",
+        "raw": "Dado um projeto arquivado, então ele não aparece em \"Projetos vigentes\", mesmo com tarefas dela."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-003",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado uma sprint cuja data final já passou, então ela não aparece em \"Sprints em curso\"",
+      "narrative": "Como pessoa autorizada, preciso que dado uma sprint cuja data final já passou, então ela não aparece em \"Sprints em curso\"..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado uma sprint cuja data final já passou, então ela não aparece em \"Sprints em curso\".",
+        "raw": "Dado uma sprint cuja data final já passou, então ela não aparece em \"Sprints em curso\"."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-004",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado que a pessoa troca de organização, então todos os blocos recarregam no novo tenant e nenhum dado…",
+      "narrative": "Como pessoa autorizada, preciso que dado que a pessoa troca de organização, então todos os blocos recarregam no novo tenant e nenhum dado do anterior permanece em tela..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado que a pessoa troca de organização, então todos os blocos recarregam no novo tenant e nenhum dado do anterior permanece em tela.",
+        "raw": "Dado que a pessoa troca de organização, então todos os blocos recarregam no novo tenant e nenhum dado do anterior permanece em tela."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-005",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Clicado",
+      "narrative": "Como pessoa autorizada, preciso que a lista abre já filtrada por aquele critério.",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "um indicador do resumo",
+        "when": "clicado",
+        "then": "a lista abre já filtrada por aquele critério",
+        "raw": "Dado um indicador do resumo, quando clicado, então a lista abre já filtrada por aquele critério."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-006",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado que a pessoa participa de um projeto sem ser responsável por nenhuma tarefa, então o projeto apar…",
+      "narrative": "Como pessoa autorizada, preciso que dado que a pessoa participa de um projeto sem ser responsável por nenhuma tarefa, então o projeto aparece com contagem zero, e não some da lista..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado que a pessoa participa de um projeto sem ser responsável por nenhuma tarefa, então o projeto aparece com contagem zero, e não some da lista.",
+        "raw": "Dado que a pessoa participa de um projeto sem ser responsável por nenhuma tarefa, então o projeto aparece com contagem zero, e não some da lista."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-MY-WORK-HUB-007",
+      "specId": "SPEC-MY-WORK-HUB",
+      "specTitle": "\"Meu trabalho\" como painel completo da pessoa",
+      "specPath": "specs/my-work-hub.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Dado um agrupamento escolhido em \"Minhas tarefas\", então ele é lembrado na próxima visita",
+      "narrative": "Como pessoa autorizada, preciso que dado um agrupamento escolhido em \"Minhas tarefas\", então ele é lembrado na próxima visita..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Dado um agrupamento escolhido em \"Minhas tarefas\", então ele é lembrado na próxima visita.",
+        "raw": "Dado um agrupamento escolhido em \"Minhas tarefas\", então ele é lembrado na próxima visita."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TASK-FLOW-UX-001-001",
+      "specId": "SPEC-TASK-FLOW-UX-001",
+      "specTitle": "Criação e detalhe completo da tarefa",
+      "specPath": "specs/task-flow-ux.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Na criação, a pessoa escolhe o responsável principal e zero ou mais adicionais dentre os elegíveis do…",
+      "narrative": "Como pessoa autorizada, preciso que na criação, a pessoa escolhe o responsável principal e zero ou mais adicionais dentre os elegíveis do projeto..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Na criação, a pessoa escolhe o responsável principal e zero ou mais adicionais dentre os elegíveis do projeto.",
+        "raw": "Na criação, a pessoa escolhe o responsável principal e zero ou mais adicionais dentre os elegíveis do projeto."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TASK-FLOW-UX-001-002",
+      "specId": "SPEC-TASK-FLOW-UX-001",
+      "specTitle": "Criação e detalhe completo da tarefa",
+      "specPath": "specs/task-flow-ux.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "IDs sem acesso, inativos ou de outro tenant continuam recusados pela API conforme D90",
+      "narrative": "Como pessoa autorizada, preciso que iDs sem acesso, inativos ou de outro tenant continuam recusados pela API conforme D90..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "IDs sem acesso, inativos ou de outro tenant continuam recusados pela API conforme D90.",
+        "raw": "IDs sem acesso, inativos ou de outro tenant continuam recusados pela API conforme D90."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TASK-FLOW-UX-001-003",
+      "specId": "SPEC-TASK-FLOW-UX-001",
+      "specTitle": "Criação e detalhe completo da tarefa",
+      "specPath": "specs/task-flow-ux.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "No detalhe, a pessoa autorizada vê Product Backlog e as sprints disponíveis do projeto; ao alterar, o…",
+      "narrative": "Como pessoa autorizada, preciso que no detalhe, a pessoa autorizada vê Product Backlog e as sprints disponíveis do projeto; ao alterar, o endpoint de planejamento aplica suas validações existentes..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "No detalhe, a pessoa autorizada vê Product Backlog e as sprints disponíveis do projeto; ao alterar, o endpoint de planejamento aplica suas validações existentes.",
+        "raw": "No detalhe, a pessoa autorizada vê Product Backlog e as sprints disponíveis do projeto; ao alterar, o endpoint de planejamento aplica suas validações existentes."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TASK-FLOW-UX-001-004",
+      "specId": "SPEC-TASK-FLOW-UX-001",
+      "specTitle": "Criação e detalhe completo da tarefa",
+      "specPath": "specs/task-flow-ux.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Na aba Subtarefas, criar ou selecionar uma subtarefa leva ao detalhe completo daquela mesma WorkItem",
+      "narrative": "Como pessoa autorizada, preciso que na aba Subtarefas, criar ou selecionar uma subtarefa leva ao detalhe completo daquela mesma WorkItem..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Na aba Subtarefas, criar ou selecionar uma subtarefa leva ao detalhe completo daquela mesma WorkItem.",
+        "raw": "Na aba Subtarefas, criar ou selecionar uma subtarefa leva ao detalhe completo daquela mesma WorkItem."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TASK-FLOW-UX-001-005",
+      "specId": "SPEC-TASK-FLOW-UX-001",
+      "specTitle": "Criação e detalhe completo da tarefa",
+      "specPath": "specs/task-flow-ux.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Descrição, anexos e apontamento de horas estão disponíveis no detalhe da subtarefa sem duplicar dados…",
+      "narrative": "Como pessoa autorizada, preciso que descrição, anexos e apontamento de horas estão disponíveis no detalhe da subtarefa sem duplicar dados ou entidade..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Descrição, anexos e apontamento de horas estão disponíveis no detalhe da subtarefa sem duplicar dados ou entidade.",
+        "raw": "Descrição, anexos e apontamento de horas estão disponíveis no detalhe da subtarefa sem duplicar dados ou entidade."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-INDEPENDENT-BOARD-COLUMNS-001",
+      "specId": "SPEC-INDEPENDENT-BOARD-COLUMNS",
+      "specTitle": "Colunas independentes por quadro",
+      "specPath": "specs/independent-board-columns.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": ".NET: isolamento de colunas, validação quadro/coluna/projeto/tenant, transferências atômicas, exclusão…",
+      "narrative": "Como pessoa autorizada, preciso que .NET: isolamento de colunas, validação quadro/coluna/projeto/tenant, transferências atômicas, exclusão segura, concorrência e preservação do histórico..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": ".NET: isolamento de colunas, validação quadro/coluna/projeto/tenant, transferências atômicas, exclusão segura, concorrência e preservação do histórico.",
+        "raw": ".NET: isolamento de colunas, validação quadro/coluna/projeto/tenant, transferências atômicas, exclusão segura, concorrência e preservação do histórico."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-INDEPENDENT-BOARD-COLUMNS-002",
+      "specId": "SPEC-INDEPENDENT-BOARD-COLUMNS",
+      "specTitle": "Colunas independentes por quadro",
+      "specPath": "specs/independent-board-columns.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "React: quadro ativo claro, criação básica/cópia, coluna independente e destino explícito para moviment…",
+      "narrative": "Como pessoa autorizada, preciso que react: quadro ativo claro, criação básica/cópia, coluna independente e destino explícito para movimentação..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "React: quadro ativo claro, criação básica/cópia, coluna independente e destino explícito para movimentação.",
+        "raw": "React: quadro ativo claro, criação básica/cópia, coluna independente e destino explícito para movimentação."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-INDEPENDENT-BOARD-COLUMNS-003",
+      "specId": "SPEC-INDEPENDENT-BOARD-COLUMNS",
+      "specTitle": "Colunas independentes por quadro",
+      "specPath": "specs/independent-board-columns.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "E2E desktop/mobile: dois quadros com estruturas diferentes, alterações isoladas, tarefa localizável ap…",
+      "narrative": "Como pessoa autorizada, preciso que e2E desktop/mobile: dois quadros com estruturas diferentes, alterações isoladas, tarefa localizável após recarga, transferência e exclusão com preservação dos dados..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "E2E desktop/mobile: dois quadros com estruturas diferentes, alterações isoladas, tarefa localizável após recarga, transferência e exclusão com preservação dos dados.",
+        "raw": "E2E desktop/mobile: dois quadros com estruturas diferentes, alterações isoladas, tarefa localizável após recarga, transferência e exclusão com preservação dos dados."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-INDEPENDENT-BOARD-COLUMNS-004",
+      "specId": "SPEC-INDEPENDENT-BOARD-COLUMNS",
+      "specTitle": "Colunas independentes por quadro",
+      "specPath": "specs/independent-board-columns.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Agent-browser: percorrer os mesmos fluxos e conferir tema claro/escuro; não usar tarefas reais para en…",
+      "narrative": "Como pessoa autorizada, preciso que agent-browser: percorrer os mesmos fluxos e conferir tema claro/escuro; não usar tarefas reais para ensaios destrutivos..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Agent-browser: percorrer os mesmos fluxos e conferir tema claro/escuro; não usar tarefas reais para ensaios destrutivos.",
+        "raw": "Agent-browser: percorrer os mesmos fluxos e conferir tema claro/escuro; não usar tarefas reais para ensaios destrutivos."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-INVITATION-ONBOARDING-001",
+      "specId": "SPEC-INVITATION-ONBOARDING",
+      "specTitle": "Convites e entrada na organização",
+      "specPath": "specs/invitation-onboarding.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação diverg…",
+      "narrative": "Como pessoa autorizada, preciso que testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação divergente, replay, expiração, cancelamento, organização inativa e concorrência. Preservar cadastro público e suíte E2E..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação divergente, replay, expiração, cancelamento, organização inativa e concorrência. Preservar cadastro público e suíte E2E.",
+        "raw": "Testar cadastro e entrada pela UI desktop/mobile; conta existente, senha incorreta, confirmação divergente, replay, expiração, cancelamento, organização inativa e concorrência. Preservar cadastro público e suíte E2E."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-PROJECT-ASSIGNMENT-ACCESS-001",
+      "specId": "SPEC-PROJECT-ASSIGNMENT-ACCESS",
+      "specTitle": "Acesso ao projeto para atribuição",
+      "specPath": "specs/project-assignment-access.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Atribuicao a membro com acesso: aceita; sem acesso, outro tenant ou inativo: recusada",
+      "narrative": "Como pessoa autorizada, preciso que atribuicao a membro com acesso: aceita; sem acesso, outro tenant ou inativo: recusada..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Atribuicao a membro com acesso: aceita; sem acesso, outro tenant ou inativo: recusada.",
+        "raw": "Atribuicao a membro com acesso: aceita; sem acesso, outro tenant ou inativo: recusada."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-PROJECT-ASSIGNMENT-ACCESS-002",
+      "specId": "SPEC-PROJECT-ASSIGNMENT-ACCESS",
+      "specTitle": "Acesso ao projeto para atribuição",
+      "specPath": "specs/project-assignment-access.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Regra aplicada a responsavel principal e adicional, inclusive update/create/bulk/automacao quando houv…",
+      "narrative": "Como pessoa autorizada, preciso que regra aplicada a responsavel principal e adicional, inclusive update/create/bulk/automacao quando houver atribuicao..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Regra aplicada a responsavel principal e adicional, inclusive update/create/bulk/automacao quando houver atribuicao.",
+        "raw": "Regra aplicada a responsavel principal e adicional, inclusive update/create/bulk/automacao quando houver atribuicao."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-PROJECT-ASSIGNMENT-ACCESS-003",
+      "specId": "SPEC-PROJECT-ASSIGNMENT-ACCESS",
+      "specTitle": "Acesso ao projeto para atribuição",
+      "specPath": "specs/project-assignment-access.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Minha Trabalho nao retorna tarefa cuja autorizacao de projeto foi perdida",
+      "narrative": "Como pessoa autorizada, preciso que minha Trabalho nao retorna tarefa cuja autorizacao de projeto foi perdida..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Minha Trabalho nao retorna tarefa cuja autorizacao de projeto foi perdida.",
+        "raw": "Minha Trabalho nao retorna tarefa cuja autorizacao de projeto foi perdida."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-PROJECT-ASSIGNMENT-ACCESS-004",
+      "specId": "SPEC-PROJECT-ASSIGNMENT-ACCESS",
+      "specTitle": "Acesso ao projeto para atribuição",
+      "specPath": "specs/project-assignment-access.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "UI mostra mensagem acionavel e preserva os demais responsaveis",
+      "narrative": "Como pessoa autorizada, preciso que uI mostra mensagem acionavel e preserva os demais responsaveis..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "UI mostra mensagem acionavel e preserva os demais responsaveis.",
+        "raw": "UI mostra mensagem acionavel e preserva os demais responsaveis."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-RICH-TASK-DESCRIPTION-001",
+      "specId": "SPEC-RICH-TASK-DESCRIPTION",
+      "specTitle": "Descrição rica da tarefa",
+      "specPath": "specs/rich-task-description.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Testes de componente cobrem formatação, salvamento e expansão",
+      "narrative": "Como pessoa autorizada, preciso que testes de componente cobrem formatação, salvamento e expansão..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Testes de componente cobrem formatação, salvamento e expansão.",
+        "raw": "Testes de componente cobrem formatação, salvamento e expansão."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-RICH-TASK-DESCRIPTION-002",
+      "specId": "SPEC-RICH-TASK-DESCRIPTION",
+      "specTitle": "Descrição rica da tarefa",
+      "specPath": "specs/rich-task-description.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "E2E cobre edição, colagem e persistência da imagem após reabrir, anexos e viewport desktop/mobile",
+      "narrative": "Como pessoa autorizada, preciso que e2E cobre edição, colagem e persistência da imagem após reabrir, anexos e viewport desktop/mobile..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "E2E cobre edição, colagem e persistência da imagem após reabrir, anexos e viewport desktop/mobile.",
+        "raw": "E2E cobre edição, colagem e persistência da imagem após reabrir, anexos e viewport desktop/mobile."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-RICH-TASK-DESCRIPTION-003",
+      "specId": "SPEC-RICH-TASK-DESCRIPTION",
+      "specTitle": "Descrição rica da tarefa",
+      "specPath": "specs/rich-task-description.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Build, Vitest, xUnit e suíte Playwright completos são obrigatórios antes de concluir ou publicar",
+      "narrative": "Como pessoa autorizada, preciso que build, Vitest, xUnit e suíte Playwright completos são obrigatórios antes de concluir ou publicar..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Build, Vitest, xUnit e suíte Playwright completos são obrigatórios antes de concluir ou publicar.",
+        "raw": "Build, Vitest, xUnit e suíte Playwright completos são obrigatórios antes de concluir ou publicar."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-001",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico",
+      "narrative": "Como pessoa autorizada, preciso que memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico.",
+        "raw": "memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-002",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa…",
+      "narrative": "Como pessoa autorizada, preciso que ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”.",
+        "raw": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-003",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta",
+      "narrative": "Como pessoa autorizada, preciso que a confirmação usa uma região de status acessível e um erro continua usando uma região de alerta..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta.",
+        "raw": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-004",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista…",
+      "narrative": "Como pessoa autorizada, preciso que erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio.",
+        "raw": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-005",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e…",
+      "narrative": "Como pessoa autorizada, preciso que excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas.",
+        "raw": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-006",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e…",
+      "narrative": "Como pessoa autorizada, preciso que cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis.",
+        "raw": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-007",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de solt…",
+      "narrative": "Como pessoa autorizada, preciso que imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML.",
+        "raw": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-008",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API rece…",
+      "narrative": "Como pessoa autorizada, preciso que o modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”.",
+        "raw": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-009",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada…",
+      "narrative": "Como pessoa autorizada, preciso que uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta.",
+        "raw": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-010",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inseri…",
+      "narrative": "Como pessoa autorizada, preciso que ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual.",
+        "raw": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-011",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a e…",
+      "narrative": "Como pessoa autorizada, preciso que o painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados.",
+        "raw": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-012",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço s…",
+      "narrative": "Como pessoa autorizada, preciso que “Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido.",
+        "raw": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-013",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo inf…",
+      "narrative": "Como pessoa autorizada, preciso que o responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal.",
+        "raw": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal."
       },
       "status": "active",
       "origin": "migrated_from_approved_spec"
