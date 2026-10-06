@@ -22,7 +22,7 @@ module.exports = {
   ],
   maxAttempts: 3,
   stopOnFirstGateFailure: true,
-  canonicalSpecs: 49,
+  canonicalSpecs: 50,
   canonicalTasks: 109,
   templateNotSpec: true,
   loopEngineTests: 47

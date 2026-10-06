@@ -4,6 +4,25 @@
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
+      "id": "US-AI-009",
+      "specId": "SPEC-AI-002",
+      "specTitle": "Configuração guiada, catálogo de modelos e autenticação CLI",
+      "specPath": "specs/ai-connection-onboarding.md",
+      "sourcePath": "stories/ai-connection-onboarding.md",
+      "sourceHeading": "US-AI-009: escolher provedor, autenticar e selecionar modelo",
+      "title": "Configuração simples das conexões de IA",
+      "narrative": "Como Administrador da instalação quero configurar a IA com poucas escolhas, selecionar modelos correspondentes a cada provedor e autenticar de verdade por login ou CLI para conectar e testar sem montar combinações inválidas.",
+      "actor": "Administrador da instalação",
+      "scenario": {
+        "given": "uma instalação com as opções de conexão IA",
+        "when": "o administrador escolhe provedor e método",
+        "then": "a lista de modelos acompanha a escolha; CLI exige aceite do risco de perda da conta antes do login real e teste antes da ativação",
+        "raw": "Seleção de modelos em todas as opções, poucos campos visíveis, autenticação real e risco CLI explícito."
+      },
+      "status": "active",
+      "origin": "human_authored"
+    },
+    {
       "id": "US-HOME-001",
       "specId": "SPEC-AUTHENTICATED-HOME",
       "specTitle": "Página inicial depois do login",

@@ -16,6 +16,9 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
   Gates locais: 250 testes backend e 126 frontend. Imagem da release: 109 E2E aprovados no CI sem retry, seis skips condicionais.
   G-DEPLOY autorizado pelo PO; main/produção `1f2fe20` saudável em 2026-10-06. Próximo teste humano: configurar modelo e habilitar IA.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
+- Refinamento solicitado após o teste humano em produção: US-AI-009 / SPEC-AI-002 (`draft`),
+  seleção de modelos por provedor em todas as conexões, configuração simplificada e login CLI real
+  com aviso e aceite do risco de bloqueio ou perda da conta. Aguarda G-SPEC; sem migration.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,
