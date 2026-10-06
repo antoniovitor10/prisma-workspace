@@ -1,3 +1,12 @@
+## [2026-10-06] - Codex - revisão da configuração IA preparada para G-SPEC
+
+- PO pediu seleção de modelos conforme o provedor em todas as conexões, interface com poucas opções e autenticação CLI real, com aviso explícito de possível bloqueio ou perda da conta. Criadas US-AI-009 e SPEC-AI-002 em `draft`; contexto, catálogo de histórias, backlog e roadmap vinculados. Sem mudança de schema.
+- Contrato revisável: provedor, método disponível, autenticação e modelo; campos técnicos e cotas em áreas expansíveis. Catálogos oficiais OpenAI/Anthropic/Gemini/OpenRouter e endpoint personalizado; CLI limitada aos adaptadores reais Codex/Claude. Credencial salva não pode ser enviada a outro provedor/endpoint ao editar.
+- Comandos oficiais das versões fixadas foram verificados em contêiner descartável, sem credenciais: Codex fornece link e código por `login --device-auth`; Claude fornece link e prompt por `auth login --claudeai`. Processos de investigação encerrados, nenhum login concluído nem inferência executada. Modelos da CLI não garantem acesso à assinatura; teste continua obrigatório.
+- Nota avulsa `IA do Prisma - Revisao SPEC-AI-002` criada e ligada ao Planejador no Maestri. Pipe herdado estava obsoleto; diagnóstico confirmado pelo CLI e transporte vivo selecionado, sem alterar hooks ou iniciar agentes.
+- Registro da nova spec/domínio no Context Explorer atualizado junto às contagens canônicas. A primeira execução detectou contagens fixas antigas; corrigidas somente as referências do catálogo. Validação final: 42 testes de governança aprovados e `git diff --check` limpo. Nenhuma lógica da aplicação, API ou schema alterada nesta preparação.
+- G-SPEC solicitado ao PO com contrato concreto. Código de produto e produção permanecem na fundação publicada enquanto a aprovação está pendente. Próximo passo: após aprovação, implementar UI, catálogos e sessões CLI; executar testes e E2E completos antes da publicação autorizada.
+
 ## [2026-10-06] - Codex - preparação da publicação IA autorizada
 
 - PO autorizou publicar a fundação IA validada: "e pode subir já". G-DEPLOY registrado e G-MIGRATION estendido à promoção da mesma migration aditiva após E2E. Conta indicada pelo PO conferida no Identity para a promoção explícita da flag, sem derivá-la de perfis da organização.

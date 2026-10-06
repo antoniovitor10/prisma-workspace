@@ -31,7 +31,8 @@ const DOMAIN_ORDER = [
   'project_queries',
   'open_source_distribution',
   'installation_setup',
-  'ai_assistant'
+  'ai_assistant',
+  'ai_connection_onboarding'
 ];
 
 function domainLabel(domainKey) {

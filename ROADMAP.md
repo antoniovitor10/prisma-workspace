@@ -12,6 +12,9 @@
   Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
   Publicação e aplicação em produção ficam para G-DEPLOY próprio.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
+- Refinamento solicitado após o teste humano em produção: US-AI-009 / SPEC-AI-002 (`draft`),
+  seleção de modelos por provedor em todas as conexões, configuração simplificada e login CLI real
+  com aviso e aceite do risco de bloqueio ou perda da conta. Aguarda G-SPEC; sem migration.
 
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source

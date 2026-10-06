@@ -2561,6 +2561,11 @@ subindo com os dados preservados.
 
 ## Fundação IA autorizada em 2026-10-06
 
+Refinamento solicitado pelo PO após a publicação: `TASK-AI-002`, vinculado à US-AI-009 e
+`specs/ai-connection-onboarding.md` (SPEC-AI-002, draft). Configuração por provedor, seleção de modelos
+em todas as opções, login CLI real e aviso explícito com aceite do risco de perda da conta.
+Depende da TASK-AI-001 publicada; implementação aguarda G-SPEC. Sem alteração de schema.
+
 ```yaml
 - id: TASK-AI-001
   spec: SPEC-AI-001 (specs/ai-assistant-foundation.md)
