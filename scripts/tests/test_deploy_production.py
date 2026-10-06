@@ -14,6 +14,27 @@ SHA = "a" * 40
 
 
 class DeploymentSafetyTests(unittest.TestCase):
+    def test_only_explicit_optional_bridge_network_is_accepted(self):
+        for networks in [{"slc_default"}, {"slc_default", "prisma_ai_bridge"}]:
+            self.assertEqual(deployment.allowed_networks({"NetworkSettings": {"Networks": {key: {} for key in networks}}}), networks)
+        for networks in [set(), {"prisma_ai_bridge"}, {"slc_default", "unexpected"}, {"slc_default", "prisma_ai_bridge", "unexpected"}]:
+            with self.assertRaises(ValueError):
+                deployment.allowed_networks({"NetworkSettings": {"Networks": {key: {} for key in networks}}})
+
+    def test_bridge_settings_refuse_broad_permissions_and_database_on_network(self):
+        path = self.root / "ai-bridge.env"
+        path.write_text("Ai__BridgeToken=" + "test" * 16 + "\nAi__BridgeUrl=http://prisma-ai-bridge:8080/v1\n")
+        path.chmod(0o644)
+        with self.assertRaisesRegex(ValueError, "600"):
+            deployment.bridge_environment()
+        path.chmod(0o600)
+        network = {"Labels": {"prisma.purpose": "ai-bridge"}, "Containers": {"sql": {"Name": deployment.SQL_CONTAINER}}}
+        with patch.object(deployment, "inspect", return_value=network):
+            with self.assertRaisesRegex(ValueError, "exclusiva"):
+                deployment.bridge_environment()
+        network["Containers"] = {"bridge": {"Name": "prisma-ai-bridge"}}
+        with patch.object(deployment, "inspect", return_value=network), patch.object(deployment, "healthy", return_value=True):
+            self.assertEqual(deployment.bridge_environment()["Ai__BridgeUrl"], "http://prisma-ai-bridge:8080/v1")
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

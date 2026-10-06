@@ -7,6 +7,8 @@ if command -v cygpath >/dev/null 2>&1; then
   export MSYS_NO_PATHCONV=1
 fi
 image=${1:?Informe a imagem candidata}
+export E2E_TEST_FILE=${2:-}
+[[ -z "$E2E_TEST_FILE" || "$E2E_TEST_FILE" =~ ^e2e/[a-z0-9-]+\.spec\.ts$ ]] || { echo 'Arquivo E2E inválido.' >&2; exit 1; }
 suffix=${GITHUB_RUN_ID:-local-$$}-${GITHUB_RUN_ATTEMPT:-1}
 network=prisma-ci-e2e-$suffix
 database=prisma-ci-sql-$suffix
@@ -42,6 +44,7 @@ docker run -d --name "$app" --network "$network" \
   -e ConnectionStrings__DefaultConnection -e Jwt__Key -e Seed__DemoPassword \
   -e ASPNETCORE_ENVIRONMENT=Development -e Seed__DemoEnabled=true -e Setup__Enabled=false \
   -e RateLimiting__GlobalPermitLimit=10000 -e RateLimiting__AuthPermitLimit=10000 -e Serilog__MinimumLevel__Default=Warning \
+  -e Ai__BridgeToken=E2E-only-cli-bridge -e Ai__BridgeUrl="http://$runner:18747/v1" -e FrontendBaseUrl=https://prisma.example.invalid \
   -e Serilog__MinimumLevel__Override__Microsoft=Warning \
   -e Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore.Database.Command=Warning \
   "$image" >/dev/null
@@ -58,8 +61,8 @@ export E2E_API_URL=$E2E_BASE_URL
 export E2E_TEST_USER_EMAIL=admin@prisma.example.invalid
 export E2E_AI_PROVIDER_HOST=$runner
 docker run --rm --name "$runner" --network "$network" --ipc=host \
-  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD -e E2E_AI_PROVIDER_HOST \
+  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD -e E2E_AI_PROVIDER_HOST -e E2E_TEST_FILE \
   -v "$root:/workspace" -w /workspace/src/Prisma.Workspace.Web \
   -v /workspace/src/Prisma.Workspace.Web/node_modules \
   mcr.microsoft.com/playwright:v1.62.1-noble \
-  sh -c 'npm ci --no-audit && npm run e2e'
+  sh -c 'npm ci --no-audit && if [ -n "$E2E_TEST_FILE" ]; then npm run e2e -- "$E2E_TEST_FILE"; else npm run e2e; fi'

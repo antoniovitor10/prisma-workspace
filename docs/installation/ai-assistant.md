@@ -27,7 +27,8 @@ autoriza conexões e consumo global; nunca leitura de conversas de outras pessoa
 Em Configurações da organização, a seção Assistente de IA mostra administração global para quem tem a flag,
 e configuração da organização para quem tem `AdministerOrganization`.
 
-1. Cadastre nome, tipo, provedor e modelo. A instalação escolhe o modelo; não há modelo pago pelo Prisma.
+1. Clique em Adicionar conexão, escolha o provedor e a forma de conexão disponível. Informe a chave ou
+   autentique e selecione o modelo no catálogo. Nome sugerido, URL opcional e preços ficam em Opções avançadas.
 2. Chave de API aceita OpenAI, Anthropic, Gemini e OpenRouter. Endpoint compatível aceita URL própria,
    como `http://ollama:11434/v1`, e chave opcional. `localhost` significa o host da API, não o navegador.
 3. OAuth usa OpenRouter com PKCE, estado de uso único associado ao administrador e validade de dez minutos.
@@ -71,13 +72,13 @@ consumo. A cobrança efetiva continua sendo a informada pelo provedor.
 ## Ponte CLI experimental
 
 O perfil `ai-cli` é opcional e desligado por padrão. A imagem contém Codex e Claude, com versões fixadas.
-Configure externamente `PRISMA_AI_BRIDGE_TOKEN` e `PRISMA_AI_BRIDGE_ADAPTER` (`claude` ou `codex`) e autentique
-a CLI no volume próprio. Não monte credenciais ou configuração completos do computador, projeto ou banco.
+Configure externamente `PRISMA_AI_BRIDGE_TOKEN`. O provedor da conexão determina o adaptador: OpenAI usa Codex,
+Anthropic usa Claude. Cada um mantém autenticação em volume próprio. Não monte credenciais ou configuração
+completos do computador, projeto ou banco.
 Antigravity não tem adaptador nesta imagem; não é anunciado como suportado operacionalmente.
 
 ```bash
 docker compose --profile ai-cli build prisma-ai-bridge
-# Configure o login da CLI no seu volume por operação do instalador.
 docker compose --profile ai-cli up -d prisma-ai-bridge
 ```
 
@@ -87,8 +88,23 @@ sem privilégios. Cada pergunta cria execução independente e elimina o diretó
 configuração do usuário e desativa shell, execução, apps, plugins, hooks e agentes. A conexão CLI do Prisma
 sempre usa o envelope de ferramentas, executado pelo backend; nenhuma consulta de banco vai para a ponte.
 
-O instalador escolhe a assinatura e confere seus termos; a opção fica identificada como Experimental e uso
-pessoal na tela. Validação automatizada usa simuladores e não consome nenhuma assinatura real.
+Em Configurações, escolha assinatura via CLI, leia o aviso de possível bloqueio ou encerramento da conta e
+aceite o risco antes de clicar Entrar com ChatGPT ou Entrar com Claude. A conta é da instalação, por adaptador,
+e será usada pelas organizações habilitadas. OAuth/login não garante que o provedor permita qualquer uso.
+Codex mostra um link e código para autorizar no provedor; pode exigir habilitar login por dispositivo nas
+configurações de segurança do ChatGPT. Claude mostra seu link e um campo temporário para o código retornado.
+Você nunca informa a senha do provedor no Prisma. O processo oficial confirma o login; em seguida escolha o
+modelo, salve, teste e ative. Cancelamento e expiração descartam as instruções temporárias.
+
+Para o VPS desta instalação, o operador prepara a fonte em `/home/dev/prisma-deploy/incoming/<commit>/ai-bridge`
+e executa `scripts/install-ai-bridge.py <pasta-da-fonte> <commit>`. O script cria rede exclusiva `prisma_ai_bridge`,
+volumes privados e token externo em arquivo com permissão 600; não autentica uma conta. O deploy preserva a
+rede original e adiciona somente essa rede aprovada após conferir isolamento e saúde da ponte. Não há portas
+públicas da ponte. Nenhum token é incluído no Git ou na saída do operador.
+
+Catálogo da CLI e aliases Claude não garantem acesso a um modelo pela assinatura: o teste confirma acesso
+efetivo. Validação automatizada usa simuladores e não consome assinatura real. A inicialização dos comandos
+oficiais também é verificada em contêiner descartável sem concluir login nem enviar perguntas.
 
 ## Migration e publicação
 

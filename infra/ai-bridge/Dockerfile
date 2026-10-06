@@ -3,7 +3,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 ca-cert
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g @openai/codex@0.160.1 @anthropic-ai/claude-code@2.1.291
 WORKDIR /bridge
-COPY server.py /bridge/server.py
+RUN install -d -o node -g node -m 700 /home/node/.claude /home/node/.claude/state /home/node/.codex
+COPY server.py auth.py /bridge/
+ENV CLAUDE_CONFIG_DIR=/home/node/.claude/state CODEX_HOME=/home/node/.codex
 USER node
 EXPOSE 8080
+HEALTHCHECK --interval=20s --timeout=5s --start-period=5s --retries=3 CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3).read()"
 CMD ["python3", "/bridge/server.py"]

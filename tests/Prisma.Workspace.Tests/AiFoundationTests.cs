@@ -51,11 +51,11 @@ public class AiFoundationTests
         public DbContextOptions<AppDbContext> Options { get; }
         public Provider Provider { get; } = new();
         public AiService Service { get; }
-        public Fixture(IAiProviderFactory? factory = null, IAiWorkspaceTools? tools = null)
+        public Fixture(IAiProviderFactory? factory = null, IAiWorkspaceTools? tools = null, IHttpClientFactory? http = null, IConfiguration? configuration = null)
         {
             Options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
             var org = new OrganizationContext(Org); Db = new(Options, org);
-            Service = new(Db, org, new Permissions(), factory ?? Provider, tools ?? new Tools(), new AiRedactionService(), new AiUsageMeter(Db), new EphemeralDataProtectionProvider(), new ConfigurationBuilder().Build(), new Clients());
+            Service = new(Db, org, new Permissions(), factory ?? Provider, tools ?? new Tools(), new AiRedactionService(), new AiUsageMeter(Db), new EphemeralDataProtectionProvider(), configuration ?? new ConfigurationBuilder().Build(), http ?? new Clients());
         }
         public async Task SeedAsync()
         {
@@ -79,6 +79,103 @@ public class AiFoundationTests
         f.Db.OrganizationMembers.Add(OrganizationMember.Create(f.Org, "tenant", OrganizationRole.Administrator)); await f.Db.SaveChangesAsync();
         var e = await Assert.ThrowsAsync<AiException>(() => f.Run("admin.connections", "tenant")); Assert.Equal(403, e.Status);
         Assert.NotNull(await f.Run("admin.connections"));
+    }
+    [Theory]
+    [InlineData("admin.models")]
+    [InlineData("admin.cli.status")]
+    [InlineData("admin.cli.login")]
+    [InlineData("admin.cli.progress")]
+    [InlineData("admin.cli.complete")]
+    [InlineData("admin.cli.cancel")]
+    public async Task CatalogAndCliRequirePlatformAuthority(string operation)
+    {
+        await using var f = new Fixture(); await f.SeedAsync();
+        var e = await Assert.ThrowsAsync<AiException>(() => f.Run(operation, "tenant", input: new { provider = "OpenAI", type = "ApiKey" }));
+        Assert.Equal(403, e.Status);
+    }
+    [Theory]
+    [InlineData("Gemini")]
+    [InlineData("OpenRouter")]
+    [InlineData("Custom")]
+    public async Task UnsupportedCliProviderCannotBeSavedOrTested(string provider)
+    {
+        await using var f = new Fixture(); await f.SeedAsync();
+        var e = await Assert.ThrowsAsync<AiException>(() => f.Run("admin.saveConnection", input: new { name = "Invalid CLI", type = "CliSubscription", provider, model = "opus" }));
+        Assert.Equal(400, e.Status);
+        var old = f.Db.AiProviderConnections.Single(); old.Type = "CliSubscription"; old.Provider = provider;
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(400, (await Assert.ThrowsAsync<AiException>(() => f.Run("admin.testConnection", id: old.Id))).Status);
+        Assert.Equal(0, f.Provider.Calls);
+    }
+    private sealed class CatalogClient(string response) : HttpMessageHandler, IHttpClientFactory
+    {
+        public readonly List<(string Url, string? Bearer, string? ApiKey, string? GoogleKey)> Requests = [];
+        public HttpClient CreateClient(string name) => new(this, false);
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Requests.Add((request.RequestUri!.ToString(), request.Headers.Authorization?.Parameter,
+                request.Headers.TryGetValues("x-api-key", out var keys) ? keys.Single() : null,
+                request.Headers.TryGetValues("x-goog-api-key", out var google) ? google.Single() : null));
+            Assert.Equal(HttpMethod.Get, request.Method);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(response, Encoding.UTF8, "application/json") });
+        }
+    }
+    [Theory]
+    [InlineData("OpenAI", "{\"data\":[{\"id\":\"gpt-chat\"},{\"id\":\"text-embedding-x\"},{\"id\":\"gpt-audio\"}]}", "gpt-chat")]
+    [InlineData("Anthropic", "{\"data\":[{\"id\":\"claude-example\",\"display_name\":\"Claude Example\"}]}", "claude-example")]
+    [InlineData("Gemini", "{\"models\":[{\"name\":\"models/gemini-example\",\"displayName\":\"Gemini Example\",\"supportedGenerationMethods\":[\"generateContent\"]},{\"name\":\"models/embedding\",\"supportedGenerationMethods\":[\"embedContent\"]}]}", "gemini-example")]
+    [InlineData("OpenRouter", "{\"data\":[{\"id\":\"vendor/chat\",\"name\":\"Chat\",\"architecture\":{\"output_modalities\":[\"text\"]},\"pricing\":{\"prompt\":\"0.000002\",\"completion\":\"0.000003\"}},{\"id\":\"vendor/image\",\"architecture\":{\"output_modalities\":[\"image\"]}}]}", "vendor/chat")]
+    public async Task CatalogUsesProviderProtocolAndFiltersNonChatModels(string provider, string response, string expected)
+    {
+        var http = new CatalogClient(response); await using var f = new Fixture(http: http); await f.SeedAsync();
+        var result = JsonSerializer.Serialize(await f.Run("admin.models", input: new { provider, type = "ApiKey", secret = "private-key" }));
+        using var json = JsonDocument.Parse(result); var models = json.RootElement.GetProperty("models");
+        Assert.Single(models.EnumerateArray()); Assert.Equal(expected, models[0].GetProperty("Id").GetString());
+        Assert.DoesNotContain("private-key", result); Assert.Equal(0, f.Provider.Calls);
+        if (provider == "Gemini") Assert.Equal("private-key", http.Requests[0].GoogleKey);
+        else if (provider == "Anthropic") Assert.Equal("private-key", http.Requests[0].ApiKey);
+        else Assert.Equal("private-key", http.Requests[0].Bearer);
+        if (provider == "OpenRouter") Assert.Equal(2, models[0].GetProperty("InputPrice").GetDecimal());
+    }
+    [Fact]
+    public async Task ChangingDestinationDoesNotForwardOrPreserveSavedKey()
+    {
+        var http = new CatalogClient("{\"data\":[{\"id\":\"chat\"}]}"); await using var f = new Fixture(http: http); await f.SeedAsync();
+        await f.Run("admin.saveConnection", input: new { name = "Credential", type = "OpenAiCompatible", provider = "Custom", baseUrl = "https://first.invalid/v1", model = "chat", secret = "private-original" });
+        var row = await f.Db.AiProviderConnections.SingleAsync(x => x.Name == "Credential");
+        await f.Run("admin.models", input: new { connectionId = row.Id, type = row.Type, provider = row.Provider, baseUrl = row.BaseUrl });
+        Assert.Equal("private-original", http.Requests.Last().Bearer);
+        await f.Run("admin.models", input: new { connectionId = row.Id, type = row.Type, provider = row.Provider, baseUrl = "https://second.invalid/v1" });
+        Assert.Null(http.Requests.Last().Bearer);
+        await f.Run("admin.saveConnection", id: row.Id, input: new { name = row.Name, type = row.Type, provider = row.Provider, baseUrl = "https://second.invalid/v1", model = "chat" });
+        Assert.Null(row.EncryptedSecret); Assert.Null(row.SecretSuffix); Assert.False(row.TestSucceeded);
+    }
+    [Fact]
+    public async Task CliRequiresRiskAcknowledgmentAndNeverPretendsMissingBridgeIsAuthenticated()
+    {
+        await using var f = new Fixture(); await f.SeedAsync();
+        Assert.Equal(400, (await Assert.ThrowsAsync<AiException>(() => f.Run("admin.cli.login", input: new { provider = "OpenAI", acceptedRisk = false }))).Status);
+        var state = JsonSerializer.Serialize(await f.Run("admin.cli.status", input: new { provider = "OpenAI" }));
+        Assert.Contains("\"authenticated\":false", state); Assert.Contains("\"available\":false", state);
+    }
+    private sealed class LoginClient : HttpMessageHandler, IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(this, false);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var input = await request.Content!.ReadAsStringAsync(ct);
+            Assert.Contains("\"owner\":\"platform\"", input);
+            return new(HttpStatusCode.OK) { Content = new StringContent("{\"sessionId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"state\":\"starting\"}", Encoding.UTF8, "application/json") };
+        }
+    }
+    [Fact]
+    public async Task StartingCliLoginInvalidatesPreviouslyTestedConnectionsOfThatAdapter()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:BridgeToken"] = "fake-bridge-token-for-test", ["Ai:BridgeUrl"] = "http://bridge.invalid/v1" }).Build();
+        await using var f = new Fixture(http: new LoginClient(), configuration: config); await f.SeedAsync();
+        var row = f.Db.AiProviderConnections.Single(); row.Type = "CliSubscription"; row.Provider = "OpenAI"; await f.Db.SaveChangesAsync();
+        var result = JsonSerializer.Serialize(await f.Run("admin.cli.login", input: new { provider = "OpenAI", acceptedRisk = true }));
+        Assert.Contains("starting", result); Assert.False(row.IsActive); Assert.False(row.TestSucceeded); Assert.Equal(0, f.Provider.Calls);
     }
     [Fact]
     public async Task ConnectionApiNeverReturnsItsPlaintextOrEncryptedSecret()

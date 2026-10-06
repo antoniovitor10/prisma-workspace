@@ -2,7 +2,7 @@
 
 **Status:** active
 **Módulo:** ai-assistant
-**Spec vinculada:** `specs/ai-connection-onboarding.md` (`draft`, aguarda G-SPEC)
+**Spec vinculada:** `specs/ai-connection-onboarding.md` (`approved`, G-SPEC concedido pelo PO em 2026-10-06)
 **Origem:** pedidos do PO em 2026-10-06 após testar as configurações em produção.
 
 ## US-AI-009: escolher provedor, autenticar e selecionar modelo
