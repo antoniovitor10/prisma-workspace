@@ -1,3 +1,15 @@
+## [2026-10-06] — Codex — diagnóstico de recuperação de senha em produção
+
+- Pedido do PO: correção pontual do e-mail de redefinição que não chega em `prisma.nordevs.com.br`.
+- Diagnóstico somente leitura na VPS: API saudável, SMTP configurado na porta 587, STARTTLS validado e autenticação aceita pelo servidor (235). Nenhuma mensagem de teste enviada; nenhuma alteração em produção, código de produto ou banco.
+- Logs de 2026-10-06: dois pedidos `POST /api/auth/forgot-password` retornaram 202, sem registro de recuperação para usuário encontrado ou falha SMTP. O fluxo retorna 202 também para endereço inexistente; isso indica conta não localizada, ainda dependente de confirmação do endereço usado pelo PO.
+- Verificação agregada do banco: 11 contas, todas confirmadas, nenhuma inconsistência de `NormalizedEmail`. Não foram listados dados pessoais das contas.
+- Limites: SSH da hospedagem de e-mail recusou a chave disponível; não foi possível consultar a fila de entrega. O sandbox inicial negava acesso a arquivos locais; leitura foi retomada com as permissões liberadas pelo PO. Nenhum segredo exposto ou registrado.
+- Próximo passo: PO informar o endereço usado e autorizar repetir a recuperação para sua própria caixa; verificar essa conta e rastrear o envio antes de definir qualquer correção.
+- Continuação autorizada pelo PO: localizada uma única conta de Sérgio Barbosa, ativa e com e-mail confirmado. Recuperação repetida em produção às 11:00:45 UTC (08:00:45 de Brasília); HTTP 202 e registro de recuperação para essa conta, sem erro SMTP. Não foram alterados senha, sessões, cadastro ou código.
+- Hospedagem de e-mail: SSH funcionou usando a chave documentada na skill `hospedagem-ssh`; acesso à fila Exim exige administração e foi negado. Não houve notificação de falha recente na caixa remetente para o destinatário testado. Isso não comprova entrega na caixa final; aguardando confirmação do PO sobre recebimento ou spam. Os dois pedidos anteriores sem registro de usuário encontrado continuam distintos do teste bem-sucedido da conta correta.
+- Resultado informado pelo PO: Sérgio usou outro endereço; causa provável compatível com os logs de conta não localizada. Orientação: usar o e-mail cadastrado. Nenhuma correção de produto/configuração indicada pelas evidências disponíveis; recebimento final não foi confirmado. Verificação documental `git diff --check` aprovada; E2E não aplicável porque não houve alteração de produto, endpoint ou schema.
+
 ## [2026-10-05] — Codex — organização local pelo Maestri (D92)
 
 - PO aprovou reunir aplicação e landing num monorepo e remover cópias locais Prisma/Runrun.
