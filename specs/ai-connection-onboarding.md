@@ -1,7 +1,8 @@
 # SPEC-AI-002: Configuração guiada, catálogo de modelos e autenticação CLI
 
-**Status:** draft
-**G-SPEC:** pendente de revisão e aprovação humana do contrato abaixo.
+**Status:** approved
+**G-SPEC:** aprovado pelo PO Vitor em 2026-10-06: "pode efetuar e publicar", em resposta à revisão preparada e ao pedido explícito de aprovação da SPEC-AI-002.
+**G-DEPLOY:** aprovado pelo mesmo pedido do PO para publicação após os checks.
 **Story:** US-AI-009 (`stories/ai-connection-onboarding.md`).
 **Fase:** 15, refinamento da fundação IA já publicada (D91 / SPEC-AI-001).
 

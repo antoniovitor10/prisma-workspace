@@ -2,7 +2,8 @@
 # Uso: .\scripts\run-api-e2e.ps1
 
 param(
-    [string]$Urls = "http://127.0.0.1:5400"
+    [string]$Urls = "http://127.0.0.1:5400",
+    [string]$FrontendUrl = "http://127.0.0.1:5450"
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,7 +45,7 @@ $env:Setup__Enabled = "false"
 $env:Setup__Token = ""
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = $Urls
-$env:Cors__AllowedOrigins__0 = "http://127.0.0.1:5450"
+$env:Cors__AllowedOrigins__0 = $FrontendUrl
 $env:RateLimiting__GlobalPermitLimit = "10000"
 $env:RateLimiting__AuthPermitLimit = "10000"
 

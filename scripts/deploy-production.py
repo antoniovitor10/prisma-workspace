@@ -15,6 +15,31 @@ ROOT = Path("/home/dev/prisma-deploy")
 CONTAINER = "prisma-workspace-api"
 SQL_CONTAINER = "detran-kanban-db"
 DATA_ROOT = Path("/home/dev/painel-projects/prisma-runtime")
+BRIDGE_NETWORK = "prisma_ai_bridge"
+
+
+def allowed_networks(current):
+    networks = set(current["NetworkSettings"]["Networks"])
+    if networks not in ({"slc_default"}, {"slc_default", BRIDGE_NETWORK}):
+        raise ValueError("Rede de produção diferente da instalação documentada.")
+    return networks
+
+
+def bridge_environment():
+    path = ROOT / "ai-bridge.env"
+    if not path.exists():
+        return {}
+    if path.stat().st_mode & 0o077:
+        raise ValueError("Configuração privada da ponte exige permissão 600.")
+    values = dict(line.split("=", 1) for line in path.read_text().splitlines() if line)
+    if set(values) != {"Ai__BridgeToken", "Ai__BridgeUrl"} or len(values["Ai__BridgeToken"]) < 32 or values["Ai__BridgeUrl"] != "http://prisma-ai-bridge:8080/v1":
+        raise ValueError("Configuração externa da ponte inválida.")
+    network = inspect(BRIDGE_NETWORK)
+    if network.get("Labels", {}).get("prisma.purpose") != "ai-bridge" or any(member.get("Name") not in {CONTAINER, "prisma-ai-bridge"} for member in network.get("Containers", {}).values()):
+        raise ValueError("A ponte deve estar em rede exclusiva, sem banco ou outros serviços.")
+    if not healthy("prisma-ai-bridge"):
+        raise ValueError("Ponte CLI não ficou saudável; promoção interrompida.")
+    return values
 
 
 def run(*args, capture=False, env=None):
@@ -61,8 +86,10 @@ def deploy(sha):
             raise RuntimeError("A imagem já está instalada, mas não está saudável.")
         print("Commit já publicado e saudável:", sha)
         return
-    if set(current["NetworkSettings"]["Networks"]) != {"slc_default"}:
-        raise ValueError("Rede de produção diferente da instalação documentada.")
+    networks = allowed_networks(current)
+    bridge_values = bridge_environment()
+    if bridge_values:
+        networks.add(BRIDGE_NETWORK)
     if any(current["HostConfig"].get("PortBindings", {}).values()):
         raise ValueError("Portas publicadas inesperadas; revisar configuração antes de promover.")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -80,6 +107,7 @@ def deploy(sha):
     run("docker", "cp", CONTAINER + ":/app/App_Data", str(backup / "App_Data"))
     old_name = CONTAINER + "-rollback-" + stamp
     environment = dict(item.split("=", 1) for item in current["Config"]["Env"])
+    environment.update(bridge_values)
     command = ["docker", "create", "--name", CONTAINER, "--restart", "unless-stopped", "--network", "slc_default"]
     for alias in current["NetworkSettings"]["Networks"]["slc_default"].get("Aliases") or []:
         if alias != current["Id"]:
@@ -105,6 +133,12 @@ def deploy(sha):
             run("docker", "cp", CONTAINER + ":/app/App_Data", str(DATA_ROOT / "App_Data"))
         run("docker", "rename", CONTAINER, old_name)
         run(*command, env={**os.environ, **environment})
+        if BRIDGE_NETWORK in networks:
+            bridge_command = ["docker", "network", "connect"]
+            for alias in current["NetworkSettings"]["Networks"].get(BRIDGE_NETWORK, {}).get("Aliases") or []:
+                if alias != current["Id"]:
+                    bridge_command += ["--alias", alias]
+            run(*bridge_command, BRIDGE_NETWORK, CONTAINER)
         run("docker", "start", CONTAINER)
         if not healthy(CONTAINER):
             raise RuntimeError("A imagem candidata não ficou saudável.")

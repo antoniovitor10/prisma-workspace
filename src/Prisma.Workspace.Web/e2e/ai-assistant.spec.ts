@@ -4,6 +4,7 @@ import { createServer, type Server } from 'node:http';
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const orgId = '11111111-1111-4111-8111-111111111111';
 let server: Server; let providerUrl = ''; let token = ''; let connectionId = ''; let itemId = ''; let modelRequests = 0;
+const cliSessions = new Map<string, { owner: string; adapter: string; cancelled: boolean; authenticated: boolean }>();
 const headers = () => ({ Authorization: `Bearer ${token}`, 'X-Organization-Id': orgId });
 
 test.beforeAll(async ({ request }) => {
@@ -17,7 +18,24 @@ test.beforeAll(async ({ request }) => {
   expect(item.ok()).toBeTruthy(); itemId = await item.json();
   server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
-    const body = JSON.parse(raw); modelRequests++;
+    const body = raw ? JSON.parse(raw) : {};
+    if (req.url === '/v1/models') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: [{ id: 'fake-e2e', name: 'Modelo E2E' }] })); return; }
+    if (req.url?.startsWith('/v1/cli/')) {
+      const [, , , adapter, operation] = req.url.split('/');
+      const id = 'a'.repeat(32); const state = cliSessions.get(id);
+      let result: unknown;
+      if (operation === 'status') result = { available: true, authenticated: state?.authenticated ?? false, state: state?.authenticated ? 'authenticated' : 'authenticationRequired', message: 'Entre na conta.' };
+      else if (operation === 'models') result = state?.authenticated && state.adapter === adapter ? { models: [{ id: adapter === 'claude' ? 'sonnet' : 'codex-e2e', name: 'Modelo CLI E2E' }], state: 'ready', message: 'Catálogo CLI de teste.' } : { models: [], state: 'authenticationRequired', message: 'Entre na conta.' };
+      else if (operation === 'login') { cliSessions.set(id, { owner: body.owner, adapter, cancelled: false, authenticated: false }); result = { sessionId: id, state: 'waiting', available: true, authenticated: false, url: adapter === 'codex' ? 'https://auth.openai.com/codex/device' : 'https://claude.com/oauth/authorize', deviceCode: adapter === 'codex' ? 'TEST-CODE' : null, requiresCode: adapter === 'claude', message: 'Autorize no provedor.' }; }
+      else {
+        if (!state || state.owner !== body.owner || state.adapter !== adapter) { res.writeHead(404); res.end('{}'); return; }
+        if (operation === 'cancel') state.cancelled = true;
+        if (operation === 'complete') state.authenticated = true;
+        result = { sessionId: id, state: state.cancelled ? 'cancelled' : state.authenticated ? 'authenticated' : 'waiting', available: true, authenticated: state.authenticated, requiresCode: !state.authenticated && adapter === 'claude', url: state.cancelled || state.authenticated ? null : adapter === 'codex' ? 'https://auth.openai.com/codex/device' : 'https://claude.com/oauth/authorize', deviceCode: !state.cancelled && adapter === 'codex' ? 'TEST-CODE' : null, message: state.authenticated ? 'Login confirmado.' : 'Autorize no provedor.' };
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(result)); return;
+    }
+    modelRequests++;
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const send = (payload: unknown) => res.write(`data: ${JSON.stringify(payload)}\n\n`);
     const last = body.messages.at(-1);
@@ -32,7 +50,7 @@ test.beforeAll(async ({ request }) => {
     }
     send({ choices: [], usage: { prompt_tokens: 10, completion_tokens: 5 } }); res.end('data: [DONE]\n\n');
   });
-  await new Promise<void>(resolve => server.listen(0, '0.0.0.0', resolve));
+  await new Promise<void>(resolve => server.listen(18747, '0.0.0.0', resolve));
   const address = server.address(); providerUrl = `http://${process.env.E2E_AI_PROVIDER_HOST ?? '127.0.0.1'}:${typeof address === 'object' && address ? address.port : 0}/v1`;
   const create = await request.post(`${apiUrl}/api/admin/ai/connections`, { headers: headers(), data: { name: 'E2E IA', type: 'OpenAiCompatible', provider: 'Custom', baseUrl: providerUrl, model: 'fake-e2e', secret: 'e2e-fake-secret-ABCD' } });
   expect(create.ok()).toBeTruthy(); const connection = await create.json(); connectionId = connection.id;
@@ -80,14 +98,23 @@ test('administrador de organização não recebe autoridade de instalação nem 
 
 test('tela administrativa cadastra, testa e ativa conexão sem devolver a credencial', async ({ page, request }, testInfo) => {
   await page.goto('/settings');
+  await page.getByRole('button', { name: 'Adicionar conexão' }).click();
   const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
   await expect(form).toBeVisible();
   const name = `IA UI ${testInfo.project.name}`;
-  await form.getByLabel('Nome da conexão').fill(name);
-  await form.getByLabel('Modelo', { exact: true }).fill('fake-e2e');
+  await form.getByLabel('Provedor', { exact: true }).selectOption('Custom');
   await form.getByLabel('URL base').fill(providerUrl);
   await form.getByLabel('Chave de API', { exact: true }).fill('e2e-ui-fake-secret-WXYZ');
-  await form.getByRole('button', { name: 'Cadastrar conexão' }).click();
+  await form.getByLabel('Chave de API', { exact: true }).blur();
+  await expect(form.getByRole('option', { name: 'Modelo E2E — fake-e2e' })).toBeAttached();
+  await form.getByLabel('Modelo', { exact: true }).selectOption('fake-e2e');
+  await form.getByText('Opções avançadas', { exact: true }).click();
+  await form.getByLabel('Nome da conexão').fill(name);
+  await expect(form.getByRole('button', { name: 'Salvar conexão', exact: true })).toBeEnabled();
+  expect(await form.evaluate(element => (element as HTMLFormElement).checkValidity())).toBe(true);
+  const saving = page.waitForResponse(response => response.url().endsWith('/api/admin/ai/connections') && response.request().method() === 'POST');
+  await form.getByRole('button', { name: 'Salvar conexão', exact: true }).click();
+  expect((await saving).ok()).toBeTruthy();
   await expect(page.getByRole('button', { name: `Testar ${name}`, exact: true })).toBeVisible();
   await page.getByRole('button', { name: `Testar ${name}`, exact: true }).click();
   await expect(page.getByRole('button', { name: `Ativar ${name}`, exact: true })).toBeEnabled();
@@ -98,4 +125,49 @@ test('tela administrativa cadastra, testa e ativa conexão sem devolver a creden
   const connections = await request.get(`${apiUrl}/api/admin/ai/connections`, { headers: headers() });
   const saved = (await connections.json()).find((x: { name: string }) => x.name === name);
   await request.delete(`${apiUrl}/api/admin/ai/connections/${saved.id}`, { headers: headers() });
+});
+
+test('modelos e métodos acompanham todos os provedores; OAuth inicia login explícito', async ({ page, request }) => {
+  await page.route('**/api/admin/ai/models', async route => {
+    const input = route.request().postDataJSON();
+    await route.fulfill({ json: { models: [{ id: `${input.provider}-chat`, name: `${input.provider} chat` }], state: 'ready', message: 'Escolha um modelo.' } });
+  });
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Adicionar conexão' }).click();
+  const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
+  for (const provider of ['OpenRouter', 'OpenAI', 'Anthropic', 'Gemini', 'Custom']) {
+    await form.getByLabel('Provedor', { exact: true }).selectOption(provider);
+    await expect(form.getByRole('option', { name: `${provider} chat — ${provider}-chat` })).toBeAttached();
+    await expect(form.getByLabel('Modelo', { exact: true })).toHaveValue('');
+    await form.getByLabel('Modelo', { exact: true }).selectOption(`${provider}-chat`);
+    if (provider === 'Gemini' || provider === 'Custom') await expect(form.getByLabel('Como conectar')).toHaveCount(0);
+  }
+  await form.getByLabel('Provedor', { exact: true }).selectOption('OpenRouter');
+  await form.getByRole('option', { name: 'OpenRouter chat — OpenRouter-chat' }).waitFor({ state: 'attached' });
+  await form.getByLabel('Modelo', { exact: true }).selectOption('OpenRouter-chat');
+  const create = await request.post(`${apiUrl}/api/admin/ai/connections`, { headers: headers(), data: { name: 'OAuth E2E', type: 'OAuth', provider: 'OpenRouter', model: 'OpenRouter-chat' } });
+  expect(create.ok()).toBeTruthy(); const id = (await create.json()).id;
+  const start = await request.post(`${apiUrl}/api/admin/ai/connections/${id}/oauth/start`, { headers: headers() }); expect(start.ok()).toBeTruthy();
+  expect((await start.json()).url).toContain('https://openrouter.ai/auth?');
+  expect((await request.post(`${apiUrl}/api/admin/ai/connections/${id}/oauth/complete`, { headers: headers(), data: { code: 'invalid', state: 'invalid' } })).status()).toBe(400);
+  await request.delete(`${apiUrl}/api/admin/ai/connections/${id}`, { headers: headers() });
+});
+
+test('CLI exige aceite, cancela Codex e autentica Claude antes de selecionar modelo', async ({ page, request }, testInfo) => {
+  cliSessions.clear();
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Adicionar conexão' }).click();
+  const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
+  await form.getByLabel('Provedor', { exact: true }).selectOption('OpenAI'); await form.getByLabel('Como conectar').selectOption('CliSubscription');
+  await expect(form.getByText(/O provedor pode bloquear ou encerrar sua conta/)).toBeVisible();
+  const enter = form.getByRole('button', { name: 'Entrar com ChatGPT' }); await expect(enter).toBeDisabled();
+  await form.getByLabel('Entendo o risco de bloqueio ou perda da conta e quero continuar').check(); await expect(enter).toBeEnabled(); await enter.click();
+  await expect(form.getByText('TEST-CODE', { exact: true })).toBeVisible();
+  await expect(form.getByRole('link', { name: 'Abrir login oficial do provedor' })).toHaveAttribute('href', 'https://auth.openai.com/codex/device');
+  await form.getByRole('button', { name: 'Cancelar login' }).click(); await expect(form.getByText('TEST-CODE', { exact: true })).toHaveCount(0);
+  await form.getByLabel('Provedor', { exact: true }).selectOption('Anthropic'); await form.getByLabel('Como conectar').selectOption('CliSubscription');
+  await form.getByLabel('Entendo o risco de bloqueio ou perda da conta e quero continuar').check(); const claude = form.getByRole('button', { name: 'Entrar com Claude' }); await expect(claude).toBeEnabled(); await claude.click();
+  await form.getByLabel('Código retornado pelo Claude').fill('E2E-temporary-code'); await form.getByRole('button', { name: 'Confirmar código' }).click();
+  await expect(form.getByText('Conta autenticada', { exact: true })).toBeVisible(); await form.getByLabel('Modelo', { exact: true }).selectOption('sonnet');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await form.screenshot({ path: `../../.local/ai-e2e/cli-settings-${testInfo.project.name}.png` });
+  expect((await request.post(`${apiUrl}/api/admin/ai/cli/OpenAI/login`, { headers: headers(), data: { acceptedRisk: false } })).status()).toBe(400);
 });

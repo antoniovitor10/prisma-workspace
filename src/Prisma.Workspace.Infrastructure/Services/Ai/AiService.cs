@@ -15,7 +15,7 @@ using Prisma.Workspace.Infrastructure.Persistence;
 
 namespace Prisma.Workspace.Infrastructure.Services.Ai;
 
-public sealed class AiService(AppDbContext db, IOrganizationContext org, IPermissionService permissions,
+public sealed partial class AiService(AppDbContext db, IOrganizationContext org, IPermissionService permissions,
     IAiProviderFactory factory, IAiWorkspaceTools tools, IAiRedactionService redaction, IAiUsageMeter meter,
     IDataProtectionProvider protection, IConfiguration config, IHttpClientFactory clients) : IAiService
 {
@@ -45,6 +45,8 @@ public sealed class AiService(AppDbContext db, IOrganizationContext org, IPermis
         var isAdmin = await db.Users.AnyAsync(x => x.Id == userId && EF.Property<bool>(x, "IsPlatformAdministrator"), ct);
         if (operation.StartsWith("admin.") && !isAdmin) throw new AiException(403, "Somente o Administrador da instalação pode acessar esta área.");
         if (!config.GetValue("Ai:Enabled", true) && operation != "status") throw new AiException(403, "IA desabilitada na instalação.");
+        if (operation == "admin.models") return await ModelsAsync(a, ct);
+        if (operation.StartsWith("admin.cli.")) return await CliAsync(operation[10..], userId, a, ct);
         if (operation == "status")
         {
             var settings = await db.OrganizationAiSettings.SingleOrDefaultAsync(ct);
@@ -65,19 +67,24 @@ public sealed class AiService(AppDbContext db, IOrganizationContext org, IPermis
             var name = S(a, "name")?.Trim() ?? ""; var model = S(a, "model")?.Trim() ?? "";
             var type = S(a, "type") ?? "OpenAiCompatible"; var provider = S(a, "provider") ?? "Custom";
             var url = S(a, "baseUrl")?.Trim();
+            ValidateConnectionMethod(type, provider);
             if (name.Length is < 1 or > 160 || model.Length is < 1 or > 200
                 || !new[] { "ApiKey", "OpenAiCompatible", "OAuth", "CliSubscription" }.Contains(type)
                 || !new[] { "OpenAI", "Anthropic", "Gemini", "OpenRouter", "Custom" }.Contains(provider)) throw new AiException(400, "Nome, modelo ou tipo de conexão inválido.");
             if (type == "OAuth" && provider != "OpenRouter") throw new AiException(400, "OAuth disponível somente para OpenRouter.");
             if (type == "CliSubscription") url = config["Ai:BridgeUrl"] ?? "http://prisma-ai-bridge:8080/v1";
+            if (type == "OAuth" && !string.IsNullOrEmpty(url)) throw new AiException(400, "Login OpenRouter usa o endereço oficial; remova a URL personalizada.");
             if (!string.IsNullOrEmpty(url) && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 || url.Length > 2048)) throw new AiException(400, "Informe uma URL base HTTP válida e sem credenciais.");
             if ((type == "OpenAiCompatible" || provider == "Custom") && string.IsNullOrEmpty(url)) throw new AiException(400, "URL base obrigatória.");
             var secret = S(a, "secret");
+            var preserveSecret = c.Type == type && c.Provider == provider && SameEndpoint(c.BaseUrl, url);
             if (secret?.Length > 4096 || secret?.Any(char.IsControl) == true) throw new AiException(400, "Credencial inválida.");
-            if (type == "ApiKey" && string.IsNullOrEmpty(secret) && c.EncryptedSecret is null) throw new AiException(400, "Chave de API obrigatória.");
+            if (type == "ApiKey" && string.IsNullOrEmpty(secret) && (!preserveSecret || c.EncryptedSecret is null)) throw new AiException(400, "Informe a chave de API para este provedor e endereço.");
             if (Price(a, "inputPrice") < 0 || Price(a, "outputPrice") < 0) throw new AiException(400, "Preço não pode ser negativo.");
             c.Name = name; c.Model = model; c.Type = type; c.Provider = provider; c.BaseUrl = string.IsNullOrEmpty(url) ? null : url;
             c.InputPrice = Price(a, "inputPrice"); c.OutputPrice = Price(a, "outputPrice");
+            if (!preserveSecret || type == "CliSubscription") { c.EncryptedSecret = null; c.SecretSuffix = null; }
+            if (type is "OAuth" or "CliSubscription") secret = null;
             if (!string.IsNullOrEmpty(secret)) { c.EncryptedSecret = _protector.Protect(secret); c.SecretSuffix = secret.Length >= 4 ? secret[^4..] : null; }
             c.IsActive = false; c.TestSucceeded = false; c.TestedAt = null; c.TestMessage = null; c.SupportsTools = false;
             CancelAll();
@@ -88,6 +95,7 @@ public sealed class AiService(AppDbContext db, IOrganizationContext org, IPermis
         if (operation == "admin.activateConnection")
         {
             var c = await ConnectionAsync(id, ct); if (!c.TestSucceeded) throw new AiException(409, "Teste a conexão com sucesso antes de ativar.");
+            ValidateConnectionMethod(c.Type, c.Provider);
             CancelAll();
             // Primeiro libera o índice único, depois ativa; falha não deixa duas conexões ativas.
             foreach (var current in await db.AiProviderConnections.Where(x => x.IsActive).ToListAsync(ct)) current.IsActive = false;
@@ -96,6 +104,7 @@ public sealed class AiService(AppDbContext db, IOrganizationContext org, IPermis
         if (operation == "admin.testConnection")
         {
             var c = await ConnectionAsync(id, ct); var watch = Stopwatch.StartNew();
+            ValidateConnectionMethod(c.Type, c.Provider);
             c.TestSucceeded = false; c.SupportsTools = false; c.TestedAt = DateTimeOffset.UtcNow;
             var messages = new[] { new AiProviderMessage("user", "Responda apenas OK. Não consulte dados nem execute ferramentas.") };
             try

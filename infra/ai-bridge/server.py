@@ -10,6 +10,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import auth
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -35,13 +36,22 @@ class Handler(BaseHTTPRequestHandler):
         # Prompts, credenciais e respostas nunca entram no log da ponte.
         pass
 
+    def do_GET(self):
+        if self.path != "/health":
+            self.send_error(404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(b'{"status":"healthy"}')
+
     def do_POST(self):
         expected = os.environ.get("AI_BRIDGE_TOKEN", "")
         supplied = self.headers.get("Authorization", "")
         if not expected or not hmac.compare_digest(supplied, "Bearer " + expected):
             self.send_error(401, "Ponte nao autorizada")
             return
-        if self.path != "/v1/chat/completions":
+        if self.path != "/v1/chat/completions" and not self.path.startswith("/v1/cli/"):
             self.send_error(404)
             return
         try:
@@ -49,13 +59,41 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 256_000:
                 raise ValueError("Pedido excedeu limite")
             body = json.loads(self.rfile.read(length))
+            if self.path.startswith("/v1/cli/"):
+                parts = self.path.split("/")
+                if len(parts) != 5 or parts[3] not in {"claude", "codex"} or parts[4] not in {"status", "models", "login", "progress", "complete", "cancel"}:
+                    raise FileNotFoundError()
+                adapter, operation = parts[3], parts[4]
+                owner = body.get("owner")
+                if operation in {"status", "models"}:
+                    data = auth.status(adapter) if operation == "status" else auth.models(adapter)
+                else:
+                    if not isinstance(owner, str) or not 0 < len(owner) < 200:
+                        raise ValueError("Dono invalido")
+                    if operation == "login":
+                        if body.get("acceptedRisk") is not True:
+                            raise ValueError("Aceite obrigatorio")
+                        data = auth.sessions.start(adapter, owner)
+                    else:
+                        row = auth.sessions.get(adapter, owner, body.get("sessionId"))
+                        if operation == "cancel":
+                            row.terminate()
+                        if operation == "complete":
+                            row.complete(body.get("code"))
+                        data = row.view()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(json.dumps(data).encode())
+                return
             if body.get("tools"):
                 raise ValueError("Ferramentas nao sao aceitas pela ponte")
             prompt = "\n\n".join(str(m["role"]) + ": " + str(m["content"]) for m in body["messages"])
-            argv = command(os.environ.get("AI_BRIDGE_ADAPTER", "claude"), body["model"])
+            argv = command(body.get("adapter", os.environ.get("AI_BRIDGE_ADAPTER", "claude")), body["model"])
             with tempfile.TemporaryDirectory(prefix="prisma-ai-") as directory:
                 with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-                    env = {k: v for k, v in os.environ.items() if k not in {"AI_BRIDGE_TOKEN", "DATABASE_URL", "CONNECTION_STRING"}}
+                    env = auth.environment(directory)
                     env["CLAUDE_CODE_SKIP_PROMPT_HISTORY"] = "1"
                     process = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=output, stderr=errors,
                                                cwd=directory, env=env, start_new_session=True)
@@ -92,6 +130,12 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.flush()
         except (BrokenPipeError, ConnectionAbortedError):
             return
+        except (FileNotFoundError, FileExistsError) as error:
+            self.send_response(404 if isinstance(error, FileNotFoundError) else 409)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(b'{"error":{"message":"Sessao indisponivel ou login ja em andamento."}}')
         except Exception:
             self.send_response(502)
             self.send_header("Content-Type", "application/json")
