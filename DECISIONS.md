@@ -632,5 +632,8 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 
   Publicação autorizada pelo PO em 2026-10-06 após validação: "e pode subir já" (G-DEPLOY).
   Aplicar a mesma migration aditiva com backup verificado e atualizar o manifesto operacional.
+  Resultado: aplicada com backup e manifesto de 27 migrations; main/produção `1f2fe20` saudável,
+  CI com seis jobs e 109 E2E aprovados sem retry. Conta indicada promovida explicitamente;
+  modelo continua escolhido e configurado pelo instalador. (2026-10-06)
 
 - **D92** — Organização local aprovada pelo PO em 2026-10-05: um monorepo em `Desktop/prisma`, aplicação na raiz, landing em `apps/landing` e coordenação pelo workspace Prisma do Maestri. Remover cópias locais antigas do Prisma e Runrun após recuperação verificada; preservar pendências, histórico e material institucional somente em arquivo privado ignorado. Sem publicação ou alteração de hooks. Andares agrupam entregas; isolamento Git é obrigatório ao executar trabalhos simultâneos.

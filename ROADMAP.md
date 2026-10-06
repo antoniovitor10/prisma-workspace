@@ -12,9 +12,9 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
   `IsPlatformAdministrator` no Identity, independente do perfil da organização.
 - Fundação implementada: conexões API/OAuth e ponte CLI experimental, seis ferramentas de leitura,
   chat privado com fontes/streaming, mascaramento, painéis de configuração/consumo e cotas.
-- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada somente ao SQL Server E2E.
-  Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
-  G-DEPLOY autorizado pelo PO em 2026-10-06; publicação em andamento pelo CI após migration com backup verificado.
+- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada ao E2E e à produção com backup verificado.
+  Gates locais: 250 testes backend e 126 frontend. Imagem da release: 109 E2E aprovados no CI sem retry, seis skips condicionais.
+  G-DEPLOY autorizado pelo PO; main/produção `1f2fe20` saudável em 2026-10-06. Próximo teste humano: configurar modelo e habilitar IA.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source

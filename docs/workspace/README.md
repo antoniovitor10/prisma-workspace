@@ -4,15 +4,15 @@ Atualizado em 2026-10-06. Responsável pelo escopo: Vitor (PO). Coordenação: M
 
 ## Objetivo e situação
 Reunir produto, landing, planejamento e memória em um monorepo e eliminar cópias locais concorrentes.
-Base canônica: `antoniovitor10/prisma-workspace`, main `53d323bda31ce6a457fd55a81c6e2633065ed8ce`.
+Base canônica: `antoniovitor10/prisma-workspace`, main `1f2fe20bd541ec1c4c7cab2f33d364f5ca020305`.
 Branch local de implementação: `feat/ai-assistant-foundation`, derivada da consolidação local com a main integrada.
-A organização D92 e a fundação IA aprovada permanecem locais; melhorias anteriores e automação de deploy estão na main.
+A organização D92 permanece local; fundação IA e automação de deploy estão na main e em produção.
 O produto é a plataforma .NET 8/EF Core/SQL Server/React 19, não Prisma ORM.
 
 ## Repositórios e ambientes
 - Aplicação: `src/Prisma.Workspace.*`; backend xUnit em `tests/`; landing em `apps/landing`.
 - Remoto único: `https://github.com/antoniovitor10/prisma-workspace.git`.
-- Produção verificada em 2026-10-06: `https://prisma.nordevs.com.br`, commit `53d323b`, CI e deploy aprovados.
+- Produção verificada em 2026-10-06: `https://prisma.nordevs.com.br`, commit `1f2fe20`, CI e deploy aprovados.
   Automação e rollback em [docs/installation/deployment.md](../installation/deployment.md).
 - Landing documentada: `https://antoniovitordev.com.br/prisma/`, `/prisma/v2/`, `/prisma/v3/`.
 - Desenvolvimento: `npm run dev` na raiz, conforme `docs/installation/development.md`; Docker em localhost:8080.
@@ -28,7 +28,7 @@ Esta tabela ordena frentes; não duplica nem conclui automaticamente as 109 tare
 | --- | --- | --- |
 | Base e governança | Monorepo, docs e ferramentas | Auditoria pública e testes de governança aprovados; licença definida pelo PO antes da release |
 | Confiabilidade do produto | API, Web, SQL Server, testes | Comparar pendências recuperadas com main e abrir somente correções ainda necessárias com fonte e aceite |
-| Assistente IA — fundação | API, infraestrutura, Web | Fundação validada localmente; preparar publicação com migration e G-DEPLOY próprios |
+| Assistente IA — fundação | API, infraestrutura, Web | Publicada e saudável; configurar modelo e habilitar organização para teste humano |
 | Community e lançamento | Produto, instalação e apps/landing | Checklist de release, backup/restauração e mensagens da landing consistentes com o produto |
 | Operação e integrações | Publicação, SQL Server, SMTP e integrações | Inventário de acessos/ambientes validado sem expor segredos e sem alterar produção |
 
@@ -87,9 +87,9 @@ Cursor recorrente: não inicializado; sem conversa confirmada/lida, não há pon
 ## Última entrega e próximo passo
 Última entrega: melhorias da main de 05/10 publicadas, CI corrigido e deploy automático validado com
 122 testes unitários e 103 E2E aprovados. Chaves, logs, anexos e configuração preservados; backup e rollback disponíveis.
-Entrega local atual: fundação IA na SPEC-AI-001, com G-SPEC, G-SCOPE da flag Identity e G-MIGRATION aprovados.
-Migration aplicada ao E2E dedicado; 250 testes backend, 126 frontend e 109 E2E aprovados (dois retries mobile e seis skips condicionais).
-Próximo passo: promover a entrega com
-backup, manifesto de migrations e G-DEPLOY próprio. Não publicar automaticamente a consolidação D92.
+Entrega atual: fundação IA na SPEC-AI-001 publicada com G-SPEC, G-SCOPE, G-MIGRATION e G-DEPLOY aprovados.
+Migration aplicada ao E2E e à produção; 250 testes backend locais, 126 frontend e 109 E2E da imagem aprovados no CI sem retry, seis skips condicionais.
+Próximo passo: testar em `/settings` com modelo escolhido pelo instalador. Backup e rollback preservados.
+A consolidação D92 continua local e não foi incluída nesta publicação.
 Limitação: Orca está fechado, e a CLI não disponibiliza remoção de repositório; metadados globais do aplicativo
 não foram editados. Diretórios locais antigos ligados a Runrun foram removidos após recuperação verificada.

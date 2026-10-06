@@ -8,6 +8,6 @@ Objetivo: implementar e validar a primeira fatia do assistente de IA do Prisma. 
 
 ## IA — próximo resultado e gates
 
-Próximo resultado: gates técnicos aprovados e entrega pronta para promoção. G-SPEC, G-SCOPE da flag `IsPlatformAdministrator` no Identity e G-MIGRATION aprovados pelo PO. Migration aplicada somente no E2E dedicado; G-DEPLOY da IA fica para publicação própria. Fatias futuras: ações aprovadas, escrita assistida, atas/áudios/anexos, consumo e exposição de MCP; não juntar implementação dessas fatias nesta fundação. Não registrar chaves em notas. Uma entrega transversal fica neste andar e numa branch própria. Fonte documental preservada; históricos externos não lidos.
+Próximo resultado: teste humano em produção, `https://prisma.nordevs.com.br/settings`, configurando modelo e habilitando organização. G-SPEC, G-SCOPE, G-MIGRATION e G-DEPLOY aprovados pelo PO; main/produção `1f2fe20` saudável, 109 E2E da imagem aprovados sem retry e seis skips condicionais. Migration aplicada ao E2E e à produção com backup verificado; conta indicada recebeu flag Identity. Fatias futuras: ações aprovadas, escrita assistida, atas/áudios/anexos, consumo e exposição de MCP; não juntar implementação dessas fatias nesta fundação. Não registrar chaves em notas. Fonte documental preservada; históricos externos não lidos.
 
 As notas estão no canvas deste andar. Nenhum terminal temporário ou agente de IA permanece aqui.

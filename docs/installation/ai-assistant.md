@@ -95,6 +95,8 @@ pessoal na tela. Validação automatizada usa simuladores e não consome nenhuma
 `20261006134545_Add_AiAssistant_Foundation` adiciona seis tabelas de IA e a flag falsa no Identity.
 G-SPEC, G-SCOPE da flag e G-MIGRATION foram aprovados pelo PO em 2026-10-06; a aplicação/validação autorizada
 é primeiro no E2E dedicado. A aprovação dessa validação não é um registro de publicação em produção.
+Nesta instalação, o PO autorizou posteriormente G-DEPLOY: fundação publicada na main/produção `1f2fe20`
+em 2026-10-06, com backup verificado, manifesto de 27 migrations e 109 E2E da imagem aprovados sem retry.
 
 Para produção: backup verificado, promoção da migration conforme gate operacional e atualização do
 manifesto de migrations do deploy. A automação recusa a imagem se o manifesto não corresponder à estrutura
