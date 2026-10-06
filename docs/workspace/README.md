@@ -1,17 +1,19 @@
 # Prisma — workspace principal
 
-Atualizado em 2026-10-05. Responsável pelo escopo: Vitor (PO). Coordenação: Maestri.
+Atualizado em 2026-10-06. Responsável pelo escopo: Vitor (PO). Coordenação: Maestri.
 
 ## Objetivo e situação
 Reunir produto, landing, planejamento e memória em um monorepo e eliminar cópias locais concorrentes.
-Base canônica: `antoniovitor10/prisma-workspace`, main `9d48f1df612c4aabce76fd2bbe7317fcdb64e702`.
-Branch de organização: `chore/maestri-workspace`; nenhuma alteração foi publicada.
+Base canônica: `antoniovitor10/prisma-workspace`, main `53d323bda31ce6a457fd55a81c6e2633065ed8ce`.
+Branch local: `chore/maestri-workspace`, com a main integrada. A organização D92 e a fundação IA draft
+permanecem locais; melhorias do produto e automação de deploy foram publicadas na main.
 O produto é a plataforma .NET 8/EF Core/SQL Server/React 19, não Prisma ORM.
 
 ## Repositórios e ambientes
 - Aplicação: `src/Prisma.Workspace.*`; backend xUnit em `tests/`; landing em `apps/landing`.
 - Remoto único: `https://github.com/antoniovitor10/prisma-workspace.git`.
-- Produção documentada: `https://prisma.nordevs.com.br`; última evidência documental de deploy em 2026-09-22.
+- Produção verificada em 2026-10-06: `https://prisma.nordevs.com.br`, commit `53d323b`, CI e deploy aprovados.
+  Automação e rollback em [docs/installation/deployment.md](../installation/deployment.md).
 - Landing documentada: `https://antoniovitordev.com.br/prisma/`, `/prisma/v2/`, `/prisma/v3/`.
 - Desenvolvimento: `npm run dev` na raiz, conforme `docs/installation/development.md`; Docker em localhost:8080.
 - Context Explorer: localhost:5174 e API localhost:3847. Não confundir com o produto.
@@ -83,7 +85,8 @@ componente e eventual vínculo incerto; comparar IDs e conteúdo com `backlog.md
 Cursor recorrente: não inicializado; sem conversa confirmada/lida, não há ponto de leitura a avançar.
 
 ## Última entrega e próximo passo
-Última entrega: consolidação local, landing incorporada, pendências protegidas e cópias redundantes removidas.
-Próximo passo: escolher uma frente e revisar suas pendências/aceites antes de começar implementação.
+Última entrega: melhorias da main de 05/10 publicadas, CI corrigido e deploy automático validado com
+122 testes unitários e 103 E2E aprovados. Chaves, logs, anexos e configuração preservados; backup e rollback disponíveis.
+Próximo passo: testar as melhorias com a equipe e revisar a fundação IA draft e seus gates próprios.
 Limitação: Orca está fechado, e a CLI não disponibiliza remoção de repositório; metadados globais do aplicativo
 não foram editados. Diretórios locais antigos ligados a Runrun foram removidos após recuperação verificada.

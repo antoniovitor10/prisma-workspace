@@ -1,3 +1,17 @@
+## [2026-10-06] - Codex - publicação das melhorias e correção do deploy automático
+
+- PO solicitou publicar a main de 2026-10-05 (`7b519b7`) e corrigir o deploy automático antes do teste da IA. Trabalho isolado em `fix/automatic-deploy-20261006`; nenhuma spec de IA aprovada por esta entrega.
+- Causas: workflow só validava/buildava, sem etapa de publicação ou secrets SSH; governança falhava por contagens antigas, referências do backlog e catálogo incompleto. Correções reaproveitam a normalização local existente, preservando histórias humanas e acrescentando cobertura das specs atuais. Governança: 42/42 testes aprovados.
+- Pipeline: imagem por commit e checksum, E2E desktop/mobile em SQL Server descartável, deploy condicionado a todos os gates, chave SSH dedicada e verificação do host. Testes backend continuam sob demanda, conforme decisão anterior do PO.
+- Operação: preserva ambiente externo, rede, chaves, logs e anexos; backup SQL verificado antes de substituir; contêiner anterior mantido para rollback automático. Manifesto com 26 migrations comparado ao código de produção e às 26 migrations aplicadas; diferenças futuras bloqueiam a publicação sem G-MIGRATION.
+- Validação preparatória: actionlint aprovado, sintaxe Bash/Python aprovada, três testes de integridade/migrations/rollback aprovados. Próximo passo: execução real do CI/E2E e promoção da imagem somente se todos os gates passarem; evidência final será registrada no workspace e no ai-memory.
+- Primeiro CI real: build backend, lint/build/frontend e 122 testes unitários, governança e imagem aprovados. E2E: 101 aprovados, 6 condicionais ignorados e 2 falhas por mensagem antiga de URL no editor, nos dois viewports. A spec de remediação aprovada exige HTTPS; a expectativa E2E foi alinhada a esse contrato, preservando a verificação de rejeição de `javascript:`. Deploy corretamente bloqueado; nenhuma alteração funcional adicional.
+- Resultado final: commit `53d323bda31ce6a457fd55a81c6e2633065ed8ce` publicado automaticamente; run `37459475957` com os seis jobs aprovados, 122 unitários frontend e 103 E2E desktop/mobile aprovados, 6 skips condicionais e zero falhas. `/health` e `/login` públicos HTTP 200; revisão e marcador da produção correspondem ao commit.
+- Backup SQL com checksum e verificação concluídos em `/home/dev/backups/prisma/20261006T120053Z-53d323bda31c`; contêiner anterior preservado em `prisma-workspace-api-rollback-20261006T120053Z`. Configuração externa idêntica à anterior; arquivo de anexo preservado por hash e mount `/app/App_Data` confirmado. Sem alteração de schema.
+- Main integrada à branch local `chore/maestri-workspace`, preservando a organização D92, landing, histórico de diagnóstico e spec IA draft. Catálogo local agora possui 49 specs e 360 histórias, com governança 42/42 aprovada; o remoto tem 48 specs porque a fundação IA permanece local. Registros finais locais não disparam outro deploy.
+- Próximo passo: testar as melhorias publicadas com a equipe e revisar as decisões pendentes da `SPEC-AI-001` antes de G-SPEC/G-MIGRATION da fundação; esta entrega não implementa nem aprova IA.
+
+
 ## [2026-10-06] — Codex — diagnóstico de recuperação de senha em produção
 
 - Pedido do PO: correção pontual do e-mail de redefinição que não chega em `prisma.nordevs.com.br`.
@@ -21,15 +35,6 @@
 - Os cinco andares agora contêm duas notas cada, espelhadas em `docs/workspace/floors`; terminais de shell
   usados somente para colocar notas foram removidos. Nenhuma sessão de IA nova foi iniciada.
 - Validação e relatório final em `docs/workspace/validation.md`; próximo passo é selecionar a frente executável.
-
-## [2026-10-06] - Codex - publicação das melhorias e correção do deploy automático
-
-- PO solicitou publicar a main de 2026-10-05 (`7b519b7`) e corrigir o deploy automático antes do teste da IA. Trabalho isolado em `fix/automatic-deploy-20261006`; nenhuma spec de IA aprovada por esta entrega.
-- Causas: workflow só validava/buildava, sem etapa de publicação ou secrets SSH; governança falhava por contagens antigas, referências do backlog e catálogo incompleto. Correções reaproveitam a normalização local existente, preservando histórias humanas e acrescentando cobertura das specs atuais. Governança: 42/42 testes aprovados.
-- Pipeline: imagem por commit e checksum, E2E desktop/mobile em SQL Server descartável, deploy condicionado a todos os gates, chave SSH dedicada e verificação do host. Testes backend continuam sob demanda, conforme decisão anterior do PO.
-- Operação: preserva ambiente externo, rede, chaves, logs e anexos; backup SQL verificado antes de substituir; contêiner anterior mantido para rollback automático. Manifesto com 26 migrations comparado ao código de produção e às 26 migrations aplicadas; diferenças futuras bloqueiam a publicação sem G-MIGRATION.
-- Validação preparatória: actionlint aprovado, sintaxe Bash/Python aprovada, três testes de integridade/migrations/rollback aprovados. Próximo passo: execução real do CI/E2E e promoção da imagem somente se todos os gates passarem; evidência final será registrada no workspace e no ai-memory.
-- Primeiro CI real: build backend, lint/build/frontend e 122 testes unitários, governança e imagem aprovados. E2E: 101 aprovados, 6 condicionais ignorados e 2 falhas por mensagem antiga de URL no editor, nos dois viewports. A spec de remediação aprovada exige HTTPS; a expectativa E2E foi alinhada a esse contrato, preservando a verificação de rejeição de `javascript:`. Deploy corretamente bloqueado; nenhuma alteração funcional adicional.
 
 ## [2026-10-05] - Codex - resumo de tempo e controles das colunas
 
