@@ -1,5 +1,19 @@
 # ROADMAP - fases do projeto
 
+## [~] Fase 15 - Assistente de IA (D91)
+
+- Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
+  mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
+- G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por
+  `IsPlatformAdministrator` no Identity, independente do perfil da organização.
+- Fundação implementada: conexões API/OAuth e ponte CLI experimental, seis ferramentas de leitura,
+  chat privado com fontes/streaming, mascaramento, painéis de configuração/consumo e cotas.
+- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada somente ao SQL Server E2E.
+  Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
+  Publicação e aplicação em produção ficam para G-DEPLOY próprio.
+- As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
+
+
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,
 horas, alocacao, lead time, dashboards, Gantt, filtros, acoes em massa e

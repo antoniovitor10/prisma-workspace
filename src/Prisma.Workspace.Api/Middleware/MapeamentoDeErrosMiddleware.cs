@@ -32,6 +32,12 @@ public class MapeamentoDeErrosMiddleware
             await WriteProblemAsync(context, ApiErrors.Problem(400, "business_rule_error",
                 "Regra de negócio inválida", ex.Message, context.TraceIdentifier));
         }
+        catch (Prisma.Workspace.Application.Features.Ai.AiException ex)
+        {
+            var problem = ApiErrors.Problem(ex.Status, "ai_error", "Assistente de IA", ex.Message, context.TraceIdentifier);
+            if (ex.ResetsAt is not null) problem.Extensions["resetsAt"] = ex.ResetsAt;
+            await WriteProblemAsync(context, problem);
+        }
         catch (ValidationException ex)
         {
             var errors = ex.Errors

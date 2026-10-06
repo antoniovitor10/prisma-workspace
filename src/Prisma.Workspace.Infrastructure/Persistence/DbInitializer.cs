@@ -61,6 +61,7 @@ public static class DbInitializer
         var adminResult = await userManager.CreateAsync(user1, demoPassword);
         if (!adminResult.Succeeded)
             throw new InvalidOperationException("Não foi possível criar o administrador da demonstração.");
+        context.Entry(user1).Property("IsPlatformAdministrator").CurrentValue = true;
 
         var user2 = new IdentityUser { UserName = "manager@prisma.example.invalid", Email = "manager@prisma.example.invalid", EmailConfirmed = true };
         var managerResult = await userManager.CreateAsync(user2, demoPassword);

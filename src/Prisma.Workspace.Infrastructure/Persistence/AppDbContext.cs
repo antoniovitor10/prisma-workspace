@@ -88,11 +88,20 @@ public class AppDbContext : IdentityDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<InstallationState> InstallationStates => Set<InstallationState>();
+    public DbSet<AiProviderConnection> AiProviderConnections => Set<AiProviderConnection>();
+    public DbSet<AiInstallationSettings> AiInstallationSettings => Set<AiInstallationSettings>();
+    public DbSet<OrganizationAiSettings> OrganizationAiSettings => Set<OrganizationAiSettings>();
+    public DbSet<AiConversation> AiConversations => Set<AiConversation>();
+    public DbSet<AiMessage> AiMessages => Set<AiMessage>();
+    public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        // Flag de control plane no Identity; nunca derivada dos perfis do tenant (G-SCOPE/TASK-117).
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUser>()
+            .Property<bool>("IsPlatformAdministrator").HasDefaultValue(false);
 
         // Configurações de mapeamento de entidades de negócio serão adicionadas na Fase 1.
         // Aplicar todas as configurações do assembly atual (IEntityTypeConfiguration<T>).
@@ -115,10 +124,23 @@ public class AppDbContext : IdentityDbContext
     public override Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
+        => SaveWithAiPrivacyAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+    private async Task<int> SaveWithAiPrivacyAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken)
     {
+        var deactivated = ChangeTracker.Entries<OrganizationMember>()
+            .Where(x => x.State == EntityState.Modified && !x.Entity.IsActive && (bool)x.OriginalValues[nameof(OrganizationMember.IsActive)]!)
+            .Select(x => new { x.Entity.OrganizationId, x.Entity.UserId }).ToArray();
+        foreach (var member in deactivated)
+        {
+            var conversations = await AiConversations.Include(x => x.Messages)
+                .Where(x => x.OrganizationId == member.OrganizationId && x.UserId == member.UserId).ToListAsync(cancellationToken);
+            foreach (var conversation in conversations) Services.Ai.AiService.Cancel(conversation.Id);
+            AiConversations.RemoveRange(conversations);
+        }
         CaptureAuditEntries();
         EnforceOrganizationOwnership();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     private void EnforceOrganizationOwnership()
@@ -152,6 +174,10 @@ public class AppDbContext : IdentityDbContext
 
     private void ApplyOrganizationFilters(ModelBuilder builder)
     {
+        builder.Entity<OrganizationAiSettings>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
+        builder.Entity<AiConversation>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
+        builder.Entity<AiMessage>().HasQueryFilter(x => x.Conversation.OrganizationId == CurrentOrganizationId);
+        builder.Entity<AiUsageRecord>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<Organization>().HasQueryFilter(x => x.Id == CurrentOrganizationId);
         builder.Entity<OrganizationWorkflowTemplate>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<OrganizationWorkflowStatus>().HasQueryFilter(x => x.Template.OrganizationId == CurrentOrganizationId);

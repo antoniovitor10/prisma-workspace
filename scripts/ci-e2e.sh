@@ -2,13 +2,18 @@
 # Testa a imagem publicável contra SQL Server exclusivo e descartável.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
+if command -v cygpath >/dev/null 2>&1; then
+  root=$(cygpath -m "$root")
+  export MSYS_NO_PATHCONV=1
+fi
 image=${1:?Informe a imagem candidata}
 suffix=${GITHUB_RUN_ID:-local-$$}-${GITHUB_RUN_ATTEMPT:-1}
 network=prisma-ci-e2e-$suffix
 database=prisma-ci-sql-$suffix
 app=prisma-ci-app-$suffix
+runner=prisma-ci-browser-$suffix
 cleanup() {
-  docker rm -f "$app" "$database" >/dev/null 2>&1 || true
+  docker rm -f "$runner" "$app" "$database" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -36,7 +41,7 @@ export Seed__DemoPassword=$E2E_TEST_USER_PASSWORD
 docker run -d --name "$app" --network "$network" \
   -e ConnectionStrings__DefaultConnection -e Jwt__Key -e Seed__DemoPassword \
   -e ASPNETCORE_ENVIRONMENT=Development -e Seed__DemoEnabled=true -e Setup__Enabled=false \
-  -e RateLimiting__GlobalPermitLimit=10000 -e Serilog__MinimumLevel__Default=Warning \
+  -e RateLimiting__GlobalPermitLimit=10000 -e RateLimiting__AuthPermitLimit=10000 -e Serilog__MinimumLevel__Default=Warning \
   -e Serilog__MinimumLevel__Override__Microsoft=Warning \
   -e Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore.Database.Command=Warning \
   "$image" >/dev/null
@@ -51,8 +56,10 @@ done
 export E2E_BASE_URL="http://$app:8080"
 export E2E_API_URL=$E2E_BASE_URL
 export E2E_TEST_USER_EMAIL=admin@prisma.example.invalid
-docker run --rm --network "$network" --ipc=host \
-  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD \
+export E2E_AI_PROVIDER_HOST=$runner
+docker run --rm --name "$runner" --network "$network" --ipc=host \
+  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD -e E2E_AI_PROVIDER_HOST \
   -v "$root:/workspace" -w /workspace/src/Prisma.Workspace.Web \
+  -v /workspace/src/Prisma.Workspace.Web/node_modules \
   mcr.microsoft.com/playwright:v1.62.1-noble \
   sh -c 'npm ci --no-audit && npm run e2e'

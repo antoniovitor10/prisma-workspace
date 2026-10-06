@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { ContextBarProvider, ContextBarSlot } from './ContextBar';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { AiAssistant } from '../features/ai/AiAssistant';
 
 /* Lateral contextual (só no projeto) e coluna de conteúdo são irmãos (D88). */
 const Shell = styled.div`
@@ -47,6 +48,7 @@ export function AppShell() {
           <Content>
             <Outlet />
           </Content>
+          <AiAssistant />
         </Coluna>
       </Shell>
     </ContextBarProvider>

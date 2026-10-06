@@ -85,6 +85,15 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IWorkItemAccessService, Identity.WorkItemAccessService>();
         services.AddScoped<IAutomationExecutor, Services.AutomationExecutor>();
         services.AddScoped<IInstallationSetupService, Services.InstallationSetupService>();
+        services.AddSingleton<IAiRedactionService, Services.AiRedactionService>();
+        services.AddHttpClient("prisma-ai", client => client.Timeout = TimeSpan.FromMinutes(3))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddScoped<Application.Features.Ai.IAiService, Services.Ai.AiService>();
+        services.AddScoped<Application.Features.Ai.IAiProviderFactory, Services.Ai.AiHttpProvider>();
+        services.AddScoped<Application.Features.Ai.IAiUsageMeter, Services.Ai.AiUsageMeter>();
+        services.AddScoped<Application.Features.Ai.IAiWorkspaceReadRepository, Services.Ai.AiWorkspaceReadRepository>();
+        services.AddScoped<Application.Features.Ai.IAiWorkspaceTools, Application.Features.Ai.AiWorkspaceTools>();
+        services.AddScoped<Application.Features.Ai.IAiRetrieval, Application.Features.Ai.AiWorkspaceTools>();
         services.AddScoped<Prisma.Workspace.Application.Features.Organizations.IInvitationOnboardingService, Services.InvitationOnboardingService>();
 
         return services;

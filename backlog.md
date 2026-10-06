@@ -1772,7 +1772,7 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Api/Controllers/OrganizationsController.cs
     - src/Prisma.Workspace.Web/src/layout/Topbar.tsx
   tests: [tests/Prisma.Workspace.Tests/MultitenancyPersistenceTests.cs, src/Prisma.Workspace.Web/e2e/organization-switch.spec.ts]
-  human_gate: sim (G-SCOPE para a identidade tecnica do Platform Admin)
+  human_gate: G-SCOPE da identidade aprovado em 2026-10-06 (flag Identity, D91); outros gates e TASK-112 continuam próprios do control plane
   status: blocked
   priority: P0
 
@@ -2559,6 +2559,25 @@ subindo com os dados preservados.
 
 ---
 
+## Fundação IA autorizada em 2026-10-06
+
+```yaml
+- id: TASK-AI-001
+  spec: SPEC-AI-001 (specs/ai-assistant-foundation.md)
+  requirement: Implementar conexoes globais, chat de leitura com permissoes, historico privado, mascaramento, uso e cotas da fundacao IA.
+  dependencies: []
+  risk: alto
+  gates: [G-SPEC, G-SCOPE, G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  files: [src/Prisma.Workspace.Application/Features/Ai, src/Prisma.Workspace.Infrastructure/Services/Ai, src/Prisma.Workspace.Api/Controllers/AiController.cs, src/Prisma.Workspace.Web/src/features/ai]
+  tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, tests/Prisma.Workspace.Tests/AiRedactionTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
+  status: done
+  priority: P0
+```
+
+G-SPEC, G-SCOPE da flag Identity e G-MIGRATION da fundação IA aprovados pelo PO. A TASK-117 mais ampla
+continua com itens de control plane fora deste recorte; esta entrega não conclui organização/tenant da D58.
+Implementação e validação local concluídas em 2026-10-06; publicação em produção é etapa própria. Evidências em PROGRESS.
+
 ## Arquivos centrais disputados entre lotes
 
 Lista para o coordenador serializar a ordem. Cada linha é um ponto onde dois ou mais lotes escrevem no mesmo
@@ -2605,8 +2624,8 @@ arquivo, com risco real de conflito semântico — não apenas textual.
    `ProductOwner`, `Developer`, `TeamMember` e `Client`? Sem essa tabela, a migration não pode ser escrita.
 4. **Mapeamento de `ProjectStatus` (TASK-115)** — `Planning`, `OnHold`, `Completed` e `Cancelled` viram `Ativo`
    ou `Arquivado`? A escolha muda a visibilidade de projetos reais em produção.
-5. **Identidade técnica do Administrador da plataforma (TASK-117)** — `G-SCOPE` ainda pendente desde a D58:
-   flag no Identity, tabela de control plane separada, ou configuração externa?
+5. **Identidade técnica do Administrador da plataforma (TASK-117)** — respondida pelo PO em 2026-10-06:
+   flag `IsPlatformAdministrator` no Identity, independente dos perfis da organização. O restante do control plane permanece no backlog.
 6. **Licença do projeto (TASK-501)** — decisão exclusivamente humana; bloqueia a promoção pública e a
    `v0.1.0`.
 7. **Apontamento em tarefa concluída (TASK-308)** — permitido, permitido com justificativa, ou bloqueado?
@@ -2614,5 +2633,5 @@ arquivo, com risco real de conflito semântico — não apenas textual.
 9. **`G-HISTORY` do `SprintItemSnapshot` (TASK-209)** — aceitar acionar o gate para incluir `ProjectId` no
    snapshot, ou derivar o projeto por join e manter o snapshot intacto?
 
-Nenhuma dessas perguntas foi respondida por agente. Onde não há decisão registrada em `DECISIONS.md` nem nas
+As decisões acima foram tomadas somente pelo PO; a resposta da pergunta 5 está registrada na D91. Onde não há decisão registrada em `DECISIONS.md` nem nas
 specs, a tarefa correspondente está com `status: blocked`.

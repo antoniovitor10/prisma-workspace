@@ -23,6 +23,35 @@ exclusions:
   - "**/*.pdb"
 
 domains:
+  ai_assistant:
+    spec: "specs/ai-assistant-foundation.md"
+    stories:
+      - "stories/ai-assistant.md"
+    code:
+      - "src/Prisma.Workspace.Application/Interfaces/IAiRedactionService.cs"
+      - "src/Prisma.Workspace.Infrastructure/Services/AiRedactionService.cs"
+      - "src/Prisma.Workspace.Domain/Entities/AiAssistant.cs"
+      - "src/Prisma.Workspace.Application/Features/Ai"
+      - "src/Prisma.Workspace.Infrastructure/Services/Ai"
+      - "src/Prisma.Workspace.Infrastructure/Persistence/Configurations/AiAssistantConfiguration.cs"
+      - "src/Prisma.Workspace.Infrastructure/Persistence/AppDbContext.cs"
+      - "src/Prisma.Workspace.Api/Controllers/AiController.cs"
+      - "src/Prisma.Workspace.Web/src/features/ai"
+      - "infra/ai-bridge"
+    tests:
+      - "tests/Prisma.Workspace.Tests/AiRedactionTests.cs"
+      - "tests/Prisma.Workspace.Tests/AiFoundationTests.cs"
+      - "src/Prisma.Workspace.Web/src/features/ai/AiAssistant.test.tsx"
+      - "src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts"
+    gates:
+      g_spec: "approved-2026-10-06"
+      g_scope: "approved-2026-10-06 (flag Identity independente)"
+      g_migration: "approved-2026-10-06 (20261006134545_Add_AiAssistant_Foundation, validacao E2E)"
+      backend_build: "dotnet build Prisma.Workspace.sln"
+      backend_test: "dotnet test tests/Prisma.Workspace.Tests/"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_e2e: "npm run e2e"
   organizations:
     spec: "specs/organizations.md"
     code:

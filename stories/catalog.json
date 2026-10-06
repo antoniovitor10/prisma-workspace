@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-06T11:36:10.504Z",
+  "generatedAt": "2026-10-06T15:08:55.175008+00:00",
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
@@ -6428,6 +6428,63 @@
       },
       "status": "active",
       "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-AI-001",
+      "specId": "SPEC-AI-001",
+      "specTitle": "Fundação do assistente de IA — conexões, chat de leitura, uso e cotas",
+      "specPath": "specs/ai-assistant-foundation.md",
+      "sourcePath": "stories/ai-assistant.md",
+      "sourceHeading": "US-AI-001",
+      "title": "conectar o modelo da instalação",
+      "narrative": "Como Administrador da instalação Quero conectar um modelo por chave de API, endpoint compatível com OpenAI, login OAuth ou, em caráter experimental, assinatura via CLI Para que todas as organizações usem IA sem que o Prisma embuta ou pague um modelo",
+      "actor": "Administrador da instalação",
+      "scenario": {
+        "given": "uma instalação sem conexão",
+        "when": "o admin cadastra e testa uma conexão válida",
+        "then": "a IA fica disponível para as organizações que a ligarem",
+        "raw": "Dado uma instalação sem conexão quando o admin cadastra e testa uma conexão válida então a IA fica disponível para as organizações que a ligarem."
+      },
+      "status": "active",
+      "origin": "human_authored"
+    },
+    {
+      "id": "US-AI-002",
+      "specId": "SPEC-AI-001",
+      "specTitle": "Fundação do assistente de IA — conexões, chat de leitura, uso e cotas",
+      "specPath": "specs/ai-assistant-foundation.md",
+      "sourcePath": "stories/ai-assistant.md",
+      "sourceHeading": "US-AI-002",
+      "title": "perguntar ao workspace pelo botão flutuante",
+      "narrative": "Como pessoa de uma organização com IA ligada Quero abrir um chat por um botão flutuante em qualquer tela e perguntar sobre projetos, tarefas, prazos e pedidos de cliente Para ter respostas e resumos de status sem montar filtros e relatórios",
+      "actor": "pessoa de uma organização com IA ligada",
+      "scenario": {
+        "given": "que estou dentro de um projeto",
+        "when": "pergunto \"o que está atrasado aqui?\"",
+        "then": "a resposta considera esse projeto e mostra as tarefas de onde tirou a informação, quando houver",
+        "raw": "Dado que estou dentro de um projeto quando pergunto \"o que está atrasado aqui?\" então a resposta considera esse projeto e mostra as tarefas de onde tirou a informação, quando houver."
+      },
+      "status": "active",
+      "origin": "human_authored"
+    },
+    {
+      "id": "US-AI-003",
+      "specId": "SPEC-AI-001",
+      "specTitle": "Fundação do assistente de IA — conexões, chat de leitura, uso e cotas",
+      "specPath": "specs/ai-assistant-foundation.md",
+      "sourcePath": "stories/ai-assistant.md",
+      "sourceHeading": "US-AI-003",
+      "title": "controlar consumo",
+      "narrative": "Como Administrador da instalação Quero definir teto diário, cotas por organização e por usuário e ver o consumo Para que ninguém esgote a conexão sozinho e o custo não surpreenda",
+      "actor": "Administrador da instalação",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Como Administrador da instalação Quero definir teto diário, cotas por organização e por usuário e ver o consumo",
+        "raw": "Como Administrador da instalação Quero definir teto diário, cotas por organização e por usuário e ver o consumo"
+      },
+      "status": "active",
+      "origin": "human_authored"
     }
   ]
 }
