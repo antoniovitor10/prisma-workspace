@@ -1,8 +1,18 @@
 # Estado atual do workspace — 2026-10-05
 
-Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, spec draft, gates próprios pendentes. D92 autoriza somente a organização local.
+Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, SPEC-AI-001 aprovada pelo PO em 2026-10-06; G-SCOPE da identidade administrativa e G-MIGRATION próprios pendentes. D92 autoriza somente a organização local.
 
 # ROADMAP - fases do projeto
+
+## [~] Fase 15 - Assistente de IA (D91)
+
+- Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
+  mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
+- G-SPEC aprovado; identidade técnica do Administrador da instalação (TASK-117/G-SCOPE) ainda pendente.
+  Migration aditiva será apresentada concretamente para G-MIGRATION antes da alteração do banco.
+- Primeira etapa independente da autoridade administrativa: serviço de mascaramento e testes dos padrões
+  do zapmind. Conexões, ferramentas, chat e painéis ainda não entregues.
+- As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,

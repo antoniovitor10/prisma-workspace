@@ -619,4 +619,9 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 
   Nota de reconciliação (2026-10-05): esta decisão estava identificada como D90 no trabalho local de 2026-09-24 e na memória. D90 já identifica acesso prévio ao projeto em main (2026-09-22). O alias histórico é preservado na recuperação privada; a numeração atual é D91. Nenhum G-SPEC/G-MIGRATION de IA foi aprovado nesta organização.
 
+  Atualização de 2026-10-06: PO Vitor aprovou a SPEC-AI-001 e autorizou sua implementação explicitamente no
+  chat. G-SPEC registrado no painel; a escolha técnica da identidade administrativa (TASK-117/G-SCOPE)
+  continua pendente e foi enviada ao PO. Não foi concedido G-MIGRATION neste registro. A implementação
+  começou somente pelo mascaramento, independente dessa identidade; a IA ainda não está disponível no produto.
+
 - **D92** — Organização local aprovada pelo PO em 2026-10-05: um monorepo em `Desktop/prisma`, aplicação na raiz, landing em `apps/landing` e coordenação pelo workspace Prisma do Maestri. Remover cópias locais antigas do Prisma e Runrun após recuperação verificada; preservar pendências, histórico e material institucional somente em arquivo privado ignorado. Sem publicação ou alteração de hooks. Andares agrupam entregas; isolamento Git é obrigatório ao executar trabalhos simultâneos.

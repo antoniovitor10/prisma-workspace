@@ -3,7 +3,7 @@
 **Status:** active
 **Módulo:** ai-assistant
 **Decisão:** D91
-**Spec vinculada:** `specs/ai-assistant-foundation.md` (fatia 1, `draft`); fatias 2 a 6 ainda sem spec
+**Spec vinculada:** `specs/ai-assistant-foundation.md` (fatia 1, `approved` em 2026-10-06); fatias 2 a 6 ainda sem spec
 
 ## Origem
 

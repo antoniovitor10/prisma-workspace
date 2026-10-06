@@ -1,3 +1,18 @@
+## [2026-10-06] - Codex - aprovação da SPEC-AI-001 e início do mascaramento
+
+- PO aprovou explicitamente a spec e pediu implementação. Status canônico alterado para approved e G-SPEC registrado no Context Explorer, atribuído a Vitor. Branch `feat/ai-assistant-foundation` criada preservando o estado local.
+- Identidade administrativa da TASK-117 continua sem escolha técnica. Pergunta G-SCOPE enviada ao PO com as alternativas já previstas: flag no Identity, tabela própria ou configuração externa. Não foi inventada uma autoridade nem concedido G-MIGRATION/G-DEPLOY.
+- Primeiro componente implementado: `IAiRedactionService` e `AiRedactionService`, portando os padrões do `redigir.py` consultado no zapmind. URLs/cabeçalhos tratados antes dos rótulos para não deixar fragmentos; valores entre aspas e credenciais em linhas soltas cobertos. CPF/CNPJ preservados, incluindo CNPJ sem pontuação; timeout de regex oculta a entrada inteira.
+- Validação: 36 testes de mascaramento aprovados, projetos backend compilados e 89 testes de governança/loop aprovados. Domínio IA incluído no índice de contexto; `git diff --check` aprovado. E2E não aplicável a este componente interno ainda não conectado a endpoints, frontend ou schema.
+- Ambiente preparado: dependências .NET e frontend instaladas, Docker iniciado; banco/API/frontend E2E ainda não configurados. Nenhum dado ou configuração de produção alterado. Conexões, provedores, ferramentas, chat, histórico persistido, cotas, painéis e migration ainda não implementados.
+- Próximo passo: resposta do PO ao G-SCOPE; então implementar a autoridade escolhida e o restante da spec, apresentar schema concreto para G-MIGRATION e executar os gates completos com E2E antes de declarar a entrega concluída.
+
+## [2026-10-06] - Codex - nota de revisão no workspace Prisma
+
+- PO pediu uma nota diferente aqui. Criada `IA do Prisma - Revisao SPEC-AI-001`, avulsa e ligada ao Planejador do workspace Prisma, com guia de revisão e íntegra da spec canônica.
+- Corrigido o destino do CLI com identificadores do workspace e terminal conferidos nos metadados locais; a sessão herdava o terminal antigo da Distribuidora. Notas anteriores preservadas.
+- Conteúdo confirmado por leitura da nova nota. Spec permanece draft; próximo passo é revisão pelo PO. Nenhum gate, produto, banco ou deploy alterado; E2E não aplicável.
+
 ## [2026-10-06] - Codex - notas para revisão da fundação IA
 
 - PO pediu identificar a spec pendente e colocá-la em notas aqui no Maestri.

@@ -1,6 +1,10 @@
 # SPEC-AI-001: Fundação do assistente de IA — conexões, chat de leitura, uso e cotas
 
-**Status:** draft
+**Status:** approved
+**G-SPEC:** aprovado pelo PO Vitor em 2026-10-06, pelo pedido explícito "pode aprovar a spec e implementa-la".
+A identidade técnica do Administrador da instalação continua dependente do G-SCOPE da TASK-117;
+esta aprovação não escolhe entre flag no Identity, tabela de control plane ou configuração externa.
+G-MIGRATION será tratado com o schema concreto antes da alteração do banco.
 
 ## Objective
 Entregar a primeira fatia da D91: o Administrador da instalação conecta um modelo, as organizações ligam a IA, e
