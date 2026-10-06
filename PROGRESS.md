@@ -5,6 +5,7 @@
 - Pipeline: imagem por commit e checksum, E2E desktop/mobile em SQL Server descartável, deploy condicionado a todos os gates, chave SSH dedicada e verificação do host. Testes backend continuam sob demanda, conforme decisão anterior do PO.
 - Operação: preserva ambiente externo, rede, chaves, logs e anexos; backup SQL verificado antes de substituir; contêiner anterior mantido para rollback automático. Manifesto com 26 migrations comparado ao código de produção e às 26 migrations aplicadas; diferenças futuras bloqueiam a publicação sem G-MIGRATION.
 - Validação preparatória: actionlint aprovado, sintaxe Bash/Python aprovada, três testes de integridade/migrations/rollback aprovados. Próximo passo: execução real do CI/E2E e promoção da imagem somente se todos os gates passarem; evidência final será registrada no workspace e no ai-memory.
+- Primeiro CI real: build backend, lint/build/frontend e 122 testes unitários, governança e imagem aprovados. E2E: 101 aprovados, 6 condicionais ignorados e 2 falhas por mensagem antiga de URL no editor, nos dois viewports. A spec de remediação aprovada exige HTTPS; a expectativa E2E foi alinhada a esse contrato, preservando a verificação de rejeição de `javascript:`. Deploy corretamente bloqueado; nenhuma alteração funcional adicional.
 
 ## [2026-10-05] - Codex - resumo de tempo e controles das colunas
 
