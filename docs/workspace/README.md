@@ -5,8 +5,8 @@ Atualizado em 2026-10-06. Responsável pelo escopo: Vitor (PO). Coordenação: M
 ## Objetivo e situação
 Reunir produto, landing, planejamento e memória em um monorepo e eliminar cópias locais concorrentes.
 Base canônica: `antoniovitor10/prisma-workspace`, main `53d323bda31ce6a457fd55a81c6e2633065ed8ce`.
-Branch local: `chore/maestri-workspace`, com a main integrada. A organização D92 e a fundação IA draft
-permanecem locais; melhorias do produto e automação de deploy foram publicadas na main.
+Branch local de implementação: `feat/ai-assistant-foundation`, derivada da consolidação local com a main integrada.
+A organização D92 e a fundação IA aprovada permanecem locais; melhorias anteriores e automação de deploy estão na main.
 O produto é a plataforma .NET 8/EF Core/SQL Server/React 19, não Prisma ORM.
 
 ## Repositórios e ambientes
@@ -22,13 +22,13 @@ O produto é a plataforma .NET 8/EF Core/SQL Server/React 19, não Prisma ORM.
   antes de usar. Nenhum valor de credencial consta neste painel.
 
 ## Prioridades e backlog atual
-Esta tabela ordena frentes; não duplica nem conclui automaticamente as 108 tarefas históricas de `backlog.md`.
+Esta tabela ordena frentes; não duplica nem conclui automaticamente as 109 tarefas estruturadas de `backlog.md`.
 
 | Frente / andar | Componentes | Próximo resultado verificável |
 | --- | --- | --- |
 | Base e governança | Monorepo, docs e ferramentas | Auditoria pública e testes de governança aprovados; licença definida pelo PO antes da release |
 | Confiabilidade do produto | API, Web, SQL Server, testes | Comparar pendências recuperadas com main e abrir somente correções ainda necessárias com fonte e aceite |
-| Assistente IA — fundação | API, infraestrutura, Web | Revisar SPEC-AI-001 draft e obter G-SPEC; nenhum código de IA liberado por esta organização |
+| Assistente IA — fundação | API, infraestrutura, Web | Fundação validada localmente; preparar publicação com migration e G-DEPLOY próprios |
 | Community e lançamento | Produto, instalação e apps/landing | Checklist de release, backup/restauração e mensagens da landing consistentes com o produto |
 | Operação e integrações | Publicação, SQL Server, SMTP e integrações | Inventário de acessos/ambientes validado sem expor segredos e sem alterar produção |
 
@@ -71,7 +71,7 @@ tenham seu contexto mesmo antes de conectar notas no canvas. Ground mantém as q
 - Runrun era a origem histórica; documentos institucionais e arquivos de migração não são materiais públicos de release.
 - Definir licença e critérios de release. Conferir quais pendências recuperadas continuam necessárias.
 - Não regenerar `stories/catalog.json` cegamente: `materialize-stories.js` reconhece documentos avulsos
-  nomeados US-..., mas não o agrupamento `stories/ai-assistant.md`; preservar a intenção humana e a spec draft.
+  nomeados US-..., mas não o agrupamento `stories/ai-assistant.md`; preservar a intenção humana e o contrato aprovado.
 - A renumeração D91 reconcilia a colisão de D90; o conteúdo original permanece no arquivo privado e na memória histórica.
 
 ## Fontes e período
@@ -87,6 +87,9 @@ Cursor recorrente: não inicializado; sem conversa confirmada/lida, não há pon
 ## Última entrega e próximo passo
 Última entrega: melhorias da main de 05/10 publicadas, CI corrigido e deploy automático validado com
 122 testes unitários e 103 E2E aprovados. Chaves, logs, anexos e configuração preservados; backup e rollback disponíveis.
-Próximo passo: testar as melhorias com a equipe e revisar a fundação IA draft e seus gates próprios.
+Entrega local atual: fundação IA na SPEC-AI-001, com G-SPEC, G-SCOPE da flag Identity e G-MIGRATION aprovados.
+Migration aplicada ao E2E dedicado; 250 testes backend, 126 frontend e 109 E2E aprovados (dois retries mobile e seis skips condicionais).
+Próximo passo: promover a entrega com
+backup, manifesto de migrations e G-DEPLOY próprio. Não publicar automaticamente a consolidação D92.
 Limitação: Orca está fechado, e a CLI não disponibiliza remoção de repositório; metadados globais do aplicativo
 não foram editados. Diretórios locais antigos ligados a Runrun foram removidos após recuperação verificada.

@@ -50,4 +50,5 @@ tools/context-explorer/web/screenshots
 
 # Recuperação privada e isolamento local
 /.local/
+**/.local/
 /.maestri/

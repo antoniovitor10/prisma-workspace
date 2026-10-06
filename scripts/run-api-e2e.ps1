@@ -46,6 +46,7 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = $Urls
 $env:Cors__AllowedOrigins__0 = "http://127.0.0.1:5450"
 $env:RateLimiting__GlobalPermitLimit = "10000"
+$env:RateLimiting__AuthPermitLimit = "10000"
 
 # A configuração Development registra cada comando SQL. Durante o E2E isso gera
 # centenas de milhares de linhas e pode atrasar/cancelar requisições concorrentes.

@@ -30,7 +30,8 @@ const DOMAIN_ORDER = [
   'visual_experience',
   'project_queries',
   'open_source_distribution',
-  'installation_setup'
+  'installation_setup',
+  'ai_assistant'
 ];
 
 function domainLabel(domainKey) {

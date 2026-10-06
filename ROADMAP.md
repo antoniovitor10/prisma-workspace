@@ -1,6 +1,6 @@
-# Estado atual do workspace — 2026-10-05
+# Estado atual do workspace — 2026-10-06
 
-Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, SPEC-AI-001 aprovada pelo PO em 2026-10-06; G-SCOPE da identidade administrativa e G-MIGRATION próprios pendentes. D92 autoriza somente a organização local.
+Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, SPEC-AI-001 aprovada pelo PO em 2026-10-06; G-SCOPE da flag Identity e G-MIGRATION aprovados, com validação em E2E. D92 autoriza somente a organização local.
 
 # ROADMAP - fases do projeto
 
@@ -8,10 +8,13 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
 
 - Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
   mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
-- G-SPEC aprovado; identidade técnica do Administrador da instalação (TASK-117/G-SCOPE) ainda pendente.
-  Migration aditiva será apresentada concretamente para G-MIGRATION antes da alteração do banco.
-- Primeira etapa independente da autoridade administrativa: serviço de mascaramento e testes dos padrões
-  do zapmind. Conexões, ferramentas, chat e painéis ainda não entregues.
+- G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por
+  `IsPlatformAdministrator` no Identity, independente do perfil da organização.
+- Fundação implementada: conexões API/OAuth e ponte CLI experimental, seis ferramentas de leitura,
+  chat privado com fontes/streaming, mascaramento, painéis de configuração/consumo e cotas.
+- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada somente ao SQL Server E2E.
+  Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
+  Publicação e aplicação em produção ficam para G-DEPLOY próprio.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source

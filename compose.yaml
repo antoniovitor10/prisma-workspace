@@ -41,6 +41,10 @@ services:
       Seed__DemoEnabled: "false"
       FrontendBaseUrl: "http://localhost:${PRISMA_HTTP_PORT:-8080}"
       Cors__AllowedOrigins__0: "http://localhost:${PRISMA_HTTP_PORT:-8080}"
+      Ai__BridgeToken: "${PRISMA_AI_BRIDGE_TOKEN:-}"
+    networks:
+      - default
+      - ai_bridge
     ports:
       - "${PRISMA_HTTP_PORT:-8080}:8080"
     volumes:
@@ -53,7 +57,30 @@ services:
       retries: 12
       start_period: 20s
 
+  prisma-ai-bridge:
+    profiles: [ai-cli]
+    build:
+      context: infra/ai-bridge
+    restart: unless-stopped
+    environment:
+      AI_BRIDGE_TOKEN: "${PRISMA_AI_BRIDGE_TOKEN:-}"
+      AI_BRIDGE_ADAPTER: "${PRISMA_AI_BRIDGE_ADAPTER:-claude}"
+    networks: [ai_bridge]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=128m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    # Somente arquivos de autenticação das CLIs; nunca montar o projeto ou o banco.
+    volumes:
+      - prisma_ai_cli_auth:/home/node/.claude
+      - prisma_ai_codex_auth:/home/node/.codex
+
+networks:
+  ai_bridge:
+
 volumes:
   prisma_sqlserver_data:
   prisma_attachments:
   prisma_dataprotection_keys:
+  prisma_ai_cli_auth:
+  prisma_ai_codex_auth:

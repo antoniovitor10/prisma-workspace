@@ -68,6 +68,8 @@ public class OrganizationContextMiddleware
             return false;
         if (path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase))
             return false;
+        if (path.StartsWith("/api/admin/ai", StringComparison.OrdinalIgnoreCase))
+            return false;
         if (path.Equals("/api/organizations", StringComparison.OrdinalIgnoreCase))
             return false;
         if (path.Equals("/api/organizations/invitations/accept", StringComparison.OrdinalIgnoreCase))

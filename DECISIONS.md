@@ -624,4 +624,10 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   continua pendente e foi enviada ao PO. Não foi concedido G-MIGRATION neste registro. A implementação
   começou somente pelo mascaramento, independente dessa identidade; a IA ainda não está disponível no produto.
 
+  Atualização posterior de 2026-10-06: PO escolheu flag `IsPlatformAdministrator` no usuário Identity,
+  independente dos perfis da organização (G-SCOPE/TASK-117). Aprovou a migration concreta
+  `20261006134545_Add_AiAssistant_Foundation` e aplicação primeiro no banco E2E (G-MIGRATION).
+  Fundação da fatia 1 implementada em `feat/ai-assistant-foundation`; produção aguarda publicação própria.
+  TASK-117 mantém o restante do control plane no backlog; a escolha de identidade está resolvida.
+
 - **D92** — Organização local aprovada pelo PO em 2026-10-05: um monorepo em `Desktop/prisma`, aplicação na raiz, landing em `apps/landing` e coordenação pelo workspace Prisma do Maestri. Remover cópias locais antigas do Prisma e Runrun após recuperação verificada; preservar pendências, histórico e material institucional somente em arquivo privado ignorado. Sem publicação ou alteração de hooks. Andares agrupam entregas; isolamento Git é obrigatório ao executar trabalhos simultâneos.

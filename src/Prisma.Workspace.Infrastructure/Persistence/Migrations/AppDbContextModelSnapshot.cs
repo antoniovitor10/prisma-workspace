@@ -96,6 +96,11 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPlatformAdministrator")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -221,6 +226,240 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "UserId", "CreatedAt");
+
+                    b.ToTable("AiConversations", (string)null);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiInstallationSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<long>("DailyTokenLimit")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OrganizationTokenLimit")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long>("UserTokenLimit")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AiInstallationSettings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AiInstallationSettings_Singleton", "[Id] = 1");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("InputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("OutputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("SourcesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ToolsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "CreatedAt");
+
+                    b.ToTable("AiMessages", (string)null);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiProviderConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BaseUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("EncryptedSecret")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("InputPrice")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("LatencyMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<decimal?>("OutputPrice")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("SecretSuffix")
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<bool>("SupportsTools")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TestMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("TestSucceeded")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("TestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Purpose")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.ToTable("AiProviderConnections", (string)null);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiUsageRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("EstimatedCost")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<long>("InputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<long>("OutputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ReservedTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt", "OrganizationId", "UserId", "ConnectionId");
+
+                    b.ToTable("AiUsageRecords", (string)null);
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.Approval", b =>
@@ -1160,6 +1399,25 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.ToTable("Organizations", (string)null);
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.OrganizationAiSettings", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long?>("DailyTokenLimit")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<long?>("UserTokenLimit")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("OrganizationAiSettings", (string)null);
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.OrganizationInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1912,11 +2170,11 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("Category")
-                        .HasColumnType("int");
-
                     b.Property<Guid?>("BoardId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -1948,9 +2206,9 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("WorkflowStatusId");
 
-                    b.HasIndex("ProjectId", "Position");
-
                     b.HasIndex("BoardId", "Position");
+
+                    b.HasIndex("ProjectId", "Position");
 
                     b.ToTable("Stages", (string)null);
                 });
@@ -2747,6 +3005,26 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiConversation", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiMessage", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.AiConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.Approval", b =>
                 {
                     b.HasOne("Prisma.Workspace.Domain.Entities.WorkItem", "WorkItem")
@@ -2971,6 +3249,15 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ExternalRequest");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.OrganizationAiSettings", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.OrganizationInvitation", b =>
@@ -3550,6 +3837,11 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("SourceStatus");
 
                     b.Navigation("TargetStatus");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.Board", b =>

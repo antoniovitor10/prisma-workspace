@@ -3,6 +3,7 @@ import { Building2, Check, Copy, KeyRound, Mail, ShieldCheck, UserRoundCheck, Us
 import { useEffect, useState, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { useOrganization } from '../features/organizations/OrganizationState';
+import { AiSettings } from '../features/ai/AiSettings';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import { AuditLogPanel } from '../features/audit/AuditLogPanel';
@@ -199,6 +200,7 @@ export function OrganizationSettings() {
 
   return <SettingsPage>
     <PageHeader><HeaderLead><span className="eyebrow"><Building2 size={13}/>Administração</span><h1>Configurações da organização</h1><p>Preferências, acesso, pessoas e governança de {current.name}.</p></HeaderLead></PageHeader>
+    <AiSettings />
     <Grid>
       <Section><header><Building2 size={16}/><h2>Preferências gerais</h2>{!canAdmin && <p>Somente leitura</p>}</header>
         <Form onSubmit={submitOrganization}>

@@ -2,9 +2,12 @@
 
 **Status:** approved
 **G-SPEC:** aprovado pelo PO Vitor em 2026-10-06, pelo pedido explícito "pode aprovar a spec e implementa-la".
-A identidade técnica do Administrador da instalação continua dependente do G-SCOPE da TASK-117;
-esta aprovação não escolhe entre flag no Identity, tabela de control plane ou configuração externa.
-G-MIGRATION será tratado com o schema concreto antes da alteração do banco.
+**G-SCOPE/TASK-117:** PO escolheu em 2026-10-06 uma flag no usuário do Identity, independente dos perfis
+da organização. `AspNetUsers.IsPlatformAdministrator` é falsa por padrão, conferida no servidor por requisição.
+O setup inicial concede a flag ao administrador que cria a instalação; instalações existentes exigem promoção
+explícita por operação administrativa no servidor. Não há concessão dessa flag por endpoints de tenant.
+**G-MIGRATION:** aprovado pelo PO em 2026-10-06 para `20261006134545_Add_AiAssistant_Foundation`,
+com validação primeiro no banco E2E dedicado. Publicação em produção é uma etapa posterior.
 
 ## Objective
 Entregar a primeira fatia da D91: o Administrador da instalação conecta um modelo, as organizações ligam a IA, e
@@ -65,7 +68,7 @@ como servidor MCP.
    compose, desligado por padrão), que executa as CLIs sem ferramentas, sem sessão persistida e sem acesso ao
    banco, do mesmo jeito que a ponte do zapmind.
 7. `OAuth` usa o fluxo público oferecido pelo provedor para obter a credencial sem colar chave. Os provedores
-   aceitos na V1 estão em Pending Decisions.
+   aceitos na V1 estão em Decisões de revisão.
 
 ### Organização
 8. O admin da organização (permissão `AdministerOrganization`) liga ou desliga a IA da organização. O padrão
@@ -164,7 +167,8 @@ como servidor MCP.
   **Then** vê somente as próprias.
 
 ## Data Impact
-Migration nova e aditiva (`G-MIGRATION`), sem alterar tabelas existentes:
+Migration nova e aditiva (`G-MIGRATION`): seis tabelas novas e a flag `IsPlatformAdministrator` em `AspNetUsers`,
+com padrão falso para contas existentes, conforme escolha humana da TASK-117. Não altera tabelas de trabalho:
 - `AiProviderConnections` — nível da instalação, sem `OrganizationId`: tipo, provedor, URL base, modelo,
   finalidade, segredo criptografado, preço opcional, ativa, experimental, resultado e data do último teste.
 - `AiInstallationSettings` — linha única: teto diário da instalação, cotas padrão por organização e por usuário.
@@ -176,8 +180,7 @@ A imagem SQL Server 2022 não tem o tipo `vector`. Embeddings futuros exigem SQL
 à parte; por isso a busca fica atrás de uma interface.
 
 ## Authorization Impact
-- Conexões, limites da instalação e painel de uso global: somente o Administrador da instalação (ver Pending
-  Decisions, item 1).
+- Conexões, limites da instalação e painel de uso global: somente o Administrador da instalação (G-SCOPE/TASK-117 aprovado).
 - Liga/desliga e consumo da organização: `AdministerOrganization`.
 - Chat: qualquer membro ativo de organização com IA ligada. Cada ferramenta aplica `View` e as negações por
   escopo exatamente como as telas equivalentes.
@@ -200,7 +203,7 @@ A imagem SQL Server 2022 não tem o tipo `vector`. Embeddings futuros exigem SQL
 ## Dependencies
 - D91 (escopo), D17/D18/D55/D58 (tenant e permissões), D34/D47 (auditoria, usada nas fatias com escrita).
 - Busca global existente (`GlobalSearchFeature`, `PlatformRepository.SearchAsync`).
-- TASK-117: identidade técnica do Administrador da plataforma (ver Pending Decisions).
+- TASK-117: identidade técnica do Administrador da plataforma (G-SCOPE aprovado).
 - Contêiner opcional `prisma-ai-bridge` apenas para `CliSubscription`.
 
 ## Error Cases
@@ -213,17 +216,15 @@ A imagem SQL Server 2022 não tem o tipo `vector`. Embeddings futuros exigem SQL
   metade.
 - `400` — validação: URL base ausente em `OpenAiCompatible`, pergunta vazia ou acima do limite de tamanho.
 
-## Pending Decisions
-1. **Quem é o "Administrador da instalação".** A D58 criou o Administrador da plataforma, mas a identidade
-   técnica dele (TASK-117) ainda aguarda `G-SCOPE`. Opções: (a) decidir a TASK-117 junto com este G-SPEC e usar
-   essa autoridade; (b) enquanto isso, conexão e limites definidos por configuração do servidor
-   (`appsettings`/variáveis de ambiente), com as telas só de leitura. Recomendação: (a), com (b) como caminho
-   provisório.
-2. **Provedores OAuth na V1.** O fluxo público conhecido é o da OpenRouter (PKCE, gera a chave sem colar).
-   Proposta: V1 só com OpenRouter; os demais entram quando oferecerem fluxo para aplicações de terceiros.
-3. **Retenção do histórico.** Proposta: manter até o usuário excluir; ao desativar o usuário, as conversas
-   dele são apagadas.
-4. **Fuso da virada das cotas.** Proposta: fuso da instalação (`America/Sao_Paulo` por padrão).
+## Decisões de revisão
+1. **Administrador da instalação:** flag `IsPlatformAdministrator` no Identity, independente dos perfis
+   da organização, escolhida explicitamente pelo PO no G-SCOPE da TASK-117.
+2. **OAuth na V1:** OpenRouter com PKCE. Proposta do rascunho incorporada à aprovação da spec.
+3. **Retenção:** até exclusão pelo dono; desativar membership apaga as conversas desse usuário naquela
+   organização. A operação nunca apaga conversas de outra organização.
+4. **Cotas:** renovação à meia-noite no fuso configurado da instalação, padrão `America/Sao_Paulo`.
+5. **Limites do protocolo:** até quatro rodadas por pergunta e até oito ações por envelope. Os limites
+   são complementares. O teste de cota bloqueia consumo já atingido; zero preserva o contrato sem limite.
 
 ## Test Gate Mapping
 - Mascaramento: testes unitários com todos os padrões do `redigir.py`, inclusive credencial em linhas soltas,
@@ -237,7 +238,7 @@ A imagem SQL Server 2022 não tem o tipo `vector`. Embeddings futuros exigem SQL
   ferramentas.
 - Front (Vitest): botão some sem conexão ou com IA desligada; painel abre e fecha com `Escape`; links `[T:]`.
 - E2E (Playwright, desktop e mobile): admin cadastra conexão falsa, liga a IA na organização, pessoa pergunta e
-  recebe resposta com link; cota zerada bloqueia a pergunta.
+  recebe resposta com link; cota atingida bloqueia a pergunta e cota zero permite o uso.
 
 ## Risks
 - **Vazamento entre tenants ou projetos** se uma ferramenta pular o serviço de permissões. Mitigação:
@@ -256,4 +257,4 @@ A imagem SQL Server 2022 não tem o tipo `vector`. Embeddings futuros exigem SQL
 - Desativar a conexão ativa interrompe o uso imediatamente.
 
 ## Traceability
-D91 → `US-AI-001`/`US-AI-002`/`US-AI-003` → SPEC-AI-001 → TASK (a criar após G-SPEC) → testes → commit
+D91 → `US-AI-001`/`US-AI-002`/`US-AI-003` → SPEC-AI-001 → TASK-AI-001 → testes → commit

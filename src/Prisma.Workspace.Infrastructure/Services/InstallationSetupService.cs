@@ -79,6 +79,7 @@ public sealed class InstallationSetupService(
         var organization = Organization.Create(
             request.OrganizationName.Trim(), request.OrganizationSlug.Trim(), user.Id);
         organization.Members.Single().UpdateDisplayName(request.AdministratorName);
+        context.Entry(user).Property("IsPlatformAdministrator").CurrentValue = true;
         await context.Organizations.AddAsync(organization, cancellationToken);
         state.MarkInitialized(DateTimeOffset.UtcNow);
         await context.SaveChangesAsync(cancellationToken);
