@@ -30,6 +30,7 @@ const Create = styled.form`
   input{width:230px;max-width:100%;min-height:38px;padding:0 10px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};}
   @media (max-width:700px){width:100%; input{width:100%;flex:1 1 100%;}}
 `;
+const CreateArea = styled.div`display:grid;justify-items:end;gap:6px;@media(max-width:700px){width:100%;justify-items:stretch;}`;
 const Button = styled.button`
   display:inline-flex;min-height:36px;align-items:center;justify-content:center;gap:6px;padding:0 12px;border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.brand};color:white;font-size:13.5px;font-weight:800;
   &:disabled{opacity:.55;}
@@ -70,7 +71,7 @@ const Projects = styled.div`
   >span{display:flex;align-items:center;gap:5px;font-weight:800;} label{display:flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.pill};background:${({theme})=>theme.color.surface};max-width:100%;}
 `;
 const Message = styled.div`padding:50px;text-align:center;color:${({theme})=>theme.color.textMuted};`;
-const ActionFeedback = styled.p<{ $error?: boolean }>`margin:0;padding:0 17px 12px;color:${({theme,$error})=>$error?theme.color.danger:theme.color.success};font-size:12.5px;font-weight:700;`;
+const ActionFeedback = styled.p<{ $error?: boolean; $compact?: boolean }>`margin:0;padding:${({$compact})=>$compact?'0':'0 17px 12px'};color:${({theme,$error})=>$error?theme.color.danger:theme.color.success};font-size:12.5px;font-weight:700;`;
 
 function TeamCard({ team, users, projects, run }: {
   team: Team; users: UserDto[]; projects: ProjectDto[]; run: (action: () => Promise<unknown>) => Promise<unknown>;
@@ -137,8 +138,8 @@ export function Teams() {
   const create=useMutation({mutationFn:()=>api.createTeam(name,40),onSuccess:()=>{setName('');return queryClient.invalidateQueries({queryKey:['teams']});}});
   const submit=(event:FormEvent)=>{event.preventDefault();if(name.trim())create.mutate();};
   return <Page>
-    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><Create onSubmit={submit}><input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create></Header>
-    {action.error && <Message>{(action.error as Error).message}</Message>}
+    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><CreateArea><Create onSubmit={submit}><input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create>{create.error&&<ActionFeedback role="alert" $error $compact>{(create.error as Error).message}</ActionFeedback>}</CreateArea></Header>
+    {action.error && <ActionFeedback role="alert" $error>{(action.error as Error).message}</ActionFeedback>}
     <Grid>{teamsQuery.data?.map(team=><TeamCard key={team.id} team={team} users={usersQuery.data??[]} projects={projectsQuery.data??[]} run={run=>action.mutateAsync(run)}/>)}</Grid>
     {!teamsQuery.isLoading && !teamsQuery.data?.length && <Message>Nenhuma equipe cadastrada.</Message>}
   </Page>;

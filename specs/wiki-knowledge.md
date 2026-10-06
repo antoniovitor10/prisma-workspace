@@ -33,6 +33,8 @@ Disponibilizar uma base de conhecimento interna por projeto, integrada ao produt
 
 - Páginas podem ser organizadas hierarquicamente dentro do projeto.
 - Uma página pode ser vinculada a tarefas do mesmo projeto.
+- O vínculo deve permitir localizar a tarefa por título ou código, sem exigir que o usuário conheça seu número.
+- A tarefa vinculada deve apresentar uma ação explícita para visualizar cada página da Wiki relacionada.
 - Uma referência removida não deve corromper o documento nem expor conteúdo sem autorização.
 
 ### Histórico de versões
@@ -155,6 +157,8 @@ Qualquer alteração de schema exige `G-MIGRATION`. Alterações na semântica i
 - **Dado** uma versão anterior, **quando** um usuário autorizado restaurá-la, **então** ela se torna o conteúdo atual sem apagar as versões posteriores.
 - **Dado** um perfil sem permissão de gestão documental, **quando** tentar excluir, arquivar ou restaurar, **então** a operação é recusada.
 - **Dado** conteúdo potencialmente executável, **quando** salvar ou renderizar, **então** scripts e URLs inseguras não são executados.
+- **Dado** uma página da Wiki, **quando** o editor pesquisar parte do título de uma tarefa do mesmo projeto e
+  selecioná-la, **então** o vínculo é criado; ao abrir a tarefa, a página aparece com a ação `Visualizar`.
 - **Dado** um usuário autenticado, **quando** tentar gerar um link externo para a página, **então** essa capacidade não está disponível.
 - **Dado** o editor rico, **quando** inserir texto formatado, imagem, anexo, link ou tabela, **então** o conteúdo permanece íntegro após salvar e reabrir.
 

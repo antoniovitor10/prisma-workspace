@@ -78,6 +78,17 @@ export function ExternalPortalSettings({project}:{project:ProjectSummary}){
   const projectMembers=useMemo(()=>new Set(project.members?.map(item=>item.userId)??[]),[project.members]);
   const activeMembers=membersQuery.data?.filter(item=>item.isActive&&projectMembers.has(item.userId))??[];
   const boardStages=workflowQuery.data?.stages.filter(stage=>stage.boardId===portalForm.boardId)??[];
+  const savedPortal=portalQuery.data;
+  const hasUnsavedPortalChanges=savedPortal
+    ? savedPortal.boardId!==portalForm.boardId
+      || savedPortal.publicSlug!==portalForm.publicSlug
+      || savedPortal.isEnabled!==portalForm.isEnabled
+      || savedPortal.requiresAuthentication!==portalForm.requiresAuthentication
+      || savedPortal.accessModes!==portalForm.accessModes
+    : portalForm.isEnabled;
+  const savedPublicUrl=savedPortal?.isEnabled
+    ? new URL(savedPortal.publicPath||`/portal/${savedPortal.publicSlug}`,window.location.origin).toString()
+    : '';
 
   useEffect(()=>{if(portalQuery.data)setPortalForm({boardId:portalQuery.data.boardId,publicSlug:portalQuery.data.publicSlug,isEnabled:portalQuery.data.isEnabled,requiresAuthentication:portalQuery.data.requiresAuthentication,accessModes:portalQuery.data.accessModes});},[portalQuery.data]);
   useEffect(()=>{if(!draft&&formsQuery.data?.length)setDraft(formsQuery.data.find(item=>item.isDefault)??formsQuery.data[0]);},[draft,formsQuery.data]);
@@ -86,14 +97,13 @@ export function ExternalPortalSettings({project}:{project:ProjectSummary}){
   const saveForm=useMutation({mutationFn:()=>draft?api.saveExternalForm(project.id,payloadOf(draft),draft.id||undefined):Promise.resolve(),onSuccess:async(value)=>{setMessage('Formulário salvo e publicado.');setDraft(value as ExternalForm);await queryClient.invalidateQueries({queryKey:['external-forms',project.id]});await queryClient.invalidateQueries({queryKey:['external-portal',project.id]});},onError:error=>setMessage((error as Error).message)});
   const invite=useMutation({mutationFn:()=>api.createExternalPortalInvitation(project.id,inviteEmail),onSuccess:(result)=>{setInvitationLink(`${window.location.origin}${result.invitationPath}`);setInviteEmail('');},onError:error=>setMessage((error as Error).message)});
   const toggleMode=(mode:number)=>setPortalForm({...portalForm,accessModes:(portalForm.accessModes&mode)?portalForm.accessModes&~mode:portalForm.accessModes|mode});
-  const publicUrl=`${window.location.origin}/portal/${portalForm.publicSlug}`;
   const updateField=(index:number,change:Partial<ExternalFormField>)=>draft&&setDraft({...draft,fields:draft.fields.map((field,current)=>current===index?{...field,...change}:field)});
   const addField=()=>draft&&setDraft({...draft,fields:[...draft.fields,{key:`campo${draft.fields.length+1}`,label:'Novo campo',type:1,kind:0,isRequired:false,position:draft.fields.length}]});
   const removeField=(index:number)=>draft&&setDraft({...draft,fields:draft.fields.filter((_,current)=>current!==index).map((field,position)=>({...field,position}))});
   const addRule=()=>draft&&setDraft({...draft,assignmentRules:[...draft.assignmentRules,{fieldKey:draft.fields[0]?.key??'',operator:1,expectedValue:'',position:draft.assignmentRules.length}]});
   const updateRule=(index:number,change:Partial<ExternalForm['assignmentRules'][number]>)=>draft&&setDraft({...draft,assignmentRules:draft.assignmentRules.map((rule,current)=>current===index?{...rule,...change}:rule)});
 
-  return <Section><header><Globe2 size={16}/><h2>Portal Externo e formulários</h2><small>{portalForm.isEnabled?'Publicado':'Desativado'}</small></header>
+  return <Section><header><Globe2 size={16}/><h2>Portal Externo e formulários</h2><small>{portalQuery.isLoading?'Carregando...':hasUnsavedPortalChanges?'Alterações não salvas':savedPortal?.isEnabled?'Publicado':'Desativado'}</small></header>
     <Form onSubmit={(event:FormEvent)=>{event.preventDefault();if(portalForm.boardId&&portalForm.accessModes)savePortal.mutate();}}>
       <label>Quadro de entrada<select required value={portalForm.boardId} onChange={event=>setPortalForm({...portalForm,boardId:event.target.value})}><option value="">Selecione...</option>{project.boards.map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select></label>
       <label>Endereço público<input required minLength={3} maxLength={80} value={portalForm.publicSlug} onChange={event=>setPortalForm({...portalForm,publicSlug:event.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')})}/></label>
@@ -101,7 +111,8 @@ export function ExternalPortalSettings({project}:{project:ProjectSummary}){
       <CheckboxLabel><input type="checkbox" checked={portalForm.isEnabled} onChange={event=>setPortalForm({...portalForm,isEnabled:event.target.checked})}/>Portal habilitado</CheckboxLabel>
       <CheckboxLabel><input type="checkbox" checked={portalForm.requiresAuthentication} onChange={event=>setPortalForm({...portalForm,requiresAuthentication:event.target.checked})}/>Exigir autenticação</CheckboxLabel>
       <Notice>O acompanhamento individual sempre exige protocolo e chave. Os envios usam rate limiting, honeypot e validação de campos e arquivos.</Notice>
-      {portalForm.isEnabled&&<PublicLink><code>{publicUrl}</code><Button type="button" $secondary onClick={()=>void navigator.clipboard.writeText(publicUrl)}><Copy size={12}/>Copiar</Button><a href={publicUrl} target="_blank" rel="noreferrer"><Button as="span" $secondary><ExternalLink size={12}/>Abrir</Button></a></PublicLink>}
+      {savedPublicUrl&&<PublicLink><code>{savedPublicUrl}</code><Button type="button" $secondary onClick={()=>void navigator.clipboard.writeText(savedPublicUrl)}><Copy size={12}/>Copiar</Button><Button as="a" href={savedPublicUrl} target="_blank" rel="noopener noreferrer" aria-label="Abrir portal público" $secondary><ExternalLink size={12}/>Abrir</Button></PublicLink>}
+      {hasUnsavedPortalChanges&&<Notice role="status">Salve as alterações para atualizar o endereço e a publicação do portal.</Notice>}
       <footer>{message&&<Notice>{message}</Notice>}<Button disabled={savePortal.isPending||!project.boards.length}><Check size={13}/>Salvar portal</Button></footer>
     </Form>
     {portalForm.isEnabled&&Boolean(portalForm.accessModes&4)&&<Invitation onSubmit={event=>{event.preventDefault();if(inviteEmail)invite.mutate();}}><input required type="email" placeholder="E-mail para convite" value={inviteEmail} onChange={event=>setInviteEmail(event.target.value)}/><Button disabled={invite.isPending}><Mail size={13}/>Gerar convite</Button>{invitationLink&&<PublicLink><code>{invitationLink}</code><Button type="button" $secondary onClick={()=>void navigator.clipboard.writeText(invitationLink)}><Copy size={12}/>Copiar link</Button></PublicLink>}</Invitation>}

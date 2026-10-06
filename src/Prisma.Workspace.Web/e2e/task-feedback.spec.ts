@@ -38,3 +38,23 @@ test('checkbox obrigatorio de campo personalizado mantem tamanho compacto', asyn
   expect(box!.width).toBeLessThanOrEqual(20);
   expect(box!.height).toBeLessThanOrEqual(20);
 });
+
+test('erro de permissao ao criar equipe aparece junto do formulario', async ({ page, authenticatedGoto }) => {
+  await page.route('**/api/teams', async route => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status:403, contentType:'application/problem+json', body:JSON.stringify({ title:'Acesso negado', detail:'Você não tem permissão para criar equipes.', status:403 }) });
+    } else await route.continue();
+  });
+  await authenticatedGoto('/teams');
+  const input = page.getByPlaceholder('Nome da nova equipe');
+  await input.fill('Equipe sem permissão');
+  await page.getByRole('button', { name:'Criar equipe' }).click();
+
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('permissão');
+  const formBox = await input.locator('xpath=..').boundingBox();
+  const alertBox = await alert.boundingBox();
+  expect(formBox).not.toBeNull();
+  expect(alertBox).not.toBeNull();
+  expect(alertBox!.y - (formBox!.y + formBox!.height)).toBeLessThanOrEqual(16);
+});

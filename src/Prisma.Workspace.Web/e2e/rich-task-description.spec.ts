@@ -41,7 +41,7 @@ test('rich description edits, expands, pastes an image and persists on reopen', 
   await expect(editor.getByRole('button', { name: /Expandir editor/ })).toBeFocused();
   page.once('dialog', (prompt) => prompt.accept('javascript:alert(1)'));
   await editor.getByRole('button', { name: /Inserir imagem por endere/ }).click();
-  await expect(editor.getByRole('status')).toContainText('http:// ou https://', { timeout: 5000 });
+  await expect(editor.getByRole('status')).toContainText('HTTPS válido', { timeout: 5000 });
   await expect(editor.locator('img[src^="javascript:"]')).toHaveCount(0);
   const descriptionSaved=page.waitForResponse(response=>
     response.request().method()==='PUT'&&/\/api\/WorkItems\/[0-9a-f-]+$/i.test(response.url())&&response.ok(),

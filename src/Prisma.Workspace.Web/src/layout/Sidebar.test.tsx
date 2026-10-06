@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../services/api';
@@ -17,6 +17,7 @@ vi.mock('../preview', () => ({
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  localStorage.clear();
 });
 
 const projeto = {
@@ -74,5 +75,18 @@ describe('Sidebar', () => {
     const areas = await screen.findByRole('navigation', { name: 'Áreas do projeto' });
     await waitFor(() =>
       expect(within(areas).getByRole('link', { name: 'Kanban' })).toHaveAttribute('aria-current', 'page'));
+  });
+
+  it('recolhe o menu, preserva as rotas acessíveis e lembra a escolha', async () => {
+    vi.spyOn(api, 'getProject').mockResolvedValue(projeto as never);
+    renderSidebar('/projects/proj-1/backlog');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navegação do projeto' });
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher menu do projeto' }));
+
+    expect(nav).toHaveAttribute('data-collapsed', 'true');
+    expect(screen.getByRole('button', { name: 'Expandir menu do projeto' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Backlog' })).toHaveAttribute('aria-current', 'page');
+    expect(localStorage.getItem('project-context-menu-collapsed')).toBe('true');
   });
 });

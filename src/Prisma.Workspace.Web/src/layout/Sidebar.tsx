@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import {
+  BarChart3, BookOpen, CalendarRange, ChevronLeft, ChevronRight, Columns3,
+  ListChecks, ListTree, Settings, type LucideIcon,
+} from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import styled from 'styled-components';
 import { previewMode, previewProject } from '../preview';
 import type { ProjectSummary } from '../pages/Projects';
@@ -20,24 +25,58 @@ const projectIdFromPath = (pathname: string) =>
  */
 
 const LARGURA = '260px';
+const LARGURA_RECOLHIDA = '64px';
+const STORAGE_KEY = 'project-context-menu-collapsed';
 
-const Painel = styled.nav`
+const projectIcons: Record<string, LucideIcon> = {
+  items: ListChecks,
+  backlog: ListTree,
+  sprints: CalendarRange,
+  boards: Columns3,
+  reports: BarChart3,
+  wiki: BookOpen,
+  settings: Settings,
+};
+
+const Painel = styled.nav<{ $collapsed: boolean }>`
   position: sticky;
   top: 0;
   z-index: 25;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  width: ${LARGURA};
+  width: ${({ $collapsed }) => $collapsed ? LARGURA_RECOLHIDA : LARGURA};
   height: 100vh;
-  padding: 16px 14px 18px;
+  padding: ${({ $collapsed }) => $collapsed ? '12px 8px 18px' : '12px 14px 18px'};
   border-right: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.surface};
-  overflow: auto;
+  overflow: hidden auto;
+  transition: width .18s ease, padding .18s ease;
 
   @media (max-width: 768px) {
     display: none;
   }
+`;
+
+const CollapseButton = styled.button<{ $collapsed: boolean }>`
+  display: inline-flex;
+  width: ${({ $collapsed }) => $collapsed ? '100%' : 'auto'};
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  align-self: ${({ $collapsed }) => $collapsed ? 'stretch' : 'flex-end'};
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0 8px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.color.surface};
+  color: ${({ theme }) => theme.color.textMuted};
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  &:hover { border-color: ${({ theme }) => theme.color.accentBlue}; color: ${({ theme }) => theme.color.text}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.color.accentBlueAccessible}; outline-offset: 1px; }
 `;
 
 const Cabecalho = styled.div`
@@ -85,22 +124,41 @@ const Descricao = styled.p`
   line-height: 1.45;
 `;
 
+const ProjectMark = styled.div`
+  display: grid;
+  width: 38px;
+  height: 38px;
+  margin: 0 auto;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 12%, ${theme.color.surface})`};
+  color: ${({ theme }) => theme.color.accentBlueAccessible};
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .04em;
+`;
+
 const Abas = styled.nav`
   display: flex;
   flex-direction: column;
   gap: 2px;
 `;
 
-const Aba = styled(NavLink)`
+const Aba = styled(NavLink)<{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   min-height: 36px;
-  padding: 0 10px;
+  justify-content: ${({ $collapsed }) => $collapsed ? 'center' : 'flex-start'};
+  gap: 8px;
+  padding: ${({ $collapsed }) => $collapsed ? '0' : '0 10px'};
   border-radius: ${({ theme }) => theme.radius.md};
   color: ${({ theme }) => theme.color.textMuted};
   font-size: 13.5px;
   font-weight: 750;
   text-decoration: none;
+
+  > svg { flex: 0 0 auto; }
+  > span { display: ${({ $collapsed }) => $collapsed ? 'none' : 'inline'}; }
 
   &:hover {
     background: ${({ theme }) => theme.color.neutral[100]};
@@ -127,6 +185,10 @@ const Placeholder = styled.div`
 export function Sidebar() {
   const { pathname } = useLocation();
   const projectId = projectIdFromPath(pathname);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
+    catch { return false; }
+  });
 
   const { data: project, isLoading } = useQuery<ProjectSummary>({
     queryKey: ['project', projectId],
@@ -145,32 +207,49 @@ export function Sidebar() {
   // Fora do projeto a lateral não existe — navegação global está no cabeçalho (D88).
   if (!projectId) return null;
 
+  const toggleCollapsed = () => setCollapsed(current => {
+    const next = !current;
+    try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* armazenamento indisponível */ }
+    return next;
+  });
+
   return (
-    <Painel aria-label="Navegação do projeto">
+    <Painel aria-label="Navegação do projeto" $collapsed={collapsed} data-collapsed={collapsed}>
+      <CollapseButton type="button" $collapsed={collapsed} onClick={toggleCollapsed} aria-label={collapsed ? 'Expandir menu do projeto' : 'Recolher menu do projeto'} title={collapsed ? 'Expandir menu' : 'Recolher menu'}>
+        {collapsed ? <ChevronRight size={15} /> : <><ChevronLeft size={15} /><span>Recolher</span></>}
+      </CollapseButton>
       {isLoading && <Placeholder>Carregando projeto...</Placeholder>}
       {!isLoading && !project && <Placeholder>Projeto indisponível.</Placeholder>}
       {project && (
         <>
           <Cabecalho>
-            <TituloLinha>
-              <h1>{project.name}</h1>
-              <Chave>{project.key}</Chave>
-            </TituloLinha>
-            <Descricao>
-              {project.description || 'Workspace integrado do projeto.'}
-            </Descricao>
+            {collapsed ? <ProjectMark title={`${project.key} · ${project.name}`}>{project.key.slice(0, 3)}</ProjectMark> : <>
+              <TituloLinha>
+                <h1>{project.name}</h1>
+                <Chave>{project.key}</Chave>
+              </TituloLinha>
+              <Descricao>
+                {project.description || 'Workspace integrado do projeto.'}
+              </Descricao>
+            </>}
           </Cabecalho>
 
           <Abas aria-label="Áreas do projeto">
-            {projectNavEntries.map(({ segment, label, end }) => (
+            {projectNavEntries.map(({ segment, label, end }) => {
+              const Icon = projectIcons[segment] ?? ListChecks;
+              return (
               <Aba
                 key={segment}
                 to={`/projects/${project.id}/${segment}`}
                 end={end}
+                $collapsed={collapsed}
+                aria-label={label}
+                title={collapsed ? label : undefined}
               >
-                {label}
+                <Icon size={15} />
+                <span>{label}</span>
               </Aba>
-            ))}
+            );})}
           </Abas>
         </>
       )}

@@ -104,6 +104,10 @@ describe('TaskDetailDrawer', () => {
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
     vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
+    vi.spyOn(api, 'getBoards').mockResolvedValue([
+      { id:'board', name:'Operação', projectId:'project-1' },
+      { id:'board-2', name:'Entrega', projectId:'project-1' },
+    ]);
     vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
     vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
     vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
@@ -123,6 +127,12 @@ describe('TaskDetailDrawer', () => {
     const responsible = screen.getByRole('combobox', { name: 'Responsável principal' });
     expect(responsible).toHaveValue('revoked-user');
     expect(screen.getByRole('option', { name: 'Pessoa revogada (sem acesso atual)' })).toBeDisabled();
+    fireEvent.click(screen.getByText('Transferir tarefa', { selector:'strong' }));
+    expect(screen.getByLabelText('Rota da transferência')).toHaveTextContent('Operação');
+    expect(screen.getByRole('combobox', { name:'Coluna de destino' })).toBeDisabled();
+    fireEvent.change(screen.getByRole('combobox', { name:'Quadro de destino' }), { target:{ value:'board-2' } });
+    expect(screen.getByLabelText('Rota da transferência')).toHaveTextContent('Entrega');
+    await waitFor(()=>expect(screen.getByRole('combobox', { name:'Coluna de destino' })).not.toBeDisabled());
     for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Grafo de estados']) {
       expect(screen.getByRole('button', { name: tab })).toBeInTheDocument();
     }

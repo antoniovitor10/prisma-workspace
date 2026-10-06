@@ -11,6 +11,7 @@ import {
   RotateCcw, Trash2, Upload, X,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { DependencyAutocomplete, type DependencyWorkItemOption } from '../features/task/DependencyAutocomplete';
 import type { ProjectSummary } from './Projects';
 
 interface WikiNode { id: string; parentPageId: string | null; title: string; position: number; updatedAt: string; lockedByOther: boolean; }
@@ -115,6 +116,21 @@ const Attach = styled.div`
   header strong { font-size: 13.5px; font-weight: 750; flex: 1; }
   .files { display: flex; flex-wrap: wrap; gap: 8px; }
   .none { color: ${({ theme }) => theme.color.textMuted}; font-size: 13px; }
+`;
+const LinkTaskForm = styled.form`
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 10px;
+  > div { min-width: 0; }
+  ${HeadBtn} { flex: 0 0 auto; }
+  @media (max-width: 560px) { flex-direction: column; }
+`;
+const LinkError = styled.span`
+  display: block;
+  margin: -2px 0 9px;
+  color: ${({ theme }) => theme.color.danger};
+  font-size: 12px;
 `;
 const FileChip = styled.div`
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px;
@@ -398,34 +414,45 @@ function WikiAttachments({ projectId, pageId, canEdit }: { projectId: string; pa
 
 interface WikiTaskLink { workItemId: string; number: number; title: string; reference: string; }
 
-function WikiTaskLinks({ projectId, pageId, canEdit }: { projectId: string; pageId: string; canEdit: boolean }) {
+export function WikiTaskLinks({ projectId, pageId, canEdit }: { projectId: string; pageId: string; canEdit: boolean }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [num, setNum] = useState('');
+  const [selectedTask, setSelectedTask] = useState<DependencyWorkItemOption | null>(null);
+  const [searchKey, setSearchKey] = useState(0);
   const list = useQuery<WikiTaskLink[]>({ queryKey: ['wiki-links', projectId, pageId], queryFn: () => api.getWikiPageLinks(projectId, pageId) });
   const link = useMutation({
     mutationFn: (value: number) => api.linkWikiTask(projectId, pageId, value),
-    onSuccess: () => { setNum(''); queryClient.invalidateQueries({ queryKey: ['wiki-links', projectId, pageId] }); },
-    onError: (error) => alert((error as Error).message),
+    onSuccess: () => {
+      setSelectedTask(null);
+      setSearchKey(current => current + 1);
+      queryClient.invalidateQueries({ queryKey: ['wiki-links', projectId, pageId] });
+    },
   });
   const unlink = useMutation({
     mutationFn: (workItemId: string) => api.unlinkWikiTask(projectId, pageId, workItemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wiki-links', projectId, pageId] }),
   });
   const items = list.data ?? [];
-  const submit = () => { const value = parseInt(num.replace(/\D/g, ''), 10); if (value > 0) link.mutate(value); };
+  const submit = () => { if (selectedTask) link.mutate(selectedTask.number); };
   return (
     <Attach>
       <header>
         <FileText size={13} />
         <strong>Tarefas vinculadas</strong>
-        {canEdit && <>
-          <input value={num} placeholder="Nº da tarefa" onChange={(event) => setNum(event.target.value)}
-            onKeyDown={(event) => { if (event.key === 'Enter') submit(); }}
-            style={{ width: 96, minHeight: 28, padding: '0 8px', borderRadius: 8, border: '1px solid #e2e5ea', fontSize: 13.5 }} />
-          <HeadBtn onClick={submit} disabled={link.isPending}><Plus size={12} />Vincular</HeadBtn>
-        </>}
       </header>
+      {canEdit && <LinkTaskForm onSubmit={(event) => { event.preventDefault(); submit(); }}>
+        <DependencyAutocomplete
+          key={searchKey}
+          projectId={projectId}
+          disabled={link.isPending}
+          ariaLabel="Buscar tarefa para vincular à Wiki"
+          placeholder="Buscar por título ou código da tarefa"
+          resultsLabel="Tarefas disponíveis para vínculo"
+          onSelect={setSelectedTask}
+        />
+        <HeadBtn type="submit" disabled={!selectedTask || link.isPending}><Plus size={12} />{link.isPending ? 'Vinculando...' : 'Vincular'}</HeadBtn>
+      </LinkTaskForm>}
+      {link.error && <LinkError role="alert">{(link.error as Error).message}</LinkError>}
       {items.length === 0 ? <span className="none">Nenhuma tarefa vinculada.</span>
         : <div className="files">{items.map((item) => (
           <FileChip key={item.workItemId}>

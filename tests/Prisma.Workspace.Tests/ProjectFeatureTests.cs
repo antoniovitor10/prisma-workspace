@@ -2,6 +2,7 @@ using Prisma.Workspace.Application.Features.Projects;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
+using Prisma.Workspace.Domain.Exceptions;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Prisma.Workspace.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -125,6 +126,45 @@ public class ProjectFeatureTests
         Assert.Contains(WorkItemOrigin.Import, Enum.GetValues<WorkItemOrigin>());
     }
 
+    [Fact]
+    public async Task ProjectOwner_CannotReceiveARoleThatDoesNotChangeEffectiveAccess()
+    {
+        var organizationId = Guid.NewGuid();
+        var project = Project.Criar(
+            "OWNER", "Projeto com responsável", "owner-1", WorkNature.Project, WorkType.Development);
+        project.OrganizationId = organizationId;
+        var handler = new AddProjectMemberCommandHandler(
+            new ProjectRepositoryStub(project), new ProjectAccessStub(),
+            new OrganizationRepositoryStub(OrganizationMember.Create(
+                organizationId, "owner-1", OrganizationRole.TeamMember)),
+            new OrganizationContextStub(organizationId));
+
+        var error = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new AddProjectMemberCommand(project.Id, "owner-1", ProjectRole.Viewer, "owner-1"), default));
+
+        Assert.Contains("responsável principal", error.Message);
+        Assert.Equal(ProjectRole.ProjectAdmin, Assert.Single(project.Members).Role);
+    }
+
+    [Fact]
+    public async Task ProjectCapabilities_ResolveManageSprintInProjectScope()
+    {
+        var projectId = Guid.NewGuid();
+        var permissions = new PermissionServiceStub { Allowed = false };
+        var handler = new GetProjectCapabilitiesQueryHandler(
+            new ProjectAccessStub(ProjectRole.Member), permissions);
+
+        var denied = await handler.Handle(new GetProjectCapabilitiesQuery(projectId, "member-1"), default);
+        Assert.False(denied.CanManageSprint);
+        Assert.Equal(PlatformPermission.ManageSprint, permissions.LastPermission);
+        Assert.Equal(PermissionScope.Project, permissions.LastScope);
+        Assert.Equal(projectId, permissions.LastScopeId);
+
+        permissions.Allowed = true;
+        var allowed = await handler.Handle(new GetProjectCapabilitiesQuery(projectId, "member-1"), default);
+        Assert.True(allowed.CanManageSprint);
+    }
+
     private sealed class ProjectRepositoryStub(Project project) : IProjectRepository
     {
         public Task<IReadOnlyList<Project>> GetForUserAsync(
@@ -153,5 +193,70 @@ public class ProjectFeatureTests
     private sealed class OrganizationContextStub(Guid organizationId) : IOrganizationContext
     {
         public Guid? OrganizationId { get; } = organizationId;
+    }
+
+    private sealed class ProjectAccessStub(ProjectRole? role = ProjectRole.ProjectAdmin) : IProjectAccessService
+    {
+        public Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(role);
+
+        public Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole,
+            CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class PermissionServiceStub : IPermissionService
+    {
+        public bool Allowed { get; set; }
+        public PlatformPermission? LastPermission { get; private set; }
+        public PermissionScope? LastScope { get; private set; }
+        public Guid? LastScopeId { get; private set; }
+
+        public Task<bool> HasAsync(string userId, PlatformPermission permission,
+            PermissionScope scope = PermissionScope.Organization, Guid? scopeId = null,
+            CancellationToken cancellationToken = default)
+        {
+            LastPermission = permission;
+            LastScope = scope;
+            LastScopeId = scopeId;
+            return Task.FromResult(Allowed);
+        }
+
+        public Task EnsureAsync(string userId, PlatformPermission permission,
+            PermissionScope scope = PermissionScope.Organization, Guid? scopeId = null,
+            CancellationToken cancellationToken = default) => Allowed
+                ? Task.CompletedTask
+                : Task.FromException(new UnauthorizedAccessException());
+    }
+
+    private sealed class OrganizationRepositoryStub(OrganizationMember member) : IOrganizationRepository
+    {
+        public Task<IReadOnlyList<Organization>> GetForUserAsync(string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Organization>>([]);
+        public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult<Organization?>(null);
+        public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+        public Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+        public Task<IReadOnlyList<OrganizationMember>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<OrganizationMember>>([member]);
+        public Task<OrganizationMember?> GetMemberAsync(Guid organizationId, string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<OrganizationMember?>(member.UserId == userId ? member : null);
+        public Task<int> CountActiveAdministratorsAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => Task.FromResult(1);
+        public Task AddInvitationAsync(OrganizationInvitation invitation, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+        public Task<OrganizationInvitation?> GetInvitationByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default)
+            => Task.FromResult<OrganizationInvitation?>(null);
+        public Task<IReadOnlyList<PermissionGrant>> GetGrantsAsync(Guid organizationId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<PermissionGrant>>([]);
+        public Task<PermissionGrant?> GetGrantAsync(Guid organizationId, string userId, PermissionScope scope,
+            Guid? scopeId, PlatformPermission permission, CancellationToken cancellationToken = default)
+            => Task.FromResult<PermissionGrant?>(null);
+        public Task AddGrantAsync(PermissionGrant grant, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+        public Task RemoveGrantAsync(PermissionGrant grant, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+        public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

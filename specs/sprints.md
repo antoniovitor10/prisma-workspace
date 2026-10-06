@@ -45,6 +45,8 @@ simultâneas, exclusão transacional — e **descarta a associação N:N**. Regi
 15. Objetivo e equipe são opcionais.
 16. Criar, editar e excluir exigem permissão configurável por usuário/perfil, nunca um papel fixo como
     `ScrumMaster`. A API é a autoridade final, mesmo quando a interface oculta a ação.
+    O botão `Nova sprint` e seu diálogo só aparecem quando a capacidade efetiva do usuário confirma
+    `ManageSprint` no escopo do projeto; durante carregamento ou falha dessa consulta, a ação permanece oculta.
 17. Excluir uma sprint remove apenas o `SprintId` das tarefas. Nunca exclui, arquiva ou movimenta tarefa.
 18. Quadro, coluna, posição, conteúdo, hierarquia e histórico da tarefa são preservados.
 19. A desvinculação e a exclusão ocorrem na mesma transação; falha em qualquer etapa causa rollback integral.
@@ -81,6 +83,8 @@ simultâneas, exclusão transacional — e **descarta a associação N:N**. Regi
 - **Dado** uma tarefa de outro projeto, **quando** se tenta vinculá-la, **então** a API recusa.
 - **Dado** um pai com descendentes ativos, **quando** planejado, **então** a família inteira é vinculada
   atomicamente.
+- **Dado** um usuário sem `ManageSprint` no projeto, **quando** abre o dashboard, **então** `Nova sprint` não
+  aparece; com a permissão efetiva, a ação e o diálogo ficam disponíveis.
 
 ## Estado atual e gaps
 
@@ -115,8 +119,8 @@ Gaps a resolver:
 - **.NET:** estado por datas no fuso da organização; sprints simultâneas; recusa de vínculo em sprint
   encerrada; recusa de tarefa de outro projeto; autorização configurável; exclusão transacional preservando
   quadro, coluna e histórico; destino atômico dos itens abertos; planejamento hierárquico; concorrência.
-- **React/Vitest:** ausência do botão iniciar; seletor que oculta sprints encerradas; formulários; diálogo de
-  exclusão; escolha de destino; capacidade apenas informativa.
+- **React/Vitest:** ausência do botão iniciar; visibilidade de `Nova sprint` conforme `ManageSprint`; seletor que
+  oculta sprints encerradas; formulários; diálogo de exclusão; escolha de destino; capacidade apenas informativa.
 - **Playwright:** criar sprint; observar transição por data; manter duas ativas; tentar planejar em sprint
   encerrada; excluir com tarefas; encerrar para backlog e para outra sprint; filtrar backlog.
 

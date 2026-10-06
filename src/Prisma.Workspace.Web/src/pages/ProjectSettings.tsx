@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, Check, Clock3, FolderCog, Globe, Plus, RotateCcw, Route, Tags, Trash2, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { Archive, Check, Clock3, FolderCog, Globe, Plus, RotateCcw, Route, ShieldCheck, Tags, Trash2, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -7,6 +7,7 @@ import { previewMode } from '../preview';
 import { api } from '../services/api';
 import type { ProjectSummary } from './Projects';
 import { workNatureOptions, workTypeOptions } from './projectClassification';
+import { projectMemberSuccessMessage, translateProjectHistoryKind } from './projectSettingsLabels';
 import { ExternalPortalSettings } from '../features/portal/ExternalPortalSettings';
 import { Page as BasePage } from '../components/PageLayout';
 
@@ -66,6 +67,13 @@ const CheckboxLabel = styled.label`display:flex;align-items:center;gap:6px;line-
 const History = styled.div`display:grid;max-height:330px;overflow:auto;`;
 const Event = styled.div`padding:11px 16px;border-bottom:1px solid ${({theme})=>theme.color.neutral[100]};font-size:13px;strong{display:block;margin-bottom:3px;}small{color:${({theme})=>theme.color.textMuted};}`;
 const ActionError = styled.div`grid-column:1/-1;padding:11px 14px;border:1px solid ${({theme})=>theme.color.danger};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.danger};font-size:13px;font-weight:700;`;
+const ActionSuccess = styled.p`margin:0;padding:0 16px 14px;color:${({theme})=>theme.color.success};font-size:13px;font-weight:700;`;
+const MemberActions = styled.div`display:flex;align-items:center;gap:7px;`;
+const EffectiveRole = styled.span`
+  display:inline-flex;min-height:32px;align-items:center;gap:6px;padding:0 9px;border:1px solid ${({theme})=>theme.color.border};
+  border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.neutral[50]};color:${({theme})=>theme.color.text};font-size:12px;font-weight:750;
+  svg{color:${({theme})=>theme.color.brand};}small{margin-left:1px;font-size:11px;font-weight:600;}
+`;
 
 /** Ordem em que as categorias aparecem no menu. A chave vai para a URL. */
 const categorias: readonly [string, string, LucideIcon][] = [
@@ -80,14 +88,8 @@ const chavesValidas = new Set(categorias.map(([chave])=>chave));
 
 const statusOptions = [[1,'Planejamento'],[2,'Ativo'],[3,'Pausado'],[4,'Concluído'],[5,'Cancelado']] as const;
 const projectRoles = [[1,'Visualizador'],[2,'Membro'],[3,'Scrum Master'],[4,'Product Owner'],[5,'Administrador']] as const;
+const organizationAdminRoleLabels = new Map([[1,'Administrador'],[2,'Gestor'],[3,'Gerente de projetos']]);
 const fieldTypes = [[1,'Texto'],[2,'Número'],[3,'Data'],[4,'Sim/não'],[5,'Seleção'],[6,'Seleção múltipla'],[7,'Texto longo'],[8,'Percentual'],[9,'Data e hora'],[10,'Usuário'],[11,'Equipe'],[12,'URL']] as const;
-
-export function translateProjectHistoryKind(kind: string): string {
-  const labels: Record<string,string> = { created:'Projeto criado', updated:'Projeto atualizado', archived:'Projeto arquivado', reactivated:'Projeto reativado', member_added:'Membro adicionado', member_removed:'Membro removido', team_added:'Equipe adicionada', team_removed:'Equipe removida', custom_field_created:'Campo personalizado criado', custom_field_deleted:'Campo personalizado desativado' };
-  const normalized = kind.trim().toLowerCase();
-  const fallback = normalized.replace(/[_-]+/g,' ').split(' ').filter(Boolean).map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
-  return labels[normalized] ?? (fallback || 'Alteração administrativa');
-}
 
 export function ProjectSettings() {
   const { project } = useOutletContext<{project: ProjectSummary}>();
@@ -111,12 +113,14 @@ export function ProjectSettings() {
   };
 
   const [member, setMember] = useState({userId:'',role:2});
+  const [memberFeedback, setMemberFeedback] = useState('');
   const [field, setField] = useState({name:'',type:1,isRequired:false,options:''});
 
   const membersQuery = useQuery<OrganizationMember[]>({queryKey:['organization','members'],queryFn:()=>api.getOrganizationMembers(),enabled:!previewMode});
   const tagsQuery = useQuery<CatalogTag[]>({queryKey:['tags'],queryFn:()=>api.getTags(),enabled:!previewMode,initialData:previewMode?project.tags??[]:undefined});
   const teamsQuery = useQuery<TeamSummary[]>({queryKey:['teams'],queryFn:()=>api.getTeams(),enabled:!previewMode,initialData:previewMode?project.teams:undefined});
   const historyQuery = useQuery<ProjectHistory[]>({queryKey:['project-history',project.id],queryFn:()=>api.getProjectHistory(project.id),enabled:!previewMode});
+  const organizationMembers = useMemo(()=>new Map(membersQuery.data?.map(item=>[item.userId,item])??[]),[membersQuery.data]);
   const memberNames = useMemo(()=>new Map(membersQuery.data?.map(item=>[item.userId,item.name])??[]),[membersQuery.data]);
   const [actionError,setActionError] = useState('');
   const clearActionError = () => setActionError('');
@@ -148,7 +152,18 @@ export function ProjectSettings() {
     },
   });
   const lifecycle=useMutation({mutationFn:(archive:boolean)=>previewMode?Promise.resolve():archive?api.archiveProject(project.id):api.reactivateProject(project.id),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
-  const saveMember=useMutation({mutationFn:(value:{userId:string;role:number})=>api.setProjectMember(project.id,value.userId,value.role),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
+  const saveMember=useMutation({
+    mutationFn:(value:{userId:string;role:number})=>api.setProjectMember(project.id,value.userId,value.role),
+    onMutate:async(value)=>{
+      clearActionError();setMemberFeedback('');
+      await queryClient.cancelQueries({queryKey:['project',project.id]});
+      const previous=queryClient.getQueryData<ProjectSummary>(['project',project.id]);
+      queryClient.setQueryData<ProjectSummary>(['project',project.id],current=>current?{...current,members:current.members?.map(item=>item.userId===value.userId?{...item,role:value.role}:item)}:current);
+      return {previous};
+    },
+    onSuccess:async(_data,value)=>{clearActionError();setMemberFeedback(projectMemberSuccessMessage(project.members?.some(item=>item.userId===value.userId)??false));await refresh();},
+    onError:(error,_value,context)=>{if(context?.previous)queryClient.setQueryData(['project',project.id],context.previous);setMemberFeedback('');reportActionError(error);},
+  });
   const removeMember=useMutation({mutationFn:(userId:string)=>api.removeProjectMember(project.id,userId),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
   const setTeam=useMutation({mutationFn:({teamId,on}:{teamId:string;on:boolean})=>on?api.addProjectTeam(project.id,teamId):api.removeProjectTeam(project.id,teamId),onMutate:clearActionError,onSuccess:async()=>{clearActionError();await refresh();},onError:reportActionError});
   const saveField=useMutation({mutationFn:()=>api.saveProjectCustomField(project.id,null,{name:field.name,type:field.type,isRequired:field.isRequired,optionsJson:field.type===5||field.type===6?JSON.stringify(field.options.split(',').map(value=>value.trim()).filter(Boolean)):null,position:(project.customFields?.length??0)*100}),onMutate:clearActionError,onSuccess:async()=>{clearActionError();setField({name:'',type:1,isRequired:false,options:''});await refresh();},onError:reportActionError});
@@ -194,7 +209,18 @@ export function ProjectSettings() {
     </>}
 
     {secao==='pessoas'&&<>
-    <Wide><header><Users size={16}/><h2>Membros e papéis</h2><small>{project.members?.length??0} pessoa(s)</small></header><List>{project.members?.map(item=><Row key={item.userId}><div><strong>{memberNames.get(item.userId)??item.userId}</strong><small>{item.userId===project.ownerId?'Responsável principal':'Membro do projeto'}</small></div><div style={{display:'flex',gap:7}}><select aria-label={`Papel de ${memberNames.get(item.userId)??item.userId}`} value={item.role} onChange={e=>saveMember.mutate({userId:item.userId,role:Number(e.target.value)})}>{projectRoles.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>{item.userId!==project.ownerId&&<Button $danger aria-label="Remover membro" onClick={()=>removeMember.mutate(item.userId)}><Trash2 size={12}/></Button>}</div></Row>)}{!project.members?.length&&<Empty>Nenhum membro adicional.</Empty>}</List><InlineForm onSubmit={submitMember}><select aria-label="Adicionar membro" required value={member.userId} onChange={e=>setMember({...member,userId:e.target.value})}><option value="">Adicionar membro...</option>{membersQuery.data?.filter(item=>item.isActive&&!project.members?.some(current=>current.userId===item.userId)).map(item=><option key={item.userId} value={item.userId}>{item.name}</option>)}</select><select aria-label="Papel do novo membro" value={member.role} onChange={e=>setMember({...member,role:Number(e.target.value)})}>{projectRoles.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><Button><UserPlus size={13}/>Adicionar</Button></InlineForm></Wide>
+    <Wide><header><Users size={16}/><h2>Membros e papéis</h2><small>{project.members?.length??0} pessoa(s)</small></header><List>{project.members?.map(item=>{
+      const name=memberNames.get(item.userId)??item.userId;
+      const organizationRole=organizationMembers.get(item.userId)?.role;
+      const inheritedAdminLabel=organizationRole?organizationAdminRoleLabels.get(organizationRole):undefined;
+      const isOwner=item.userId===project.ownerId;
+      return <Row key={item.userId}><div><strong>{name}</strong><small>{isOwner?'Responsável principal':inheritedAdminLabel?`Acesso administrativo herdado do perfil ${inheritedAdminLabel}`:'Membro do projeto'}</small></div><MemberActions>
+        {isOwner?<EffectiveRole title="O responsável principal sempre administra o projeto"><ShieldCheck size={13}/>Administrador <small>responsável</small></EffectiveRole>
+          :inheritedAdminLabel?<EffectiveRole title={`O perfil ${inheritedAdminLabel} da organização concede administração do projeto`}><ShieldCheck size={13}/>Administrador <small>pela organização</small></EffectiveRole>
+          :<select aria-label={`Papel de ${name}`} disabled={saveMember.isPending} aria-busy={saveMember.isPending&&saveMember.variables?.userId===item.userId} value={item.role} onChange={e=>saveMember.mutate({userId:item.userId,role:Number(e.target.value)})}>{projectRoles.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>}
+        {!isOwner&&<Button $danger disabled={removeMember.isPending} aria-label={`Remover ${name}`} onClick={()=>removeMember.mutate(item.userId)}><Trash2 size={12}/></Button>}
+      </MemberActions></Row>;
+    })}{!project.members?.length&&<Empty>Nenhum membro adicional.</Empty>}</List><InlineForm onSubmit={submitMember}><select aria-label="Adicionar membro" required value={member.userId} onChange={e=>setMember({...member,userId:e.target.value})}><option value="">Adicionar membro...</option>{membersQuery.data?.filter(item=>item.isActive&&!project.members?.some(current=>current.userId===item.userId)).map(item=><option key={item.userId} value={item.userId}>{item.name}</option>)}</select><select aria-label="Papel do novo membro" value={member.role} onChange={e=>setMember({...member,role:Number(e.target.value)})}>{projectRoles.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><Button><UserPlus size={13}/>Adicionar</Button></InlineForm>{memberFeedback&&<ActionSuccess role="status" aria-live="polite">{memberFeedback}</ActionSuccess>}</Wide>
     <Section><header><Users size={16}/><h2>Equipes</h2><small>Salvo automaticamente ao marcar</small></header><List>{teamsQuery.data?.map(team=>{const on=project.teams.some(item=>item.id===team.id);return <Row key={team.id}><div><strong>{team.name}</strong><small>{on?'Associada ao projeto':'Disponível'}</small></div><label style={{fontSize:13}}><input type="checkbox" checked={on} onChange={e=>setTeam.mutate({teamId:team.id,on:e.target.checked})}/>Usar no projeto</label></Row>})}</List></Section>
     </>}
 

@@ -17,6 +17,9 @@ interface DependencyAutocompleteProps {
   projectId: string;
   excludeWorkItemId?: string;
   disabled?: boolean;
+  ariaLabel?: string;
+  placeholder?: string;
+  resultsLabel?: string;
   onSelect: (item: DependencyWorkItemOption | null) => void;
 }
 
@@ -84,6 +87,9 @@ export function DependencyAutocomplete({
   projectId,
   excludeWorkItemId,
   disabled,
+  ariaLabel = 'Buscar tarefa relacionada',
+  placeholder = 'Código ou título, ex.: DET-42',
+  resultsLabel = 'Tarefas encontradas',
   onSelect,
 }: DependencyAutocompleteProps) {
   const listId = useId();
@@ -120,13 +126,13 @@ export function DependencyAutocomplete({
         <input
           type="search"
           role="combobox"
-          aria-label="Buscar tarefa relacionada"
+          aria-label={ariaLabel}
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={showResults}
           disabled={disabled}
           value={input}
-          placeholder="Código ou título, ex.: DET-42"
+          placeholder={placeholder}
           onFocus={() => setOpen(true)}
           onChange={event => {
             setInput(event.target.value);
@@ -136,7 +142,7 @@ export function DependencyAutocomplete({
         />
       </InputBox>
       {showResults && (
-        <Results id={listId} role="listbox" aria-label="Tarefas encontradas">
+        <Results id={listId} role="listbox" aria-label={resultsLabel}>
           {query.isFetching && <Message>Buscando tarefas...</Message>}
           {query.error && <Message role="alert">{(query.error as Error).message}</Message>}
           {!query.isFetching && !query.error && debounced && options.length === 0 && (

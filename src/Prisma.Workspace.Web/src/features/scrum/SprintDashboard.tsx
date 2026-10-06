@@ -454,6 +454,13 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
   const [editForm, setEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '' });
   const [selectedItem, setSelectedItem] = useState<BacklogItem | null>(null);
   const [error, setError] = useState('');
+  const accessQuery = useQuery<{canManageSprint:boolean}>({
+    queryKey:['project-access',project.id],
+    queryFn:()=>api.getProjectAccess(project.id),
+    enabled:!previewMode,
+    initialData:previewMode?{canManageSprint:true}:undefined,
+  });
+  const canManageSprint=accessQuery.data?.canManageSprint===true;
   const sprintQuery = useQuery<Sprint[]>({
     queryKey: ['project-sprints', project.id],
     retry: false,
@@ -585,7 +592,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
     <Page>
       <Toolbar>
         <div><h2>Sprints</h2><p>Meta, capacidade e entrega do time em uma única visão.</p></div>
-        <Primary onClick={() => setCreateOpen(true)}><Plus size={14} />Nova sprint</Primary>
+        {canManageSprint&&<Primary onClick={() => setCreateOpen(true)}><Plus size={14} />Nova sprint</Primary>}
       </Toolbar>
       {error && <ErrorBanner role="alert"><AlertCircle size={14} />{error}</ErrorBanner>}
       {!sprintQuery.data?.length && <Empty>Nenhuma sprint planejada para este projeto.</Empty>}
@@ -725,7 +732,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
           <TaskDetailDrawer item={selectedItem} projectKey={project.key} sprintName={selectedSprint.name} onOpenChange={(open) => { if (!open) setSelectedItem(null); }} onOpenSubtask={(workItemId) => { void api.getWorkItemDetails(workItemId).then((details) => setSelectedItem(details as unknown as BacklogItem)); }} />
         </>
       )}
-      <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
+      {canManageSprint&&<Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
         <Dialog.Portal>
           <Overlay />
           <DialogContent aria-describedby={undefined}>
@@ -740,7 +747,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
             </SprintForm>
           </DialogContent>
         </Dialog.Portal>
-      </Dialog.Root>
+      </Dialog.Root>}
       <Dialog.Root open={editOpen} onOpenChange={setEditOpen}>
         <Dialog.Portal>
           <Overlay />

@@ -6251,6 +6251,240 @@
       },
       "status": "active",
       "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-001",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico",
+      "narrative": "Como pessoa autorizada, preciso que memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico.",
+        "raw": "memberupdated, customfieldsaved e customfielddisabled aparecem em português no histórico."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-002",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa…",
+      "narrative": "Como pessoa autorizada, preciso que ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”.",
+        "raw": "Ao adicionar um membro, a seção informa “Membro adicionado ao projeto.”; ao alterar seu papel, informa “Papel do membro atualizado.”."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-003",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta",
+      "narrative": "Como pessoa autorizada, preciso que a confirmação usa uma região de status acessível e um erro continua usando uma região de alerta..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta.",
+        "raw": "A confirmação usa uma região de status acessível e um erro continua usando uma região de alerta."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-004",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista…",
+      "narrative": "Como pessoa autorizada, preciso que erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio.",
+        "raw": "Erro ao criar equipe aparece junto do formulário de criação; erro de outra ação aparece antes da lista de equipes, sem o espaçamento de estado vazio."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-005",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e…",
+      "narrative": "Como pessoa autorizada, preciso que excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas.",
+        "raw": "Excluir uma coluna exige confirmação que informa o nome da coluna e, quando necessário, a quantidade e o destino das tarefas."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-006",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e…",
+      "narrative": "Como pessoa autorizada, preciso que cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis.",
+        "raw": "Cada cabeçalho de coluna exibe uma ação de lixeira nomeada. Ao acioná-la, a opção visual de exclusão e a orientação de transferência dos cartões ficam disponíveis."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-007",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de solt…",
+      "narrative": "Como pessoa autorizada, preciso que imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML.",
+        "raw": "Imagens arrastadas para a descrição são enviadas como anexos autenticados e inseridas no ponto de soltura, sem base64 no HTML."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-008",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API rece…",
+      "narrative": "Como pessoa autorizada, preciso que o modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”.",
+        "raw": "O modal “Criar Nova Coluna” contém somente o nome e as ações; não exibe a combobox ambígua. A API recebe a classificação padrão “Em andamento”."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-009",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada…",
+      "narrative": "Como pessoa autorizada, preciso que uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta.",
+        "raw": "Uma URL HTTPS direta de imagem válida é baixada, validada, salva como anexo autenticado e renderizada no editor. Se o download falhar, nada é inserido e a interface orienta verificar se a URL é pública e direta."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-010",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inseri…",
+      "narrative": "Como pessoa autorizada, preciso que ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual.",
+        "raw": "Ao usar “Inserir link” sem texto selecionado com uma extensão de imagem conhecida, o conteúdo é inserido como imagem, não como link textual."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-011",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a e…",
+      "narrative": "Como pessoa autorizada, preciso que o painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados.",
+        "raw": "O painel “Transferir tarefa” organiza quadro e coluna em campos rotulados, desabilita a coluna até a escolha do quadro, resume origem e destino e informa que subtarefas e histórico são preservados."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-012",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço s…",
+      "narrative": "Como pessoa autorizada, preciso que “Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido.",
+        "raw": "“Abrir” e “Copiar” usam o caminho retornado pelo portal persistido. Ao editar publicação ou endereço sem salvar, a interface mantém o link vigente e informa que existem alterações não salvas; antes da primeira publicação salva, nenhum link é oferecido."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
+    },
+    {
+      "id": "US-TEST-REPORT-2026-09-21-013",
+      "specId": "SPEC-TEST-REPORT-2026-09-21",
+      "specTitle": "Remediação residual do relatório de testes",
+      "specPath": "specs/test-report-2026-09-21-remediation.md",
+      "sourceHeading": "Critérios de aceite",
+      "title": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo inf…",
+      "narrative": "Como pessoa autorizada, preciso que o responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal..",
+      "actor": "pessoa autorizada",
+      "scenario": {
+        "given": "",
+        "when": "",
+        "then": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal.",
+        "raw": "O responsável principal e membros elevados pelo perfil da organização exibem acesso administrativo informativo, sem combobox ineficaz. Membros comuns mantêm o seletor funcional, com persistência, feedback e reversão visual em caso de erro. A API rejeita o rebaixamento fictício do responsável principal."
+      },
+      "status": "active",
+      "origin": "migrated_from_approved_spec"
     }
   ],
   "reconciliationNote": "Catálogo anterior preservado; somente specs sem histórias receberam derivações. Intenção humana da fundação IA recuperada da fonte local de 2026-09-24; spec permanece draft."

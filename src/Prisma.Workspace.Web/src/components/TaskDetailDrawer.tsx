@@ -2,9 +2,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Archive,
+  ArrowRight,
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronDown,
   CircleDot,
   Clock3,
   Copy,
@@ -152,6 +154,37 @@ const Section = styled.section`margin-top:24px;padding-top:4px;>h2{display:flex;
 const FormGrid = styled.div`display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;@media(max-width:540px){grid-template-columns:1fr;}`;
 const Field = styled.label<{ $wide?:boolean }>`display:grid;grid-column:${({$wide})=>$wide?'1/-1':'auto'};gap:5px;color:${({theme})=>theme.color.textMuted};font-size:12px;font-weight:800;text-transform:uppercase;input,textarea,select{width:100%;min-height:37px;padding:8px 9px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.text};font-family:${({theme})=>theme.font.body};font-size:14px;font-weight:500;text-transform:none;outline:none;&:focus{border-color:${({theme})=>theme.color.accentBlue};box-shadow:0 0 0 2px color-mix(in srgb, ${({theme})=>theme.color.accentBlue} 12%, transparent);}}textarea{min-height:86px;resize:vertical;line-height:1.5;}select[multiple]{min-height:92px;}`;
 const Button = styled.button<{ $secondary?:boolean; $danger?:boolean }>`display:inline-flex;min-height:34px;align-items:center;justify-content:center;gap:6px;padding:0 11px;border:1px solid ${({theme,$danger,$secondary})=>$danger?theme.color.danger:$secondary?theme.color.border:'transparent'};border-radius:${({theme})=>theme.radius.md};background:${({theme,$danger,$secondary})=>$danger?'transparent':$secondary?theme.color.surface:theme.color.brand};color:${({theme,$danger,$secondary})=>$danger?theme.color.danger:$secondary?theme.color.text:theme.color.onBrand};font-size:13px;font-weight:800;&:disabled{opacity:.5;}`;
+const TransferPanel = styled.details`
+  margin-top:18px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.lg};
+  background:${({theme})=>theme.color.surface};overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease;
+  &[open]{border-color:color-mix(in srgb, ${({theme})=>theme.color.accentBlue} 40%, ${({theme})=>theme.color.border});box-shadow:${({theme})=>theme.shadow.sm};}
+  &[open] summary .transfer-chevron{transform:rotate(180deg);}
+`;
+const TransferSummary = styled.summary`
+  display:flex;min-height:54px;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;
+  background:${({theme})=>theme.color.surfaceSubtle};cursor:pointer;list-style:none;user-select:none;
+  &::-webkit-details-marker{display:none;}
+  &:focus-visible{outline:2px solid ${({theme})=>theme.color.accentBlue};outline-offset:-2px;}
+  >span:first-child{display:flex;min-width:0;align-items:center;gap:10px;}
+  .transfer-icon{display:grid;width:32px;height:32px;flex:0 0 auto;place-items:center;border-radius:${({theme})=>theme.radius.md};background:color-mix(in srgb, ${({theme})=>theme.color.brand} 12%, transparent);color:${({theme})=>theme.color.brand};}
+  strong{display:block;color:${({theme})=>theme.color.text};font-size:13.5px;}
+  small{display:block;margin-top:2px;color:${({theme})=>theme.color.textMuted};font-size:12px;font-weight:500;}
+  .transfer-chevron{flex:0 0 auto;color:${({theme})=>theme.color.textMuted};transition:transform .15s ease;}
+`;
+const TransferContent = styled.div`display:grid;gap:14px;padding:14px;`;
+const TransferRoute = styled.div`
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;
+  padding:10px 12px;border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.neutral[50]};
+  div{min-width:0;}small{display:block;color:${({theme})=>theme.color.textMuted};font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}strong{display:block;margin-top:2px;overflow:hidden;color:${({theme})=>theme.color.text};font-size:13px;text-overflow:ellipsis;white-space:nowrap;}svg{color:${({theme})=>theme.color.textMuted};}
+  @media(max-width:520px){grid-template-columns:1fr;svg{transform:rotate(90deg);justify-self:center;}}
+`;
+const TransferGrid = styled.div`display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;@media(max-width:560px){grid-template-columns:1fr;}`;
+const TransferField = styled.label`
+  display:grid;gap:5px;color:${({theme})=>theme.color.textMuted};font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
+  select{width:100%;min-height:40px;padding:0 32px 0 10px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};background:${({theme})=>theme.color.surface};color:${({theme})=>theme.color.text};font:inherit;font-size:13.5px;font-weight:600;text-transform:none;outline:none;&:focus{border-color:${({theme})=>theme.color.accentBlue};box-shadow:0 0 0 2px color-mix(in srgb, ${({theme})=>theme.color.accentBlue} 12%, transparent);}&:disabled{background:${({theme})=>theme.color.neutral[50]};color:${({theme})=>theme.color.textMuted};}}
+`;
+const TransferFooter = styled.div`display:flex;align-items:center;justify-content:space-between;gap:12px;small{max-width:520px;color:${({theme})=>theme.color.textMuted};font-size:11.5px;line-height:1.4;}@media(max-width:560px){align-items:stretch;flex-direction:column;button{width:100%;}}`;
+const TransferNotice = styled.p`margin:0;padding:9px 11px;border-radius:${({theme})=>theme.radius.md};background:color-mix(in srgb, ${({theme})=>theme.color.success} 10%, transparent);color:${({theme})=>theme.color.success};font-size:12.5px;font-weight:750;`;
 const InlineForm = styled.form`display:flex;position:relative;flex-wrap:wrap;gap:7px;align-items:center;margin-top:9px;input,select{min-height:34px;padding:0 8px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};font-size:13px;}input{flex:1 1 220px;min-width:min(220px,100%);}.kind-selector{position:relative;z-index:1;flex:0 1 140px;min-width:140px;}button{flex:0 0 auto;max-width:100%;}@media(max-width:560px){> *{flex:1 1 100%;min-width:0;}.kind-selector{min-width:0;}}`;
 const List = styled.div`display:grid;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.lg};overflow:hidden;`;
 const Row = styled.div`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;min-height:48px;padding:8px 11px;border-bottom:1px solid ${({theme})=>theme.color.neutral[100]};&:last-child{border-bottom:0;}strong{display:block;font-size:13.5px;}small{display:block;margin-top:2px;color:${({theme})=>theme.color.textMuted};font-size:12px;}`;
@@ -408,19 +441,25 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Meta><MetaChip aria-label="Coluna atual"><CircleDot size={12}/>{stagesQuery.data?.find(stage=>stage.id===draft.stageId)?.name||details.stageName||'Sem coluna'}</MetaChip><MetaChip><Target size={12}/>{priorityNames[draft.priority]??'Média'}</MetaChip><MetaChip><FolderKanban size={12}/>{details.boardName}</MetaChip>{(details.sprintName||sprintName)&&<MetaChip><GitBranch size={12}/>{details.sprintName||sprintName}</MetaChip>}</Meta>
       {detailsQuery.error&&<ErrorBox>{(detailsQuery.error as Error).message}. Exibindo os dados disponíveis na tela atual.</ErrorBox>}
 
-      {realMode && <details>
-        <summary>Transferir tarefa para outro quadro</summary>
-        <select aria-label="Quadro de destino" value={transferBoardId} onChange={e=>{setTransferBoardId(e.target.value);setTransferStageId('');}}>
-          <option value="">Escolha o quadro de destino</option>
-          {(transferBoards.data??[]).filter(board=>board.projectId===details.projectId&&board.id!==details.boardId).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}
-        </select>
-        <select aria-label="Coluna de destino" value={transferStageId} onChange={e=>setTransferStageId(e.target.value)}>
-          <option value="">Escolha a coluna de destino</option>
-          {(transferStages.data??[]).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
-        </select>
-        <button type="button" disabled={!transferBoardId||!transferStageId||transfer.isPending} onClick={()=>transfer.mutate()}>Transferir tarefa</button>
-        {transfer.isError&&<p role="alert">{(transfer.error as Error).message}</p>}
-      </details>}
+      {realMode && <TransferPanel>
+        <TransferSummary><span><span className="transfer-icon"><FolderKanban size={16}/></span><span><strong>Transferir tarefa</strong><small>Mover para outro quadro deste projeto</small></span></span><ChevronDown className="transfer-chevron" size={17}/></TransferSummary>
+        <TransferContent>
+          <TransferRoute aria-label="Rota da transferência"><div><small>Origem</small><strong>{details.boardName}</strong></div><ArrowRight size={16}/><div><small>Destino</small><strong>{transferBoards.data?.find(board=>board.id===transferBoardId)?.name||'Selecione um quadro'}</strong></div></TransferRoute>
+          <TransferGrid>
+            <TransferField>Quadro de destino<select aria-label="Quadro de destino" value={transferBoardId} onChange={e=>{setTransferBoardId(e.target.value);setTransferStageId('');}}>
+              <option value="">{transferBoards.isLoading?'Carregando quadros...':'Escolha o quadro de destino'}</option>
+              {(transferBoards.data??[]).filter(board=>board.projectId===details.projectId&&board.id!==details.boardId).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}
+            </select></TransferField>
+            <TransferField>Coluna de destino<select aria-label="Coluna de destino" disabled={!transferBoardId||transferStages.isLoading} value={transferStageId} onChange={e=>setTransferStageId(e.target.value)}>
+              <option value="">{!transferBoardId?'Escolha primeiro o quadro':transferStages.isLoading?'Carregando colunas...':'Escolha a coluna de destino'}</option>
+              {(transferStages.data??[]).map(stage=><option key={stage.id} value={stage.id}>{stage.name}</option>)}
+            </select></TransferField>
+          </TransferGrid>
+          <TransferFooter><small>A tarefa, suas subtarefas e seu histórico serão preservados. Confira o destino antes de continuar.</small><Button type="button" disabled={!transferBoardId||!transferStageId||transfer.isPending} onClick={()=>transfer.mutate()}>{transfer.isPending?<LoaderCircle size={13}/>:<ArrowRight size={13}/>} {transfer.isPending?'Transferindo...':'Transferir tarefa'}</Button></TransferFooter>
+          {transfer.isSuccess&&<TransferNotice role="status">Transferência concluída.</TransferNotice>}
+          {transfer.isError&&<ErrorBox>{(transfer.error as Error).message}</ErrorBox>}
+        </TransferContent>
+      </TransferPanel>}
       <Tabs aria-label="Seções da tarefa">
         <Tab $active={activeTab==='description'} onClick={()=>setActiveTab('description')}>Descrição</Tab>
         <Tab $active={activeTab==='comments'} onClick={()=>setActiveTab('comments')}>Comentários</Tab>

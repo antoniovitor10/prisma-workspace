@@ -79,6 +79,26 @@ public class GetProjectQueryHandler : IRequestHandler<GetProjectQuery, ProjectDt
     }
 }
 
+public record ProjectCapabilitiesDto(bool CanManageSprint);
+public record GetProjectCapabilitiesQuery(Guid ProjectId, string UserId) : IRequest<ProjectCapabilitiesDto>;
+public class GetProjectCapabilitiesQueryHandler : IRequestHandler<GetProjectCapabilitiesQuery, ProjectCapabilitiesDto>
+{
+    private readonly IProjectAccessService _access;
+    private readonly IPermissionService _permissions;
+    public GetProjectCapabilitiesQueryHandler(IProjectAccessService access, IPermissionService permissions)
+        => (_access, _permissions) = (access, permissions);
+
+    public async Task<ProjectCapabilitiesDto> Handle(GetProjectCapabilitiesQuery request, CancellationToken ct)
+    {
+        await _access.EnsureAtLeastAsync(request.ProjectId, request.UserId, ProjectRole.Viewer, ct);
+        var role = await _access.GetRoleAsync(request.ProjectId, request.UserId, ct);
+        var canManageSprint = role is not null && role.Value >= ProjectRole.Member
+            && await _permissions.HasAsync(request.UserId, PlatformPermission.ManageSprint,
+                PermissionScope.Project, request.ProjectId, ct);
+        return new ProjectCapabilitiesDto(canManageSprint);
+    }
+}
+
 public record CreateProjectCommand(
     string? Key,
     string Name,
@@ -280,6 +300,8 @@ public class AddProjectMemberCommandHandler : IRequestHandler<AddProjectMemberCo
             _organizationContext.RequireOrganizationId(), request.UserId, ct);
         DomainException.Garantir(organizationMember?.IsActive == true,
             "Somente membros ativos da organização podem entrar no projeto.");
+        DomainException.Garantir(project.OwnerId != request.UserId || request.Role == ProjectRole.ProjectAdmin,
+            "O responsável principal deve permanecer como Administrador do projeto.");
         var current = project.Members.FirstOrDefault(x => x.UserId == request.UserId);
         if (current is null)
             project.Members.Add(new ProjectMember { ProjectId = project.Id, UserId = request.UserId, Role = request.Role, JoinedAt = DateTimeOffset.UtcNow });
