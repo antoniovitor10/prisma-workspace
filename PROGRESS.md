@@ -1,3 +1,11 @@
+## [2026-10-06] - Codex - notas para revisão da fundação IA
+
+- PO pediu identificar a spec pendente e colocá-la em notas aqui no Maestri.
+- Criadas e verificadas duas notas no fichário `Prisma — IA`, ligadas ao terminal atual: `Prisma — Revisão SPEC-AI-001` e `Prisma — SPEC-AI-001 completa`. A sessão do CLI está no workspace atual do terminal Farol; não foram alteradas notas existentes nem iniciados agentes.
+- Guia de revisão: escopo da primeira entrega, exemplos de perguntas, busca textual/consultas, quatro decisões pendentes, impacto aditivo no banco e gates próprios. Sinalizadas as inconsistências de limite zero versus teste de bloqueio e quatro rodadas versus oito ações.
+- A nota completa preserva a íntegra de `specs/ai-assistant-foundation.md`. Conteúdos conferidos por leitura após criação. Spec permanece draft; nenhuma aprovação, código de produto, migration ou produção alterada.
+- Próximo passo: PO revisar as notas e fechar as decisões; depois revisar o contrato canônico para G-SPEC e tratar G-MIGRATION. E2E não aplicável a notas/documentação.
+
 ## [2026-10-06] - Codex - publicação das melhorias e correção do deploy automático
 
 - PO solicitou publicar a main de 2026-10-05 (`7b519b7`) e corrigir o deploy automático antes do teste da IA. Trabalho isolado em `fix/automatic-deploy-20261006`; nenhuma spec de IA aprovada por esta entrega.
