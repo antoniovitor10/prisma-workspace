@@ -4,6 +4,25 @@
   "migrationNote": "Baseline materializado dos critérios de aceite aprovados antes da adoção do fluxo story-first da D67.",
   "stories": [
     {
+      "id": "US-AI-010",
+      "specId": "SPEC-AI-003",
+      "specTitle": "Gemini por assinatura e login Google na ponte CLI",
+      "specPath": "specs/ai-gemini-subscription.md",
+      "sourcePath": "stories/ai-gemini-subscription.md",
+      "sourceHeading": "US-AI-010: conectar conta Google pela Gemini CLI",
+      "title": "Assinatura Gemini com login Google",
+      "narrative": "Como Administrador da instalação quero conectar minha conta Google pela Gemini CLI e escolher um modelo para usar o acesso da assinatura sem cadastrar chave de API.",
+      "actor": "Administrador da instalação",
+      "scenario": {
+        "given": "uma instalação com ponte CLI opcional",
+        "when": "o administrador escolhe Gemini por assinatura e conclui login Google",
+        "then": "o catálogo da CLI permite selecionar e testar modelo antes de ativar, com aceite do risco e credenciais privadas",
+        "raw": "Login Google real, catálogo da CLI e isolamento preservado."
+      },
+      "status": "active",
+      "origin": "human_authored"
+    },
+    {
       "id": "US-AI-009",
       "specId": "SPEC-AI-002",
       "specTitle": "Configuração guiada, catálogo de modelos e autenticação CLI",
