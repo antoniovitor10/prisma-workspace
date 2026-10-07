@@ -39,7 +39,7 @@ um checkpoint antigo isoladamente.
 
 ## Equipe por demanda
 Desde 2026-10-07 (D96) o time ativo no Maestri é: Maestro (Claude Code, planejador principal), Tear (Codex,
-executor, antigo terminal Planejador), Antigravity (revisor) e Farol (Codex, QA no navegador do Maestri).
+executor, antigo terminal Planejador), Prumo (Antigravity com Claude Opus 5.5, revisor) e Farol (Codex, QA no navegador do Maestri).
 O parágrafo abaixo é a orientação anterior de D92 e vale apenas no que não conflitar com D96.
 Reutilizar Planejador (terminal existente) como PM, planejamento técnico e consolidação do contexto.
 Executor trabalha em mudanças pequenas com isolamento próprio. Revisor acumula segurança básica e compatibilidade.

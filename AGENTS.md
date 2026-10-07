@@ -195,7 +195,8 @@ Organização local pelo Maestri concluída em 2026-10-05. Estado e próximos re
 
 ## Coordenação e memória
 - Workspace único: Prisma no Maestri. Time fixo (D96): Maestro (Claude Code) planeja, despacha, aceita e commita;
-  Tear (Codex) executa; Antigravity revisa em modo somente leitura quando o planejador pedir; Farol (Codex) faz o QA
+  Tear (Codex) executa; Prumo (Antigravity, Claude Opus 5.5) revisa em modo somente leitura quando o planejador
+  pedir; Farol (Codex) faz o QA
   da tarefa no navegador do Maestri. Tarefas e respostas passam pelo Maestro. Não iniciar outros agentes sem demanda.
 - Raiz local: `C:\Users\Vitor\Desktop\prisma`. Landing: `apps/landing`, sem Git aninhado.
 - Uma entrega que afete API, frontend e landing permanece no mesmo andar.
