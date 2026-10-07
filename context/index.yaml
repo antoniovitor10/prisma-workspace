@@ -23,6 +23,25 @@ exclusions:
   - "**/*.pdb"
 
 domains:
+  ai_gemini_subscription:
+    spec: "specs/ai-gemini-subscription.md"
+    stories:
+      - "stories/ai-gemini-subscription.md"
+    code:
+      - "src/Prisma.Workspace.Infrastructure/Services/Ai"
+      - "src/Prisma.Workspace.Web/src/features/ai"
+      - "infra/ai-bridge"
+      - "scripts/install-ai-bridge.py"
+    tests:
+      - "tests/Prisma.Workspace.Tests/AiFoundationTests.cs"
+      - "src/Prisma.Workspace.Web/src/features/ai/AiConnectionForm.test.tsx"
+      - "src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts"
+      - "infra/ai-bridge/test_bridge.py"
+    gates:
+      g_spec: "pending (SPEC-AI-003 draft)"
+      frontend_build: "npm run build"
+      frontend_test: "npm run test"
+      frontend_e2e: "npm run e2e"
   ai_connection_onboarding:
     spec: "specs/ai-connection-onboarding.md"
     stories:

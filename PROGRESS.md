@@ -1,3 +1,11 @@
+## [2026-10-07] - Codex - proposta Gemini por assinatura pronta para aprovação
+
+- PO solicitou explicitamente Gemini por assinatura. Criadas US-AI-010 e SPEC-AI-003 em `draft`, com login Google oficial da Gemini CLI, código temporário/PKCE delegado, confirmação sem inferência, modelos da versão instalada e volume privado adicional. Não houve alteração de produto para admitir Gemini/CLI sem G-SPEC.
+- Documentação primária Google confirma uso de conta Google associada a AI Pro/Ultra e reutilização da autenticação CLI em headless. Código oficial do fluxo manual usa `NO_BROWSER`, código e prazo de cinco minutos. Versão npm proposta 0.63.0; prova de execução isolada em investigação antes da implementação.
+- Nota avulsa `IA do Prisma - Gemini por assinatura SPEC-AI-003` criada no Maestri e G-SPEC solicitado ao PO, com explicação da exigência do AGENTS.md. Catálogo, índice, backlog e roadmap atualizados; Context Explorer passou 42 testes após registrar o novo domínio/contagens. Primeira execução detectou a lista fixa de domínios, corrigida na ferramenta.
+- Correção do seletor API segue em release separada, main `cfbff1e`, CI `37613311462`. E2E focal final teve 12 aprovados e um cenário de chat aprovado na primeira repetição: launcher ainda ausente no limite de cinco segundos durante carga inicial; fluxos novos de seleção/login passaram sem retries. A suíte geral no CI determinará a publicação do candidato final.
+- Próximo passo Gemini: obter G-SPEC, comprovar versão/fluxo oficial sem autenticar conta real, implementar e executar todos os checks/E2E antes de publicar. Sem migration ou importação de credenciais humanas.
+
 ## [2026-10-07] - Codex - seleção após colar chave sem recarregar no clique
 
 - PO esclareceu que OpenRouter com chave também não mostrava modelos, enquanto deseja utilizar assinaturas. A consulta de catálogo dentro do contêiner API de produção retornou HTTP 200, eliminando falha de saída de rede nesse endpoint.
