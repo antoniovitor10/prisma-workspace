@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T13:35:00Z",
+  "title": "Prisma WorkSpace D68",
+  "extensions": {
+    "shadows": [
+      { "name": "panel-light", "value": "0 24px 64px rgba(20,24,40,0.12)", "purpose": "Painel flutuante em tema claro, shadow.lg existente." },
+      { "name": "panel-dark", "value": "0 24px 64px rgba(0,0,0,0.38)", "purpose": "Painel flutuante em tema escuro, shadow.lg existente." }
+    ],
+    "motion": [
+      { "name": "theme-transition", "value": "all 0.2s ease-in-out", "purpose": "Token existente do tema; nenhuma animação nova na extensão." }
+    ],
+    "breakpoints": [
+      { "name": "assistant-full-screen", "value": "768px" },
+      { "name": "assistant-single-column", "value": "480px" },
+      { "name": "connection-form-single-column", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ação principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Controle de ação principal do formulário de conexões, extraído de AiSettings.tsx.",
+      "html": "<button class=\"prisma-primary\">Salvar conexão</button>",
+      "css": ".prisma-primary { min-height:44px; padding:10px 16px; border:1px solid transparent; border-radius:10px; background:#1D4ED8; color:white; font-family:Inter,system-ui,sans-serif; font-size:14px; cursor:pointer; } .prisma-primary:focus-visible { outline:2px solid #1D4ED8; outline-offset:3px; } .prisma-primary:disabled { opacity:.55; cursor:not-allowed; }"
+    },
+    {
+      "name": "Campo de conexão",
+      "kind": "input",
+      "description": "Campo acessível do formulário de conexões, extraído de AiSettings.tsx em tema claro.",
+      "html": "<label class=\"prisma-field\">Nome da conexão<input placeholder=\"Nome\" /></label>",
+      "css": ".prisma-field { display:grid; gap:6px; font-family:Inter,system-ui,sans-serif; font-size:13px; } .prisma-field input { box-sizing:border-box; width:100%; min-width:0; min-height:44px; padding:10px 12px; color:#0F172A; border:1px solid #E5E8F0; border-radius:10px; background:white; } .prisma-field input:focus-visible { outline:2px solid #1D4ED8; outline-offset:3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Identidade Prisma D68 existente",
+    "overview": "Espectro Prisma para identificação da marca; controles funcionais com cores acessíveis, superfícies do tema e hierarquia de leitura. Referência normativa em src/styles/theme.ts, sem identidade nova.",
+    "keyCharacteristics": ["Tokens existentes", "Contexto e leitura", "Escolha explícita por conversa"],
+    "rules": [
+      { "name": "Preservar D68", "body": "Reutilizar AppTheme e suas variantes clara e escura.", "section": "colors" }
+    ],
+    "dos": ["Manter foco visível e contexto claro", "Distinguir conexões do mesmo provedor pelo nome"],
+    "donts": ["Não introduzir ícones, emojis ou identidade novos nesta extensão", "Não apresentar quota da assinatura como medida"]
+  }
+}

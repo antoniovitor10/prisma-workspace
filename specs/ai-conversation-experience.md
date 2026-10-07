@@ -77,3 +77,12 @@ ALTER TABLE [AiConversations] ADD
 ## Tests and Gates
 
 G-SPEC e G-MIGRATION explícitos antes de código/schema novos. Backend: permissões, seleção, catálogo, persistência, revogação, custo e cotas. Frontend: troca/consulta tardia/erros/expansão e build `tsc -b`. E2E com dois provedores falsos controlados, reabertura, outro usuário/organização, interrupção e regressões de configuração. Conferência visual desktop/mobile em uma rodada conjunta e no máximo uma confirmação após correções. Nenhuma autenticação humana ou inferência paga pelo agente.
+
+## Validation record
+
+- Implementação validada em 2026-10-07: 271 testes backend, 137 frontend, governança 42, build `tsc -b` e lint sem erros.
+- E2E final local: 114 cenários aprovados na primeira execução e três após repetição, seis skips condicionais, zero falhas finais. Fluxos IA/teclado passaram sem retries.
+- Revisão visual desktop/mobile confirmada após uma rodada de correções, preservando D68. Registro em docs/design/ai-conversation-review.md.
+- Migration aplicada primeiro ao E2E e depois à produção após checks, com backup verificado em 2026-10-07T13:39:50Z. Duas colunas nullable e histórico 28 conferidos; sem Down.
+- Main/API de produção `6eecba886b974d57cc055af9b8014b7c01b49434`; CI `37629372432` com seis jobs aprovados e 117 E2E aprovados sem retries, seis skips condicionais.
+- Revisão/saúde/schema/bundle e preservação de ambiente/mounts/volumes conferidos após publicação. Ponte permanece `aad03a3`; três CLIs disponíveis, sem conta humana autenticada pelo agente. Próximo teste humano: conectar/testar uma assinatura e escolher seu modelo no chat.

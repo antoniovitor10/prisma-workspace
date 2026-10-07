@@ -8,7 +8,9 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
 
 - Recorte solicitado em 2026-10-07: chat visualmente inspirado no Zapmind e provedor/modelo por conversa.
   US-AI-011 / SPEC-AI-004 (`approved`), G-SPEC/G-MIGRATION concedidos pelo PO em 2026-10-07.
-  Duas colunas opcionais aplicadas ao banco E2E; implementação em validação antes da publicação.
+  Duas colunas opcionais aplicadas ao E2E e à produção com backup verificado; implementação validada.
+  Main/produção `6eecba8`, CI `37629372432` com todos os seis jobs aprovados,
+  117 E2E aprovados sem retries e seis skips condicionais. Próximo passo: teste humano da assinatura/chat.
 - Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
   mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
 - G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por
