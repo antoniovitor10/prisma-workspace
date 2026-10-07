@@ -21,7 +21,7 @@ test('convite informa se o e-mail saiu e sempre entrega o link', async ({ page, 
   await expect(link).toContainText(/[?&]invite=[0-9a-f]{16,}/);
 
   // E a tela precisa dizer explicitamente o que aconteceu com o e-mail.
-  const aviso = page.getByRole('status');
+  const aviso = page.getByRole('status').filter({ hasText: /enviado por e-mail|não foi possível enviar o e-mail/i });
   await expect(aviso).toBeVisible();
   await expect(aviso).toHaveText(/enviado por e-mail|não foi possível enviar o e-mail/i);
 });

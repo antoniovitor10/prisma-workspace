@@ -1,3 +1,8 @@
+## [2026-10-07] - Codex - seletor validado; teste de convite escopado à própria mensagem
+
+- CI `37613311462` impediu o deploy: 113 E2E passaram e os dois cenários de convite falharam porque seu seletor genérico `getByRole('status')` encontrou também a nova mensagem acessível do catálogo. O teste agora seleciona a mensagem sobre entrega do e-mail; contrato do convite não mudou. A correção será publicada pelo mesmo fluxo com suíte geral repetida.
+- SPEC-AI-003 aprovada explicitamente pelo PO em 2026-10-07 ("Sim, aprovar e implementar"). Implementação Gemini/CLI autorizada na raiz; publicação do seletor segue seletiva, sem levar alterações incompletas Gemini ou D92 para produção.
+
 ## [2026-10-07] - Codex - proposta Gemini por assinatura pronta para aprovação
 
 - PO solicitou explicitamente Gemini por assinatura. Criadas US-AI-010 e SPEC-AI-003 em `draft`, com login Google oficial da Gemini CLI, código temporário/PKCE delegado, confirmação sem inferência, modelos da versão instalada e volume privado adicional. Não houve alteração de produto para admitir Gemini/CLI sem G-SPEC.
