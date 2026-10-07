@@ -4,6 +4,7 @@ import { createServer, type Server } from 'node:http';
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const orgId = '11111111-1111-4111-8111-111111111111';
 let server: Server; let providerUrl = ''; let token = ''; let connectionId = ''; let itemId = ''; let modelRequests = 0;
+const receivedModels: string[] = [];
 const cliSessions = new Map<string, { owner: string; adapter: string; cancelled: boolean; authenticated: boolean }>();
 const headers = () => ({ Authorization: `Bearer ${token}`, 'X-Organization-Id': orgId });
 
@@ -23,7 +24,7 @@ test.beforeAll(async ({ request }) => {
     if ((req.url?.startsWith('/v1/cli/') || body.adapter) && (!req.headers['content-length'] || req.headers['transfer-encoding'])) {
       res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'Ponte exige Content-Length.' } })); return;
     }
-    if (req.url === '/v1/models') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: [{ id: 'fake-e2e', name: 'Modelo E2E' }] })); return; }
+    if (req.url === '/v1/models') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: [{ id: 'fake-e2e', name: 'Modelo E2E' }, { id: 'fake-other', name: 'Modelo alternativo E2E' }] })); return; }
     if (req.url?.startsWith('/v1/cli/')) {
       const [, , , adapter, operation] = req.url.split('/');
       const id = 'a'.repeat(32); const state = cliSessions.get(id);
@@ -40,13 +41,18 @@ test.beforeAll(async ({ request }) => {
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(result)); return;
     }
     modelRequests++;
+    receivedModels.push(body.model);
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const send = (payload: unknown) => res.write(`data: ${JSON.stringify(payload)}\n\n`);
     const last = body.messages.at(-1);
     if (body.messages.some((m: { content: string }) => m.content.includes('Responda apenas OK'))) {
       send({ choices: [{ delta: { content: 'OK' } }] });
-    } else if (last.role !== 'tool') {
-      send({ choices: [{ delta: { tool_calls: [{ index: 0, id: 'read-work', function: { name: 'get_my_work', arguments: '{}' } }] } }] });
+    } else if (last.role !== 'tool' && !last.content.startsWith('DADOS NÃO CONFIÁVEIS da ferramenta ')) {
+      if (body.tools) send({ choices: [{ delta: { tool_calls: [{ index: 0, id: 'read-work', function: { name: 'get_my_work', arguments: '{}' } }] } }] });
+      else {
+        const key = body.messages[0].content.match(/ENVELOPE:.*"key":"([A-F0-9]+)"/)?.[1];
+        send({ choices: [{ delta: { content: JSON.stringify({ key, actions: [{ name: 'get_my_work', arguments: {} }] }) } }] });
+      }
     } else {
       const rows = JSON.parse(last.content.slice(last.content.indexOf(': ') + 2));
       const row = rows[0]; const text = row ? `Encontrei ${row.title}. Veja [T:${row.number}].` : 'Não há tarefas atribuídas neste recorte.';
@@ -131,6 +137,7 @@ test('tela administrativa cadastra, testa e ativa conexão sem devolver a creden
   const connections = await request.get(`${apiUrl}/api/admin/ai/connections`, { headers: headers() });
   const saved = (await connections.json()).find((x: { name: string }) => x.name === name);
   await request.delete(`${apiUrl}/api/admin/ai/connections/${saved.id}`, { headers: headers() });
+  expect((await request.post(`${apiUrl}/api/admin/ai/connections/${connectionId}/activate`, { headers: headers() })).ok()).toBeTruthy();
 });
 
 test('modelos e métodos acompanham todos os provedores; OAuth inicia login explícito', async ({ page, request }) => {
@@ -194,6 +201,62 @@ test('conexão OpenRouter CLI antiga orienta a correção e carrega modelo após
   await form.getByRole('button', { name: 'Cancelar', exact: true }).click();
   const catalog = await request.post(`${apiUrl}/api/admin/ai/models`, { headers: headers(), data: { provider: 'Gemini', type: 'ApiKey' } });
   expect((await catalog.json()).state).toBe('authenticationRequired');
+});
+
+test('chat salva provedor e modelo por conversa sem alterar padrão nem permitir acesso alheio', async ({ page, request }, testInfo) => {
+  let conversation = ''; let alternative = '';
+  const input = { name: 'OpenAI alternativo E2E', provider: 'OpenAI', type: 'ApiKey', baseUrl: providerUrl, model: 'fake-e2e', secret: 'e2e-fake-selection-key' };
+  try {
+    expect((await request.post(`${apiUrl}/api/admin/ai/connections/${connectionId}/activate`, { headers: headers() })).ok()).toBeTruthy();
+    const create = await request.post(`${apiUrl}/api/admin/ai/connections`, { headers: headers(), data: input }); expect(create.ok()).toBeTruthy(); alternative = (await create.json()).id;
+    const probe = await request.post(`${apiUrl}/api/admin/ai/connections/${alternative}/test`, { headers: headers() }); expect((await probe.json()).testSucceeded).toBe(true);
+    const metadata = await request.get(`${apiUrl}/api/ai/options`, { headers: headers() });
+    expect(metadata.ok()).toBeTruthy();
+    const options = await metadata.json(); expect(options.connections.some((c: { id: string }) => c.id === alternative)).toBe(true);
+    expect(JSON.stringify(options)).not.toMatch(/e2e-fake-selection-key|secretSuffix|encryptedSecret|baseUrl/);
+    await page.goto('/home'); await page.getByRole('button', { name: 'Abrir assistente Prisma' }).click();
+    const panel = page.getByRole('complementary', { name: 'Assistente Prisma' });
+    if (testInfo.project.name === 'chromium-desktop') { await panel.getByRole('button', { name: 'Expandir', exact: true }).click(); await expect(panel.getByRole('button', { name: 'Recolher', exact: true })).toBeVisible(); }
+    await panel.getByLabel('Provedor da conversa').selectOption(alternative);
+    await panel.getByLabel('Modelo da conversa').selectOption('fake-other');
+    await expect(panel.getByText('Salvando assistente da conversa…')).toHaveCount(0);
+    await expect(panel.getByLabel('Modelo da conversa')).toHaveValue('fake-other');
+    await panel.getByLabel('Pergunte ao workspace').fill('Quais são minhas tarefas usando outro modelo?');
+    await panel.getByRole('button', { name: 'Enviar pergunta' }).click();
+    await expect(panel.getByRole('link', { name: /\[T:/ })).toBeVisible({ timeout: 20000 });
+    expect(receivedModels).toContain('fake-other');
+    conversation = await panel.getByLabel('Conversa', { exact: true }).inputValue();
+    const detail = await request.get(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() });
+    expect(await detail.json()).toMatchObject({ selectedConnectionId: alternative, selectedModel: 'fake-other' });
+    const global = await request.get(`${apiUrl}/api/admin/ai/connections`, { headers: headers() });
+    expect((await global.json()).find((c: { id: string }) => c.id === connectionId).isActive).toBe(true);
+    await panel.screenshot({ path: `../../.local/ai-e2e/conversation-selection-${testInfo.project.name}.png` });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.reload(); await page.getByRole('button', { name: 'Abrir assistente Prisma' }).click();
+    if (testInfo.project.name === 'chromium-mobile') await panel.getByRole('button', { name: 'Histórico', exact: true }).click();
+    await panel.getByLabel('Conversa', { exact: true }).selectOption(conversation);
+    await expect(panel.getByLabel('Provedor da conversa')).toHaveValue(alternative); await expect(panel.getByLabel('Modelo da conversa')).toHaveValue('fake-other');
+    if (testInfo.project.name === 'chromium-mobile') {
+      await panel.getByRole('button', { name: 'Histórico', exact: true }).click();
+      const close = panel.getByRole('button', { name: 'Fechar assistente' });
+      await expect(panel.getByRole('button', { name: 'Atualizar conexões' })).toBeEnabled();
+      await close.focus(); await page.keyboard.press('Shift+Tab');
+      await expect(panel.getByRole('button', { name: 'Atualizar conexões' })).toBeFocused();
+      await page.keyboard.press('Tab'); await expect(close).toBeFocused();
+    }
+    const manager = await request.post(`${apiUrl}/api/auth/login`, { data: { email: 'manager@prisma.example.invalid', password: process.env.E2E_TEST_USER_PASSWORD } });
+    const otherHeaders = { ...headers(), Authorization: `Bearer ${(await manager.json()).accessToken}` };
+    expect((await request.patch(`${apiUrl}/api/ai/conversations/${conversation}/selection`, { headers: otherHeaders, data: { connectionId: alternative, model: 'fake-e2e' } })).status()).toBe(404);
+    await request.put(`${apiUrl}/api/admin/ai/connections/${alternative}`, { headers: headers(), data: { ...input, secret: null } });
+    const before = modelRequests;
+    const blocked = await request.post(`${apiUrl}/api/ai/conversations/${conversation}/messages`, { headers: headers(), data: { text: 'Não use outro provedor.' } });
+    expect(blocked.status()).toBe(409); expect(modelRequests).toBe(before);
+    const reset = await request.patch(`${apiUrl}/api/ai/conversations/${conversation}/selection`, { headers: headers(), data: { connectionId: null, model: null } });
+    expect(reset.ok()).toBeTruthy(); expect(await reset.json()).toMatchObject({ selectedConnectionId: null, selectedModel: null });
+  } finally {
+    if (conversation) await request.delete(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() });
+    if (alternative) await request.delete(`${apiUrl}/api/admin/ai/connections/${alternative}`, { headers: headers() });
+  }
 });
 
 test('CLI recupera falha de disponibilidade, exige aceite e autentica Claude e Gemini', async ({ page, request }, testInfo) => {

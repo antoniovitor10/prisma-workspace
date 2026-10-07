@@ -1,9 +1,9 @@
 # SPEC-AI-004: Chat inspirado no Zapmind e escolha por conversa
 
-**Status:** draft
-**G-SPEC:** pendente; comportamento solicitado pelo PO em 2026-10-07.
+**Status:** approved
+**G-SPEC:** aprovado pelo PO em 2026-10-07: "Aprovar spec e migration descrita".
 **G-SCOPE:** escolha de provedor/modelo por conversa confirmada pelo PO: "Visual e escolha de provedor/modelo por conversa".
-**G-MIGRATION:** pendente para duas colunas opcionais de preferência em `AiConversations`.
+**G-MIGRATION:** aprovado pelo mesmo aceite explícito para as duas colunas opcionais descritas em Data Impact; primeiro E2E e depois produção após checks.
 **Story:** US-AI-011 (`stories/ai-conversation-experience.md`).
 **Fase:** 15, evolução da experiência de conversa da D91.
 **Relação:** estende SPEC-AI-001/002/003. Substitui somente a obrigatoriedade de usar a conexão global em toda chamada; a conexão global continua como padrão. Desktop pode expandir o painel por ação explícita.
@@ -49,7 +49,7 @@ Adaptar a composição do chat do Zapmind ao Prisma, com seleção de provedor/m
 
 ## Data Impact
 
-Migration aditiva proposta `Add_AiConversation_Selection`: adicionar somente:
+Migration aditiva aprovada `20261007125405_Add_AiConversation_Selection`: adicionar somente:
 
 ```sql
 ALTER TABLE [AiConversations] ADD

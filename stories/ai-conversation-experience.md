@@ -2,7 +2,7 @@
 
 **Status:** active
 **Módulo:** ai-assistant
-**Spec vinculada:** `specs/ai-conversation-experience.md` (`draft`, revisão solicitada ao PO).
+**Spec vinculada:** `specs/ai-conversation-experience.md` (`approved`, G-SPEC/G-MIGRATION concedidos pelo PO em 2026-10-07).
 **Origem:** pedidos do PO em 2026-10-07: usar o exemplo do Zapmind na mesma VPS e implementar também a aparência; escolha explícita "Visual e escolha de provedor/modelo por conversa".
 
 ## US-AI-011: escolher o assistente de cada conversa

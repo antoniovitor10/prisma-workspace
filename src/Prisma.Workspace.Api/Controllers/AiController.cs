@@ -13,6 +13,9 @@ public sealed class AiController(IMediator mediator) : ControllerBase
 {
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     [HttpGet("status")] public async Task<IActionResult> Status(CancellationToken ct) => Ok(await mediator.Send(new AiQuery("status", UserId), ct));
+    [HttpGet("options")] public async Task<IActionResult> Options(CancellationToken ct) => Ok(await mediator.Send(new AiQuery("chat.options", UserId), ct));
+    [HttpGet("options/{connectionId:guid}/models")] public async Task<IActionResult> Models(Guid connectionId, bool refresh, CancellationToken ct) => Ok(await mediator.Send(new AiQuery("chat.models", UserId, connectionId, JsonSerializer.SerializeToElement(new { refresh })), ct));
+    [HttpPatch("conversations/{id:guid}/selection")] public async Task<IActionResult> Selection(Guid id, JsonElement input, CancellationToken ct) => Ok(await mediator.Send(new AiCommand("selectConversation", UserId, id, input), ct));
     [HttpGet("conversations")] public async Task<IActionResult> List(CancellationToken ct) => Ok(await mediator.Send(new AiQuery("conversations", UserId), ct));
     [HttpPost("conversations")] public async Task<IActionResult> Create(CancellationToken ct) => Ok(await mediator.Send(new AiCommand("createConversation", UserId), ct));
     [HttpGet("conversations/{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await mediator.Send(new AiQuery("conversation", UserId, id), ct));

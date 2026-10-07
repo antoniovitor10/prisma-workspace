@@ -46,6 +46,8 @@ public sealed class AiConversation : IOrganizationOwned
     public Guid OrganizationId { get; set; }
     public string UserId { get; set; } = string.Empty;
     public string Title { get; set; } = "Nova conversa";
+    public Guid? SelectedConnectionId { get; set; }
+    public string? SelectedModel { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public ICollection<AiMessage> Messages { get; set; } = new List<AiMessage>();
 }

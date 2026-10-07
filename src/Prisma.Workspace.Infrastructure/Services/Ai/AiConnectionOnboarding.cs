@@ -106,7 +106,7 @@ public sealed partial class AiService
         {
             // Trocar a conta da ponte exige testar novamente todas as conexões desse adaptador.
             foreach (var connection in await db.AiProviderConnections.Where(x => x.Type == "CliSubscription" && x.Provider == provider).ToListAsync(ct))
-            { connection.IsActive = false; connection.TestSucceeded = false; connection.TestMessage = "Login CLI iniciado. Conclua a autenticação e teste novamente."; }
+            { ChatCatalogs.TryRemove(connection.Id, out _); connection.IsActive = false; connection.TestSucceeded = false; connection.TestMessage = "Login CLI iniciado. Conclua a autenticação e teste novamente."; }
             CancelAll(); await db.SaveChangesAsync(ct);
         }
         return result;

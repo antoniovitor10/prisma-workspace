@@ -240,6 +240,13 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SelectedConnectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SelectedModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(160)
