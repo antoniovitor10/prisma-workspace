@@ -74,7 +74,7 @@ test('canonical constants match expected counts', () => {
   assert.equal(canonical.humanGates.length, 7);
   assert.equal(canonical.maxAttempts, 3);
   assert.equal(canonical.stopOnFirstGateFailure, true);
-  assert.equal(canonical.canonicalSpecs, 51);
-  assert.equal(canonical.canonicalTasks, 110);
+  assert.equal(canonical.canonicalSpecs, 52);
+  assert.equal(canonical.canonicalTasks, 111);
   assert.equal(canonical.loopEngineTests, 47);
 });

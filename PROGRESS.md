@@ -1,3 +1,9 @@
+## [2026-10-07] - Codex - experiência Zapmind especificada para revisão humana
+
+- PO confirmou "Visual e escolha de provedor/modelo por conversa". US-AI-011 e SPEC-AI-004 preparadas em draft com expansão do painel, histórico/compositor inspirados no Zapmind, identidade D68 e escolha persistida por conversa. Conexões testadas da instalação, catálogos no servidor, validação do dono/organização, ausência de fallback silencioso e preservação de cotas/mascaramento/consumo. Seleção não altera padrão global ou conta CLI.
+- Proposta de migration incremental `Add_AiConversation_Selection`: somente `SelectedConnectionId` uniqueidentifier nullable e `SelectedModel` nvarchar(200) nullable em AiConversations, sem backfill/FK/índice novo ou dados de trabalho. Sem alterações de produto/schema antes de G-SPEC/G-MIGRATION; nota avulsa preparada para revisão. Contexto, catálogo, backlog e roadmap atualizados para 18 domínios, 52 specs e 111 tarefas.
+- Correção HTTP CLI já autorizada publicada na main candidata `614948f`, CI `37622461626` em andamento. E2E focal da imagem: 13 aprovados sem retries, incluindo contrato real de tamanho do corpo. Referência Zapmind usa arquivos de autenticação existentes; nenhuma credencial/conta/conversa foi copiada ou compartilhada. Login do Prisma continua pelo mecanismo oficial.
+
 ## [2026-10-07] - Codex - causa HTTP da indisponibilidade CLI reproduzida e corrigida
 
 - PO apresentou erro de sessão após a espera passar a mostrar falha. Prova no contêiner da API de produção com .NET 8 confirmou: `JsonContent` sem Content-Length envia chunked e a ponte Python retorna 502; corpo de tamanho conhecido retorna 200/disponível. Host, token e rede estavam corretos. A verificação anterior consultava a ponte por um cliente que informava tamanho; essa diferença escapou ao endpoint falso Node, que aceitava chunked.
