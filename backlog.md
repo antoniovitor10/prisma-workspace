@@ -2561,6 +2561,23 @@ subindo com os dados preservados.
 
 ## Fundação IA autorizada em 2026-10-06
 
+Extensão solicitada em 2026-10-07: experiência semelhante ao Zapmind e escolha de provedor/modelo por conversa.
+US-AI-011 / SPEC-AI-004 em draft. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION pendentes.
+
+```yaml
+- id: TASK-AI-004
+  spec: SPEC-AI-004 (specs/ai-conversation-experience.md)
+  requirement: Adaptar visual do chat e permitir seleção de provedor/modelo persistida por conversa.
+  dependencies: [TASK-AI-003]
+  risk: alto
+  gates: [G-SPEC, G-MIGRATION, backend-build, backend-test, frontend-build, frontend-test, frontend-e2e]
+  context_minimo: [AGENTS.md, context/index.yaml, stories/ai-conversation-experience.md, specs/ai-conversation-experience.md]
+  tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
+  human_gate: sim
+  status: blocked
+  priority: P1
+```
+
 Extensão solicitada pelo PO em 2026-10-07: Gemini por assinatura (US-AI-010).
 SPEC-AI-003 aprovada explicitamente pelo PO, com login Google oficial, catálogo CLI e isolamento;
 implementação e validação em andamento, sem migration.
