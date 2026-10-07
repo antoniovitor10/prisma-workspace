@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AiConnectionForm } from './AiConnectionForm';
+import { AiConnectionForm, type AiConnection } from './AiConnectionForm';
 import { api } from '../../services/api';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -30,6 +30,8 @@ describe('Configuração guiada da IA', () => {
     expect(screen.queryByLabelText('Como conectar')).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /router\/model/ })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Modelo')).toHaveValue('');
+    expect(screen.getByText(/Cole a chave de API do Google Gemini acima/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
     await screen.findByRole('option', { name: 'Gemini — gemini-test' });
     expect(screen.getByRole('button', { name: 'Salvar conexão' })).toBeDisabled();
   });
@@ -59,8 +61,39 @@ describe('Configuração guiada da IA', () => {
     });
     wrap(); await waitFor(() => expect(api.request).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
+    fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
     await screen.findByRole('option', { name: 'Gemini — gemini-test' });
     resolveOld({ models: [{ id: 'old', name: 'Antigo' }], state: 'ready', message: 'Antigo' });
     await waitFor(() => expect(screen.queryByRole('option', { name: /Antigo/ })).not.toBeInTheDocument());
+  });
+  it('carrega ao colar a chave sem exigir blur e mantém o catálogo ao repetir o provedor', async () => {
+    const sent: Array<{ provider: string; secret: string }> = [];
+    vi.spyOn(api, 'request').mockImplementation(async (_url, init) => {
+      const body = JSON.parse(init?.body as string); sent.push(body);
+      return { models: [{ id: 'gemini-test', name: 'Gemini' }], state: 'ready', message: 'Pronto' };
+    });
+    wrap(); fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
+    expect(screen.getByLabelText('Modelo')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Atualizar modelos' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
+    await screen.findByRole('option', { name: 'Gemini — gemini-test' });
+    expect(sent).toEqual([{ provider: 'Gemini', type: 'ApiKey', baseUrl: null, secret: 'current-key' }]);
+    fireEvent.change(screen.getByLabelText('Modelo'), { target: { value: 'gemini-test' } });
+    fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
+    expect(screen.getByLabelText('Modelo')).toBeEnabled(); expect(screen.getByLabelText('Modelo')).toHaveValue('gemini-test');
+    expect(screen.getByLabelText('Chave de API')).toHaveValue('current-key');
+  });
+  it('explica e corrige a conexão Gemini CLI somente após uma escolha explícita', async () => {
+    const request = vi.spyOn(api, 'request').mockResolvedValue({ models: [{ id: 'gemini-test', name: 'Gemini' }], state: 'ready', message: 'Pronto' });
+    const legacy: AiConnection = { id: 'legacy', name: 'Legada', provider: 'Gemini', type: 'CliSubscription', model: 'opus', baseUrl: 'http://bridge.invalid/v1', hasSecret: false, secretSuffix: null, isActive: false, testSucceeded: false, testMessage: null, inputPrice: null, outputPrice: null, latencyMs: null };
+    render(<AiConnectionForm connection={legacy} onSaved={async () => undefined} onCancel={() => undefined}/>);
+    expect(screen.getByLabelText('Como conectar')).toHaveValue('CliSubscription');
+    expect(screen.getByLabelText('Modelo')).toBeDisabled(); expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Usar chave de API com Google Gemini' }));
+    expect(screen.getByLabelText('Chave de API')).toBeVisible(); expect(request).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Modelo')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
+    await screen.findByRole('option', { name: 'Gemini — gemini-test' });
+    expect(screen.getByLabelText('Modelo')).toBeEnabled();
   });
 });

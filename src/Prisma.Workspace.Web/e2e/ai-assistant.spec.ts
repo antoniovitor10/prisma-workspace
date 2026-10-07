@@ -136,6 +136,12 @@ test('modelos e métodos acompanham todos os provedores; OAuth inicia login expl
   const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
   for (const provider of ['OpenRouter', 'OpenAI', 'Anthropic', 'Gemini', 'Custom']) {
     await form.getByLabel('Provedor', { exact: true }).selectOption(provider);
+    if (provider === 'Custom') await form.getByLabel('URL base').fill(providerUrl);
+    if (['OpenAI', 'Anthropic', 'Gemini'].includes(provider)) {
+      await expect(form.getByLabel('Modelo', { exact: true })).toBeDisabled();
+      await expect(form.getByText(/Cole a chave de API do/)).toBeVisible();
+      await form.getByLabel('Chave de API', { exact: true }).fill('e2e-catalog-key');
+    }
     await expect(form.getByRole('option', { name: `${provider} chat — ${provider}-chat` })).toBeAttached();
     await expect(form.getByLabel('Modelo', { exact: true })).toHaveValue('');
     await form.getByLabel('Modelo', { exact: true }).selectOption(`${provider}-chat`);
@@ -150,6 +156,38 @@ test('modelos e métodos acompanham todos os provedores; OAuth inicia login expl
   expect((await start.json()).url).toContain('https://openrouter.ai/auth?');
   expect((await request.post(`${apiUrl}/api/admin/ai/connections/${id}/oauth/complete`, { headers: headers(), data: { code: 'invalid', state: 'invalid' } })).status()).toBe(400);
   await request.delete(`${apiUrl}/api/admin/ai/connections/${id}`, { headers: headers() });
+});
+
+test('conexão Gemini CLI antiga orienta a correção e carrega modelo após colar chave', async ({ page, request }, testInfo) => {
+  // O fixture representa a combinação histórica recusada pelo backend atual.
+  await page.route('**/api/admin/ai/connections', async route => {
+    if (route.request().method() !== 'GET') { await route.continue(); return; }
+    await route.fulfill({ json: [{ id: '11111111-1111-4111-8111-111111111112', name: 'Gemini antiga', provider: 'Gemini', type: 'CliSubscription', model: 'opus', baseUrl: null, hasSecret: false, isActive: false, testSucceeded: false, secretSuffix: null, inputPrice: null, outputPrice: null, testMessage: null, latencyMs: null }] });
+  });
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Editar Gemini antiga' }).click();
+  const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
+  await expect(form.getByLabel('Como conectar')).toHaveValue('CliSubscription');
+  await expect(form.getByLabel('Modelo', { exact: true })).toBeDisabled();
+  await expect(form.getByText(/não oferece esta forma de conexão/)).toBeVisible();
+  await form.screenshot({ path: `../../.local/ai-e2e/legacy-correction-${testInfo.project.name}.png` });
+  await form.getByRole('button', { name: 'Usar chave de API com Google Gemini' }).click();
+  await expect(form.getByLabel('Chave de API', { exact: true })).toBeVisible();
+  await expect(form.getByText(/Cole a chave de API do Google Gemini acima/)).toBeVisible();
+  // O endpoint falso exercita a API real; a consulta usa o texto atual sem blur.
+  await form.getByLabel('Provedor', { exact: true }).selectOption('Custom');
+  await form.getByLabel('URL base').fill(providerUrl);
+  await form.getByLabel('Chave de API', { exact: true }).fill('e2e-current-key');
+  // Edição guarda o id legado apenas na UI, enquanto uma chave nova evita lookup.
+  await expect(form.getByRole('option', { name: 'Modelo E2E — fake-e2e' })).toBeAttached();
+  await form.getByLabel('Modelo', { exact: true }).selectOption('fake-e2e');
+  await form.getByLabel('Provedor', { exact: true }).selectOption('Custom');
+  await expect(form.getByLabel('Modelo', { exact: true })).toHaveValue('fake-e2e');
+  await expect(form.getByLabel('Chave de API', { exact: true })).toHaveValue('e2e-current-key');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await form.screenshot({ path: `../../.local/ai-e2e/catalog-recovery-${testInfo.project.name}.png` });
+  await form.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  const catalog = await request.post(`${apiUrl}/api/admin/ai/models`, { headers: headers(), data: { provider: 'Gemini', type: 'ApiKey' } });
+  expect((await catalog.json()).state).toBe('authenticationRequired');
 });
 
 test('CLI exige aceite, cancela Codex e autentica Claude antes de selecionar modelo', async ({ page, request }, testInfo) => {
