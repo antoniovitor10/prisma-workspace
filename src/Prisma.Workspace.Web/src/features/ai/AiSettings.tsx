@@ -62,7 +62,7 @@ export function AiSettings() {
   }, [administrator, action]);
   if (!administrator && !orgAdmin) return null;
   const showForm = adding || editing !== null || connections.data?.length === 0;
-  const connectionState = (c: AiConnection) => c.type === 'CliSubscription' && !['OpenAI', 'Anthropic'].includes(c.provider) ? 'Configuração inválida — edite a conexão' : c.isActive ? 'Ativa' : c.testSucceeded ? 'Pronta para ativar' : c.testMessage ? 'Teste falhou' : c.type === 'OAuth' && !c.hasSecret ? 'Sem autenticação' : c.type === 'CliSubscription' ? 'Confira o login ao editar' : 'Pronta para testar';
+  const connectionState = (c: AiConnection) => c.type === 'CliSubscription' && !['OpenAI', 'Anthropic', 'Gemini'].includes(c.provider) ? 'Configuração inválida — edite a conexão' : c.isActive ? 'Ativa' : c.testSucceeded ? 'Pronta para ativar' : c.testMessage ? 'Teste falhou' : c.type === 'OAuth' && !c.hasSecret ? 'Sem autenticação' : c.type === 'CliSubscription' ? 'Confira o login ao editar' : 'Pronta para testar';
   return <Section aria-label="Configurações de IA"><h2>Assistente de IA</h2><p>Conecte um provedor, escolha o modelo e teste. Depois, habilite o assistente nesta organização.</p>
     {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
     {administrator && <><div className="section-heading"><h3>Conexões da instalação</h3>{!showForm && <button onClick={() => setAdding(true)}>Adicionar conexão</button>}</div>

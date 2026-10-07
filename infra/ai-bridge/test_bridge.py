@@ -3,6 +3,8 @@ import pathlib
 import unittest
 import sys
 import time
+import tempfile
+import json
 from unittest.mock import patch
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import auth
@@ -102,6 +104,78 @@ class BridgeTests(unittest.TestCase):
             bridge.command("unknown", "model")
         with self.assertRaises(ValueError):
             bridge.command("claude", "model\nargument")
+
+    def test_gemini_login_accepts_only_google_host_and_expires_in_five_minutes(self):
+        self.assertEqual(auth.instructions("gemini", "https://accounts.google.com/o/oauth2/v2/auth?state=temporary"), ("https://accounts.google.com/o/oauth2/v2/auth?state=temporary", None))
+        self.assertEqual(auth.instructions("gemini", "https://accounts.google.com.attacker.invalid/auth"), (None, None))
+        row = auth.Session("gemini", "owner")
+        self.assertLessEqual(row.expires - time.time(), 300)
+        row.state = "waiting"
+        self.assertTrue(row.view()["requiresCode"])
+
+    def test_gemini_status_uses_verified_module_result_not_just_a_cache_file(self):
+        from subprocess import CompletedProcess
+        with patch.object(auth.shutil, "which", return_value="/bin/gemini"), patch.object(auth.subprocess, "run", return_value=CompletedProcess([], 0, b'PRISMA_GEMINI_AUTH={"authenticated":false}\n', b'')):
+            self.assertFalse(auth.status("gemini")["authenticated"])
+        with patch.object(auth.shutil, "which", return_value="/bin/gemini"), patch.object(auth.subprocess, "run", return_value=CompletedProcess([], 0, b'PRISMA_GEMINI_AUTH={"authenticated":true}\n', b'')):
+            self.assertTrue(auth.status("gemini")["authenticated"])
+
+    def test_google_environment_drops_api_keys_adc_and_oauth_overrides(self):
+        keys = ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_ACCESS_TOKEN", "GEMINI_API_BASE_URL", "GEMINI_FORCE_AUTH_TYPE"]
+        with patch.dict(auth.os.environ, dict.fromkeys(keys, "private")):
+            env = auth.environment("/tmp/isolated")
+        for key in keys:
+            self.assertNotIn(key, env)
+        self.assertEqual(env["NO_BROWSER"], "true")
+
+    def test_gemini_chat_uses_temporary_config_with_zero_tools_and_only_oauth_cache(self):
+        with tempfile.TemporaryDirectory() as private, tempfile.TemporaryDirectory() as directory:
+            folder = pathlib.Path(private) / ".gemini"; folder.mkdir()
+            (folder / "oauth_creds.json").write_text('{"refresh_token":"fake-private"}')
+            (folder / "settings.json").write_text('{"mcpServers":{"unsafe":{}}}')
+            with patch.dict(auth.os.environ, {"GEMINI_AUTH_HOME": private}):
+                env = bridge.gemini_chat_environment(directory)
+            config = json.loads((pathlib.Path(directory) / ".gemini" / "settings.json").read_text())
+            self.assertEqual(env["GEMINI_CLI_HOME"], directory)
+            self.assertEqual(config["tools"]["core"], [])
+            self.assertEqual(config["mcpServers"], {})
+            self.assertFalse(config["hooksConfig"]["enabled"])
+            self.assertFalse(config["experimental"]["enableAgents"])
+            args = bridge.command("gemini", "auto")
+            self.assertEqual(args[args.index("--extensions") + 1], "none")
+            self.assertIn("/bridge/gemini-deny-tools.toml", args)
+            self.assertNotIn("--yolo", args)
+
+    def test_gemini_json_preserves_response_and_validates_token_statistics(self):
+        text, usage = bridge.gemini_result(json.dumps({"response":" Resposta ","stats":{"models":{"gemini":{"tokens":{"input":20,"candidates":8}}}}}))
+        self.assertEqual(text, "Resposta")
+        self.assertEqual(usage, {"prompt_tokens":20,"completion_tokens":8})
+        with self.assertRaises(ValueError):
+            bridge.gemini_result('{"response":"text","error":{"code":403}}')
+
+    def test_google_code_is_sent_only_once_and_cancellation_keeps_credentials_private(self):
+        from unittest.mock import Mock
+        row = auth.Session("gemini", "owner"); row.state = "waiting"; row.process = Mock(); row.process.poll.return_value = None
+        row.complete("temporary-code")
+        row.process.stdin.write.assert_called_once_with(b"temporary-code\n")
+        with self.assertRaises(ValueError):
+            row.complete("second-code")
+
+    def test_gemini_missing_statistics_estimates_usage_instead_of_bypassing_token_quota(self):
+        text, usage = bridge.gemini_result('{"response":"Resposta"}', "Pergunta")
+        self.assertEqual(text, "Resposta")
+        self.assertEqual(usage, {"prompt_tokens": 3, "completion_tokens": 3})
+        _, partial = bridge.gemini_result('{"response":"Resposta","stats":{"models":{"gemini":{"tokens":{"input":20,"candidates":-1}}}}}', "Pergunta")
+        self.assertEqual(partial, {"prompt_tokens": 20, "completion_tokens": 3})
+
+    def test_gemini_promotes_only_the_official_cache_into_its_private_volume(self):
+        with tempfile.TemporaryDirectory() as private, tempfile.TemporaryDirectory() as directory:
+            folder = pathlib.Path(directory) / ".gemini"; folder.mkdir()
+            (folder / "oauth_creds.json").write_text('{"refresh_token":"fake-private"}')
+            (folder / "settings.json").write_text('{"unsafe":"configuration"}')
+            with patch.dict(auth.os.environ, {"GEMINI_AUTH_HOME": private}):
+                auth.persist_gemini_login(directory)
+            self.assertEqual([p.name for p in (pathlib.Path(private) / ".gemini").iterdir()], ["oauth_creds.json"])
 
 
 if __name__ == "__main__":

@@ -94,7 +94,6 @@ public class AiFoundationTests
         Assert.Equal(403, e.Status);
     }
     [Theory]
-    [InlineData("Gemini")]
     [InlineData("OpenRouter")]
     [InlineData("Custom")]
     public async Task UnsupportedCliProviderCannotBeSavedOrTested(string provider)
@@ -168,13 +167,38 @@ public class AiFoundationTests
             return new(HttpStatusCode.OK) { Content = new StringContent("{\"sessionId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"state\":\"starting\"}", Encoding.UTF8, "application/json") };
         }
     }
+    private sealed class GeminiBridgeClient : HttpMessageHandler, IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(this, false);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Assert.Equal("http://bridge.invalid/v1/chat/completions", request.RequestUri!.ToString());
+            Assert.Equal("fake-private-bridge-token", request.Headers.Authorization?.Parameter);
+            using var input = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+            Assert.Equal("gemini", input.RootElement.GetProperty("adapter").GetString());
+            Assert.False(input.RootElement.TryGetProperty("tools", out _));
+            return new(HttpStatusCode.OK) { Content = new StringContent("data: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":1}}\n\ndata: [DONE]\n\n", Encoding.UTF8, "text/event-stream") };
+        }
+    }
     [Fact]
-    public async Task StartingCliLoginInvalidatesPreviouslyTestedConnectionsOfThatAdapter()
+    public async Task LegacyGeminiCliUsesConfiguredBridgeAndNeverForwardsItsTokenToSavedHost()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:BridgeUrl"] = "http://bridge.invalid/v1" }).Build();
+        var provider = new AiHttpProvider(new GeminiBridgeClient(), configuration: config);
+        var connection = new AiProviderConnection { Type = "CliSubscription", Provider = "Gemini", BaseUrl = "http://untrusted-old.invalid/v1", Model = "auto" };
+        var result = await provider.CompleteAsync(connection, "fake-private-bridge-token", [new("user", "OK")], false, 32, null, default);
+        Assert.Equal("OK", result.Text); Assert.Equal(2, result.InputTokens); Assert.Equal(1, result.OutputTokens);
+    }
+    [Theory]
+    [InlineData("OpenAI")]
+    [InlineData("Anthropic")]
+    [InlineData("Gemini")]
+    public async Task StartingCliLoginInvalidatesPreviouslyTestedConnectionsOfThatAdapter(string provider)
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:BridgeToken"] = "fake-bridge-token-for-test", ["Ai:BridgeUrl"] = "http://bridge.invalid/v1" }).Build();
         await using var f = new Fixture(http: new LoginClient(), configuration: config); await f.SeedAsync();
-        var row = f.Db.AiProviderConnections.Single(); row.Type = "CliSubscription"; row.Provider = "OpenAI"; await f.Db.SaveChangesAsync();
-        var result = JsonSerializer.Serialize(await f.Run("admin.cli.login", input: new { provider = "OpenAI", acceptedRisk = true }));
+        var row = f.Db.AiProviderConnections.Single(); row.Type = "CliSubscription"; row.Provider = provider; await f.Db.SaveChangesAsync();
+        var result = JsonSerializer.Serialize(await f.Run("admin.cli.login", input: new { provider, acceptedRisk = true }));
         Assert.Contains("starting", result); Assert.False(row.IsActive); Assert.False(row.TestSucceeded); Assert.Equal(0, f.Provider.Calls);
     }
     [Fact]

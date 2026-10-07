@@ -2,7 +2,7 @@
 
 **Status:** active
 **Módulo:** ai-assistant
-**Spec vinculada:** `specs/ai-gemini-subscription.md` (`draft`, aguardando G-SPEC)
+**Spec vinculada:** `specs/ai-gemini-subscription.md` (`approved`, G-SPEC concedido pelo PO em 2026-10-07)
 **Origem:** pedido do PO em 2026-10-07: "coloca gemini tambem como assinatura".
 
 ## US-AI-010: conectar conta Google pela Gemini CLI

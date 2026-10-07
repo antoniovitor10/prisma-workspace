@@ -2562,8 +2562,8 @@ subindo com os dados preservados.
 ## Fundação IA autorizada em 2026-10-06
 
 Extensão solicitada pelo PO em 2026-10-07: Gemini por assinatura (US-AI-010).
-SPEC-AI-003 preparada em `draft`, com login Google oficial, catálogo CLI e isolamento;
-implementação depende de G-SPEC, sem migration.
+SPEC-AI-003 aprovada explicitamente pelo PO, com login Google oficial, catálogo CLI e isolamento;
+implementação e validação em andamento, sem migration.
 
 ```yaml
 - id: TASK-AI-003
@@ -2575,7 +2575,7 @@ implementação depende de G-SPEC, sem migration.
   context_minimo: [AGENTS.md, context/index.yaml, stories/ai-gemini-subscription.md, specs/ai-gemini-subscription.md]
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
-  status: blocked
+  status: in_progress
   priority: P1
 ```
 

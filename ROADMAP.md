@@ -17,8 +17,8 @@
   com aviso e aceite do risco de bloqueio ou perda da conta. G-SPEC/G-DEPLOY concedidos pelo PO em 2026-10-06; sem migration.
 - SPEC-AI-002 publicada na main/produção `758b032`: 266 testes backend, 130 frontend, 113 E2E finais
   e seis skips condicionais; ponte CLI instalada, sem conta autenticada. Teste humano nas Configurações.
-- PO solicitou Gemini por assinatura em 2026-10-07. US-AI-010 / SPEC-AI-003 (`draft`):
-  login Google oficial da Gemini CLI, catálogo e ponte isolada; aguardando G-SPEC antes de código de produto.
+- PO aprovou Gemini por assinatura em 2026-10-07. US-AI-010 / SPEC-AI-003 (`approved`):
+  login Google oficial da Gemini CLI, catálogo e ponte isolada; implementação e validação em andamento, sem migration.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,

@@ -1,0 +1,5 @@
+# Nenhuma ferramenta pode executar, inclusive se a CLI mudar a descoberta.
+[[rule]]
+toolName = "*"
+decision = "deny"
+priority = 999

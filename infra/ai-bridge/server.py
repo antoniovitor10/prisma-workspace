@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 import auth
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -28,7 +29,59 @@ def command(adapter: str, model: str) -> list[str]:
             argv.extend(["-c", f"features.{feature}=false"])
         argv.extend(["-c", 'web_search="disabled"', "-"])
         return argv
-    raise ValueError("Adaptador nao configurado: use claude ou codex")
+    if adapter == "gemini":
+        return ["gemini", "--prompt", "", "--output-format", "json", "--model", model,
+                "--extensions", "none", "--policy", "/bridge/gemini-deny-tools.toml"]
+    raise ValueError("Adaptador nao configurado: use claude, codex ou gemini")
+
+
+def gemini_chat_environment(directory):
+    env = auth.environment(directory)
+    env["GEMINI_CLI_HOME"] = directory
+    env["GEMINI_FORCE_AUTH_TYPE"] = "oauth-personal"
+    temporary = Path(directory) / ".gemini"
+    temporary.mkdir(mode=0o700)
+    source = Path(auth.gemini_home()) / ".gemini" / "oauth_creds.json"
+    # A CLI verifica os tokens com o Google; arquivo existente não autentica.
+    with auth.gemini_lock:
+        if not source.is_file() or source.stat().st_size > 32000:
+            raise ValueError("Autentique Gemini antes de testar")
+        cache = temporary / "oauth_creds.json"
+        cache.write_bytes(source.read_bytes())
+        cache.chmod(0o600)
+    settings = {
+        "security": {"auth": {"selectedType": "oauth-personal"}},
+        "tools": {"core": [], "useRipgrep": False}, "mcpServers": {}, "hooks": {},
+        "hooksConfig": {"enabled": False}, "experimental": {"enableAgents": False},
+        "telemetry": {"enabled": False, "logPrompts": False},
+        "context": {"fileName": []}, "model": {"maxSessionTurns": 1},
+        "general": {"enableAutoUpdate": False, "enablePromptCompletion": False, "sessionRetention": {"enabled": False}}
+    }
+    file = temporary / "settings.json"
+    file.write_text(json.dumps(settings), encoding="utf-8")
+    file.chmod(0o600)
+    return env
+
+
+def gemini_result(output, prompt=""):
+    data = json.loads(output)
+    text = data.get("response")
+    if data.get("error") or not isinstance(text, str) or not text.strip() or len(text) > 64000:
+        raise ValueError("Resposta Gemini inválida")
+    usage = {"prompt_tokens": 0, "completion_tokens": 0}
+    for model in data.get("stats", {}).get("models", {}).values():
+        tokens = model.get("tokens", {})
+        for target, key, fallback in [("prompt_tokens", "input", "prompt"), ("completion_tokens", "candidates", "output")]:
+            value = tokens.get(key, tokens.get(fallback, 0))
+            if type(value) is int and 0 <= value <= 10_000_000:
+                usage[target] += value
+    # A reserva da fundação estima entrada por caracteres/3. Sem estatísticas,
+    # conserva essa estimativa e aplica o mesmo critério à saída, sem declarar uso gratuito.
+    if usage["prompt_tokens"] == 0 and prompt:
+        usage["prompt_tokens"] = (len(prompt) + 2) // 3
+    if usage["completion_tokens"] == 0:
+        usage["completion_tokens"] = (len(text.strip()) + 2) // 3
+    return text.strip(), usage
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -61,7 +114,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(length))
             if self.path.startswith("/v1/cli/"):
                 parts = self.path.split("/")
-                if len(parts) != 5 or parts[3] not in {"claude", "codex"} or parts[4] not in {"status", "models", "login", "progress", "complete", "cancel"}:
+                if len(parts) != 5 or parts[3] not in {"claude", "codex", "gemini"} or parts[4] not in {"status", "models", "login", "progress", "complete", "cancel"}:
                     raise FileNotFoundError()
                 adapter, operation = parts[3], parts[4]
                 owner = body.get("owner")
@@ -90,10 +143,11 @@ class Handler(BaseHTTPRequestHandler):
             if body.get("tools"):
                 raise ValueError("Ferramentas nao sao aceitas pela ponte")
             prompt = "\n\n".join(str(m["role"]) + ": " + str(m["content"]) for m in body["messages"])
-            argv = command(body.get("adapter", os.environ.get("AI_BRIDGE_ADAPTER", "claude")), body["model"])
+            adapter = body.get("adapter", os.environ.get("AI_BRIDGE_ADAPTER", "claude"))
+            argv = command(adapter, body["model"])
             with tempfile.TemporaryDirectory(prefix="prisma-ai-") as directory:
                 with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-                    env = auth.environment(directory)
+                    env = gemini_chat_environment(directory) if adapter == "gemini" else auth.environment(directory)
                     env["CLAUDE_CODE_SKIP_PROMPT_HISTORY"] = "1"
                     process = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=output, stderr=errors,
                                                cwd=directory, env=env, start_new_session=True)
@@ -110,7 +164,10 @@ class Handler(BaseHTTPRequestHandler):
                         if process.returncode:
                             raise RuntimeError("A CLI recusou a chamada; confira login e assinatura na ponte")
                         output.seek(0)
-                        text = output.read(64_001).decode("utf-8", errors="replace").strip()
+                        raw = output.read(256_001 if adapter == "gemini" else 64_001).decode("utf-8", errors="replace").strip()
+                        if adapter == "gemini" and len(raw) > 256000:
+                            raise RuntimeError("Resposta da CLI excedeu limite")
+                        text, usage = gemini_result(raw, prompt) if adapter == "gemini" else (raw, {"prompt_tokens": 0, "completion_tokens": 0})
                         if not text or len(text) > 64000:
                             raise RuntimeError("Resposta da CLI invalida")
                     finally:
@@ -125,7 +182,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
-            data = {"choices": [{"delta": {"content": text}}], "usage": {"prompt_tokens": 0, "completion_tokens": 0}}
+            data = {"choices": [{"delta": {"content": text}}], "usage": usage}
             self.wfile.write(("data: " + json.dumps(data) + "\n\ndata: [DONE]\n\n").encode("utf-8"))
             self.wfile.flush()
         except (BrokenPipeError, ConnectionAbortedError):

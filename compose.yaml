@@ -74,6 +74,7 @@ services:
     volumes:
       - prisma_ai_cli_auth:/home/node/.claude
       - prisma_ai_codex_auth:/home/node/.codex
+      - prisma_ai_gemini_auth:/home/node/.gemini
 
 networks:
   ai_bridge:
@@ -84,3 +85,4 @@ volumes:
   prisma_dataprotection_keys:
   prisma_ai_cli_auth:
   prisma_ai_codex_auth:
+  prisma_ai_gemini_auth:
