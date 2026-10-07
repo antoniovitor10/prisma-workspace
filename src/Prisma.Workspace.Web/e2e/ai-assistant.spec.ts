@@ -107,6 +107,8 @@ test('tela administrativa cadastra, testa e ativa conexão sem devolver a creden
   await form.getByLabel('Chave de API', { exact: true }).fill('e2e-ui-fake-secret-WXYZ');
   await form.getByLabel('Chave de API', { exact: true }).blur();
   await expect(form.getByRole('option', { name: 'Modelo E2E — fake-e2e' })).toBeAttached();
+  await form.getByLabel('Modelo', { exact: true }).focus();
+  await expect(form.getByLabel('Modelo', { exact: true })).toBeEnabled();
   await form.getByLabel('Modelo', { exact: true }).selectOption('fake-e2e');
   await form.getByText('Opções avançadas', { exact: true }).click();
   await form.getByLabel('Nome da conexão').fill(name);

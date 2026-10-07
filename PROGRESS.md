@@ -1,3 +1,9 @@
+## [2026-10-07] - Codex - seleção após colar chave sem recarregar no clique
+
+- PO esclareceu que OpenRouter com chave também não mostrava modelos, enquanto deseja utilizar assinaturas. A consulta de catálogo dentro do contêiner API de produção retornou HTTP 200, eliminando falha de saída de rede nesse endpoint.
+- Reprodução no formulário confirmou que sair do campo de chave dispara consulta redundante e desabilita o seletor durante o clique. Regressão falhou antes da correção (duas consultas em vez de uma) e passou após remover o carregamento em blur; carregamento automático e botão explícito permanecem. Seis testes focais aprovados; imagem final compilada com `tsc -b`; E2E focal repetido para validar a alteração.
+- CI intermediário `37612325130`, main `5b8da10`, cancelado pelo agente antes do deploy para publicar somente o fluxo corrigido. Sem modificação de conta, schema ou segredo de produção. Gemini por assinatura solicitado adicionalmente pelo PO: pesquisa oficial e revisão de spec em preparação, separada desta correção já autorizada.
+
 ## [2026-10-07] - Codex - correção do seletor de modelos IA
 
 - PO relatou que não consegue selecionar modelos após a publicação. Investigação somente de metadados confirmou catálogo público OpenRouter acessível no servidor (465 modelos), API E2E normalizando a lista e uma conexão histórica Gemini/CliSubscription sem credencial em produção. Essa combinação exige correção explícita; Codex/Claude continuam sem conta autenticada.

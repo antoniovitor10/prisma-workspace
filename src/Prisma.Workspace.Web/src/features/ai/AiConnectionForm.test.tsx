@@ -17,7 +17,7 @@ describe('Configuração guiada da IA', () => {
     fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
     fireEvent.blur(screen.getByLabelText('Chave de API'));
     await screen.findByRole('option', { name: 'Chat — chat' });
-    await waitFor(() => expect(sent.filter(x => x.provider === 'Custom')).toHaveLength(2));
+    await waitFor(() => expect(sent.filter(x => x.provider === 'Custom')).toHaveLength(1));
     expect(sent.filter(x => x.provider === 'Custom').every(x => x.secret === 'current-key')).toBe(true);
   });
   it('muda métodos e modelos conforme o provedor e descarta a escolha anterior', async () => {
@@ -78,6 +78,9 @@ describe('Configuração guiada da IA', () => {
     fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
     await screen.findByRole('option', { name: 'Gemini — gemini-test' });
     expect(sent).toEqual([{ provider: 'Gemini', type: 'ApiKey', baseUrl: null, secret: 'current-key' }]);
+    fireEvent.blur(screen.getByLabelText('Chave de API'));
+    expect(sent).toHaveLength(1);
+    expect(screen.getByLabelText('Modelo')).toBeEnabled();
     fireEvent.change(screen.getByLabelText('Modelo'), { target: { value: 'gemini-test' } });
     fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
     expect(screen.getByLabelText('Modelo')).toBeEnabled(); expect(screen.getByLabelText('Modelo')).toHaveValue('gemini-test');
