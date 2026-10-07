@@ -23,6 +23,12 @@ export function AiConnectionForm({ connection, onSaved, onCancel, onAuthenticati
   const generation = useRef(0); const loadAbort = useRef<AbortController | null>(null); const activeLogin = useRef<{ provider: string; sessionId: string } | null>(null);
   const validMethod = methods(form.provider).includes(form.type); const savedCredential = connection?.hasSecret && connection.provider === form.provider && connection.type === form.type && (connection.baseUrl ?? '').replace(/\/$/, '') === form.baseUrl.replace(/\/$/, '');
   const isCli = form.type === 'CliSubscription'; const isOAuth = form.type === 'OAuth';
+  const providerName = providers.find(p => p.id === form.provider)?.name ?? form.provider;
+  const needsKey = !isCli && !isOAuth && form.provider !== 'Custom' && !form.secret && !savedCredential;
+  const catalogPrerequisite = !validMethod ? 'Corrija a forma de conexão acima para escolher um modelo.'
+    : isCli && !cli?.authenticated ? `Entre com ${form.provider === 'OpenAI' ? 'ChatGPT' : 'Claude'} acima. Os modelos aparecem após concluir o login.`
+    : needsKey ? `Cole a chave de API do ${providerName} acima. Os modelos serão carregados automaticamente.`
+    : form.provider === 'Custom' && !form.baseUrl ? 'Informe a URL base acima para carregar os modelos.' : null;
   const loadModels = useCallback(async () => {
     loadAbort.current?.abort(); const controller = new AbortController(); loadAbort.current = controller;
     const current = generation.current; setLoading(true); setError('');
@@ -40,12 +46,12 @@ export function AiConnectionForm({ connection, onSaved, onCancel, onAuthenticati
   }, []);
   useEffect(() => () => { generation.current++; loadAbort.current?.abort(); cancelLogin(); }, [cancelLogin]);
   useEffect(() => {
-    if (!validMethod) return;
+    if (catalogPrerequisite) return;
     const timer = window.setTimeout(() => void modelsLoader.current(), 350);
     return () => window.clearTimeout(timer);
-    // A credencial é enviada somente ao sair do campo ou clicar em carregar.
+    // Aguarda uma pausa na edição e cancela consultas de credenciais anteriores.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.provider, form.type, form.baseUrl, validMethod]);
+  }, [form.provider, form.type, form.baseUrl, form.secret, catalogPrerequisite]);
   useEffect(() => {
     if (!isCli || !validMethod) return;
     const controller = new AbortController();
@@ -66,6 +72,7 @@ export function AiConnectionForm({ connection, onSaved, onCancel, onAuthenticati
     return () => { window.clearInterval(timer); controller.abort(); };
   }, [cli?.sessionId, cli?.state, form.provider, loadModels, cancelLogin]);
   const changeTarget = (change: Partial<typeof form>) => {
+    if (Object.entries(change).every(([key, value]) => form[key as keyof typeof form] === value)) return;
     generation.current++; loadAbort.current?.abort(); cancelLogin(); setCatalog(null); setSearch(''); setManual(false); setCli(null); setCode(''); setRisk(false); setError(''); setLoading(false);
     setForm(v => ({ ...v, ...change, model: '', secret: '', inputPrice: '', outputPrice: '' }));
   };
@@ -89,9 +96,9 @@ export function AiConnectionForm({ connection, onSaved, onCancel, onAuthenticati
   const loginUrl = safeLoginUrl(cli?.url);
   return <form onSubmit={e => void submit(e)} aria-label="Cadastro de conexão IA">
     <h3 className="wide">{connection ? 'Editar conexão' : 'Conectar um provedor'}</h3>
-    <label>Provedor<select aria-label="Provedor" value={form.provider} disabled={busy} onChange={e => changeTarget({ provider: e.target.value, type: methods(e.target.value)[0], baseUrl: '' })}>{providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+    <label>Provedor<select aria-label="Provedor" value={form.provider} disabled={busy} onChange={e => { if (e.target.value !== form.provider) changeTarget({ provider: e.target.value, type: methods(e.target.value)[0], baseUrl: '' }); }}>{providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     {(methods(form.provider).length > 1 || !validMethod) ? <label>Como conectar<select aria-label="Como conectar" value={form.type} disabled={busy} onChange={e => changeTarget({ type: e.target.value, baseUrl: '' })}>{!validMethod && <option value={form.type} disabled>Combinação antiga inválida — escolha outra</option>}{methods(form.provider).map(m => <option key={m} value={m}>{methodNames[m]}</option>)}</select></label> : <p className="method">{methodNames[form.type]}</p>}
-    {!validMethod && <p className="wide" role="alert">Esta conexão usa uma combinação inválida. Corrija o provedor ou a forma de conexão antes de salvar.</p>}
+    {!validMethod && <div className="wide" role="alert"><p>{providerName} não oferece esta forma de conexão. Escolha uma opção válida em “Como conectar”.</p><button type="button" className="secondary" disabled={busy} onClick={() => changeTarget({ type: methods(form.provider)[0], baseUrl: '' })}>Usar {methodNames[methods(form.provider)[0]].replace(/^./, letter => letter.toLocaleLowerCase())} {form.provider === 'Custom' ? '' : `com ${providerName}`}</button></div>}
     {form.provider === 'Custom' && <label className="wide">URL base<input aria-label="URL base" type="url" required placeholder="https://seu-servidor/v1" value={form.baseUrl} onChange={e => changeTarget({ baseUrl: e.target.value })}/><small>Endereço acessível pelo servidor do Prisma.</small></label>}
     {!isCli && !isOAuth && <label className="wide">Chave de API<input aria-label="Chave de API" type="password" autoComplete="new-password" value={form.secret} placeholder={savedCredential ? 'Credencial salva; deixe vazio para manter' : form.provider === 'Custom' ? 'Opcional, conforme o endpoint' : 'Cole a chave do provedor'} required={form.type === 'ApiKey' && !savedCredential} onChange={e => { generation.current++; loadAbort.current?.abort(); setLoading(false); setCatalog(null); setForm(v => ({ ...v, secret: e.target.value, model: '' })); }} onBlur={() => { if (form.secret) void loadModels(); }}/><small>{savedCredential ? 'A credencial salva será usada somente neste provedor e endereço.' : 'Sua chave é criptografada no servidor e não volta para o navegador.'}</small></label>}
     {isOAuth && <p className="wide">{savedCredential ? 'Login OpenRouter conectado. Você pode escolher outro modelo ou autenticar novamente após salvar.' : 'Escolha o modelo e entre com sua conta no OpenRouter. Você autoriza o acesso no site do provedor.'}</p>}
@@ -105,10 +112,10 @@ export function AiConnectionForm({ connection, onSaved, onCancel, onAuthenticati
       </> : <button className={cli?.authenticated ? 'secondary' : undefined} type="button" disabled={busy || !risk || !cli?.available} onClick={() => void startLogin()}>{cli?.authenticated ? `Trocar conta ${form.provider === 'OpenAI' ? 'do ChatGPT' : 'do Claude'}` : form.provider === 'OpenAI' ? 'Entrar com ChatGPT' : 'Entrar com Claude'}</button>}
     </div>}
     <div className="wide model-selection">
-      <div className="catalog-heading"><h4>Modelos disponíveis</h4><button className="secondary" type="button" disabled={loading || busy || !validMethod || isCli && !cli?.authenticated} onClick={() => void loadModels()}>{loading ? 'Carregando modelos…' : 'Atualizar modelos'}</button></div>
-      {loading ? <p role="status">Carregando os modelos do provedor…</p> : catalog?.message && <p role="status">{catalog.message}</p>}
+      <div className="catalog-heading"><h4>Modelos disponíveis</h4><button className="secondary" type="button" disabled={loading || busy || !!catalogPrerequisite} onClick={() => void loadModels()}>{loading ? 'Carregando modelos…' : 'Atualizar modelos'}</button></div>
+      <p id="ai-model-status" role="status">{catalogPrerequisite ?? (loading ? 'Carregando os modelos do provedor…' : catalog?.message ?? 'Preparando o catálogo de modelos…')}</p>
       {(catalog?.models?.length ?? 0) > 10 && <label>Buscar modelo<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome ou identificador"/></label>}
-      {!manual && <label>Modelo<select aria-label="Modelo" required value={form.model} disabled={loading || !catalog?.models?.length || !validMethod} onChange={e => { const model = catalog?.models.find(m => m.id === e.target.value); setForm(v => ({ ...v, model: e.target.value, inputPrice: model?.inputPrice?.toString() ?? v.inputPrice, outputPrice: model?.outputPrice?.toString() ?? v.outputPrice })); }}><option value="">Selecione um modelo</option>{connection && form.model && !catalog?.models?.some(m => m.id === form.model) && <option value={form.model}>{form.model} (modelo salvo; confira o catálogo)</option>}{visibleModels.map(m => <option value={m.id} key={m.id}>{m.name === m.id ? m.id : `${m.name} — ${m.id}`}</option>)}</select></label>}
+      {!manual && <label>Modelo<select aria-label="Modelo" aria-describedby="ai-model-status" required value={form.model} disabled={loading || !catalog?.models?.length || !!catalogPrerequisite} onChange={e => { const model = catalog?.models.find(m => m.id === e.target.value); setForm(v => ({ ...v, model: e.target.value, inputPrice: model?.inputPrice?.toString() ?? v.inputPrice, outputPrice: model?.outputPrice?.toString() ?? v.outputPrice })); }}><option value="">{!validMethod ? 'Corrija a forma de conexão' : isCli && !cli?.authenticated ? 'Conclua o login para escolher' : needsKey ? 'Informe a chave de API para escolher' : loading ? 'Carregando modelos…' : catalog?.models?.length ? 'Selecione um modelo' : 'Aguardando catálogo de modelos'}</option>{connection && form.model && !catalog?.models?.some(m => m.id === form.model) && <option value={form.model}>{form.model} (modelo salvo; confira o catálogo)</option>}{visibleModels.map(m => <option value={m.id} key={m.id}>{m.name === m.id ? m.id : `${m.name} — ${m.id}`}</option>)}</select></label>}
       {form.model && <small>Identificador: {form.model}. O teste confirma o acesso da sua conta antes de ativar.</small>}
     </div>
     <details className="wide advanced"><summary>Opções avançadas</summary><div className="fields">

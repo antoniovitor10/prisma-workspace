@@ -1,3 +1,10 @@
+## [2026-10-07] - Codex - correção do seletor de modelos IA
+
+- PO relatou que não consegue selecionar modelos após a publicação. Investigação somente de metadados confirmou catálogo público OpenRouter acessível no servidor (465 modelos), API E2E normalizando a lista e uma conexão histórica Gemini/CliSubscription sem credencial em produção. Essa combinação exige correção explícita; Codex/Claude continuam sem conta autenticada.
+- Refinamento dentro da SPEC-AI-002 aprovada: instrução junto ao seletor conforme falta de chave, login ou endpoint; botão explícito para corrigir método antigo; carregamento automático após pausa ao colar a chave, sem depender de blur. Selecionar novamente o mesmo provedor/método preserva catálogo, modelo e credencial. Alterar o destino continua limpando dados incompatíveis.
+- Seis testes focais frontend aprovados; build com `tsc -b` aprovado; lint sem erros novos. Primeira execução identificou diferença de caixa no rótulo do botão (API), corrigida antes da repetição aprovada. E2E cobre recuperação de conexão antiga e catálogo pela API real de endpoint falso em desktop/mobile, além dos cinco provedores e login CLI. Validação E2E/publicação em andamento.
+- Sem alteração de API, schema, conta ou segredo de produção. Publicação autorizada anteriormente pelo PO será seletiva a partir da main, preservando a organização local D92 fora da release.
+
 ## [2026-10-06] - Codex - configuração guiada IA publicada em produção
 
 - SPEC-AI-002 e G-DEPLOY aprovados pelo PO com "pode efetuar e publicar". Main/produção em `758b03288f29d53fe9c51b5065f3d461935f676d`, release seletiva dos commits locais `8338d96` e `3f21c74`, sem D92/landing/profile rename. O único conflito de composição foi documental em PROGRESS e preservou somente o histórico autorizado da release.
