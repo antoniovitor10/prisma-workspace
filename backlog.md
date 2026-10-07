@@ -2563,7 +2563,7 @@ subindo com os dados preservados.
 
 Extensão solicitada pelo PO em 2026-10-07: Gemini por assinatura (US-AI-010).
 SPEC-AI-003 aprovada explicitamente pelo PO, com login Google oficial, catálogo CLI e isolamento;
-implementação e validação em andamento, sem migration.
+implementada e publicada em `aad03a3`, CI `37618509581` com 115 E2E aprovados, sem migration.
 
 ```yaml
 - id: TASK-AI-003
@@ -2575,7 +2575,7 @@ implementação e validação em andamento, sem migration.
   context_minimo: [AGENTS.md, context/index.yaml, stories/ai-gemini-subscription.md, specs/ai-gemini-subscription.md]
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
-  status: in_progress
+  status: implemented
   priority: P1
 ```
 
