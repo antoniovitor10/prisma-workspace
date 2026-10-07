@@ -1,3 +1,8 @@
+## [2026-10-07] - Codex - seletor validado; teste de convite escopado à própria mensagem
+
+- CI `37613311462` impediu o deploy: 113 E2E passaram e os dois cenários de convite falharam porque seu seletor genérico `getByRole('status')` encontrou também a nova mensagem acessível do catálogo. O teste agora seleciona a mensagem sobre entrega do e-mail; contrato do convite não mudou. A correção será publicada pelo mesmo fluxo com suíte geral repetida.
+- SPEC-AI-003 aprovada explicitamente pelo PO em 2026-10-07 ("Sim, aprovar e implementar"). Implementação Gemini/CLI autorizada na raiz; publicação do seletor segue seletiva, sem levar alterações incompletas Gemini ou D92 para produção.
+
 ## [2026-10-07] - Codex - seleção após colar chave sem recarregar no clique
 
 - PO esclareceu que OpenRouter com chave também não mostrava modelos, enquanto deseja utilizar assinaturas. A consulta de catálogo dentro do contêiner API de produção retornou HTTP 200, eliminando falha de saída de rede nesse endpoint.
