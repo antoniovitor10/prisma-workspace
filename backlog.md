@@ -2562,7 +2562,7 @@ subindo com os dados preservados.
 ## Fundação IA autorizada em 2026-10-06
 
 Extensão solicitada em 2026-10-07: experiência semelhante ao Zapmind e escolha de provedor/modelo por conversa.
-US-AI-011 / SPEC-AI-004 em draft. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION pendentes.
+US-AI-011 / SPEC-AI-004 aprovada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
 
 ```yaml
 - id: TASK-AI-004
@@ -2574,7 +2574,7 @@ US-AI-011 / SPEC-AI-004 em draft. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION
   context_minimo: [AGENTS.md, context/index.yaml, stories/ai-conversation-experience.md, specs/ai-conversation-experience.md]
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
-  status: blocked
+  status: in_progress
   priority: P1
 ```
 

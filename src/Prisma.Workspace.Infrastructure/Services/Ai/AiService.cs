@@ -44,6 +44,7 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         var a = input ?? Empty;
         var isAdmin = await db.Users.AnyAsync(x => x.Id == userId && EF.Property<bool>(x, "IsPlatformAdministrator"), ct);
         if (operation.StartsWith("admin.") && !isAdmin) throw new AiException(403, "Somente o Administrador da instalação pode acessar esta área.");
+        if (id.HasValue && operation is "admin.saveConnection" or "admin.deleteConnection" or "admin.testConnection" or "admin.oauthComplete") ChatCatalogs.TryRemove(id.Value, out _);
         if (!config.GetValue("Ai:Enabled", true) && operation != "status") throw new AiException(403, "IA desabilitada na instalação.");
         if (operation == "admin.models") return await ModelsAsync(a, ct);
         if (operation.StartsWith("admin.cli.")) return await CliAsync(operation[10..], userId, a, ct);
@@ -91,7 +92,7 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
             if (!id.HasValue) db.AiProviderConnections.Add(c);
             await db.SaveChangesAsync(ct); return Dto(c);
         }
-        if (operation == "admin.deleteConnection") { var connection = await ConnectionAsync(id, ct); if (connection.IsActive) CancelAll(); db.AiProviderConnections.Remove(connection); await db.SaveChangesAsync(ct); return null; }
+        if (operation == "admin.deleteConnection") { var connection = await ConnectionAsync(id, ct); CancelAll(); db.AiProviderConnections.Remove(connection); await db.SaveChangesAsync(ct); return null; }
         if (operation == "admin.activateConnection")
         {
             var c = await ConnectionAsync(id, ct); if (!c.TestSucceeded) throw new AiException(409, "Teste a conexão com sucesso antes de ativar.");
@@ -172,14 +173,19 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         }
         if (operation == "admin.usage") return await UsageAsync(a, true, ct);
         await ChatEnabledAsync(ct);
-        if (operation == "conversations") return await db.AiConversations.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.CreatedAt }).Take(100).ToListAsync(ct);
+        if (operation == "chat.options") return await ChatOptionsAsync(ct);
+        if (operation == "chat.models") return await ChatModelsAsync(await EligibleConnectionAsync(id, ct), B(a, "refresh"), ct);
+        if (operation == "conversations") return await db.AiConversations.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.CreatedAt, x.SelectedConnectionId, x.SelectedModel, selectionAvailable = x.SelectedConnectionId == null || db.AiProviderConnections.Any(c => c.Id == x.SelectedConnectionId && c.TestSucceeded && c.Purpose == "Chat") }).Take(100).ToListAsync(ct);
         if (operation == "createConversation")
         {
             var c = new AiConversation { OrganizationId = org.RequireOrganizationId(), UserId = userId };
-            db.AiConversations.Add(c); await db.SaveChangesAsync(ct); return new { c.Id, c.Title, c.CreatedAt };
+            db.AiConversations.Add(c); await db.SaveChangesAsync(ct); return new { c.Id, c.Title, c.CreatedAt, c.SelectedConnectionId, c.SelectedModel, selectionAvailable = true };
         }
         var conversationRow = await db.AiConversations.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct) ?? throw new AiException(404, "Conversa não encontrada.");
-        if (operation == "conversation") return new { conversationRow.Id, conversationRow.Title, messages = await db.AiMessages.Where(x => x.ConversationId == id).OrderBy(x => x.CreatedAt).Select(x => new { x.Id, x.Role, x.Content, x.SourcesJson, x.CreatedAt }).ToListAsync(ct) };
+        if (operation == "conversation") return new { conversationRow.Id, conversationRow.Title, conversationRow.SelectedConnectionId, conversationRow.SelectedModel,
+            selectionAvailable = conversationRow.SelectedConnectionId is null || await db.AiProviderConnections.AnyAsync(c => c.Id == conversationRow.SelectedConnectionId && c.TestSucceeded && c.Purpose == "Chat", ct),
+            messages = await db.AiMessages.Where(x => x.ConversationId == id).OrderBy(x => x.CreatedAt).Select(x => new { x.Id, x.Role, x.Content, x.SourcesJson, x.CreatedAt }).ToListAsync(ct) };
+        if (operation == "selectConversation") return await SelectConversationAsync(conversationRow, a, ct);
         if (operation == "renameConversation") { var title = S(a, "title")?.Trim() ?? ""; if (title.Length is < 1 or > 160) throw new AiException(400, "Título inválido."); conversationRow.Title = title; await db.SaveChangesAsync(ct); return new { conversationRow.Id, conversationRow.Title }; }
         if (operation == "deleteConversation") { if (Running.ContainsKey(conversationRow.Id)) throw new AiException(409, "Interrompa a resposta antes de excluir."); db.AiConversations.Remove(conversationRow); await db.SaveChangesAsync(ct); return null; }
         if (operation == "cancelMessage") { Cancel(conversationRow.Id); return null; }
@@ -261,7 +267,9 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         var ct = running.Token;
         try
         {
-            var connection = await db.AiProviderConnections.SingleAsync(x => x.IsActive, ct);
+            // Recarrega a preferência após adquirir o mesmo guard usado pela seleção.
+            await db.Entry(conversation).ReloadAsync(ct);
+            var connection = await ResolveConversationConnectionAsync(conversation, ct);
             var history = await db.AiMessages.Where(x => x.ConversationId == conversation.Id).OrderByDescending(x => x.CreatedAt).Take(12).ToListAsync(ct);
             if (history.Count == 0) conversation.Title = redaction.Redact(text)[..Math.Min(160, redaction.Redact(text).Length)];
             db.AiMessages.Add(new() { ConversationId = conversation.Id, Role = "user", Content = redaction.Redact(text) }); await db.SaveChangesAsync(ct);
@@ -272,7 +280,7 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
             for (var round = 0; round < 4; round++)
             {
                 await ChatEnabledAsync(ct);
-                if (!await db.AiProviderConnections.AsNoTracking().AnyAsync(x => x.Id == connection.Id && x.IsActive, ct)) throw new AiException(409, "A conexão foi desativada.");
+                if (!await db.AiProviderConnections.AsNoTracking().AnyAsync(x => x.Id == connection.Id && x.TestSucceeded && x.TestedAt == connection.TestedAt && (conversation.SelectedConnectionId != null || x.IsActive), ct)) throw new AiException(409, "A conexão foi alterada ou desativada. Confirme uma conexão disponível.");
                 var key = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
                 if (!connection.SupportsTools) messages[0] = messages[0] with { Content = messages[0].Content.Split("\nENVELOPE:")[0] + "\nENVELOPE: Quando precisar consultar, responda SOMENTE JSON {\"key\":\"" + key + "\",\"actions\":[{\"name\":\"search_workspace\",\"arguments\":{\"query\":\"texto\"}}]}. Máximo 8 ações. Ferramentas: " + string.Join(", ", AiHttpProvider.ToolNames) + ". Fora de chamadas, responda texto normal." };
                 // Guarda apenas a cauda incompleta para validar referências antes de exibi-las.

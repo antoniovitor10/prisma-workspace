@@ -9,10 +9,15 @@ type Usage = { key: string; calls: number; inputTokens: number; outputTokens: nu
 const Section = styled.section`
   margin: 22px 0; padding: 24px; border-top: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.surface}; color: ${({ theme }) => theme.color.text};
-  h2 { font-size: 20px; margin: 0 0 8px; } h3 { font-size: 17px; margin: 0; } h4 { font-size: 14px; margin: 0; }
+  h2 { font-size: 24px; margin: 0 0 8px; letter-spacing: -.02em; } h3 { font-size: 17px; margin: 0; } h4 { font-size: 14px; margin: 0; }
   p, small { font-size: 13px; line-height: 1.6; color: ${({ theme }) => theme.color.textMutedAccessible}; }
   p { margin: 8px 0; max-width: 75ch; } small { display: block; } strong { overflow-wrap: anywhere; }
   form, .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+  form[aria-label="Cadastro de conexão IA"] { max-width: 900px; padding-top: 12px; }
+  .connection { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 24px; }
+  .connection > .connection-heading, .connection > p { grid-column: 1; }
+  .connection > .actions { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+  .connection > .more-actions { grid-column: 1 / -1; } .connection-heading strong { font-size: 16px; }
   form > h3 { margin-bottom: 4px; } label { display: grid; gap: 6px; font-size: 13px; }
   input, select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; color: ${({ theme }) => theme.color.text}; border: 1px solid ${({ theme }) => theme.color.border}; border-radius: ${({ theme }) => theme.radius.md}; background: ${({ theme }) => theme.color.surface}; }
   input::placeholder { color: ${({ theme }) => theme.color.textMutedAccessible}; } input { caret-color: ${({ theme }) => theme.color.brandAccessible}; }
@@ -33,7 +38,7 @@ const Section = styled.section`
   .model-selection { display: grid; gap: 8px; } .model-selection p { margin: 0; } .method { align-self: end; padding: 10px 0; }
   .table-scroll { overflow-x: auto; } table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 14px; } th, td { text-align: left; padding: 10px 8px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
   [role=alert] { color: ${({ theme }) => theme.color.text}; font-weight: 600; }
-  @media(max-width: 640px) { padding: 20px 8px; form, .fields { grid-template-columns: 1fr; } .catalog-heading button { width: auto; } .actions button { flex: 1 1 auto; } table { font-size: 12px; } }
+  @media(max-width: 640px) { padding: 20px 8px; form, .fields { grid-template-columns: 1fr; } .connection { grid-template-columns: minmax(0,1fr); } .connection > .actions { grid-column: 1; grid-row: auto; margin-top: 8px; } .catalog-heading button { width: auto; } .actions button { flex: 1 1 auto; } table { font-size: 12px; } }
 `;
 
 export function AiSettings() {

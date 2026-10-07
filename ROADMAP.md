@@ -3,7 +3,8 @@
 ## [~] Fase 15 - Assistente de IA (D91)
 
 - Recorte solicitado em 2026-10-07: chat visualmente inspirado no Zapmind e provedor/modelo por conversa.
-  US-AI-011 / SPEC-AI-004 (`draft`), duas colunas opcionais propostas; aguardando G-SPEC/G-MIGRATION.
+  US-AI-011 / SPEC-AI-004 (`approved`), G-SPEC/G-MIGRATION concedidos pelo PO em 2026-10-07.
+  Duas colunas opcionais aplicadas ao banco E2E; implementação em validação antes da publicação.
 - Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
   mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
 - G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por

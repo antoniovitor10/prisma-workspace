@@ -39,8 +39,8 @@ domains:
       - "src/Prisma.Workspace.Web/src/features/ai/AiAssistant.test.tsx"
       - "src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts"
     gates:
-      g_spec: "pending (SPEC-AI-004 draft)"
-      g_migration: "pending (Add_AiConversation_Selection: two nullable preference columns)"
+      g_spec: "approved-2026-10-07 (PO: Aprovar spec e migration descrita)"
+      g_migration: "approved-2026-10-07 (Add_AiConversation_Selection: two nullable preference columns)"
       frontend_build: "npm run build"
       frontend_test: "npm run test"
       frontend_e2e: "npm run e2e"

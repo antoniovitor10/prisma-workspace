@@ -28,10 +28,13 @@ public class AiFoundationTests
     {
         public IReadOnlyList<AiProviderMessage> Received = [];
         public int Calls;
+        public Guid LastConnectionId;
+        public string LastModel = "";
+        public bool LastNative;
         public IAiChatProvider Create(AiProviderConnection c) => this;
         public async Task<AiProviderResult> CompleteAsync(AiProviderConnection c, string? secret, IReadOnlyList<AiProviderMessage> messages, bool native, int maxTokens, Func<string, Task>? delta, CancellationToken ct)
         {
-            Calls++; Received = messages;
+            Calls++; Received = messages; LastConnectionId = c.Id; LastModel = c.Model; LastNative = native;
             const string answer = "Resposta [T:9999] e [P:NEGADO].";
             if (delta is not null) await delta(answer);
             return new(answer, [], 10, 5);
@@ -44,6 +47,67 @@ public class AiFoundationTests
         public Task<IReadOnlyList<AiSource>> ResolveSourcesAsync(string text, string user, CancellationToken ct) => Task.FromResult<IReadOnlyList<AiSource>>([]);
     }
     private sealed class Clients : IHttpClientFactory { public HttpClient CreateClient(string name) => new(); }
+    private sealed class ChatCatalogClient : HttpMessageHandler, IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(this, false);
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"data\":[{\"id\":\"model-a\",\"name\":\"Modelo A\"},{\"id\":\"model-b\",\"name\":\"Modelo B\"}]}", Encoding.UTF8, "application/json") });
+    }
+    private sealed class WaitingProvider : IAiProviderFactory, IAiChatProvider
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public IAiChatProvider Create(AiProviderConnection connection) => this;
+        public async Task<AiProviderResult> CompleteAsync(AiProviderConnection connection, string? secret, IReadOnlyList<AiProviderMessage> messages, bool nativeTools, int maxTokens, Func<string, Task>? delta, CancellationToken ct)
+        {
+            Started.TrySetResult(); await Release.Task.WaitAsync(ct); return new("OK", [], 1, 1);
+        }
+    }
+    [Fact]
+    public async Task SelectionCannotChangeWhileTheSameConversationIsGenerating()
+    {
+        var provider = new WaitingProvider(); await using var f = new Fixture(factory: provider); await f.SeedAsync();
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation")).GetProperty("Id").GetGuid();
+        var running = f.Service.ExecuteAsync("message", "platform", id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default);
+        await provider.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        try { Assert.Equal(409, (await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", id: id, input: new { connectionId = (Guid?)null, model = (string?)null }))).Status); }
+        finally { provider.Release.TrySetResult(); await running; }
+    }
+    [Fact]
+    public async Task ConversationSelectionIsPrivatePersistentAndDoesNotModifyTheGlobalConnection()
+    {
+        await using var f = new Fixture(http: new ChatCatalogClient()); await f.SeedAsync();
+        var primary = f.Db.AiProviderConnections.Single();
+        var second = new AiProviderConnection { Name = "Segunda", Model = "model-a", Provider = "Custom", Type = "OpenAiCompatible", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true, SupportsTools = true, InputPrice = 2, OutputPrice = 3, TestedAt = DateTimeOffset.UtcNow };
+        f.Db.AiProviderConnections.Add(second); await f.Db.SaveChangesAsync();
+        var created = JsonSerializer.SerializeToElement(await f.Run("createConversation"));
+        var id = created.GetProperty("Id").GetGuid();
+        var options = JsonSerializer.Serialize(await f.Run("chat.options", user: "regular"));
+        Assert.Contains("Segunda", options); Assert.DoesNotContain("catalog.invalid", options); Assert.DoesNotContain("Secret", options);
+        await f.Run("selectConversation", id: id, input: new { connectionId = second.Id, model = "model-b" });
+        var row = f.Db.AiConversations.Single(); Assert.Equal(second.Id, row.SelectedConnectionId); Assert.Equal("model-b", row.SelectedModel);
+        Assert.True(primary.IsActive); Assert.False(second.IsActive); Assert.Equal("model-a", second.Model);
+        Assert.Equal(404, (await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", user: "other", id: id, input: new { connectionId = second.Id, model = "model-a" }))).Status);
+        await f.Service.ExecuteAsync("message", "platform", id, JsonSerializer.SerializeToElement(new { text = "Olá" }), (_, _) => Task.CompletedTask, default);
+        Assert.Equal(second.Id, f.Provider.LastConnectionId); Assert.Equal("model-b", f.Provider.LastModel); Assert.False(f.Provider.LastNative);
+        var usage = f.Db.AiUsageRecords.Single(); Assert.Equal(second.Id, usage.ConnectionId); Assert.Equal("model-b", usage.Model); Assert.Null(usage.EstimatedCost);
+        Assert.Equal("model-a", second.Model);
+        await f.Run("selectConversation", id: id, input: new { connectionId = (Guid?)null, model = (string?)null });
+        Assert.Null(row.SelectedConnectionId); Assert.Null(row.SelectedModel);
+    }
+    [Fact]
+    public async Task InvalidOrRevokedSelectionNeverFallsBackToAnotherProvider()
+    {
+        await using var f = new Fixture(http: new ChatCatalogClient()); await f.SeedAsync();
+        var second = new AiProviderConnection { Name = "Segunda", Model = "model-a", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true };
+        f.Db.AiProviderConnections.Add(second); await f.Db.SaveChangesAsync();
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation")).GetProperty("Id").GetGuid();
+        Assert.Equal(409, (await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", id: id, input: new { connectionId = second.Id, model = "arbitrary" }))).Status);
+        await f.Run("selectConversation", id: id, input: new { connectionId = second.Id, model = "model-a" });
+        second.TestSucceeded = false; await f.Db.SaveChangesAsync();
+        Assert.Equal(409, (await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "platform", id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default))).Status);
+        Assert.Equal(0, f.Provider.Calls); Assert.Empty(f.Db.AiMessages);
+    }
     private sealed class Fixture : IAsyncDisposable
     {
         public Guid Org { get; } = Guid.NewGuid();

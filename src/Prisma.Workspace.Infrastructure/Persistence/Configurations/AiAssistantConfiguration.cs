@@ -33,6 +33,7 @@ public sealed class AiAssistantConfiguration :
     {
         b.ToTable("AiConversations"); b.HasKey(x => x.Id); b.Property(x => x.UserId).HasMaxLength(450);
         b.Property(x => x.Title).HasMaxLength(160); b.HasIndex(x => new { x.OrganizationId, x.UserId, x.CreatedAt });
+        b.Property(x => x.SelectedModel).HasMaxLength(200);
         b.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
     }
     public void Configure(EntityTypeBuilder<AiMessage> b)

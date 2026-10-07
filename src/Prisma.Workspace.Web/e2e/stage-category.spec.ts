@@ -28,7 +28,7 @@ test('coluna é criada sem combobox ambígua e pode ser reclassificada na ediç�
     expect(response.ok(), await response.text()).toBeTruthy();
 
     await expect(page.getByPlaceholder('Nome da Coluna')).toHaveCount(0);
-    await expect(page.getByText(nome).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: `Editar coluna ${nome}`, exact: true })).toBeVisible();
 
     const stages = await authenticatedApiGet<Stage[]>(page, `/api/Stages/board/${board.id}`);
     const criada = stages.find((stage) => stage.name === nome);
@@ -39,6 +39,8 @@ test('coluna é criada sem combobox ambígua e pode ser reclassificada na ediç�
     await page.getByPlaceholder('Nome da Coluna').fill(renamed);
     await page.getByRole('combobox', { name: 'Classificação da coluna' })
       .selectOption({ label: 'Concluída' });
+    // A confirmação depende da consulta assíncrona, mesmo em uma coluna vazia.
+    await expect(page.getByLabel('Impacto da reclassificação')).toContainText('0 tarefa(s) na coluna');
     const [updated] = await Promise.all([
       page.waitForResponse(result => result.request().method() === 'PUT'
         && result.url().includes(`/Stages/${criada!.id}`)),
