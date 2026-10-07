@@ -49,7 +49,9 @@ public sealed class AiHttpProvider(IHttpClientFactory clients, IAiRedactionServi
             if (nativeTools) payload["tools"] = ToolNames.Select(name => new { type = "function", function = new { name, description = ToolDescription(name), parameters = Schema } }).ToArray();
         }
         using var request = new HttpRequestMessage(HttpMethod.Post, baseUrl.TrimEnd('/') + (anthropic ? "/messages" : "/chat/completions"));
-        request.Content = JsonContent.Create(payload);
+        request.Content = c.Type == "CliSubscription"
+            ? new StringContent(JsonSerializer.Serialize(payload, new JsonSerializerOptions(JsonSerializerDefaults.Web)), Encoding.UTF8, "application/json")
+            : JsonContent.Create(payload);
         if (!string.IsNullOrEmpty(secret))
         {
             if (anthropic) request.Headers.Add("x-api-key", secret);
