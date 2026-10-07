@@ -1,3 +1,13 @@
+## [2026-10-07] - Claude Code (Maestro) - time de agentes montado no Maestri (D96)
+
+- Pedido do PO: Claude Code como planejador principal, o Planejador Codex como executor, um QA e um revisor. Escopo fechado por perguntas: QA testa de acordo com a tarefa no navegador do Maestri, revisor é o Antigravity já existente (Claude Opus 5.5), trabalho sequencial na raiz e commit feito pelo planejador após o aceite.
+- Maestri: papéis `Executor Prisma`, `Revisor Prisma` e `QA Prisma` criados com escopo do workspace. Terminal Planejador convertido no lugar em Tear (notas e conexões preservadas), Antigravity recebeu `Revisor Prisma` e o terminal Codex Farol foi recrutado como QA. O papel global `Planejador reserva` e o papel `Revisor` de outro projeto não foram tocados.
+- Antes da troca o Planejador gravou o handoff em `notes/handoff-tear-maestro-2026-10-07.md` no ai-memory: nada pela metade, raiz limpa em `34cad80`, produção em `6eecba8`.
+- Teste de prontidão: os três responderam com papel, origem das tarefas e proibições corretos; `maestri list` e ai-memory por MCP funcionam nos três. O preset Codex inicia na pasta do papel com sandbox restrito a ela, então Tear foi reiniciado com `codex --no-daemon --add-dir C:\Users\Vitor\Desktop\prisma` e confirmou escrita na raiz. Farol segue no preset padrão (sem escrita na raiz) e ainda não tem portal conectado.
+- Arquivos: `DECISIONS.md` (D96), `AGENTS.md` (coordenação), `agents/qa.yaml` (novo), `docs/workspace/README.md`. Sem código de produto, sem commit.
+- Próximo passo: PO passa a primeira tarefa ao Maestro. O chat Zapmind já estava commitado e publicado; resta a homologação humana (login da assinatura, modelo e habilitar IA na organização).
+- Bloqueios: nenhum.
+
 ## [2026-10-07] - Codex - chat por conversa publicado e verificado
 
 - Produção/main de produto em `6eecba886b974d57cc055af9b8014b7c01b49434`; CI [37629372432](https://github.com/antoniovitor10/prisma-workspace/actions/runs/37629372432) terminou com todos os seis jobs aprovados. Suíte geral do CI: 117 aprovados, seis skips condicionais, sem retries. Frontend 137, backend local 271, governança 42, lint/build `tsc -b`, imagem e operadores aprovados. Teste de coluna sincronizado com a consulta de impacto; comportamento Kanban preservado.
