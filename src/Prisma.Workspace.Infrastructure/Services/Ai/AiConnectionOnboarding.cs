@@ -15,7 +15,7 @@ public sealed partial class AiService
     private static bool SameEndpoint(string? a, string? b) => string.Equals(a?.TrimEnd('/') ?? "", b?.TrimEnd('/') ?? "", StringComparison.Ordinal);
     private static void ValidateConnectionMethod(string type, string provider)
     {
-        if (type == "CliSubscription" && provider is not ("OpenAI" or "Anthropic")) throw new AiException(400, "Assinatura CLI disponível somente para OpenAI/Codex e Anthropic/Claude. Edite o provedor desta conexão.");
+        if (type == "CliSubscription" && provider is not ("OpenAI" or "Anthropic" or "Gemini")) throw new AiException(400, "Assinatura CLI disponível para OpenAI/Codex, Anthropic/Claude e Google/Gemini. Edite o provedor desta conexão.");
         if (type == "OAuth" && provider != "OpenRouter") throw new AiException(400, "Login disponível somente para OpenRouter.");
         if (provider == "Custom" && type != "OpenAiCompatible") throw new AiException(400, "Para endpoint personalizado, escolha conexão compatível com OpenAI.");
         if (type is not ("ApiKey" or "OpenAiCompatible" or "OAuth" or "CliSubscription") || provider is not ("OpenAI" or "Anthropic" or "Gemini" or "OpenRouter" or "Custom")) throw new AiException(400, "Provedor ou método de conexão inválido.");
@@ -112,7 +112,7 @@ public sealed partial class AiService
     }
     private async Task<object> BridgeAsync(string operation, string provider, object payload, CancellationToken ct)
     {
-        var adapter = provider switch { "OpenAI" => "codex", "Anthropic" => "claude", _ => throw new AiException(400, "CLI inválida.") };
+        var adapter = provider switch { "OpenAI" => "codex", "Anthropic" => "claude", "Gemini" => "gemini", _ => throw new AiException(400, "CLI inválida.") };
         var token = config["Ai:BridgeToken"];
         if (string.IsNullOrEmpty(token)) return new { available = false, authenticated = false, state = "unavailable", models = Array.Empty<ModelOption>(), message = "A conexão CLI não está instalada. Use chave de API ou configure a ponte de autenticação." };
         try

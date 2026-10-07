@@ -1,7 +1,7 @@
 # SPEC-AI-003: Gemini por assinatura e login Google na ponte CLI
 
-**Status:** draft
-**G-SPEC:** pendente; proposta preparada após o pedido explícito do PO em 2026-10-07.
+**Status:** approved
+**G-SPEC:** aprovado pelo PO Vitor em 2026-10-07: "Sim, aprovar e implementar", em resposta ao pedido explícito sobre a SPEC-AI-003.
 **Story:** US-AI-010 (`stories/ai-gemini-subscription.md`).
 **Fase:** 15, refinamento do assistente IA (D91).
 **Relação:** estende a SPEC-AI-002 somente para admitir Gemini/CliSubscription. Preserva os contratos da fundação e dos outros provedores.

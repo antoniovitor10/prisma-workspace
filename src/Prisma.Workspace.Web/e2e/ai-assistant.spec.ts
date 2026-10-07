@@ -24,14 +24,14 @@ test.beforeAll(async ({ request }) => {
       const [, , , adapter, operation] = req.url.split('/');
       const id = 'a'.repeat(32); const state = cliSessions.get(id);
       let result: unknown;
-      if (operation === 'status') result = { available: true, authenticated: state?.authenticated ?? false, state: state?.authenticated ? 'authenticated' : 'authenticationRequired', message: 'Entre na conta.' };
-      else if (operation === 'models') result = state?.authenticated && state.adapter === adapter ? { models: [{ id: adapter === 'claude' ? 'sonnet' : 'codex-e2e', name: 'Modelo CLI E2E' }], state: 'ready', message: 'Catálogo CLI de teste.' } : { models: [], state: 'authenticationRequired', message: 'Entre na conta.' };
-      else if (operation === 'login') { cliSessions.set(id, { owner: body.owner, adapter, cancelled: false, authenticated: false }); result = { sessionId: id, state: 'waiting', available: true, authenticated: false, url: adapter === 'codex' ? 'https://auth.openai.com/codex/device' : 'https://claude.com/oauth/authorize', deviceCode: adapter === 'codex' ? 'TEST-CODE' : null, requiresCode: adapter === 'claude', message: 'Autorize no provedor.' }; }
+      if (operation === 'status') { const authenticated = state?.adapter === adapter && state.authenticated; result = { available: true, authenticated: authenticated ?? false, state: authenticated ? 'authenticated' : 'authenticationRequired', message: 'Entre na conta.' }; }
+      else if (operation === 'models') result = state?.authenticated && state.adapter === adapter ? { models: [{ id: adapter === 'claude' ? 'sonnet' : adapter === 'gemini' ? 'auto' : 'codex-e2e', name: 'Modelo CLI E2E' }], state: 'ready', message: 'Catálogo CLI de teste.' } : { models: [], state: 'authenticationRequired', message: 'Entre na conta.' };
+      else if (operation === 'login') { cliSessions.set(id, { owner: body.owner, adapter, cancelled: false, authenticated: false }); result = { sessionId: id, state: 'waiting', available: true, authenticated: false, url: adapter === 'codex' ? 'https://auth.openai.com/codex/device' : adapter === 'gemini' ? 'https://accounts.google.com/o/oauth2/v2/auth' : 'https://claude.com/oauth/authorize', deviceCode: adapter === 'codex' ? 'TEST-CODE' : null, requiresCode: adapter !== 'codex', message: 'Autorize no provedor.' }; }
       else {
         if (!state || state.owner !== body.owner || state.adapter !== adapter) { res.writeHead(404); res.end('{}'); return; }
         if (operation === 'cancel') state.cancelled = true;
         if (operation === 'complete') state.authenticated = true;
-        result = { sessionId: id, state: state.cancelled ? 'cancelled' : state.authenticated ? 'authenticated' : 'waiting', available: true, authenticated: state.authenticated, requiresCode: !state.authenticated && adapter === 'claude', url: state.cancelled || state.authenticated ? null : adapter === 'codex' ? 'https://auth.openai.com/codex/device' : 'https://claude.com/oauth/authorize', deviceCode: !state.cancelled && adapter === 'codex' ? 'TEST-CODE' : null, message: state.authenticated ? 'Login confirmado.' : 'Autorize no provedor.' };
+        result = { sessionId: id, state: state.cancelled ? 'cancelled' : state.authenticated ? 'authenticated' : 'waiting', available: true, authenticated: state.authenticated, requiresCode: !state.authenticated && adapter !== 'codex', url: state.cancelled || state.authenticated ? null : adapter === 'codex' ? 'https://auth.openai.com/codex/device' : adapter === 'gemini' ? 'https://accounts.google.com/o/oauth2/v2/auth' : 'https://claude.com/oauth/authorize', deviceCode: !state.cancelled && adapter === 'codex' ? 'TEST-CODE' : null, message: state.authenticated ? 'Login confirmado.' : 'Autorize no provedor.' };
       }
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(result)); return;
     }
@@ -147,7 +147,7 @@ test('modelos e métodos acompanham todos os provedores; OAuth inicia login expl
     await expect(form.getByRole('option', { name: `${provider} chat — ${provider}-chat` })).toBeAttached();
     await expect(form.getByLabel('Modelo', { exact: true })).toHaveValue('');
     await form.getByLabel('Modelo', { exact: true }).selectOption(`${provider}-chat`);
-    if (provider === 'Gemini' || provider === 'Custom') await expect(form.getByLabel('Como conectar')).toHaveCount(0);
+    if (provider === 'Custom') await expect(form.getByLabel('Como conectar')).toHaveCount(0);
   }
   await form.getByLabel('Provedor', { exact: true }).selectOption('OpenRouter');
   await form.getByRole('option', { name: 'OpenRouter chat — OpenRouter-chat' }).waitFor({ state: 'attached' });
@@ -160,21 +160,21 @@ test('modelos e métodos acompanham todos os provedores; OAuth inicia login expl
   await request.delete(`${apiUrl}/api/admin/ai/connections/${id}`, { headers: headers() });
 });
 
-test('conexão Gemini CLI antiga orienta a correção e carrega modelo após colar chave', async ({ page, request }, testInfo) => {
+test('conexão OpenRouter CLI antiga orienta a correção e carrega modelo após colar chave', async ({ page, request }, testInfo) => {
   // O fixture representa a combinação histórica recusada pelo backend atual.
   await page.route('**/api/admin/ai/connections', async route => {
     if (route.request().method() !== 'GET') { await route.continue(); return; }
-    await route.fulfill({ json: [{ id: '11111111-1111-4111-8111-111111111112', name: 'Gemini antiga', provider: 'Gemini', type: 'CliSubscription', model: 'opus', baseUrl: null, hasSecret: false, isActive: false, testSucceeded: false, secretSuffix: null, inputPrice: null, outputPrice: null, testMessage: null, latencyMs: null }] });
+    await route.fulfill({ json: [{ id: '11111111-1111-4111-8111-111111111112', name: 'OpenRouter antiga', provider: 'OpenRouter', type: 'CliSubscription', model: 'opus', baseUrl: null, hasSecret: false, isActive: false, testSucceeded: false, secretSuffix: null, inputPrice: null, outputPrice: null, testMessage: null, latencyMs: null }] });
   });
-  await page.goto('/settings'); await page.getByRole('button', { name: 'Editar Gemini antiga' }).click();
+  await page.goto('/settings'); await page.getByRole('button', { name: 'Editar OpenRouter antiga' }).click();
   const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
   await expect(form.getByLabel('Como conectar')).toHaveValue('CliSubscription');
   await expect(form.getByLabel('Modelo', { exact: true })).toBeDisabled();
   await expect(form.getByText(/não oferece esta forma de conexão/)).toBeVisible();
   await form.screenshot({ path: `../../.local/ai-e2e/legacy-correction-${testInfo.project.name}.png` });
-  await form.getByRole('button', { name: 'Usar chave de API com Google Gemini' }).click();
-  await expect(form.getByLabel('Chave de API', { exact: true })).toBeVisible();
-  await expect(form.getByText(/Cole a chave de API do Google Gemini acima/)).toBeVisible();
+  await form.getByRole('button', { name: 'Usar login com OpenRouter' }).click();
+  await expect(form.getByLabel('Como conectar')).toHaveValue('OAuth');
+  await expect(form.getByText(/Escolha o modelo e entre com sua conta no OpenRouter/)).toBeVisible();
   // O endpoint falso exercita a API real; a consulta usa o texto atual sem blur.
   await form.getByLabel('Provedor', { exact: true }).selectOption('Custom');
   await form.getByLabel('URL base').fill(providerUrl);
@@ -192,13 +192,23 @@ test('conexão Gemini CLI antiga orienta a correção e carrega modelo após col
   expect((await catalog.json()).state).toBe('authenticationRequired');
 });
 
-test('CLI exige aceite, cancela Codex e autentica Claude antes de selecionar modelo', async ({ page, request }, testInfo) => {
+test('CLI recupera falha de disponibilidade, exige aceite e autentica Claude e Gemini', async ({ page, request }, testInfo) => {
   cliSessions.clear();
+  let statusAttempts = 0;
+  await page.route('**/api/admin/ai/cli/OpenAI/status', async route => {
+    statusAttempts++;
+    if (statusAttempts === 1) { await route.fulfill({ status: 503, json: { message: 'Disponibilidade temporariamente indisponível.' } }); return; }
+    await route.continue();
+  });
   await page.goto('/settings'); await page.getByRole('button', { name: 'Adicionar conexão' }).click();
   const form = page.getByRole('form', { name: 'Cadastro de conexão IA' });
   await form.getByLabel('Provedor', { exact: true }).selectOption('OpenAI'); await form.getByLabel('Como conectar').selectOption('CliSubscription');
   await expect(form.getByText(/O provedor pode bloquear ou encerrar sua conta/)).toBeVisible();
   const enter = form.getByRole('button', { name: 'Entrar com ChatGPT' }); await expect(enter).toBeDisabled();
+  await expect(form.getByText(/Não foi possível verificar a conexão/)).toBeVisible();
+  await form.getByRole('button', { name: 'Tentar verificar novamente' }).click();
+  await expect(form.getByText('Entre na conta.', { exact: true })).toBeVisible();
+  expect(statusAttempts).toBe(2);
   await form.getByLabel('Entendo o risco de bloqueio ou perda da conta e quero continuar').check(); await expect(enter).toBeEnabled(); await enter.click();
   await expect(form.getByText('TEST-CODE', { exact: true })).toBeVisible();
   await expect(form.getByRole('link', { name: 'Abrir login oficial do provedor' })).toHaveAttribute('href', 'https://auth.openai.com/codex/device');
@@ -209,5 +219,23 @@ test('CLI exige aceite, cancela Codex e autentica Claude antes de selecionar mod
   await expect(form.getByText('Conta autenticada', { exact: true })).toBeVisible(); await form.getByLabel('Modelo', { exact: true }).selectOption('sonnet');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await form.screenshot({ path: `../../.local/ai-e2e/cli-settings-${testInfo.project.name}.png` });
+  await form.getByLabel('Provedor', { exact: true }).selectOption('Gemini');
+  await form.getByLabel('Como conectar').selectOption('CliSubscription');
+  await expect(form.getByLabel('Chave de API', { exact: true })).toHaveCount(0);
+  await expect(form.getByLabel('Modelo', { exact: true })).toBeDisabled();
+  await expect(form.getByText(/Entre com Google acima/)).toBeVisible();
+  const google = form.getByRole('button', { name: 'Entrar com Google' }); await expect(google).toBeDisabled();
+  await form.getByLabel('Entendo o risco de bloqueio ou perda da conta e quero continuar').check();
+  await expect(google).toBeEnabled(); await google.click();
+  await expect(form.getByRole('link', { name: 'Abrir login oficial do provedor' })).toHaveAttribute('href', 'https://accounts.google.com/o/oauth2/v2/auth');
+  await expect(form.getByText(/expira em até 5 minutos/)).toBeVisible();
+  await form.getByLabel('Código retornado pelo Google').fill('E2E-temporary-google-code');
+  await form.getByRole('button', { name: 'Confirmar código' }).click();
+  await expect(form.getByText('Conta autenticada', { exact: true })).toBeVisible();
+  await expect(form.getByLabel('Código retornado pelo Google')).toHaveCount(0);
+  await form.getByLabel('Modelo', { exact: true }).selectOption('auto');
+  await expect(form.getByRole('button', { name: 'Salvar conexão', exact: true })).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await form.screenshot({ path: `../../.local/ai-e2e/gemini-settings-${testInfo.project.name}.png` });
   expect((await request.post(`${apiUrl}/api/admin/ai/cli/OpenAI/login`, { headers: headers(), data: { acceptedRisk: false } })).status()).toBe(400);
 });

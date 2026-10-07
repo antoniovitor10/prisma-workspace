@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AiConnectionForm, type AiConnection } from './AiConnectionForm';
 import { api } from '../../services/api';
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 const wrap = () => render(<AiConnectionForm onSaved={async () => undefined} onCancel={() => undefined}/>);
 describe('Configuração guiada da IA', () => {
   it('usa a chave atual ao carregar o catálogo após editar o endereço', async () => {
@@ -27,7 +27,7 @@ describe('Configuração guiada da IA', () => {
     wrap(); await screen.findByRole('option', { name: 'OpenRouter — router/model' });
     fireEvent.change(screen.getByLabelText('Modelo'), { target: { value: 'router/model' } });
     fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
-    expect(screen.queryByLabelText('Como conectar')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Como conectar')).toHaveValue('ApiKey');
     expect(screen.queryByRole('option', { name: /router\/model/ })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Modelo')).toHaveValue('');
     expect(screen.getByText(/Cole a chave de API do Google Gemini acima/)).toBeInTheDocument();
@@ -86,17 +86,73 @@ describe('Configuração guiada da IA', () => {
     expect(screen.getByLabelText('Modelo')).toBeEnabled(); expect(screen.getByLabelText('Modelo')).toHaveValue('gemini-test');
     expect(screen.getByLabelText('Chave de API')).toHaveValue('current-key');
   });
-  it('explica e corrige a conexão Gemini CLI somente após uma escolha explícita', async () => {
+  it('explica e corrige a conexão OpenRouter CLI somente após uma escolha explícita', async () => {
     const request = vi.spyOn(api, 'request').mockResolvedValue({ models: [{ id: 'gemini-test', name: 'Gemini' }], state: 'ready', message: 'Pronto' });
-    const legacy: AiConnection = { id: 'legacy', name: 'Legada', provider: 'Gemini', type: 'CliSubscription', model: 'opus', baseUrl: 'http://bridge.invalid/v1', hasSecret: false, secretSuffix: null, isActive: false, testSucceeded: false, testMessage: null, inputPrice: null, outputPrice: null, latencyMs: null };
+    const legacy: AiConnection = { id: 'legacy', name: 'Legada', provider: 'OpenRouter', type: 'CliSubscription', model: 'opus', baseUrl: 'http://bridge.invalid/v1', hasSecret: false, secretSuffix: null, isActive: false, testSucceeded: false, testMessage: null, inputPrice: null, outputPrice: null, latencyMs: null };
     render(<AiConnectionForm connection={legacy} onSaved={async () => undefined} onCancel={() => undefined}/>);
     expect(screen.getByLabelText('Como conectar')).toHaveValue('CliSubscription');
     expect(screen.getByLabelText('Modelo')).toBeDisabled(); expect(request).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Usar chave de API com Google Gemini' }));
-    expect(screen.getByLabelText('Chave de API')).toBeVisible(); expect(request).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Usar login com OpenRouter' }));
+    expect(screen.getByLabelText('Como conectar')).toHaveValue('OAuth');
     expect(screen.getByLabelText('Modelo')).toHaveValue('');
-    fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'current-key' } });
     await screen.findByRole('option', { name: 'Gemini — gemini-test' });
     expect(screen.getByLabelText('Modelo')).toBeEnabled();
+  });
+  it('autentica Gemini por Google sem chave e libera o catálogo somente depois de confirmar', async () => {
+    let authenticated = false;
+    const request = vi.spyOn(api, 'request').mockImplementation(async url => {
+      if (url.endsWith('/status')) return { available: true, authenticated: false, state: 'authenticationRequired', message: 'Entre na conta.' };
+      if (url.endsWith('/complete')) { authenticated = true; return { available: true, authenticated: true, state: 'authenticated', message: 'Login confirmado.' }; }
+      if (url.endsWith('/login')) return { available: true, authenticated: false, sessionId: 'b'.repeat(32), state: 'waiting', url: 'https://accounts.google.com/o/oauth2/v2/auth', requiresCode: true, message: 'Autorize no Google.' };
+      return { models: authenticated ? [{ id: 'auto', name: 'Automático' }] : [], state: authenticated ? 'ready' : 'authenticationRequired', message: 'Catálogo Gemini.' };
+    });
+    wrap(); fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'Gemini' } });
+    fireEvent.change(screen.getByLabelText('Como conectar'), { target: { value: 'CliSubscription' } });
+    expect(screen.queryByLabelText('Chave de API')).not.toBeInTheDocument();
+    expect(screen.getByText(/Entre com Google acima/)).toBeInTheDocument();
+    const login = screen.getByRole('button', { name: 'Entrar com Google' });
+    await waitFor(() => expect(request).toHaveBeenCalledWith('/api/admin/ai/cli/Gemini/status', expect.anything()));
+    expect(login).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('Entendo o risco de bloqueio ou perda da conta e quero continuar'));
+    await waitFor(() => expect(login).toBeEnabled()); fireEvent.click(login);
+    expect(await screen.findByRole('link', { name: 'Abrir login oficial do provedor' })).toHaveAttribute('href', 'https://accounts.google.com/o/oauth2/v2/auth');
+    expect(screen.getByLabelText('Modelo')).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Código retornado pelo Google'), { target: { value: 'temporary-code' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar código' }));
+    await screen.findByRole('option', { name: 'Automático — auto' });
+    expect(screen.queryByLabelText('Código retornado pelo Google')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Modelo'), { target: { value: 'auto' } });
+    expect(screen.getByRole('button', { name: 'Salvar conexão' })).toBeEnabled();
+  });
+  it('mostra falha de disponibilidade junto ao login e permite verificar novamente', async () => {
+    let checks = 0;
+    vi.spyOn(api, 'request').mockImplementation(async url => {
+      if (url.endsWith('/status')) { if (++checks === 1) throw new Error('Falha de rede'); return { available: true, authenticated: false, state: 'authenticationRequired', message: 'Conta disponível para login.' }; }
+      return { models: [], state: 'ready', message: 'Pronto' };
+    });
+    wrap(); fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'OpenAI' } }); fireEvent.change(screen.getByLabelText('Como conectar'), { target: { value: 'CliSubscription' } });
+    await screen.findByText(/Não foi possível verificar a conexão/);
+    fireEvent.click(screen.getByLabelText('Entendo o risco de bloqueio ou perda da conta e quero continuar'));
+    expect(screen.getByRole('button', { name: 'Entrar com ChatGPT' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar verificar novamente' }));
+    await screen.findByText('Conta disponível para login.');
+    expect(screen.getByRole('button', { name: 'Entrar com ChatGPT' })).toBeEnabled();
+    expect(checks).toBe(2);
+  });
+  it('encerra a espera de disponibilidade após vinte segundos', async () => {
+    vi.useFakeTimers(); let signal: AbortSignal | null = null;
+    vi.spyOn(api, 'request').mockImplementation(async (url, init) => {
+      if (url.endsWith('/status')) {
+        signal = init?.signal as AbortSignal;
+        return new Promise((_resolve, reject) => signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError'))));
+      }
+      return { models: [], state: 'ready', message: 'Pronto' };
+    });
+    wrap(); fireEvent.change(screen.getByLabelText('Provedor'), { target: { value: 'OpenAI' } }); fireEvent.change(screen.getByLabelText('Como conectar'), { target: { value: 'CliSubscription' } });
+    expect(screen.getByText(/Consultando a ponte de autenticação/)).toBeInTheDocument();
+    await act(async () => { await vi.advanceTimersByTimeAsync(20000); });
+    expect(screen.getByText(/A verificação demorou mais que o esperado/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tentar verificar novamente' })).toBeEnabled();
+    expect((signal as AbortSignal | null)?.aborted).toBe(true);
   });
 });

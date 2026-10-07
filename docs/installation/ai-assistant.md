@@ -61,8 +61,8 @@ significa sem limite; campos vazios da organização herdam o padrão da instala
 meia-noite do fuso configurado, por padrão `America/Sao_Paulo`.
 
 Toda chamada registra resultado e duração. Tokens e custo são registrados quando informados pelo provedor;
-preço ausente não é mostrado como custo zero. A ponte CLI registra tokens zerados, portanto suas chamadas
-não consomem uma cota em tokens. Uso global permite agrupar por dia, organização, usuário ou conexão;
+preço ausente não é mostrado como custo zero. Gemini CLI informa estatísticas quando disponíveis;
+ausência de estatísticas conserva a estimativa de tokens da fundação. Uso global permite agrupar por dia, organização, usuário ou conexão;
 administradores da organização veem somente seu consumo. Os painéis nunca expõem mensagens.
 
 Chamadas concorrentes são admitidas sob lock transacional no SQL Server, considerando reservas em andamento.
@@ -71,9 +71,9 @@ consumo. A cobrança efetiva continua sendo a informada pelo provedor.
 
 ## Ponte CLI experimental
 
-O perfil `ai-cli` é opcional e desligado por padrão. A imagem contém Codex e Claude, com versões fixadas.
+O perfil `ai-cli` é opcional e desligado por padrão. A imagem contém Codex, Claude e Gemini, com versões fixadas.
 Configure externamente `PRISMA_AI_BRIDGE_TOKEN`. O provedor da conexão determina o adaptador: OpenAI usa Codex,
-Anthropic usa Claude. Cada um mantém autenticação em volume próprio. Não monte credenciais ou configuração
+Anthropic usa Claude e Gemini usa a Gemini CLI. Cada um mantém autenticação em volume próprio. Não monte credenciais ou configuração
 completos do computador, projeto ou banco.
 Antigravity não tem adaptador nesta imagem; não é anunciado como suportado operacionalmente.
 
@@ -85,14 +85,22 @@ docker compose --profile ai-cli up -d prisma-ai-bridge
 A ponte usa uma rede separada do SQL Server, não publica porta no host, exige token e roda como usuário
 sem privilégios. Cada pergunta cria execução independente e elimina o diretório temporário. Claude usa
 `--tools ""`, MCP vazio e `--no-session-persistence`; Codex usa execução efêmera, sandbox de leitura, ignora
-configuração do usuário e desativa shell, execução, apps, plugins, hooks e agentes. A conexão CLI do Prisma
+configuração do usuário e desativa shell, execução, apps, plugins, hooks e agentes. Gemini usa configuração temporária,
+registro de ferramentas vazio, política de negação, extensões/MCP/hooks/agentes desativados e saída JSON.
+A conexão CLI do Prisma
 sempre usa o envelope de ferramentas, executado pelo backend; nenhuma consulta de banco vai para a ponte.
 
 Em Configurações, escolha assinatura via CLI, leia o aviso de possível bloqueio ou encerramento da conta e
-aceite o risco antes de clicar Entrar com ChatGPT ou Entrar com Claude. A conta é da instalação, por adaptador,
+aceite o risco antes de clicar Entrar com ChatGPT, Entrar com Claude ou Entrar com Google. A conta é da instalação, por adaptador,
 e será usada pelas organizações habilitadas. OAuth/login não garante que o provedor permita qualquer uso.
 Codex mostra um link e código para autorizar no provedor; pode exigir habilitar login por dispositivo nas
 configurações de segurança do ChatGPT. Claude mostra seu link e um campo temporário para o código retornado.
+Gemini abre o login oficial Google: use a conta pessoal associada à assinatura e cole o código temporário retornado.
+O prazo é de cinco minutos. Conta gratuita ou Google AI Pro/Ultra depende do acesso admitido pela CLI;
+não há detecção de plano nem garantia de acesso a um modelo. Contas corporativas que exigem projeto/licença
+Google Cloud ficam fora deste fluxo inicial. A assinatura e a chave de API têm acessos e cotas distintos.
+Após autenticar, o catálogo apresenta modelos e aliases da versão instalada da CLI, incluindo Automático.
+Se a verificação inicial de disponibilidade falhar ou exceder 20 segundos, use Tentar verificar novamente.
 Você nunca informa a senha do provedor no Prisma. O processo oficial confirma o login; em seguida escolha o
 modelo, salve, teste e ative. Cancelamento e expiração descartam as instruções temporárias.
 
@@ -101,6 +109,11 @@ e executa `scripts/install-ai-bridge.py <pasta-da-fonte> <commit>`. O script cri
 volumes privados e token externo em arquivo com permissão 600; não autentica uma conta. O deploy preserva a
 rede original e adiciona somente essa rede aprovada após conferir isolamento e saúde da ponte. Não há portas
 públicas da ponte. Nenhum token é incluído no Git ou na saída do operador.
+
+Para atualizar uma ponte existente, prepare a nova fonte no diretório privado de release e execute
+`scripts/install-ai-bridge.py <pasta-da-fonte> <commit> --upgrade`. O operador valida isolamento, preserva token
+e volumes Codex/Claude, adiciona o volume Gemini e mantém o contêiner anterior para rollback. Uma falha de
+saúde restaura a ponte anterior sem apagar contas. O upgrade não autentica a conta do administrador.
 
 Catálogo da CLI e aliases Claude não garantem acesso a um modelo pela assinatura: o teste confirma acesso
 efetivo. Validação automatizada usa simuladores e não consome assinatura real. A inicialização dos comandos

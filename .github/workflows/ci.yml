@@ -81,6 +81,8 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Test deployment guards
         run: python3 -m unittest discover -s scripts/tests
+      - name: Test CLI bridge isolation and authentication
+        run: python3 infra/ai-bridge/test_bridge.py
       - name: Build image
         run: docker build --label org.opencontainers.image.revision=${{ github.sha }} --tag prisma-workspace:${{ github.sha }} .
       - name: Export candidate

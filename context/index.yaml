@@ -38,7 +38,7 @@ domains:
       - "src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts"
       - "infra/ai-bridge/test_bridge.py"
     gates:
-      g_spec: "pending (SPEC-AI-003 draft)"
+      g_spec: "approved-2026-10-07 (PO: Sim, aprovar e implementar)"
       frontend_build: "npm run build"
       frontend_test: "npm run test"
       frontend_e2e: "npm run e2e"

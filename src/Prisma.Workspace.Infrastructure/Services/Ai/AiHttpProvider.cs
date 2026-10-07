@@ -2,13 +2,14 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Prisma.Workspace.Application.Features.Ai;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Application.Interfaces;
 
 namespace Prisma.Workspace.Infrastructure.Services.Ai;
 
-public sealed class AiHttpProvider(IHttpClientFactory clients, IAiRedactionService? redaction = null) : IAiChatProvider, IAiProviderFactory
+public sealed class AiHttpProvider(IHttpClientFactory clients, IAiRedactionService? redaction = null, IConfiguration? configuration = null) : IAiChatProvider, IAiProviderFactory
 {
     internal static readonly string[] ToolNames = ["search_workspace", "list_work_items", "get_work_item", "get_project_overview", "get_recent_activity", "get_my_work"];
     public IAiChatProvider Create(AiProviderConnection connection) => this;
@@ -22,12 +23,12 @@ public sealed class AiHttpProvider(IHttpClientFactory clients, IAiRedactionServi
         IReadOnlyList<AiProviderMessage> messages, bool nativeTools, int maxTokens, Func<string, Task>? delta, CancellationToken ct)
     {
         var anthropic = c.Provider == "Anthropic" && c.BaseUrl is null && c.Type != "OpenAiCompatible" && c.Type != "CliSubscription";
-        var baseUrl = c.BaseUrl ?? c.Provider switch {
+        var baseUrl = c.Type == "CliSubscription" ? configuration?["Ai:BridgeUrl"] ?? "http://prisma-ai-bridge:8080/v1" : c.BaseUrl ?? c.Provider switch {
             "OpenAI" => "https://api.openai.com/v1", "Anthropic" => "https://api.anthropic.com/v1",
             "Gemini" => "https://generativelanguage.googleapis.com/v1beta/openai", "OpenRouter" => "https://openrouter.ai/api/v1",
             _ => throw new AiException(400, "URL base obrigatória.") };
         var payload = new Dictionary<string, object?> { ["model"] = c.Model, ["stream"] = true, ["max_tokens"] = maxTokens };
-        if (c.Type == "CliSubscription") payload["adapter"] = c.Provider switch { "OpenAI" => "codex", "Anthropic" => "claude", _ => throw new AiException(400, "Escolha OpenAI/Codex ou Anthropic/Claude para assinatura CLI.") };
+        if (c.Type == "CliSubscription") payload["adapter"] = c.Provider switch { "OpenAI" => "codex", "Anthropic" => "claude", "Gemini" => "gemini", _ => throw new AiException(400, "Escolha Codex, Claude ou Gemini para assinatura CLI.") };
         if (anthropic)
         {
             payload["system"] = string.Join("\n", messages.Where(x => x.Role == "system").Select(x => x.Content));
