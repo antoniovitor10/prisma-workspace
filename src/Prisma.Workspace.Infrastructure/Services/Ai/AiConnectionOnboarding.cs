@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.DataProtection;
@@ -120,7 +121,9 @@ public sealed partial class AiService
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct); timeout.CancelAfter(TimeSpan.FromSeconds(25));
             using var client = clients.CreateClient("prisma-ai");
             using var request = new HttpRequestMessage(HttpMethod.Post, (config["Ai:BridgeUrl"] ?? "http://prisma-ai-bridge:8080/v1").TrimEnd('/') + "/cli/" + adapter + "/" + operation);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token); request.Content = JsonContent.Create(payload);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            // A ponte Python exige tamanho conhecido; JsonContent usa envio chunked.
+            request.Content = new StringContent(JsonSerializer.Serialize(payload, Json), Encoding.UTF8, "application/json");
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
             if (!response.IsSuccessStatusCode) throw new AiException(response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Forbidden ? 404 : response.StatusCode == System.Net.HttpStatusCode.Conflict ? 409 : 502, response.StatusCode == System.Net.HttpStatusCode.Conflict ? "Já existe um login em andamento para esta CLI. Aguarde ou cancele sua tentativa." : "Não foi possível consultar esta sessão CLI. Confira a instalação ou inicie novamente.");
             using var data = await ReadLimitedJsonAsync(response, 256_000, timeout.Token); return data.RootElement.Clone();

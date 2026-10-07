@@ -162,6 +162,7 @@ public class AiFoundationTests
         public HttpClient CreateClient(string name) => new(this, false);
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            Assert.NotNull(request.Content!.Headers.ContentLength);
             var input = await request.Content!.ReadAsStringAsync(ct);
             Assert.Contains("\"owner\":\"platform\"", input);
             return new(HttpStatusCode.OK) { Content = new StringContent("{\"sessionId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"state\":\"starting\"}", Encoding.UTF8, "application/json") };
@@ -174,6 +175,7 @@ public class AiFoundationTests
         {
             Assert.Equal("http://bridge.invalid/v1/chat/completions", request.RequestUri!.ToString());
             Assert.Equal("fake-private-bridge-token", request.Headers.Authorization?.Parameter);
+            Assert.NotNull(request.Content!.Headers.ContentLength);
             using var input = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
             Assert.Equal("gemini", input.RootElement.GetProperty("adapter").GetString());
             Assert.False(input.RootElement.TryGetProperty("tools", out _));

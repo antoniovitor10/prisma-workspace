@@ -19,6 +19,10 @@ test.beforeAll(async ({ request }) => {
   server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : {};
+    // Mesmo contrato HTTP da ponte Python real: corpo com tamanho conhecido.
+    if ((req.url?.startsWith('/v1/cli/') || body.adapter) && (!req.headers['content-length'] || req.headers['transfer-encoding'])) {
+      res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'Ponte exige Content-Length.' } })); return;
+    }
     if (req.url === '/v1/models') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: [{ id: 'fake-e2e', name: 'Modelo E2E' }] })); return; }
     if (req.url?.startsWith('/v1/cli/')) {
       const [, , , adapter, operation] = req.url.split('/');
