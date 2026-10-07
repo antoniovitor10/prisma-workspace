@@ -2565,6 +2565,8 @@ Refinamento solicitado pelo PO após a publicação: `TASK-AI-002`, vinculado à
 `specs/ai-connection-onboarding.md` (SPEC-AI-002, approved). Configuração por provedor, seleção de modelos
 em todas as opções, login CLI real e aviso explícito com aceite do risco de perda da conta.
 Depende da TASK-AI-001 publicada; G-SPEC/G-DEPLOY concedidos pelo PO em 2026-10-06. Sem alteração de schema.
+Implementada e publicada em `758b032`, com 113 E2E finais aprovados, sem retries. Conta CLI real aguarda
+somente a autenticação e aceite do administrador pela tela, não intervenção técnica do instalador.
 
 ```yaml
 - id: TASK-AI-001
