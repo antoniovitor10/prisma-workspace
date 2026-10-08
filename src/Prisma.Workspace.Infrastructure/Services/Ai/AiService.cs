@@ -174,8 +174,16 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         if (operation == "admin.usage") return await UsageAsync(a, true, ct);
         await ChatEnabledAsync(ct);
         if (operation == "chat.options") return await ChatOptionsAsync(ct);
-        if (operation == "chat.models") return await ChatModelsAsync(await EligibleConnectionAsync(id, ct), B(a, "refresh"), ct);
-        if (operation == "conversations") return await db.AiConversations.Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.CreatedAt, x.SelectedConnectionId, x.SelectedModel, selectionAvailable = x.SelectedConnectionId == null || db.AiProviderConnections.Any(c => c.Id == x.SelectedConnectionId && c.TestSucceeded && c.Purpose == "Chat") }).Take(100).ToListAsync(ct);
+        if (operation == "chat.models") return await ChatModelsAsync(await EligibleConnectionAsync(id, ct), B(a, "refresh"), ct, isAdmin);
+        if (operation == "conversations")
+        {
+            var rows = await db.AiConversations.AsNoTracking().Where(x => x.UserId == userId).OrderByDescending(x => x.CreatedAt).Take(100).ToListAsync(ct);
+            var connectionIds = rows.Where(x => x.SelectedConnectionId.HasValue).Select(x => x.SelectedConnectionId!.Value).Distinct().ToArray();
+            var connections = connectionIds.Length == 0 ? new Dictionary<Guid, AiProviderConnection>()
+                : await db.AiProviderConnections.AsNoTracking().Where(x => connectionIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
+            return rows.Select(row => new { row.Id, row.Title, row.CreatedAt, row.SelectedConnectionId, row.SelectedModel,
+                selectionAvailable = SelectionAvailableLocally(row, connections) }).ToArray();
+        }
         if (operation == "createConversation")
         {
             var c = new AiConversation { OrganizationId = org.RequireOrganizationId(), UserId = userId };
@@ -183,13 +191,13 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         }
         var conversationRow = await db.AiConversations.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct) ?? throw new AiException(404, "Conversa não encontrada.");
         if (operation == "conversation") return new { conversationRow.Id, conversationRow.Title, conversationRow.SelectedConnectionId, conversationRow.SelectedModel,
-            selectionAvailable = conversationRow.SelectedConnectionId is null || await db.AiProviderConnections.AnyAsync(c => c.Id == conversationRow.SelectedConnectionId && c.TestSucceeded && c.Purpose == "Chat", ct),
+            selectionAvailable = await SelectionAvailableAsync(conversationRow, ct),
             messages = await db.AiMessages.Where(x => x.ConversationId == id).OrderBy(x => x.CreatedAt).Select(x => new { x.Id, x.Role, x.Content, x.SourcesJson, x.CreatedAt }).ToListAsync(ct) };
-        if (operation == "selectConversation") return await SelectConversationAsync(conversationRow, a, ct);
+        if (operation == "selectConversation") return await SelectConversationAsync(conversationRow, a, ct, isAdmin);
         if (operation == "renameConversation") { var title = S(a, "title")?.Trim() ?? ""; if (title.Length is < 1 or > 160) throw new AiException(400, "Título inválido."); conversationRow.Title = title; await db.SaveChangesAsync(ct); return new { conversationRow.Id, conversationRow.Title }; }
         if (operation == "deleteConversation") { if (Running.ContainsKey(conversationRow.Id)) throw new AiException(409, "Interrompa a resposta antes de excluir."); db.AiConversations.Remove(conversationRow); await db.SaveChangesAsync(ct); return null; }
         if (operation == "cancelMessage") { Cancel(conversationRow.Id); return null; }
-        if (operation == "message") return await ChatAsync(conversationRow, a, userId, emit!, ct);
+        if (operation == "message") return await ChatAsync(conversationRow, a, userId, emit!, ct, isAdmin);
         throw new AiException(400, "Operação desconhecida.");
     }
 
@@ -249,7 +257,7 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         return JsonSerializer.Serialize(Visit(doc.RootElement), Json);
     }
 
-    private async Task<object?> ChatAsync(AiConversation conversation, JsonElement a, string user, Func<string, object, Task> emit, CancellationToken requestCt)
+    private async Task<object?> ChatAsync(AiConversation conversation, JsonElement a, string user, Func<string, object, Task> emit, CancellationToken requestCt, bool isAdmin)
     {
         var text = S(a, "text")?.Trim() ?? "";
         if (text.Length is < 1 or > 8000) throw new AiException(400, "Pergunta deve ter de 1 a 8000 caracteres.");
@@ -269,7 +277,7 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
         {
             // Recarrega a preferência após adquirir o mesmo guard usado pela seleção.
             await db.Entry(conversation).ReloadAsync(ct);
-            var connection = await ResolveConversationConnectionAsync(conversation, ct);
+            var connection = await ResolveConversationConnectionAsync(conversation, ct, isAdmin);
             var history = await db.AiMessages.Where(x => x.ConversationId == conversation.Id).OrderByDescending(x => x.CreatedAt).Take(12).ToListAsync(ct);
             if (history.Count == 0) conversation.Title = redaction.Redact(text)[..Math.Min(160, redaction.Redact(text).Length)];
             db.AiMessages.Add(new() { ConversationId = conversation.Id, Role = "user", Content = redaction.Redact(text) }); await db.SaveChangesAsync(ct);
@@ -299,8 +307,11 @@ public sealed partial class AiService(AppDbContext db, IOrganizationContext org,
                         if (cut > 0) { var safe = await SanitizeAsync(snapshot[..cut], user, ct); answer.Append(safe); await emit("delta", new { text = safe }); pending.Remove(0, cut); }
                     }
                 }
-                var result = await CallAsync(connection, user, conversation.OrganizationId, messages, connection.SupportsTools, 2048, Delta, ct,
-                    () => emit("step", new { message = "Consultando o modelo", round = round + 1 }));
+                AiProviderResult result;
+                try { result = await CallAsync(connection, user, conversation.OrganizationId, messages, connection.SupportsTools, 2048, Delta, ct,
+                    () => emit("step", new { message = "Consultando o modelo", round = round + 1 })); }
+                catch (AiException e) when (connection.Type == "CliSubscription" && !isAdmin && e.Status >= 500)
+                { throw new AiException(e.Status, "Esta conexão está indisponível no momento. Tente novamente."); }
                 inputTokens += result.InputTokens; outputTokens += result.OutputTokens;
                 IReadOnlyList<AiToolCall> calls = result.Calls;
                 if (!connection.SupportsTools && envelope == true) calls = ParseEnvelope(result.Text, key);

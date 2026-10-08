@@ -102,37 +102,55 @@ export function AiAssistant() {
     setError(''); setId(value || null); setChoiceDirty(false); setChoice({ connectionId: null, model: null });
     if (!value) { setMessages([]); return; }
     setLoadingConversation(true);
-    try { const data = await api.request(`/api/ai/conversations/${value}`); if (currentTenant.current === requestedTenant && selection.current === version) { setMessages(data.messages.map((m: Message) => ({ ...m, sources: JSON.parse(m.sourcesJson ?? '[]') }))); setChoice({ connectionId: data.selectedConnectionId ?? null, model: data.selectedModel ?? null }); if (data.selectionAvailable === false) setError('A conexão desta conversa não está mais disponível. Escolha outra ou use o padrão da instalação.'); } }
+    try { const data = await api.request(`/api/ai/conversations/${value}`); if (currentTenant.current === requestedTenant && selection.current === version) { setMessages(data.messages.map((m: Message) => ({ ...m, sources: JSON.parse(m.sourcesJson ?? '[]') }))); setChoice({ connectionId: data.selectedConnectionId ?? null, model: data.selectedModel ?? null }); if (data.selectionAvailable === false) setError('O assistente desta conversa está indisponível. Atualize as conexões e confira a seleção antes de perguntar.'); } }
     catch (e) { if (currentTenant.current === requestedTenant && selection.current === version) setError((e as Error).message); }
     finally { if (currentTenant.current === requestedTenant && selection.current === version) setLoadingConversation(false); }
   };
   const saveChoice = async (next: AiChoice) => {
     const requestedTenant = tenantId; const version = selection.current; setChoice(next); setChoiceDirty(true); setSavingChoice(true); setError('');
     const controller = new AbortController(); abort.current = controller;
+    let conversation = id;
     try {
       if (!id && !next.connectionId) { setChoiceDirty(false); return; }
-      const conversation = id ?? (await api.request('/api/ai/conversations', { method: 'POST', signal: controller.signal })).id;
+      if (!conversation) {
+        const created = await api.request('/api/ai/conversations', { method: 'POST', signal: controller.signal });
+        conversation = created.id;
+        if (currentTenant.current === requestedTenant && selection.current === version && !controller.signal.aborted) setConversations(rows => [created, ...rows]);
+      }
       if (controller.signal.aborted || currentTenant.current !== requestedTenant || selection.current !== version) return;
       setId(conversation);
-      await api.request(`/api/ai/conversations/${conversation}/selection`, { method: 'PATCH', signal: controller.signal, body: JSON.stringify(next) });
-      if (!controller.signal.aborted && currentTenant.current === requestedTenant && selection.current === version) { setChoiceDirty(false); await refresh(); }
-    } catch (e) { if (!controller.signal.aborted && currentTenant.current === requestedTenant && selection.current === version) setError((e as Error).message); }
+      const saved = await api.request(`/api/ai/conversations/${conversation}/selection`, { method: 'PATCH', signal: controller.signal, body: JSON.stringify(next) });
+      if (!controller.signal.aborted && currentTenant.current === requestedTenant && selection.current === version) { setChoice({ connectionId: saved.selectedConnectionId ?? null, model: saved.selectedModel ?? null }); setChoiceDirty(false); await refresh(); }
+    } catch (e) {
+      if (!controller.signal.aborted && currentTenant.current === requestedTenant && selection.current === version) {
+        setError((e as Error).message);
+        // Reconsulta a preferência persistida inclusive se a resposta do PATCH se perdeu.
+        if (conversation) {
+          try {
+            const saved = await api.request(`/api/ai/conversations/${conversation}`, { signal: controller.signal });
+            if (currentTenant.current === requestedTenant && selection.current === version && !controller.signal.aborted) { setChoice({ connectionId: saved.selectedConnectionId ?? null, model: saved.selectedModel ?? null }); setChoiceDirty(false); }
+            await refresh();
+          } catch { /* Mantém a escolha pendente e impede envio até confirmá-la. */ }
+        }
+      }
+    }
     finally { if (currentTenant.current === requestedTenant && selection.current === version) setSavingChoice(false); if (abort.current === controller) abort.current = null; }
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault(); if (!text.trim() || busy || choiceDirty || savingChoice || loadingConversation) return;
-    setBusy(true); setError(''); setStep('Preparando resposta'); const question = text.trim(); setText('');
+    setBusy(true); setError(''); setStep('Preparando resposta'); const question = text.trim();
     const controller = new AbortController(); abort.current = controller;
     try {
       const conversation = id ?? (await api.request('/api/ai/conversations', { method: 'POST' })).id;
       if (controller.signal.aborted) return;
       setId(conversation);
-      setMessages(m => [...m, { role: 'user', content: question }, { role: 'assistant', content: '' }]);
       const projectId = location.pathname.match(/\/projects\/([\da-f-]{36})/i)?.[1];
       const boardId = location.pathname.match(/\/boards\/([\da-f-]{36})/i)?.[1];
       const workItemId = new URLSearchParams(location.search).get('item') ?? undefined;
       const response = await fetch(`${api.baseUrl}/api/ai/conversations/${conversation}/messages`, { method: 'POST', credentials: 'include', headers: api.headers(),
         body: JSON.stringify({ text: question, context: { projectId, boardId, workItemId } }), signal: controller.signal });
+      // Só limpa o rascunho e cria as bolhas depois da validação HTTP do servidor.
+      if (response.ok && !controller.signal.aborted) { setText(''); setMessages(m => [...m, { role: 'user', content: question }, { role: 'assistant', content: '' }]); }
       await readAiEvents(response, (name, data) => {
         if (controller.signal.aborted) return;
         if (name === 'delta') setMessages(m => m.map((v, i) => i === m.length - 1 ? { ...v, content: v.content + String(data.text ?? '') } : v));

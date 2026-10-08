@@ -49,9 +49,17 @@ public class AiFoundationTests
     private sealed class Clients : IHttpClientFactory { public HttpClient CreateClient(string name) => new(); }
     private sealed class ChatCatalogClient : HttpMessageHandler, IHttpClientFactory
     {
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+        public string Body { get; set; } = "{\"data\":[{\"id\":\"model-a\",\"name\":\"Modelo A\"},{\"id\":\"model-b\",\"name\":\"Modelo B\"}]}";
+        public Exception? Error { get; set; }
+        public int Requests { get; private set; }
         public HttpClient CreateClient(string name) => new(this, false);
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"data\":[{\"id\":\"model-a\",\"name\":\"Modelo A\"},{\"id\":\"model-b\",\"name\":\"Modelo B\"}]}", Encoding.UTF8, "application/json") });
+        {
+            Requests++;
+            if (Error is not null) throw Error;
+            return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(Body, Encoding.UTF8, "application/json") });
+        }
     }
     private sealed class WaitingProvider : IAiProviderFactory, IAiChatProvider
     {
@@ -62,6 +70,273 @@ public class AiFoundationTests
         {
             Started.TrySetResult(); await Release.Task.WaitAsync(ct); return new("OK", [], 1, 1);
         }
+    }
+    private sealed class RefusingCliProvider : IAiProviderFactory, IAiChatProvider
+    {
+        public IAiChatProvider Create(AiProviderConnection connection) => this;
+        public Task<AiProviderResult> CompleteAsync(AiProviderConnection connection, string? secret, IReadOnlyList<AiProviderMessage> messages, bool nativeTools, int maxTokens, Func<string, Task>? delta, CancellationToken ct)
+            => throw new AiException(502, "Confira a instalação da ponte ou inicie o login novamente.");
+    }
+    [Theory]
+    [InlineData("tenant")]
+    [InlineData("platform")]
+    public async Task CliInferenceErrorsKeepAdministrativeDetailsOutOfCommonUsersChat(string user)
+    {
+        await using var f = new Fixture(factory: new RefusingCliProvider()); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.Type = "CliSubscription"; connection.Provider = "OpenAI"; await f.Db.SaveChangesAsync();
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation", user)).GetProperty("Id").GetGuid();
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", user, id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default));
+        Assert.Equal(502, error.Status);
+        Assert.Equal(user == "tenant" ? "Esta conexão está indisponível no momento. Tente novamente." : "Confira a instalação da ponte ou inicie o login novamente.", error.Message);
+    }
+    [Theory]
+    [InlineData(401)]
+    [InlineData(403)]
+    [InlineData(500)]
+    [InlineData(501)]
+    [InlineData(503)]
+    [InlineData(-1)]
+    [InlineData(-2)]
+    public async Task TemporarilyUnavailableCatalogRefusesSendingWithoutInferenceAndPreservesSelection(int failure)
+    {
+        var http = new ChatCatalogClient(); await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = new AiProviderConnection { Name = "Segunda", Model = "model-a", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true };
+        f.Db.AiProviderConnections.Add(connection); await f.Db.SaveChangesAsync();
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation", user: "tenant")).GetProperty("Id").GetGuid();
+        await f.Run("selectConversation", user: "tenant", id: id, input: new { connectionId = connection.Id, model = "model-b" });
+        http.Status = failure > 0 ? (HttpStatusCode)failure : HttpStatusCode.OK;
+        http.Error = failure == -1 ? new HttpRequestException("Rede") : failure == -2 ? new TaskCanceledException("Prazo") : null;
+        await f.Run("chat.models", user: "tenant", id: connection.Id, input: new { refresh = true });
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var requests = http.Requests;
+            var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "tenant", id, JsonSerializer.SerializeToElement(new { text = "Preserve esta pergunta" }), (_, _) => Task.CompletedTask, default));
+            Assert.Equal(409, error.Status);
+            Assert.Equal("Não foi possível consultar os modelos desta conexão agora. Tente novamente", error.Message);
+            Assert.Equal(requests + 1, http.Requests);
+            Assert.Equal(0, f.Provider.Calls); Assert.Empty(f.Db.AiMessages); Assert.Empty(f.Db.AiUsageRecords);
+            Assert.Equal(connection.Id, f.Db.AiConversations.Single().SelectedConnectionId);
+            Assert.Equal("model-b", f.Db.AiConversations.Single().SelectedModel);
+        }
+        Assert.False(JsonSerializer.SerializeToElement(await f.Run("conversation", "tenant", id)).GetProperty("selectionAvailable").GetBoolean());
+        http.Status = HttpStatusCode.OK; http.Error = null;
+        await f.Service.ExecuteAsync("message", "tenant", id, JsonSerializer.SerializeToElement(new { text = "Preserve esta pergunta" }), (_, _) => Task.CompletedTask, default);
+        Assert.Equal(1, f.Provider.Calls); Assert.Equal(connection.Id, f.Provider.LastConnectionId); Assert.Equal("model-b", f.Provider.LastModel);
+        Assert.Equal(connection.Id, f.Db.AiUsageRecords.Single().ConnectionId); Assert.Equal("model-b", f.Db.AiUsageRecords.Single().Model);
+        Assert.Equal(2, f.Db.AiMessages.Count()); Assert.True(f.Db.AiProviderConnections.Single(x => x.IsActive).Id != connection.Id);
+    }
+    [Theory]
+    [InlineData(401)]
+    [InlineData(403)]
+    [InlineData(500)]
+    [InlineData(501)]
+    [InlineData(503)]
+    [InlineData(-1)]
+    [InlineData(-2)]
+    public async Task TransientCatalogFailuresNeverBecomeManualFallbackOrEnterCache(int failure)
+    {
+        var http = new ChatCatalogClient { Status = failure > 0 ? (HttpStatusCode)failure : HttpStatusCode.OK, Error = failure == -1 ? new HttpRequestException("Rede") : failure == -2 ? new TaskCanceledException("Prazo") : null };
+        await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.Model = "model-a"; connection.BaseUrl = "http://catalog.invalid/v1"; await f.Db.SaveChangesAsync();
+        var admin = JsonSerializer.SerializeToElement(await f.Run("admin.models", input: new { connectionId = connection.Id, provider = connection.Provider, type = connection.Type, baseUrl = connection.BaseUrl }));
+        Assert.False(admin.GetProperty("manualAllowed").GetBoolean());
+        var catalog = JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id));
+        Assert.Equal("unavailable", catalog.GetProperty("State").GetString()); Assert.Empty(catalog.GetProperty("Models").EnumerateArray());
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation")).GetProperty("Id").GetGuid();
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", id: id, input: new { connectionId = connection.Id, model = "model-b" }));
+        Assert.Equal(409, error.Status); Assert.DoesNotContain("O modelo não está mais disponível", error.Message);
+        Assert.Null(f.Db.AiConversations.Single().SelectedConnectionId);
+        http.Status = HttpStatusCode.OK; http.Error = null;
+        catalog = JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id));
+        Assert.Equal("ready", catalog.GetProperty("State").GetString()); Assert.Equal(2, catalog.GetProperty("Models").GetArrayLength());
+        await f.Run("selectConversation", id: id, input: new { connectionId = connection.Id, model = "model-b" });
+        Assert.Equal("model-b", f.Db.AiConversations.Single().SelectedModel); Assert.Equal(4, http.Requests);
+    }
+    [Theory]
+    [InlineData(404)]
+    [InlineData(405)]
+    public async Task EndpointWithoutCatalogOnlyAllowsItsConfiguredTestedModel(int status)
+    {
+        var http = new ChatCatalogClient { Status = (HttpStatusCode)status }; await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.Model = "model-a"; connection.BaseUrl = "http://catalog.invalid/v1"; await f.Db.SaveChangesAsync();
+        var catalog = JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id));
+        Assert.Equal("ready", catalog.GetProperty("State").GetString()); Assert.Single(catalog.GetProperty("Models").EnumerateArray());
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation")).GetProperty("Id").GetGuid();
+        Assert.Equal(409, (await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", id: id, input: new { connectionId = connection.Id, model = "model-b" }))).Status);
+        await f.Run("selectConversation", id: id, input: new { connectionId = connection.Id, model = "model-a" });
+        Assert.Equal("model-a", f.Db.AiConversations.Single().SelectedModel);
+    }
+    [Fact]
+    public async Task EmptyCatalogDoesNotOfferAConfiguredModelThatWasRemoved()
+    {
+        var http = new ChatCatalogClient { Body = "{\"data\":[]}" }; await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.BaseUrl = "http://catalog.invalid/v1"; await f.Db.SaveChangesAsync();
+        var catalog = JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id));
+        Assert.Equal("empty", catalog.GetProperty("State").GetString()); Assert.Empty(catalog.GetProperty("Models").EnumerateArray());
+        Assert.Contains("Nenhum modelo", catalog.GetProperty("Message").GetString());
+        var conversation = new AiConversation { OrganizationId = f.Org, UserId = "tenant", SelectedConnectionId = connection.Id, SelectedModel = connection.Model };
+        f.Db.AiConversations.Add(conversation); await f.Db.SaveChangesAsync();
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "tenant", conversation.Id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default));
+        Assert.Equal(409, error.Status); Assert.Contains("O modelo não está mais disponível", error.Message);
+        Assert.Equal(connection.Model, conversation.SelectedModel); Assert.Equal(0, f.Provider.Calls); Assert.Empty(f.Db.AiMessages);
+        http.Body = "{\"data\":[{\"id\":\"model-a\"}]}";
+        Assert.Equal("ready", JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id)).GetProperty("State").GetString());
+        Assert.Equal(3, http.Requests);
+    }
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"data\":null}")]
+    [InlineData("null")]
+    [InlineData("[]")]
+    public async Task InvalidCatalogResponseDoesNotDeclareTheSelectedModelRemoved(string body)
+    {
+        var http = new ChatCatalogClient { Body = body }; await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.BaseUrl = "http://catalog.invalid/v1"; await f.Db.SaveChangesAsync();
+        var conversation = new AiConversation { OrganizationId = f.Org, UserId = "tenant", SelectedConnectionId = connection.Id, SelectedModel = connection.Model };
+        f.Db.AiConversations.Add(conversation); await f.Db.SaveChangesAsync();
+        var catalog = JsonSerializer.SerializeToElement(await f.Run("chat.models", "tenant", connection.Id));
+        Assert.Equal("unavailable", catalog.GetProperty("State").GetString());
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "tenant", conversation.Id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default));
+        Assert.Equal(409, error.Status); Assert.Equal("Não foi possível consultar os modelos desta conexão agora. Tente novamente", error.Message);
+        Assert.Equal(0, f.Provider.Calls); Assert.Empty(f.Db.AiMessages);
+        http.Body = "{\"data\":[{\"id\":\"fake\"}]}";
+        await f.Service.ExecuteAsync("message", "tenant", conversation.Id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default);
+        Assert.Equal(1, f.Provider.Calls); Assert.Equal(3, http.Requests);
+    }
+    [Theory]
+    [InlineData("removed")]
+    [InlineData("deleted")]
+    [InlineData("method")]
+    [InlineData("revoked")]
+    public async Task SelectionAvailabilityMatchesSendingForIneligibleSelections(string change)
+    {
+        var http = new ChatCatalogClient(); await using var f = new Fixture(http: http); await f.SeedAsync();
+        var second = new AiProviderConnection { Name = "Segunda", Model = "model-a", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true };
+        f.Db.AiProviderConnections.Add(second); await f.Db.SaveChangesAsync();
+        var id = JsonSerializer.SerializeToElement(await f.Run("createConversation")).GetProperty("Id").GetGuid();
+        await f.Run("selectConversation", id: id, input: new { connectionId = second.Id, model = "model-b" });
+        Assert.True(JsonSerializer.SerializeToElement(await f.Run("conversation", id: id)).GetProperty("selectionAvailable").GetBoolean());
+        if (change == "removed") { http.Body = "{\"data\":[{\"id\":\"model-a\"}]}"; await f.Run("chat.models", id: second.Id, input: new { refresh = true }); }
+        if (change == "deleted") await f.Run("admin.deleteConnection", id: second.Id);
+        if (change == "method") { second.Type = "CliSubscription"; await f.Db.SaveChangesAsync(); }
+        if (change == "revoked") { second.TestSucceeded = false; await f.Db.SaveChangesAsync(); }
+        var detail = JsonSerializer.SerializeToElement(await f.Run("conversation", id: id));
+        Assert.False(detail.GetProperty("selectionAvailable").GetBoolean());
+        var list = JsonSerializer.SerializeToElement(await f.Run("conversations"));
+        Assert.False(list[0].GetProperty("selectionAvailable").GetBoolean());
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "platform", id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default));
+        Assert.Equal(409, error.Status);
+        if (change == "removed") Assert.Contains("O modelo não está mais disponível", error.Message);
+        Assert.Equal(second.Id, f.Db.AiConversations.Single().SelectedConnectionId);
+        Assert.Equal("model-b", f.Db.AiConversations.Single().SelectedModel);
+        Assert.Empty(f.Db.AiMessages); Assert.Equal(0, f.Provider.Calls);
+    }
+    [Fact]
+    public async Task ListingOneHundredSelectedConversationsDoesNotFetchAnUnavailableCatalogButDetailDoes()
+    {
+        var http = new ChatCatalogClient { Status = HttpStatusCode.ServiceUnavailable };
+        await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = new AiProviderConnection { Name = "Segunda", Model = "model-a", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true };
+        f.Db.AiProviderConnections.Add(connection);
+        var conversations = Enumerable.Range(0, 100).Select(_ => new AiConversation { OrganizationId = f.Org, UserId = "tenant", SelectedConnectionId = connection.Id, SelectedModel = "model-b" }).ToArray();
+        f.Db.AiConversations.AddRange(conversations); await f.Db.SaveChangesAsync();
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var list = JsonSerializer.SerializeToElement(await f.Run("conversations", "tenant"));
+            Assert.Equal(100, list.GetArrayLength()); Assert.All(list.EnumerateArray(), row => Assert.True(row.GetProperty("selectionAvailable").GetBoolean()));
+            Assert.Equal(0, http.Requests);
+        }
+        var detail = JsonSerializer.SerializeToElement(await f.Run("conversation", "tenant", conversations[0].Id));
+        Assert.False(detail.GetProperty("selectionAvailable").GetBoolean()); Assert.Equal(1, http.Requests);
+        var afterFailure = JsonSerializer.SerializeToElement(await f.Run("conversations", "tenant"));
+        Assert.All(afterFailure.EnumerateArray(), row => Assert.True(row.GetProperty("selectionAvailable").GetBoolean()));
+        Assert.Equal(1, http.Requests); Assert.Equal(0, f.Provider.Calls);
+        Assert.Equal(connection.Id, conversations[0].SelectedConnectionId); Assert.Equal("model-b", conversations[0].SelectedModel);
+    }
+    [Theory]
+    [InlineData("unchanged")]
+    [InlineData("testedAt")]
+    [InlineData("model")]
+    public async Task ListingOnlyUsesCatalogAlreadyCachedForTheCurrentConnectionState(string change)
+    {
+        var http = new ChatCatalogClient { Body = "{\"data\":[{\"id\":\"model-a\"}]}" };
+        await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = new AiProviderConnection { Name = "Segunda", Model = "model-a", BaseUrl = "http://catalog.invalid/v1", TestSucceeded = true };
+        f.Db.AiProviderConnections.Add(connection);
+        f.Db.AiConversations.Add(new AiConversation { OrganizationId = f.Org, UserId = "tenant", SelectedConnectionId = connection.Id, SelectedModel = "model-b" });
+        await f.Db.SaveChangesAsync(); await f.Run("chat.models", "tenant", connection.Id);
+        Assert.Equal(1, http.Requests); http.Status = HttpStatusCode.ServiceUnavailable;
+        if (change == "testedAt") connection.TestedAt = DateTimeOffset.UtcNow;
+        if (change == "model") connection.Model = "model-c";
+        await f.Db.SaveChangesAsync();
+        var list = JsonSerializer.SerializeToElement(await f.Run("conversations", "tenant"));
+        Assert.Equal(change != "unchanged", list[0].GetProperty("selectionAvailable").GetBoolean());
+        Assert.Equal(1, http.Requests); Assert.Equal(0, f.Provider.Calls);
+    }
+    [Theory]
+    [InlineData("save")]
+    [InlineData("test")]
+    public async Task AdministrativeChangesInvalidateChatCatalogCache(string operation)
+    {
+        var http = new ChatCatalogClient(); await using var f = new Fixture(http: http); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.BaseUrl = "http://catalog.invalid/v1"; connection.Model = "model-a"; await f.Db.SaveChangesAsync();
+        await f.Run("chat.models", id: connection.Id); await f.Run("chat.models", id: connection.Id);
+        Assert.Equal(1, http.Requests);
+        http.Body = "{\"data\":[{\"id\":\"model-c\"}]}";
+        if (operation == "save")
+        {
+            await f.Run("admin.saveConnection", id: connection.Id, input: new { name = connection.Name, provider = connection.Provider, type = connection.Type, baseUrl = connection.BaseUrl, model = connection.Model });
+            Assert.Equal(409, (await Assert.ThrowsAsync<AiException>(() => f.Run("chat.models", id: connection.Id))).Status);
+        }
+        await f.Run("admin.testConnection", id: connection.Id);
+        if (operation == "save") await f.Run("admin.activateConnection", id: connection.Id);
+        var data = JsonSerializer.SerializeToElement(await f.Run("chat.models", id: connection.Id));
+        Assert.Equal(2, http.Requests); Assert.Equal("model-c", data.GetProperty("Models")[0].GetProperty("Id").GetString());
+    }
+    [Fact]
+    public async Task CommonUserOptionsExcludeIneligibleConnectionsAndPrivateConfiguration()
+    {
+        await using var f = new Fixture(http: new ChatCatalogClient()); await f.SeedAsync();
+        var primary = f.Db.AiProviderConnections.Single(); primary.BaseUrl = "http://private.invalid/v1"; primary.SecretSuffix = "ABCD";
+        f.Db.AiProviderConnections.AddRange(new AiProviderConnection { Name = "Sem teste" }, new AiProviderConnection { Name = "Método inválido", TestSucceeded = true, Provider = "Custom", Type = "CliSubscription" }, new AiProviderConnection { Name = "Transcrição", TestSucceeded = true, Purpose = "Transcription" });
+        await f.Db.SaveChangesAsync();
+        var json = JsonSerializer.SerializeToElement(await f.Run("chat.options", user: "tenant"));
+        Assert.Single(json.GetProperty("connections").EnumerateArray());
+        Assert.Equal(primary.Id, json.GetProperty("connections")[0].GetProperty("Id").GetGuid());
+        Assert.DoesNotContain("private.invalid", json.ToString()); Assert.DoesNotContain("ABCD", json.ToString());
+        Assert.DoesNotContain("Secret", json.ToString()); Assert.DoesNotContain("login", json.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+    [Theory]
+    [InlineData(503)]
+    [InlineData(409)]
+    [InlineData(0)]
+    public async Task CliCatalogFailuresAreNeutralForCommonUsersAndDetailedForAdministrators(int status)
+    {
+        var http = new ChatCatalogClient { Status = status == 0 ? HttpStatusCode.OK : (HttpStatusCode)status, Body = "{\"models\":[],\"state\":\"authenticationRequired\",\"message\":\"Inicie o login oficial e confira a instalação.\"}" };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:BridgeToken"] = "fake-test", ["Ai:BridgeUrl"] = "http://bridge.invalid/v1" }).Build();
+        await using var f = new Fixture(http: http, configuration: config); await f.SeedAsync();
+        var connection = f.Db.AiProviderConnections.Single(); connection.Type = "CliSubscription"; connection.Provider = "OpenAI"; await f.Db.SaveChangesAsync();
+        foreach (var user in new[] { "tenant", "platform" })
+        {
+            var data = JsonSerializer.SerializeToElement(await f.Run("chat.models", user, connection.Id));
+            var message = data.GetProperty("Message").GetString()!;
+            if (user == "tenant") { Assert.Equal("Esta conexão está indisponível no momento. Tente novamente.", message); }
+            else { Assert.True(message.Contains("login", StringComparison.OrdinalIgnoreCase) || message.Contains("instalação")); }
+            var id = JsonSerializer.SerializeToElement(await f.Run("createConversation", user)).GetProperty("Id").GetGuid();
+            var selectionError = await Assert.ThrowsAsync<AiException>(() => f.Run("selectConversation", user, id, new { connectionId = connection.Id, model = connection.Model }));
+            Assert.Equal(409, selectionError.Status); Assert.Equal(message, selectionError.Message);
+            var row = f.Db.AiConversations.Single(x => x.Id == id); row.SelectedConnectionId = connection.Id; row.SelectedModel = connection.Model; await f.Db.SaveChangesAsync();
+            var sendError = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", user, id, JsonSerializer.SerializeToElement(new { text = "Pergunta" }), (_, _) => Task.CompletedTask, default));
+            if (status == 0) Assert.Equal(message, sendError.Message);
+            else
+            {
+                Assert.Equal(409, sendError.Status);
+                Assert.StartsWith("Não foi possível consultar os modelos desta conexão agora. Tente novamente", sendError.Message);
+                if (user == "platform") Assert.Contains(message, sendError.Message);
+                else Assert.Equal("Não foi possível consultar os modelos desta conexão agora. Tente novamente", sendError.Message);
+            }
+        }
+        Assert.Empty(f.Db.AiMessages); Assert.Equal(0, f.Provider.Calls);
     }
     [Fact]
     public async Task SelectionCannotChangeWhileTheSameConversationIsGenerating()
@@ -199,6 +474,19 @@ public class AiFoundationTests
         else if (provider == "Anthropic") Assert.Equal("private-key", http.Requests[0].ApiKey);
         else Assert.Equal("private-key", http.Requests[0].Bearer);
         if (provider == "OpenRouter") Assert.Equal(2, models[0].GetProperty("InputPrice").GetDecimal());
+    }
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task OpenRouterPublicCatalogWithEmptyUrlAndNoCredentialUsesTheOfficialEndpoint(string? baseUrl)
+    {
+        var http = new CatalogClient("{\"data\":[{\"id\":\"vendor/chat\"}]}");
+        await using var f = new Fixture(http: http); await f.SeedAsync();
+        var data = JsonSerializer.SerializeToElement(await f.Run("admin.models", input: new { provider = "OpenRouter", type = "OAuth", baseUrl, secret = (string?)null }));
+        Assert.Equal("ready", data.GetProperty("state").GetString());
+        Assert.Equal("https://openrouter.ai/api/v1/models", http.Requests.Single().Url);
+        Assert.Null(http.Requests.Single().Bearer); Assert.Equal(0, f.Provider.Calls);
     }
     [Fact]
     public async Task ChangingDestinationDoesNotForwardOrPreserveSavedKey()
