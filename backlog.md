@@ -2565,6 +2565,7 @@ Extensão solicitada em 2026-10-07: experiência semelhante ao Zapmind e escolha
 US-AI-011 / SPEC-AI-004 aprovada e implementada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
 Migration aplicada ao E2E e à produção com backup verificado. Main/produção 6eecba8;
 CI 37629372432 com seis jobs aprovados e 117 E2E aprovados sem retries.
+Registro anterior na main: US-AI-011 / SPEC-AI-004 aprovada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
 
 ```yaml
 - id: TASK-AI-004
@@ -2577,12 +2578,14 @@ CI 37629372432 com seis jobs aprovados e 117 E2E aprovados sem retries.
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
   status: implemented
+  # Estado anterior registrado na main: in_progress.
   priority: P1
 ```
 
 Extensão solicitada pelo PO em 2026-10-07: Gemini por assinatura (US-AI-010).
 SPEC-AI-003 aprovada explicitamente pelo PO, com login Google oficial, catálogo CLI e isolamento;
 implementada e publicada em `aad03a3`, CI `37618509581` com 115 E2E aprovados, sem migration.
+Registro anterior na main: implementação e validação em andamento, sem migration.
 
 ```yaml
 - id: TASK-AI-003
@@ -2595,6 +2598,7 @@ implementada e publicada em `aad03a3`, CI `37618509581` com 115 E2E aprovados, s
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
   status: implemented
+  # Estado anterior registrado na main: in_progress.
   priority: P1
 ```
 

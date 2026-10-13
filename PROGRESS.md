@@ -1,3 +1,12 @@
+## [2026-10-13] - Codex (Tear) - reconciliação da feat com main para integração
+
+- Tarefa 3 autorizada pelo Maestro/PO: criada `integration/ai-foundation-main` de `origin/feat/ai-assistant-foundation` (`457c6d2`), merge de `origin/main` (`6eecba8`), sem rebase/force push. Resolvidos 14 conflitos com comparação de ambos os pais e SPEC-AI-004 aprovada; base publicada preservada e correções posteriores aceitas da feat mantidas. Nenhuma correção exclusiva da main ausente no código final; produto/testes finais coincidem com a feat, sem refatoração ou correção adicional.
+- Documentos unidos sem perder entradas: confirmações de 13 E2E/38,2 s e 11 E2E exclusivas da main incorporadas ao PROGRESS; entradas ordenadas por data. ROADMAP/backlog preservam estado posterior e identificam estado anterior da main como histórico. DECISIONS ordenada D1–D98, IDs únicos; proposta e aprovação da mesma D81 preservadas em um registro com atualização, sem colisão de decisões diferentes. Spec mantém esclarecimento humano Recusar e avisar e histórico de validação, sem contrato novo.
+- Checks: solution build aprovado (59,76 s; 3 avisos), xUnit 311/311 (59,07 s), tsc -b (93,55 s), lint (0,90 s; 12 avisos), Vitest threads CI 145/145 (254,14 s), build frontend (106,86 s), Context Explorer 42/42 (0,91 s), scripts Python 8/8 (0,28 s), ponte 17/17 (0,44 s).
+- Banco exclusivo DetranKanban_E2E recriado pelo SQL versionado (1,89 s); `scripts/run-local.sh up` reconstruiu a imagem e iniciou app/SQL saudáveis (177,15 s), com 28 migrations existentes e um projeto seed antes da suíte. App da branch mantido em 0.0.0.0:3100. Nenhum arquivo de Migrations/ModelSnapshot diferente de origin/main; nenhum container, banco ou caminho de produção tocado.
+- E2E completo headless no banco limpo: 119 aprovados, 6 skips, zero retries (639,41 s). Script `ci-e2e.sh` idêntico ao versionado executado em cópia temporária sem env local, com rótulos de propriedade prisma-dev, rede/banco próprios e sem publicar portas: 119 aprovados, 6 skips, zero retries (797,05 s, incluindo preparação/limpeza). Recursos temporários removidos pelo script. board-stage-sync desktop/mobile e rich-task-description mobile da tarefa 2 passaram nas duas rodadas sem alterar esses specs; causa exata do timeout rico anterior não determinada retrospectivamente.
+- Relatório dos 14 conflitos, comandos, tempos e limites em `docs/integration-ai-foundation-validation.md`; continuidade em NOTAS; logs ignorados em `.runlogs/integration`. Sem QA visual humano, contas CLI reais ou inferência paga. Próximo passo: Maestro revisar, abrir PR e integrar; Tear envia somente esta branch, sem main, PR, deploy ou autoaprovação de gate.
+
 ## [2026-10-13] - Codex (Tear) - três correções de testes no servidor
 
 - Tarefa 2 na branch `fix/server-test-failures`, baseada em `origin/feat/ai-assistant-foundation` / `1494b7a`, após fetch e leitura das instruções. Um commit por grupo: Context Explorer exige cinco contratos e inclui qa (`a5ba7a1`); OrganizationSettings aguarda atualizações assíncronas, mocka consultas auxiliares e limpa render/cliente/mocks (`5c1e703`); atribuição E2E cria projeto/item próprios, mantém as verificações de acesso e arquiva sua fixture. Sem aumento de timeout, enfraquecimento de asserções ou alteração de produto/spec/schema.
@@ -160,7 +169,7 @@
 
 - PO relatou que não consegue selecionar modelos após a publicação. Investigação somente de metadados confirmou catálogo público OpenRouter acessível no servidor (465 modelos), API E2E normalizando a lista e uma conexão histórica Gemini/CliSubscription sem credencial em produção. Essa combinação exige correção explícita; Codex/Claude continuam sem conta autenticada.
 - Refinamento dentro da SPEC-AI-002 aprovada: instrução junto ao seletor conforme falta de chave, login ou endpoint; botão explícito para corrigir método antigo; carregamento automático após pausa ao colar a chave, sem depender de blur. Selecionar novamente o mesmo provedor/método preserva catálogo, modelo e credencial. Alterar o destino continua limpando dados incompatíveis.
-- Seis testes focais frontend aprovados; build com `tsc -b` aprovado; lint sem erros novos. Primeira execução identificou diferença de caixa no rótulo do botão (API), corrigida antes da repetição aprovada. E2E cobre recuperação de conexão antiga e catálogo pela API real de endpoint falso em desktop/mobile, além dos cinco provedores e login CLI. Validação E2E/publicação em andamento.
+- Seis testes focais frontend aprovados; build com `tsc -b` aprovado; lint sem erros novos. Primeira execução identificou diferença de caixa no rótulo do botão (API), corrigida antes da repetição aprovada. E2E cobre recuperação de conexão antiga e catálogo pela API real de endpoint falso em desktop/mobile, além dos cinco provedores e login CLI. Validação E2E/publicação em andamento na linha de desenvolvimento. Confirmação na linha publicada: E2E focal da imagem final com 13 aprovados em desktop/mobile sem retries (38,2 s), com inspeção das telas de correção e modelo selecionado; CI completo/publicação automática em andamento naquele registro.
 - Sem alteração de API, schema, conta ou segredo de produção. Publicação autorizada anteriormente pelo PO será seletiva a partir da main, preservando a organização local D92 fora da release.
 
 ## [2026-10-06] - Codex - configuração guiada IA publicada em produção
@@ -181,7 +190,9 @@
 - Ponte mantém token externo, volumes privados, usuário sem privilégios, raiz somente leitura, rede sem SQL e execução sem ferramentas/projeto/histórico. Operador de instalação preparado; deploy admite somente a rede opcional identificada e preserva rollback, ambiente e mounts. Configuração privada tem permissão 600 e não entra no Git.
 - Checks locais: backend compilado e 266 testes aprovados, inclusive SQL isolado; frontend com 129 testes completos no contêiner e quatro testes focais após o ajuste de consulta (130 previstos no conjunto final); build com `tsc -b`; lint sem erros; 42 testes de governança; nove da ponte e cinco do deploy. Comandos oficiais de login iniciados/cancelados em imagem isolada e catálogo Codex consultado sem autenticar conta ou executar inferência.
 - E2E detectou rótulos ambíguos, corrigidos com nomes acessíveis explícitos, e origem HTTP de Docker incompatível com o requisito HTTPS do OAuth, corrigida somente no ambiente de teste. Execuções antigas foram interrompidas para usar o candidato corrigido. Cenários de cadastro/teste/ativação e CLI passaram em desktop/mobile; confirmação focal final e suíte completa da imagem final ainda em validação antes do deploy. Ambiente local usa web 5540 porque Windows reservou 5433–5532; API E2E 5400.
-- Próximo passo: terminar a validação focal/visual, compor release seletiva a partir da main, instalar a ponte sem conta, executar CI/E2E completos e verificar publicação. Consolidação D92/landing/profile rename permanece fora da release.
+- Próximo passo registrado antes da confirmação: terminar a validação focal/visual, compor release seletiva a partir da main, instalar a ponte sem conta, executar CI/E2E completos e verificar publicação. Consolidação D92/landing/profile rename permanece fora da release.
+- Confirmação do candidato corrigido: 11 E2E focais aprovados sem retry em desktop/mobile, incluindo todos os provedores, OAuth, login/cancelamento CLI e ausência de overflow. Capturas dos dois tamanhos conferidas em uma rodada e uma confirmação. Release seletiva composta a partir da main; governança da composição passou 42 testes.
+- Próximo passo: instalar a ponte sem conta, executar CI/E2E completos da imagem final e verificar publicação. Consolidação D92/landing/profile rename permanece fora da release.
 
 ## [2026-10-06] - Codex - revisão da configuração IA preparada para G-SPEC
 
@@ -542,6 +553,37 @@
 - PO decidiu colunas independentes por quadro. Registrei D89, história e spec draft; não alterei schema ou código de produto. A spec separa decisão humana de propostas de migração ainda não aprovadas.
 - Próximo: aprovar contrato; inventariar dados antes de G-MIGRATION; testar e corrigir pendências compatíveis com specs aprovadas. Não considerar concluídos os 20 relatos e 13 sugestões do PDF.
 
+## [2026-09-22] - Codex - colagem fluida de imagens na descrição
+
+- Aprovação funcional: pedido direto do PO para colar imagens na descrição de forma mais fluida; `stories/rich-task-description.md` e a spec aprovada foram ampliadas sem migration.
+- Implementação: o editor intercepta uma ou várias imagens da área de transferência, envia cada arquivo pelo endpoint autenticado de anexos, insere uma referência opaca no ponto da edição e hidrata a imagem com Blob URL autenticada. O HTML não incorpora o binário/base64, o arquivo permanece protegido pelas permissões da tarefa e também aparece na aba Anexos.
+- Experiência e segurança: estados de envio/sucesso/falha, dica de `Ctrl+V`, placeholder local, erro visual de carregamento e anúncio acessível separado da dica. O sanitizador preserva somente `data-attachment-id`; URLs públicas continuam limitadas a HTTP/HTTPS.
+- Testes: build frontend aprovado; Vitest focal 10/10; teste .NET do sanitizador 1/1; E2E Playwright real no candidato Docker aprovado em desktop e mobile (3/3 incluindo setup), com upload, salvamento e reabertura. A primeira execução detectou e levou à correção da dica dentro de `role=status`.
+- Ambiente: imagem isolada `prisma-paste-image:20260922`, QA em `127.0.0.1:55400` e E2E em `127.0.0.1:55401`. Produção não alterada.
+- Próximo passo: integrar os lotes paralelos, executar as suítes completas e validar visualmente o conjunto com agent-browser antes de solicitar/publicar o G-DEPLOY.
+
+## [2026-09-22] - Codex - integração D89, fluxo de tarefas e homologação completa em QA
+
+- Implementação integrada: colunas independentes por quadro com migration segura, remapeamento de tarefas, automações e formulários externos; transferência transacional da árvore de tarefas; proteção de exclusão para referências de portal, automações e formulários; ordenação por coluna; criação com responsável principal e adicionais elegíveis; sprint no detalhe; subtarefas abrindo o detalhe completo; editor de descrição amplo com colagem autenticada de imagens.
+- Regras confirmadas: atribuição exige acesso prévio ao projeto; exclusão e reclassificação exigem destino/consentimento explícitos quando aplicável; `Solicitações` permanece como módulo externo conforme decisões vigentes, sem criar entidade central `Demanda`.
+- Revisão estrutural: os quatro bloqueadores encontrados na revisão paralela foram corrigidos (árvore pai/filhos, descendência na reclassificação, automações e formulários na migration). Permanecem como dívida deliberada a entrega pós-commit por outbox/idempotência para automações/SignalR em transferências e a ativação segura de retry SQL somente após essa infraestrutura.
+- Migration ensaiada sobre restauração verificada do backup de produção em banco isolado: 28 colunas legadas, 40 colunas por quadro, zero tarefas incompatíveis, zero referências inválidas de automação e formulário; `DBCC CHECKCONSTRAINTS` e `DBCC CHECKDB` limpos. Produção não foi alterada.
+- Validação automatizada: build frontend aprovado; Vitest 101/101; xUnit 189/189 no banco isolado correto; Playwright final em base E2E limpa, contêiner oficial e limites de teste isolados: 101 aprovados, 6 condicionais ignorados, zero falhas em desktop e mobile.
+- Validação visual com `agent-browser`: login, início desktop/mobile, backlog, Kanban, seleção independente de quadros/colunas, detalhe amplo, múltiplos responsáveis, sprint, editor em tela cheia e ausência de erros de console. A auditoria axe passou de seis violações para zero após corrigir contrastes, nomes acessíveis, landmarks, toolbar e hierarquia de títulos; restaram apenas verificações de contraste inconclusivas por pseudo-elementos, sem violação confirmada.
+- Artefato homologado: imagem `prisma-integrated-20260922-final:latest`, manifest list `sha256:b39695fc5b1c5d7e7436a7e6c1027e528f43f72256b0042fa73a2134c821573d`, executada somente na QA `127.0.0.1:55401`.
+- Próximo passo: abrir e aprovar `G-DEPLOY` antes de promover a imagem homologada e executar a migration em produção com backup e verificação pós-deploy.
+- Bloqueios: produção aguarda `G-DEPLOY`; não há bloqueio técnico na QA homologada.
+
+## [2026-09-22] - Codex - G-DEPLOY D89 aprovado e publicado em produção
+
+- Gate humano: o PO aprovou explicitamente o `G-DEPLOY` nesta sessão com a instrução de subir em produção.
+- Segurança: backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY`, arquivo-fonte completo, hashes, configuração e duas imagens de rollback foram preservados em `/home/dev/backups/prisma/20260922T150935Z`.
+- Publicação principal: imagem homologada promovida, 115 arquivos sincronizados e migration `20260922143000_Add_Independent_Board_Columns` aplicada. Pós-migration: 31 etapas legadas, 43 etapas vinculadas a quadros, zero tarefas em quadro/coluna incompatível, zero automações inválidas e zero formulários com etapa inicial incompatível. `DBCC CHECKCONSTRAINTS` e `DBCC CHECKDB` concluíram sem erro.
+- Ajuste pós-deploy: o `agent-browser` encontrou ausência de `h1` no workspace de projeto. O título do projeto foi corrigido semanticamente sem mudança visual, validado com 15 testes focados, build e nova suíte E2E completa: 101 aprovados, 6 condicionais ignorados e zero falhas em desktop/mobile.
+- Produção final: imagem `prisma-integrated-20260922-r2:latest`, digest `sha256:8cc5c26fc1ed0c5d55c622992b054aab02cf9ad74fd2b79341df9142f2e8ef4c`, domínio `https://prisma.nordevs.com.br` saudável. Login real, projetos, backlog e Kanban foram abertos com sucesso; console sem erros e auditoria axe com zero violações confirmadas.
+- Rollback: `prisma-rollback:20260922T150935Z` para o lote anterior à migration e `prisma-rollback:20260922T150935Z-r2` para o estado imediatamente anterior ao ajuste semântico.
+- Próximo passo: acompanhar logs e uso real da equipe; as dívidas de outbox/idempotência e retry SQL permanecem planejadas, sem bloquear esta release.
+- Bloqueios: nenhum.
 ## [2026-09-21] — Cursor (Claude) — G-DEPLOY: convite fantasma + modal da tarefa
 - **Autorização:** PO em 2026-09-21: “pode continuar”, após o desbloqueio operacional do Gabriel e o pedido explícito de publicar o patch.
 - **Proteção:** backup SQL `COPY_ONLY`+`CHECKSUM` com `RESTORE VERIFYONLY` válido em `/home/dev/backups/prisma/20260921T154939Z/PrismaWorkspace_20260921T154939Z.bak`, SHA-256 `b11d3a9ea56dcde566f46fd92af83352c8d29d80cbce7a1e3cf0319983580bba`. Imagem anterior etiquetada `prisma-rollback:20260921T154939Z`. Sem migration.
@@ -576,38 +618,6 @@
 - **Bloqueios:** Nenhum.
 
 ---
-## [2026-09-10] — Composer — D88: nav global no cabeçalho, lateral só no projeto
-- **Fiz:** Na worktree `prisma-wt-nav-shell` (`feat/nav-project-sidebar` @ `b1b8ad4`), movi Início/Meu trabalho/Projetos/Solicitações/Relatórios/Equipes do trilho para o cabeçalho. A lateral passou a ser painel contextual do projeto (nome, chave, descrição e abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações), visível só em `/projects/:id`. Fora do projeto a lateral some. No mobile (≤768px) a lateral some e as abas ficam na faixa horizontal do workspace; o hambúrguer segue com a nav global. Registrada **D88** (sucede D87 quanto ao destino da nav global).
-- **Arquivos:** `layout/navigation.ts`, `Sidebar.tsx` (+test), `Topbar.tsx` (+test), `AppShell.tsx`, `ProjectWorkspace.tsx`, `e2e/smoke.spec.ts`, `e2e/release-shell-navigation.spec.ts`, `DECISIONS.md`, `PROGRESS.md`.
-- **Testes:** `tsc -b` 0; Vitest **79/79**. E2E limpa: **68 passed / 4 skipped / 1 failed** — a falha (`document-alignment` dependência) passou isolada e não é do shell; smoke + release-shell (desktop/mobile) verdes, incluindo o caso novo D88.
-- **Decisões:** D88. Sem migration. Specs `top-navigation-shell` / `prisma-visual-system` ficam desalinhadas no texto histórico — alinhamento formal via G-SPEC se o PO quiser; a autoridade vigente é D88.
-- **Próximo:** merge na `integration/all-specs-v2` só com pedido explícito.
-- **Bloqueios:** nenhum no recorte. Não toquei na API nem em produção. Front E2E desta worktree em `:5450`; API compartilhada em `:5400`.
-
----
-## [2026-09-19] — Codex — onboarding direto por convite
-- **Aprovações:** PO autorizou implementar o fluxo proposto, excluir somente a conta de teste e publicar. Contrato em `specs/invitation-onboarding.md`, história em `stories/invitation-onboarding.md`. Sem migration.
-- **Implementação:** preview pelo token com e-mail fixo; nome completo/senha/confirmação para novo cadastro; conta existente exige senha atual. Transação serializável com lock do convite preserva atomicidade e uso único. Confirmação por posse do convite, seleção da organização e sessão automática. Associação existente mantém papel; acesso desativado e associação a outro tenant são recusados.
-- **Validação:** build .NET/frontend, 153 testes .NET e 82 Vitest aprovados. E2E completo: **74 passed, 5 skipped, 0 failed**. Inclui UI desktop/mobile e HTTP de concorrência/conta existente. Execução final com API recém-iniciada para limpar cota consumida por execuções anteriores, sem relaxar limite de produção.
-- **Operação:** backup SQL COPY_ONLY/CHECKSUM verificado em `/home/dev/backups/prisma/invitation-20260919/PrismaWorkspace.bak`; imagem anterior etiquetada para rollback. Preflight da conta de teste não encontrou referências funcionais; um convite válido preservado. Publicação e exclusão ainda pendentes nesta entrada.
-
-## [2026-09-19] — Codex — cadastro duplicado em português (validação pendente)
-- **Pedido e contrato:** tradução do erro de conta existente, história `US-AUTH-001-004` e `SPEC-AUTH-001` aprovada (requisito 2).
-- **Implementado localmente:** `PortugueseIdentityErrorDescriber` registrado no Identity traduz `DuplicateUserName` e `DuplicateEmail` para “Este e-mail já está cadastrado. Entre na sua conta.”, preservando códigos e regras. Sem migration.
-- **Validação:** build e 2 testes unitários específicos aprovados. Adicionado E2E pela tela com conta de teste existente e API real. `npm run e2e` falhou no setup por API indisponível; 74 testes não executaram. `run-api-e2e.ps1` confirmou SQL Server inacessível (10061); Docker local desligado.
-- **Pendente:** restabelecer ambiente E2E e executar a suíte. Não publicado nem homologado. A falha de confirmação de e-mail é separada e não foi corrigida por esta tradução.
-
-## [2026-09-11] — Claude Opus 5 (coordenador) — G-DEPLOY: D88, navegação global no cabeçalho
-- **Publicado** em `https://prisma.nordevs.com.br` o merge da `feat/nav-project-sidebar` (D88): a navegação global volta ao cabeçalho e a lateral passa a ser **painel contextual do projeto**, visível somente dentro de `/projects/:projectId`. Commit `7aa547b`.
-- **Duas implementações da mesma coisa, e a escolha foi consciente.** Existiam a `feat/nav-project-sidebar` (pronta, com decisão registrada e testes) e a minha `feat/trilho-projetos` (WIP, parada pelo PO, com trilho de projetos sempre visível). Ficou a primeira: além de estar completa, a regra "a lateral não aparece fora do projeto" é melhor que a minha, que mantinha um trilho sem nada a dizer fora de um projeto. A `feat/trilho-projetos` fica como histórico; seu único conteúdo exclusivo era essa implementação, já que o filtro recolhido do backlog foi entregue em separado.
-- **Duas coberturas de permissão voltaram, por não serem redundantes.** A reescrita do `Sidebar.test.tsx` levou embora o teste do **papel 8** (solicitante externo não deve ver Início, Meu trabalho nem Projetos) e o do **seletor de organização escondido com uma só**. O portão do papel 8 continua em `navigation.ts`, mas nada mais o afirmava — quebrá-lo passaria em silêncio e o solicitante externo veria o espaço interno. Ambas voltaram para `Topbar.test.tsx`, onde a navegação agora vive.
-- **Correção de diagnóstico meu:** eu já havia chamado a falha do `wiki-image` de "instabilidade do poll" e depois descobri que era espera pelo seletor de organização removido. Desta vez a causa **é** de tempo, e confirmada: passa em ~4s isolado e estourava os 20s sob a suíte inteira, porque o salvamento é por debounce com data URI grande competindo pela máquina. Poll ampliado para 60s com intervalos progressivos; o que a asserção prova é o mesmo.
-- **Validação:** `tsc -b` limpo, Vitest **82/82**, xUnit **143/143**, E2E **69 passed / 4 skipped / 0 failed**.
-- **Verificação pós-deploy, navegando autenticado:** fora do projeto, navegação principal no cabeçalho presente e **lateral ausente**; dentro do projeto, cabeçalho mantido e o painel do projeto exibindo nome, chave, descrição e as abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações. Zero chamadas a endereço local.
-- **Backup:** `/home/dev/backups/prisma/PrismaWorkspace_20260911T150113Z.bak`, SHA-256 `e7d6bd1a5beb5f447551781d089c81f16f2f156809c6e9271e70cee12650726a`, `RESTORE VERIFYONLY` válido. Sem migration neste lote.
-- **Decisões novas:** nenhuma minha; D88 é do agente que implementou, e sucede a D87 quanto ao destino da navegação global.
-- **Pendências:** convite por projeto com permissões antes do link e criação de conta na hora ao aceitar — não implementado; hoje o convite é por organização e aceitar exige usuário autenticado. Página inicial no desenho que o PO enviou. Cláusula 10 da `SPEC-BOARD-AS-VIEW` (`WorkItem.ProjectId`) segue aberta.
-
 ## [2026-09-21] — Codex — G-DEPLOY do editor rico de descrição
 - **Autorização:** PO autorizou explicitamente publicar a descrição. O lote contém somente o editor rico do commit `010096e`; o relato posterior sobre múltiplos responsáveis ficou separado.
 - **Proteção:** backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY` aprovado em `/home/dev/backups/prisma/20260921T130836Z/PrismaWorkspace_20260921T130836Z.bak`, SHA-256 `bfea09374810f2604475db5617fd8f5ea7a1dd519dd46e21138a314e641c11e0`. Imagem anterior preservada como `prisma-rollback:20260921T130836Z`.
@@ -632,6 +642,38 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 
 ---
 
+## [2026-09-19] — Codex — onboarding direto por convite
+- **Aprovações:** PO autorizou implementar o fluxo proposto, excluir somente a conta de teste e publicar. Contrato em `specs/invitation-onboarding.md`, história em `stories/invitation-onboarding.md`. Sem migration.
+- **Implementação:** preview pelo token com e-mail fixo; nome completo/senha/confirmação para novo cadastro; conta existente exige senha atual. Transação serializável com lock do convite preserva atomicidade e uso único. Confirmação por posse do convite, seleção da organização e sessão automática. Associação existente mantém papel; acesso desativado e associação a outro tenant são recusados.
+- **Validação:** build .NET/frontend, 153 testes .NET e 82 Vitest aprovados. E2E completo: **74 passed, 5 skipped, 0 failed**. Inclui UI desktop/mobile e HTTP de concorrência/conta existente. Execução final com API recém-iniciada para limpar cota consumida por execuções anteriores, sem relaxar limite de produção.
+- **Operação:** backup SQL COPY_ONLY/CHECKSUM verificado em `/home/dev/backups/prisma/invitation-20260919/PrismaWorkspace.bak`; imagem anterior etiquetada para rollback. Preflight da conta de teste não encontrou referências funcionais; um convite válido preservado. Publicação e exclusão ainda pendentes nesta entrada.
+
+## [2026-09-19] — Codex — cadastro duplicado em português (validação pendente)
+- **Pedido e contrato:** tradução do erro de conta existente, história `US-AUTH-001-004` e `SPEC-AUTH-001` aprovada (requisito 2).
+- **Implementado localmente:** `PortugueseIdentityErrorDescriber` registrado no Identity traduz `DuplicateUserName` e `DuplicateEmail` para “Este e-mail já está cadastrado. Entre na sua conta.”, preservando códigos e regras. Sem migration.
+- **Validação:** build e 2 testes unitários específicos aprovados. Adicionado E2E pela tela com conta de teste existente e API real. `npm run e2e` falhou no setup por API indisponível; 74 testes não executaram. `run-api-e2e.ps1` confirmou SQL Server inacessível (10061); Docker local desligado.
+- **Pendente:** restabelecer ambiente E2E e executar a suíte. Não publicado nem homologado. A falha de confirmação de e-mail é separada e não foi corrigida por esta tradução.
+
+## [2026-09-11] — Claude Opus 5 (coordenador) — G-DEPLOY: D88, navegação global no cabeçalho
+- **Publicado** em `https://prisma.nordevs.com.br` o merge da `feat/nav-project-sidebar` (D88): a navegação global volta ao cabeçalho e a lateral passa a ser **painel contextual do projeto**, visível somente dentro de `/projects/:projectId`. Commit `7aa547b`.
+- **Duas implementações da mesma coisa, e a escolha foi consciente.** Existiam a `feat/nav-project-sidebar` (pronta, com decisão registrada e testes) e a minha `feat/trilho-projetos` (WIP, parada pelo PO, com trilho de projetos sempre visível). Ficou a primeira: além de estar completa, a regra "a lateral não aparece fora do projeto" é melhor que a minha, que mantinha um trilho sem nada a dizer fora de um projeto. A `feat/trilho-projetos` fica como histórico; seu único conteúdo exclusivo era essa implementação, já que o filtro recolhido do backlog foi entregue em separado.
+- **Duas coberturas de permissão voltaram, por não serem redundantes.** A reescrita do `Sidebar.test.tsx` levou embora o teste do **papel 8** (solicitante externo não deve ver Início, Meu trabalho nem Projetos) e o do **seletor de organização escondido com uma só**. O portão do papel 8 continua em `navigation.ts`, mas nada mais o afirmava — quebrá-lo passaria em silêncio e o solicitante externo veria o espaço interno. Ambas voltaram para `Topbar.test.tsx`, onde a navegação agora vive.
+- **Correção de diagnóstico meu:** eu já havia chamado a falha do `wiki-image` de "instabilidade do poll" e depois descobri que era espera pelo seletor de organização removido. Desta vez a causa **é** de tempo, e confirmada: passa em ~4s isolado e estourava os 20s sob a suíte inteira, porque o salvamento é por debounce com data URI grande competindo pela máquina. Poll ampliado para 60s com intervalos progressivos; o que a asserção prova é o mesmo.
+- **Validação:** `tsc -b` limpo, Vitest **82/82**, xUnit **143/143**, E2E **69 passed / 4 skipped / 0 failed**.
+- **Verificação pós-deploy, navegando autenticado:** fora do projeto, navegação principal no cabeçalho presente e **lateral ausente**; dentro do projeto, cabeçalho mantido e o painel do projeto exibindo nome, chave, descrição e as abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações. Zero chamadas a endereço local.
+- **Backup:** `/home/dev/backups/prisma/PrismaWorkspace_20260911T150113Z.bak`, SHA-256 `e7d6bd1a5beb5f447551781d089c81f16f2f156809c6e9271e70cee12650726a`, `RESTORE VERIFYONLY` válido. Sem migration neste lote.
+- **Decisões novas:** nenhuma minha; D88 é do agente que implementou, e sucede a D87 quanto ao destino da navegação global.
+- **Pendências:** convite por projeto com permissões antes do link e criação de conta na hora ao aceitar — não implementado; hoje o convite é por organização e aceitar exige usuário autenticado. Página inicial no desenho que o PO enviou. Cláusula 10 da `SPEC-BOARD-AS-VIEW` (`WorkItem.ProjectId`) segue aberta.
+
+## [2026-09-10] — Composer — D88: nav global no cabeçalho, lateral só no projeto
+- **Fiz:** Na worktree `prisma-wt-nav-shell` (`feat/nav-project-sidebar` @ `b1b8ad4`), movi Início/Meu trabalho/Projetos/Solicitações/Relatórios/Equipes do trilho para o cabeçalho. A lateral passou a ser painel contextual do projeto (nome, chave, descrição e abas Itens/Backlog/Sprints/Kanban/Relatórios/Wiki/Configurações), visível só em `/projects/:id`. Fora do projeto a lateral some. No mobile (≤768px) a lateral some e as abas ficam na faixa horizontal do workspace; o hambúrguer segue com a nav global. Registrada **D88** (sucede D87 quanto ao destino da nav global).
+- **Arquivos:** `layout/navigation.ts`, `Sidebar.tsx` (+test), `Topbar.tsx` (+test), `AppShell.tsx`, `ProjectWorkspace.tsx`, `e2e/smoke.spec.ts`, `e2e/release-shell-navigation.spec.ts`, `DECISIONS.md`, `PROGRESS.md`.
+- **Testes:** `tsc -b` 0; Vitest **79/79**. E2E limpa: **68 passed / 4 skipped / 1 failed** — a falha (`document-alignment` dependência) passou isolada e não é do shell; smoke + release-shell (desktop/mobile) verdes, incluindo o caso novo D88.
+- **Decisões:** D88. Sem migration. Specs `top-navigation-shell` / `prisma-visual-system` ficam desalinhadas no texto histórico — alinhamento formal via G-SPEC se o PO quiser; a autoridade vigente é D88.
+- **Próximo:** merge na `integration/all-specs-v2` só com pedido explícito.
+- **Bloqueios:** nenhum no recorte. Não toquei na API nem em produção. Front E2E desta worktree em `:5450`; API compartilhada em `:5400`.
+
+---
 ## [2026-09-10] — Claude Opus 5 (coordenador) — G-DEPLOY: as três worktrees em produção
 - **Publicado** em `https://prisma.nordevs.com.br` o lote integrado pelo Codex: `feat/edit-column` (editar nome e classificação da coluna), `state-graph-redesign` (grafo de estados) e `feat/workitem-kind-selection` (escolha do tipo nos pontos de criação). Commit `bcb612a`.
 - **Retomada:** o agente que fez os merges parou por limite de uso no meio do E2E, deixando `PROGRESS.md` e três specs sem commit. Conferi os merges (código combinou sem conflito; os conflitos foram só de PROGRESS, com as entradas de todos preservadas), revisei as edições de spec e fechei a validação.
@@ -1211,6 +1253,8 @@ Formato:
 - **Bloqueios:** TASK-001/002/003 concluídas. TASK-004 a TASK-016 continuam bloqueadas enquanto suas specs permanecerem `draft`. O executor local está funcional, mas ativar a política condicional de E2E no profile ainda requer G-WORKFLOW explícito.
 
 ## [2026-08-20] — Codex + agentes orquestrador anterior — Execução SDD orientada pelo documento de requisitos
+
+Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem duplicação.
 - **Fiz:** Auditei visualmente as 7 páginas de `docs/ProjetoRunrun-Detran.docx.pdf`, confrontei requisitos, 21 specs, backlog e código com cinco agentes coordenados em paralelo. Pelo fluxo SDD, executei apenas tarefas cobertas pela `SPEC-PROJECT-STRUCTURE` aprovada: concluí a TASK-002, substituindo os rótulos visuais "Metodologia" por "Estrutura de Trabalho" e adicionando cobertura Vitest/Playwright; concluí a TASK-003 ao confirmar que projetos Kanban já não criam Sprint automaticamente e adicionar um teste de regressão EF Core. Corrigi o ambiente E2E local, seletores Playwright, isolamento Vitest, um teste .NET incompatível com a janela de tolerância de refresh token, paths reais do backlog e contadores canônicos do Context Explorer para as 21 specs. Atualizei specs/backlog apenas com inconsistências comprovadas; nenhuma spec foi autoaprovada, nenhuma migration foi criada e nenhum gate humano foi contornado.
 - **Arquivos tocados:** `backlog.md`, specs auditadas em `specs/`, `src/Detran.Kanban.Web/src/pages/Projects.tsx`, `src/Detran.Kanban.Web/src/pages/ProjectSettings.tsx`, testes Vitest/Playwright/xUnit, configuração Playwright/Vitest, scripts E2E, scanner/testes do `tools/context-explorer` e `PROGRESS.md`.
 - **Decisões novas:** Nenhuma decisão de produto. A inclusão de XP continua bloqueada em G-SCOPE porque contradiz D20; as demais implementações continuam bloqueadas por G-SPEC nas specs em `draft` e por perguntas de escopo registradas nas próprias specs.
@@ -1780,34 +1824,3 @@ Formato:
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
-## [2026-09-22] - Codex - colagem fluida de imagens na descrição
-
-- Aprovação funcional: pedido direto do PO para colar imagens na descrição de forma mais fluida; `stories/rich-task-description.md` e a spec aprovada foram ampliadas sem migration.
-- Implementação: o editor intercepta uma ou várias imagens da área de transferência, envia cada arquivo pelo endpoint autenticado de anexos, insere uma referência opaca no ponto da edição e hidrata a imagem com Blob URL autenticada. O HTML não incorpora o binário/base64, o arquivo permanece protegido pelas permissões da tarefa e também aparece na aba Anexos.
-- Experiência e segurança: estados de envio/sucesso/falha, dica de `Ctrl+V`, placeholder local, erro visual de carregamento e anúncio acessível separado da dica. O sanitizador preserva somente `data-attachment-id`; URLs públicas continuam limitadas a HTTP/HTTPS.
-- Testes: build frontend aprovado; Vitest focal 10/10; teste .NET do sanitizador 1/1; E2E Playwright real no candidato Docker aprovado em desktop e mobile (3/3 incluindo setup), com upload, salvamento e reabertura. A primeira execução detectou e levou à correção da dica dentro de `role=status`.
-- Ambiente: imagem isolada `prisma-paste-image:20260922`, QA em `127.0.0.1:55400` e E2E em `127.0.0.1:55401`. Produção não alterada.
-- Próximo passo: integrar os lotes paralelos, executar as suítes completas e validar visualmente o conjunto com agent-browser antes de solicitar/publicar o G-DEPLOY.
-
-## [2026-09-22] - Codex - integração D89, fluxo de tarefas e homologação completa em QA
-
-- Implementação integrada: colunas independentes por quadro com migration segura, remapeamento de tarefas, automações e formulários externos; transferência transacional da árvore de tarefas; proteção de exclusão para referências de portal, automações e formulários; ordenação por coluna; criação com responsável principal e adicionais elegíveis; sprint no detalhe; subtarefas abrindo o detalhe completo; editor de descrição amplo com colagem autenticada de imagens.
-- Regras confirmadas: atribuição exige acesso prévio ao projeto; exclusão e reclassificação exigem destino/consentimento explícitos quando aplicável; `Solicitações` permanece como módulo externo conforme decisões vigentes, sem criar entidade central `Demanda`.
-- Revisão estrutural: os quatro bloqueadores encontrados na revisão paralela foram corrigidos (árvore pai/filhos, descendência na reclassificação, automações e formulários na migration). Permanecem como dívida deliberada a entrega pós-commit por outbox/idempotência para automações/SignalR em transferências e a ativação segura de retry SQL somente após essa infraestrutura.
-- Migration ensaiada sobre restauração verificada do backup de produção em banco isolado: 28 colunas legadas, 40 colunas por quadro, zero tarefas incompatíveis, zero referências inválidas de automação e formulário; `DBCC CHECKCONSTRAINTS` e `DBCC CHECKDB` limpos. Produção não foi alterada.
-- Validação automatizada: build frontend aprovado; Vitest 101/101; xUnit 189/189 no banco isolado correto; Playwright final em base E2E limpa, contêiner oficial e limites de teste isolados: 101 aprovados, 6 condicionais ignorados, zero falhas em desktop e mobile.
-- Validação visual com `agent-browser`: login, início desktop/mobile, backlog, Kanban, seleção independente de quadros/colunas, detalhe amplo, múltiplos responsáveis, sprint, editor em tela cheia e ausência de erros de console. A auditoria axe passou de seis violações para zero após corrigir contrastes, nomes acessíveis, landmarks, toolbar e hierarquia de títulos; restaram apenas verificações de contraste inconclusivas por pseudo-elementos, sem violação confirmada.
-- Artefato homologado: imagem `prisma-integrated-20260922-final:latest`, manifest list `sha256:b39695fc5b1c5d7e7436a7e6c1027e528f43f72256b0042fa73a2134c821573d`, executada somente na QA `127.0.0.1:55401`.
-- Próximo passo: abrir e aprovar `G-DEPLOY` antes de promover a imagem homologada e executar a migration em produção com backup e verificação pós-deploy.
-- Bloqueios: produção aguarda `G-DEPLOY`; não há bloqueio técnico na QA homologada.
-
-## [2026-09-22] - Codex - G-DEPLOY D89 aprovado e publicado em produção
-
-- Gate humano: o PO aprovou explicitamente o `G-DEPLOY` nesta sessão com a instrução de subir em produção.
-- Segurança: backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY`, arquivo-fonte completo, hashes, configuração e duas imagens de rollback foram preservados em `/home/dev/backups/prisma/20260922T150935Z`.
-- Publicação principal: imagem homologada promovida, 115 arquivos sincronizados e migration `20260922143000_Add_Independent_Board_Columns` aplicada. Pós-migration: 31 etapas legadas, 43 etapas vinculadas a quadros, zero tarefas em quadro/coluna incompatível, zero automações inválidas e zero formulários com etapa inicial incompatível. `DBCC CHECKCONSTRAINTS` e `DBCC CHECKDB` concluíram sem erro.
-- Ajuste pós-deploy: o `agent-browser` encontrou ausência de `h1` no workspace de projeto. O título do projeto foi corrigido semanticamente sem mudança visual, validado com 15 testes focados, build e nova suíte E2E completa: 101 aprovados, 6 condicionais ignorados e zero falhas em desktop/mobile.
-- Produção final: imagem `prisma-integrated-20260922-r2:latest`, digest `sha256:8cc5c26fc1ed0c5d55c622992b054aab02cf9ad74fd2b79341df9142f2e8ef4c`, domínio `https://prisma.nordevs.com.br` saudável. Login real, projetos, backlog e Kanban foram abertos com sucesso; console sem erros e auditoria axe com zero violações confirmadas.
-- Rollback: `prisma-rollback:20260922T150935Z` para o lote anterior à migration e `prisma-rollback:20260922T150935Z-r2` para o estado imediatamente anterior ao ajuste semântico.
-- Próximo passo: acompanhar logs e uso real da equipe; as dívidas de outbox/idempotência e retry SQL permanecem planejadas, sem bloquear esta release.
-- Bloqueios: nenhum.

@@ -11,6 +11,7 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
   Duas colunas opcionais aplicadas ao E2E e à produção com backup verificado; implementação validada.
   Main/produção `6eecba8`, CI `37629372432` com todos os seis jobs aprovados,
   117 E2E aprovados sem retries e seis skips condicionais. Próximo passo: teste humano da assinatura/chat.
+  Registro anterior na main: Duas colunas opcionais aplicadas ao banco E2E; implementação em validação antes da publicação.
 - Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
   mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
 - G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por
@@ -28,6 +29,7 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
   e seis skips condicionais; ponte CLI instalada, sem conta autenticada. Teste humano nas Configurações.
 - PO aprovou Gemini por assinatura em 2026-10-07. US-AI-010 / SPEC-AI-003 (`approved`):
   login Google oficial da Gemini CLI, catálogo e ponte isolada; publicados em `aad03a3`, CI com 115 E2E aprovados. Sem migration.
+  Registro anterior na main: login Google oficial da Gemini CLI, catálogo e ponte isolada; implementação e validação em andamento, sem migration.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,

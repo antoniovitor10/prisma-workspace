@@ -1,56 +1,68 @@
 # DECISIONS — decisões travadas (ADR-lite)
 
-- **D93** — Em 2026-10-06, o PO solicitou publicar as melhorias da main de 2026-10-05 e corrigir o deploy automático. A publicação desta instalação será executada após build, testes frontend, governança e E2E aprovados, usando a mesma imagem identificada pelo commit. Credenciais SSH ficam nos secrets do GitHub; a aplicação preserva configuração externa, banco, chaves e anexos. O deploy verifica saúde, mantém o contêiner anterior para rollback e bloqueia diferenças no manifesto de migrations até aprovação e operação explícitas de G-MIGRATION. Esta autorização não aprova a spec draft de IA.
-
-- **D89** - Em 2026-09-22, o PO escolheu explicitamente "Mudar para colunas independentes por quadro" ao comparar o relatório de testes com D83. Sucede a direção de fluxo compartilhado por projeto da D83. Não autoriza apagar dados nem reativar WIP ou quadros transversais. Contrato em `specs/independent-board-columns.md` (`approved`). O PO aprovou G-MIGRATION/G-WORKFLOW com "Aprovo a migration e esse fluxo seguro": cópia incremental das colunas por quadro, tarefas mantidas no quadro atual, IDs históricos preservados, backup verificado e ensaio antes de produção. Exclusão de estrutura ocupada exige destino explícito. Aprovação não significa migração aplicada nem dispensa validação.
-
-- **D90** - Em 2026-09-22, o PO escolheu "Exigir acesso ao projeto antes de atribuir a tarefa". Atribuição não concede acesso. Responsável principal e adicionais devem ser pessoas ativas da organização com acesso efetivo ao projeto; a interface oferece elegíveis e a API revalida todas as entradas. Atribuições legadas inconsistentes não são apagadas nem liberam visibilidade em Meu Trabalho. Contrato aprovado em `specs/project-assignment-access.md`; não exige alteração de schema.
-
 Uma linha por decisão. Pra mudar: não apague, marque ~~riscado~~ e adicione a nova abaixo.
 Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 
 - **D1** — Backend em .NET 8 + Clean Architecture. (2026-06-30)
+
 - **D2** — Banco SQL Server via Entity Framework Core. (2026-06-30)
+
 - **D3** — Auth = JWT + ASP.NET Core Identity. (2026-06-30)
+
 - **D4** — Subtarefa = a própria entidade `WorkItem` com `ParentId` (auto-referência),
   e não uma tabela separada. Assim subtarefa herda alocação, anexo e horas de graça. (2026-06-30)
+
 - **D5** — Lead time é capturado **desde a Fase 2** gravando uma linha em `StageHistory`
   a cada movimentação de card — mesmo antes do dashboard existir. Os dados acumulam desde o dia 1. (2026-06-30)
+
 - **D6** — ~~[EM ABERTO] Frontend: **Next.js + TS + Tailwind** (consome a API .NET, joga a favor da sua força em React) **vs Blazor Server** (tudo em C#, um deploy só, real-time via SignalR de brinde). Decidir na Fase 2.~~ (2026-06-30)
+
 - **D7** — Frontend: **React.js (SPA) + Styled Components** (sem Tailwind). Consome a API .NET. Decidido pelo usuário na Fase 1. (2026-06-30)
 
 - **D8** - Storage de anexos na Fase 3: arquivos ficam em disco local controlado pela API (`App_Data/attachments`) e metadados ficam no SQL Server via entidade `Attachment`. Evita configurar FILESTREAM agora e mantem caminho simples para trocar por blob storage futuramente. (2026-06-30)
+
 - **D9** - ~~Identidade visual oficial adotada a partir do Manual do Governo de Sergipe: padrão light-first, sem gradientes, sem glow, com as cores oficiais (#164194, #008ECF, #76B82A, #FBBA00) e fontes Hanken Grotesk + Inter.~~ Sucedida pela D68. (2026-06-30)
 
 - **D10** — ~~O produto passa a usar a hierarquia **Projeto → Times → Quadros → Itens de trabalho**. `Project`
   e `Board` são entidades distintas e um projeto pode conter vários quadros.~~ Parcialmente sucedida pela D52:
   as entidades continuam distintas, mas quadro deixa de ser filho funcional de projeto. (2026-07-15)
+
 - **D11** — O MVP adota Scrum operacional: backlog hierárquico, sprints, meta, capacidade, velocity e burndown. Tipos oficiais: Epic, Feature, User Story, Bug, Task e Subtask. (2026-07-15)
+
 - **D12** — Autorização por projeto com os papéis ProjectAdmin, ProductOwner, ScrumMaster, Member e Viewer; administradores globais continuam no ASP.NET Core Identity. (2026-07-15)
+
 - **D13** — ~~O redesenho mantém React SPA + Styled Components e a identidade D9, com layout corporativo denso.~~ Mantém React SPA + Styled Components com layout denso; a identidade visual passa a seguir a D68. TanStack Query, dnd-kit e Recharts podem ser adicionados para estado remoto, interações e gráficos. (2026-07-15)
+
 - **D14** — Azure DevOps é referência funcional; sincronização com repositórios e pipelines fica fora do MVP. (2026-07-15)
+
 - **D15** — O toolkit do frontend da Fase 6B será composto por **TanStack Query** para estado remoto,
   **React Hook Form + Zod** para formulários tipados, **Radix Dialog** para superfícies acessíveis,
   **dnd-kit** para planejamento visual, **Recharts** para indicadores e **Vitest + Testing Library**
   para testes. Styled Components continua sendo a única camada de estilos. (2026-07-15)
+
 - **D16** — Solicitação externa não será um fluxo isolado: ela terá protocolo e dados do
   solicitante, mas será vinculada ao mesmo `WorkItem` operado no backlog, sprint, lista e Kanban.
   A origem externa deve permanecer identificável durante todo o ciclo. (2026-07-15)
+
 - **D17** — O SaaS será multitenant por **organização**. Agregados-raiz recebem
   `OrganizationId` obrigatório; entidades-filhas herdam o tenant pelo agregado. A organização ativa
   é enviada em `X-Organization-Id`, validada contra uma associação ativa e aplicada por filtros
   globais do EF Core. Ausência de contexto não libera leitura cruzada. (2026-07-15)
+
 - **D18** — Autorização adota modelo híbrido: perfil-base por organização mais concessões
   explícitas por escopo (organização, equipe, projeto, tarefa, relatório, formulário e solicitação).
   Administrador da organização possui todas as permissões; uma negação explícita prevalece
   sobre concessões e sobre o perfil-base. (2026-07-15)
+
 - **D19** — Equipes pertencem a uma única organização e possuem estado ativo, líder opcional,
   capacidade padrão e capacidade individual por membro. Desativar preserva histórico e vínculos;
   não realiza exclusão física. (2026-07-15)
+
 - **D20** — Projetos possuem ciclo de vida explícito (planejamento, ativo, pausado, concluído
   ou cancelado), metodologia (Kanban, Scrum, Scrumban ou lista simples), datas e arquivamento
   lógico. Configurações, etiquetas e definições de campos personalizados pertencem ao projeto
   e toda mudança administrativa relevante gera histórico. (2026-07-15)
+
 - **D21** — `WorkItem` permanece o agregado único para demandas internas e externas. Cada item
   recebe número estável gerado por sequence do SQL Server e pode registrar origem, solicitante,
   responsável principal, participantes, critérios de aceite, seguidores, links tipados
@@ -63,25 +75,30 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   ambos. Transições são direcionais e obrigatórias, e o limite de WIP da coluna é validado no backend.
   A migration cria status equivalentes às colunas existentes e libera as transições já possíveis para
   manter compatibilidade. (2026-07-16)
+
 - **D23** — “Meu trabalho” será uma projeção de leitura calculada a partir do mesmo `WorkItem`, sem
   duplicar tarefas em uma fila própria. A projeção combina atribuição, autoria, acompanhamento,
   prazos, bloqueios, solicitações externas, aprovações e comentários; menções usam o token `@e-mail`.
   Alertas importantes são derivados desses dados até o módulo persistente de notificações da Fase 7.
   (2026-07-16)
+
 - **D24** — Atualizações em tempo real do quadro usam SignalR com grupos por organização/quadro.
   O evento transporta apenas o identificador do quadro; clientes autorizados invalidam o cache e
   recarregam a projeção, mantendo regras e dados sensíveis na API. Preferências de conteúdo dos
   cartões são persistidas no próprio quadro como JSON versionável. (2026-07-16)
+
 - **D25** — O ciclo de sprint passa a ser Planejada → Ativa → Concluída, com cancelamento a partir
   de Planejada ou Ativa, e somente uma sprint ativa por projeto. Ao concluir ou cancelar, o escopo
   é fotografado em `SprintItemSnapshot`; itens pendentes podem voltar ao Product Backlog ou seguir
   para outra sprint sem apagar métricas e resultados históricos. (2026-07-20)
+
 - **D26** — O Portal Externo é configurado por projeto e quadro de entrada, mas cada solicitação
   continua sendo o mesmo `WorkItem` conforme D16/D21. Metadados públicos ficam em
   `ExternalRequest`: protocolo, chave de acompanhamento armazenada apenas como hash, conversa,
   avaliação e confirmação. O acesso pode usar link público, JWT, convite ou código de e-mail;
   códigos só retornam na resposta quando o host está em Development e não há SMTP configurado.
   (2026-07-20)
+
 - **D27** — Formulários externos pertencem ao Portal Externo e persistem definição, campos,
   condições simples, limites de anexo e regras ordenadas de atribuição. Cada envio cria, numa única
   operação, o `ExternalRequest` e o mesmo `WorkItem` de origem externa, preservando os valores
@@ -90,48 +107,57 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   extensão/MIME. A triagem usa estado explícito e eventos append-only; toda ação administrativa
   fica auditada, inclusive recusa justificada, pedido de informação, roteamento e vínculos.
   (2026-07-20)
+
 - **D28** — Comunicação externa e colaboração interna usam fronteiras persistentes distintas.
   `Comment` é sempre interno e só circula em endpoints autenticados da tarefa;
   `ExternalRequestMessage` é sempre uma resposta pública e pode ser devolvida ao solicitante.
   A consulta por protocolo usa um DTO público mínimo, sem triagem, roteamento, responsáveis,
   campos privados, eventos internos ou horas. Anexos só atravessam essa fronteira quando
   `IsExternalVisible` estiver explicitamente marcado. (2026-07-20)
+
 - **D29** — O SLA pertence ao projeto e é aplicado às solicitações externas por uma política com
   calendário de atendimento, feriados e regras ordenadas por categoria/prioridade. Ao abrir a
   solicitação, os parâmetros e vencimentos são fotografados no `ExternalRequest`; alterações
   posteriores da política não reescrevem o histórico. Pedido de informação pode pausar o relógio,
   resposta do solicitante o retoma e apenas minutos úteis deslocam os vencimentos. (2026-07-20)
+
 - **D30** — Apontamentos e relatórios de produtividade tratam somente duração, horas previstas,
   horas realizadas, capacidade e seus desvios. Valor-hora, salário, custo, faturamento e
   rentabilidade não fazem parte do modelo, dos DTOs nem das telas. Relatórios são projeções do
   mesmo `TimeEntry` e `WorkItem`, agrupadas por usuário, equipe e projeto. (2026-07-20)
+
 - **D31** — O construtor de relatórios é declarativo e executado no servidor sobre um catálogo
   fechado de fontes, colunas, métricas, filtros, agrupamentos, ordenações e visualizações.
   `SavedReport` persiste a definição JSON validada, proprietário, projeto opcional e
   compartilhamento na organização; nunca armazena nem executa SQL fornecido pelo usuário.
   Dashboards são projeções dos mesmos agregados e aceitam filtros básicos, evitando tabelas de
   resumo divergentes. A exportação inicial usa CSV da projeção autorizada. (2026-07-20)
+
 - **D32** — Notificações internas são registros persistentes por organização e destinatário,
   separados dos alertas derivados de “Meu Trabalho”. Preferências por tipo controlam os canais
   in-app e e-mail; o registro também funciona como fila durável de entrega, com chave de
   deduplicação para lembretes de prazo/SLA e processamento assíncrono sem bloquear o caso de uso.
   Mensagens transacionais do Portal Externo continuam seguindo a fronteira definida em D28.
   (2026-07-20)
+
 - **D33** — A pesquisa global é uma projeção paginada e limitada no servidor sobre tarefas,
   solicitações, projetos, usuários, equipes e sprints, sempre sob tenant e permissões do usuário.
   Ela retorna somente metadados mínimos e destinos de navegação; comandos rápidos são um catálogo
   fechado do frontend e não aceitam código ou rotas fornecidas pelo usuário. (2026-07-20)
+
 - **D34** — A auditoria transversal é imutável e gravada na mesma transação das alterações pelo
   `AppDbContext`, usando o contexto autenticado da requisição para usuário, origem, IP e correlação.
   Somente entidades funcionais previstas são auditadas; senhas, hashes, tokens, chaves, segredos e
   conteúdo binário são excluídos dos snapshots anterior/novo. Consultas de auditoria exigem
   permissão administrativa e permanecem isoladas por organização. (2026-07-20)
+
 - **D35** — Refresh tokens são opacos, armazenados somente como hash, rotacionados a cada uso e
   enviados à SPA em cookie HttpOnly/SameSite; revogação de uma família invalida sua reutilização.
   Confirmação de e-mail e recuperação de senha usam tokens nativos e temporários do Identity,
   lockout contabiliza falhas reais e segredos de banco/JWT saem dos arquivos versionados para
   configuração externa. Erros HTTP seguem Problem Details, com mapa de campos em validações.
   (2026-07-20)
+
 - **D36** — A hierarquia funcional apresentada ao usuário será **Organização → Equipe → Projeto →
   Tarefa → Subtarefa → Checklist**; em projetos de desenvolvimento, os tipos do mesmo `WorkItem`
   formam **Épico → História de usuário → Tarefa → Subtarefa**. `Board`, `Stage`, backlog e sprint
@@ -139,22 +165,26 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   existente~~ não criam níveis organizacionais adicionais; após D52, `Board`/`Stage` são operacionais e
   transversais, enquanto backlog e sprint permanecem ligados ao projeto. `Feature` permanece tipo opcional e
   nunca é um nível obrigatório. (2026-07-20)
+
 - **D37** — O fechamento do MVP inclui ações em massa, automações básicas declarativas, autorização
   integral, acessibilidade e homologação. Automações aceitam somente gatilho de entrada em coluna e
   ações fechadas de atribuir, mover, priorizar ou etiquetar, com validação de alvos, workflow/WIP,
   detecção de ciclos, limite defensivo e auditoria. Permanecem fora do MVP IA, finanças, chat/wiki,
   mobile nativo, CI/CD/Git próprios, Gantt/roadmap avançados, BI/SQL livre, fórmulas complexas,
   monitoramento invasivo, microsserviços e automações avançadas ou com scripts. (2026-07-20)
+
 - **D38** — As dependências do fechamento do MVP permanecem nas famílias estáveis compatíveis com
   .NET 8, mas recebem as correções de manutenção e segurança mais recentes dessas famílias. Quando
   uma dependência transitiva vulnerável não puder ser eliminada pelo pacote de nível superior, ela
   será fixada explicitamente na menor família estável compatível e coberta por build, testes e
   auditoria de pacotes. Não serão usadas versões preview. (2026-07-20)
+
 - **D39** — Testes E2E com **Playwright** (@playwright/test). Chromium em cada PR; Firefox/WebKit
   em execucao noturna ou pre-release. Autenticacao via setup project que faz login pela API e
   persiste storageState. baseURL configuravel por variavel de ambiente. Trace on-first-retry,
   screenshot e video em falha, relatorio HTML. Sem sleeps fixos; locators por role, label ou
   data-testid estavel. Nunca executar contra producao. (2026-08-19)
+
 - **D40** — Toda tarefa que modifique frontend (React), endpoints da API (.NET) ou schema de banco de dados
   deve ter os testes E2E executados e passando como parte da Definition of Done. Antes de considerar a
   tarefa concluída, execute `npm run e2e` em `src/Prisma.Workspace.Web` com o ambiente E2E ativo (API +
@@ -162,32 +192,39 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   corrigidas ou novos testes sejam adicionados para cobrir a funcionalidade implementada. Esta regra
   não se aplica a tarefas que modificam apenas documentação, configurações de infraestrutura sem impacto
   no comportamento, ou refatorações internas sem mudança de interface. (2026-08-19)
+
 - **D41** — O Agent Loop pode executar automaticamente somente os product gates ativos e versionados em
   `profiles/prisma-loop.yaml`. A execução ocorre apenas no estado `gating`, respeita a ordem declarada,
   interrompe na primeira falha quando configurado, registra resultado/duração/código de saída no envelope
   e na telemetria e nunca persiste stdout/stderr. Não existe entrada para executar comandos arbitrários,
   autoaprovar Human Gates, chamar agentes/LLMs, aplicar migrations, criar PR, fazer merge ou deploy.
   Caminhos de trabalho devem permanecer dentro do repositório. (2026-08-20)
+
 - **D42** — XP não será adicionado nem exibido por enquanto. As estruturas de trabalho continuam sendo
   somente Kanban, Scrum, Scrumban e Lista simples, com os valores definidos na D20. (2026-08-20)
+
 - **D43** — Em projetos Kanban, Story Points ficam ocultos e não editáveis em todas as superfícies do
   produto, incluindo detalhe, cards, backlog, sprint, dashboards e relatórios. O campo permanece no
   backend apenas para retrocompatibilidade e preservação de dados. (2026-08-20)
+
 - **D44** — O detalhe da tarefa será uma única gaveta com seis abas: Descrição, Comentários, Subtarefas,
   Anexos, Histórico e Grafo de Estados. Comentários são conversas humanas; Histórico contém auditoria
   automática; o Grafo de Estados é uma projeção interativa do histórico feita com React Flow.
   Participantes autorizados podem editar, mover e apontar horas, mantendo o responsável principal como
   dono accountable da tarefa. (2026-08-20)
+
 - **D45** — A padronização de workflow será multitenant e dinâmica no sentido **Organização → Projeto**.
   A organização mantém templates de status e transições; cada projeto opera em modo `Inherited` ou
   `Custom`. Projetos herdados acompanham alterações compatíveis do template vinculado, enquanto a primeira
   personalização explícita cria uma configuração independente. Projetos legados entram como `Custom` para
   preservar integralmente o comportamento existente. (2026-08-20)
+
 - **D46** — O nome funcional exibido para responsáveis e participantes pertence à associação do usuário com
   a organização (`OrganizationMember.DisplayName`), permitindo identificação adequada por tenant. O campo é
   editável por administrador da organização. O fallback aceita `UserName` somente quando não tiver formato
   de e-mail; caso contrário, usa o rótulo neutro `Usuário {shortId}`. O e-mail fica restrito a contexto
   administrativo secundário e nunca é o nome principal em superfícies de tarefa. (2026-08-20)
+
 - **D47** — A auditoria de tarefas preserva autoria por snapshot: eventos e movimentações registram o
   `ActorId` quando disponível e o `ActorName` observado no momento da ação, sem FK obrigatória que permita
   apagar autoria ou impedir o ciclo de vida do usuário. Comentários continuam separados do histórico
@@ -485,7 +522,7 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   Gates exigidos: `G-SPEC` (pendente), `G-MIGRATION` (obrigatório), `G-WORKFLOW` (obrigatório) e `G-HISTORY`
   (somente se `SprintItemSnapshot` mudar de estrutura). (proposta em 2026-09-08)
 
-- **D81 — APROVADA em 2026-09-08.** O PO leu o contrato e respondeu *"Aprovo, pode implementar"* ao `G-SPEC` da
+  Atualização — **APROVADA em 2026-09-08.** O PO leu o contrato e respondeu *"Aprovo, pode implementar"* ao `G-SPEC` da
   `SPEC-S-003 v2`. A `SPEC-S-003` passa a `approved` e D81 sucede D25, que fica revogada quanto à regra de uma
   única sprint ativa e à transição manual de status. `G-MIGRATION` e `G-WORKFLOW` ficam cobertos pela mesma
   instrução, combinada com a determinação anterior do PO de que a Sprint N:N deve rodar em produção
@@ -575,6 +612,10 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
   globais e dos destinos do projeto. Identidade visual Prisma (D68 / SPEC-PRISMA-VISUAL-SYSTEM) intacta;
   não copiar visual de outro produto. (2026-09-10)
 
+- **D89** - Em 2026-09-22, o PO escolheu explicitamente "Mudar para colunas independentes por quadro" ao comparar o relatório de testes com D83. Sucede a direção de fluxo compartilhado por projeto da D83. Não autoriza apagar dados nem reativar WIP ou quadros transversais. Contrato em `specs/independent-board-columns.md` (`approved`). O PO aprovou G-MIGRATION/G-WORKFLOW com "Aprovo a migration e esse fluxo seguro": cópia incremental das colunas por quadro, tarefas mantidas no quadro atual, IDs históricos preservados, backup verificado e ensaio antes de produção. Exclusão de estrutura ocupada exige destino explícito. Aprovação não significa migração aplicada nem dispensa validação.
+
+- **D90** - Em 2026-09-22, o PO escolheu "Exigir acesso ao projeto antes de atribuir a tarefa". Atribuição não concede acesso. Responsável principal e adicionais devem ser pessoas ativas da organização com acesso efetivo ao projeto; a interface oferece elegíveis e a API revalida todas as entradas. Atribuições legadas inconsistentes não são apagadas nem liberam visibilidade em Meu Trabalho. Contrato aprovado em `specs/project-assignment-access.md`; não exige alteração de schema.
+
 
 - **D91** — Assistente de IA no Prisma, no estilo Notion AI / ClickUp Brain. O PO decidiu em 2026-09-24,
   em sessão de fechamento de escopo, e **sucede parcialmente a D37** somente quanto a "IA fora do MVP";
@@ -638,10 +679,14 @@ Decisão que está aqui **não se re-discute** — qualquer IA respeita.
 
 - **D92** — Organização local aprovada pelo PO em 2026-10-05: um monorepo em `Desktop/prisma`, aplicação na raiz, landing em `apps/landing` e coordenação pelo workspace Prisma do Maestri. Remover cópias locais antigas do Prisma e Runrun após recuperação verificada; preservar pendências, histórico e material institucional somente em arquivo privado ignorado. Sem publicação ou alteração de hooks. Andares agrupam entregas; isolamento Git é obrigatório ao executar trabalhos simultâneos.
 
+- **D93** — Em 2026-10-06, o PO solicitou publicar as melhorias da main de 2026-10-05 e corrigir o deploy automático. A publicação desta instalação será executada após build, testes frontend, governança e E2E aprovados, usando a mesma imagem identificada pelo commit. Credenciais SSH ficam nos secrets do GitHub; a aplicação preserva configuração externa, banco, chaves e anexos. O deploy verifica saúde, mantém o contêiner anterior para rollback e bloqueia diferenças no manifesto de migrations até aprovação e operação explícitas de G-MIGRATION. Esta autorização não aprova a spec draft de IA.
+
 - **D94** — Gemini por assinatura na ponte IA, solicitado e aprovado pelo PO em 2026-10-07 (US-AI-010 / SPEC-AI-003; resposta: "Sim, aprovar e implementar"). Estende D91 e SPEC-AI-002 para admitir Gemini/CLI ao lado de Codex e Claude, mantendo Gemini por chave de API. Usar `@google/gemini-cli@0.63.0` e seus módulos oficiais fixados, com invólucro mínimo para login Google/validação sem inferência; não reimplementar OAuth nem consumir diretamente APIs privadas do Code Assist. Modelos vêm da CLI instalada, acesso exige teste, login exige risco/aceite e conta é da instalação. Volume Google privado separado, ponte sem ferramentas/MCP/hooks/extensões/projeto/banco/histórico persistente, upgrade preserva contas e rollback. Contas pessoais, inclusive Pro/Ultra conforme acesso concedido pelo provedor; contas corporativas com projeto/licença extra fora desta entrega. Sem migration ou troca de stack.
 
 - **D95** — Experiência de conversa inspirada no Zapmind (US-AI-011 / SPEC-AI-004), solicitada pelo PO e aprovada em 2026-10-07 com "Aprovar spec e migration descrita" (G-SPEC/G-MIGRATION). Provedor/modelo escolhidos por conversa entre conexões Chat testadas da instalação; padrão global preservado. Preferência opcional persistida em duas colunas nullable de AiConversations, sem alterar mensagens/tarefas ou copiar contas do Zapmind. Catálogos no servidor, cache curto vinculado ao teste da conexão, validação antes de salvar/enviar, ausência de fallback silencioso, preço desconhecido para modelo sem preço e envelope de leitura para capacidades não testadas. Preservar permissões, mascaramento, cotas e consumo. Painel lateral com expansão e histórico/compositor semelhantes ao Zapmind, identidade D68. Migration primeiro no E2E; produção após checks e backup.
 
 - **D96** — Time de agentes no Maestri, solicitado e fechado pelo PO em 2026-10-07. O terminal Maestro (Claude Code) passa a ser o planejador principal: recebe a demanda do PO, planeja, despacha, aceita e faz os commits locais. O antigo terminal Planejador (Codex) foi convertido no lugar em executor, com o nome Tear e o papel `Executor Prisma`. Um novo terminal Antigravity com Claude Opus 5.5, Prumo, é o revisor, papel `Revisor Prisma`, somente leitura e acionado quando o planejador julgar necessário. Um novo terminal Codex, Farol, é o QA, papel `QA Prisma`: testa de acordo com a tarefa repassada pelo planejador, no navegador (portal) do próprio Maestri, e só escreve testes automatizados quando a tarefa pedir. Fluxo: PO -> Maestro -> Tear -> Prumo (se necessário) -> Farol -> aceite e commit do Maestro. Toda comunicação passa pelo Maestro. Trabalho sequencial na raiz, um escritor por vez; worktree por entrega continua disponível conforme D92 quando houver paralelismo. Executor não faz commit (`agents/executor.yaml` preservado); push, PR e deploy exigem autorização explícita do PO. Por escolha do PO, os três agentes rodam sem prompts de aprovação (`codex --yolo` e `agy --dangerously-skip-permissions`); as proibições de commit, push, deploy e produção valem pelo papel e pelos gates humanos. O terminal Antigravity anterior permanece no canvas sem papel, apenas com as notas do fichário. Os papéis são restritos ao workspace Prisma; o papel global `Planejador reserva` e o papel `Revisor` de outro projeto não foram alterados. Esta decisão substitui, em D92, a orientação de reutilizar o terminal Planejador como PM.
+
 - **D97** — Desenvolvimento migrado para o servidor Contabo e coordenação pelo Batuta, pedido pelo PO em 2026-10-13. Substitui D96 no que trata de onde os agentes rodam e de quem faz commit. O Maestro (Claude Code) continua no PC como planejador: despacha, revisa, integra e publica. Tear (Codex, papel `Executor Prisma`) e Prumo (Claude Code com Opus 5.5 em esforço alto, papel `Revisor Prisma`) rodam no servidor, host SSH `contabo-agentes`, usuário `agentes`, em `/home/agentes/projetos/prisma`, clonado do GitHub. Farol (Codex, papel `QA Prisma`) permanece no PC porque o portal do Batuta só existe aqui. O GitHub fica no meio: o executor faz commit e push somente da branch da tarefa; a `main` só recebe integração do Maestro com autorização do PO, porque push na `main` dispara o deploy de produção (`.github/workflows/ci.yml`). Agente remoto não tem o comando `batuta`, as notas nem o ai-memory: o trecho do plano vai dentro da tarefa, o relatório volta pelo retorno do `ask`, e as regras do servidor são repassadas em toda tarefa. O ambiente de desenvolvimento no servidor usa projeto Docker próprio (`prisma-dev`), banco próprio e portas 3000 a 3999; os containers `prisma-workspace-api` e `prisma-ai-bridge` e `/home/dev/prisma-deploy` são produção e não são tocados por agentes. Segredos e arquivos fora do Git (`.env`, `.local/`) não são copiados para o servidor. Revisor continua somente leitura; gates humanos inalterados.
+
 - **D98** — Rede host no ambiente de desenvolvimento do servidor, risco aceito pelo PO em 2026-10-13. O serviço `app` de `compose.server-dev.yaml` usa `network_mode: host` porque o firewall do servidor bloqueia o tráfego de bridge para o host e agentes não alteram firewall; sem isso a API não alcança o provedor falso dos testes E2E. Consequência conhecida: o app de desenvolvimento alcança o loopback do servidor e outros serviços locais, e fica acessível pela prévia protegida por senha. Atenuantes: connection string fixa no SQL próprio em `127.0.0.1:3102`, scripts recusam outro banco, senhas geradas localmente e fora do Git. Vale somente para o projeto Docker `prisma-dev`; produção e `compose.yaml` não mudam. Os achados baixos da revisão ficam como melhorias do ambiente.
