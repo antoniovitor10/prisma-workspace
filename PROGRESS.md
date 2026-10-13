@@ -1,3 +1,9 @@
+## [2026-10-13] - Claude Code (Maestro) - aceite do ambiente do servidor e limpeza das worktrees do PC
+
+- PO respondeu sim às pendências da migração em 2026-10-13. Risco da rede host do ambiente de desenvolvimento aceito e registrado em D98; `chore/server-dev-env` (`14f8c66`) integrada na `feat/ai-assistant-foundation` após a revisão do Prumo (aprovado com ressalvas, nenhum achado bloqueante).
+- Worktrees `ai-release-20261006` e `deploy-20261006` removidas do PC com `git worktree remove`; estavam integradas na `main`, limpas e sem junções. A pasta `.local` da segunda foi guardada antes em `.local/recovery/worktrees-20261013/deploy-20261006` e conferida. Branches locais preservadas.
+- Próximo passo: Tear corrige as três falhas preservadas; depois, reconciliação da feat com a `main` em branch própria, revisão, PR e, com CI verde, integração na `main` (deploy autorizado pelo PO).
+
 ## [2026-10-13] - Claude Code (Maestro) - desenvolvimento migrado para o servidor Contabo (D97)
 
 - Pedido do PO: código, worktrees, ambiente Docker e testes automáticos no servidor (`contabo-agentes`, usuário `agentes`, `/home/agentes/projetos/prisma`); no PC ficam o Maestro, as notas, a memória e o QA visual. Coordenação pelo Batuta, só com Claude Code e Codex.
@@ -9,6 +15,14 @@
 - Revisão do Prumo no servidor: sem segredo versionado e sem comando que atinja outros containers; achado médio em `compose.server-dev.yaml:24` (`network_mode: host` dá ao app de desenvolvimento alcance ao loopback do servidor) e nove baixos. A branch não foi integrada: aguarda decisão do PO sobre o risco da rede host.
 - Arquivos desta entrada: `DECISIONS.md` (D97), `AGENTS.md`, `docs/workspace/README.md`, `PROGRESS.md`. Sem código de produto, sem push na `main`, sem deploy.
 - Próximo passo: PO decidir rede host, integração da feat na `main`, correção das três falhas preservadas e limpeza das worktrees antigas do PC.
+## [2026-10-13] - Codex (Tear) - ambiente Linux prisma-dev e verificações no servidor
+
+- Tarefa 1 do Maestro executada na branch `chore/server-dev-env`, criada da `feat/ai-assistant-foundation` em `faed2ef`. `git fetch` e leitura das instruções obrigatórias realizados. Instalado SDK .NET 8 (8.0.131), dependências React/Context Explorer e navegadores Chromium/Firefox/WebKit do Playwright. Sem agentes adicionais, ai-memory, produção, hooks, specs ou código/testes de produto alterados.
+- Criados Compose exclusivo `prisma-dev`, scripts Linux de setup/API/subir/derrubar e runner xUnit. App React compilado e API na mesma origem, `0.0.0.0:3100`; SQL próprio somente em `127.0.0.1:3102`, sem publicar 1433 no host. API usa rede host para o fixture IA em localhost:3103, após timeout confirmado no caminho bridge→host; nenhum firewall ou serviço alheio alterado. Credenciais aleatórias derivadas de `.env.example`, arquivos ignorados e modo 600; usuário `admin@prisma.example.invalid`, senha em `.env.e2e.seedpassword`.
+- Resultado final: restore/build .NET aprovados (3 avisos de build), xUnit 311/311; tsc -b aprovado; lint aprovado com 12 avisos; Vitest padrão 145/145; build frontend aprovado; Python scripts 8/8 e ponte 17/17. Context Explorer: 39/42, três expectativas de quatro agentes contra cinco (inclui qa). Execução adicional Vitest com pool threads: 144/145, campo Nome de exibição não encontrado em OrganizationSettings.test.tsx:58. Falhas preservadas, sem correção de produto/testes.
+- E2E headless completo desktop/mobile: 118 aprovados, 1 falha mobile, 6 skips condicionais, zero retries, 1.026,69 s. project-assignment-access.spec.ts:49 recebeu task?.id undefined e timeout de 30 s; cenário desktop passou. Tentativa inicial interrompida para corrigir rede do fixture: logs/artefatos preservados; falha de sincronização de status dessa tentativa passou na rodada final. xUnit inicial sem seed teve uma falha de preparação; banco novo com seed oficial passou integralmente, sem mudar testes.
+- Operação validada: down 17,21 s, up 210,43 s, script API temporária com health 200 em 45,89 s; API temporária encerrada, app/SQL saudáveis mantidos. HTTP saúde/SPA/login 200; proxy público respondeu 401 da autenticação existente, sem login no proxy. Tempos, comandos, saídas e limites em docs/server-dev-validation.md; operação em docs/server-dev.md; continuidade em NOTAS.md. Artefatos completos locais ignorados em .runlogs/server-dev e no Playwright.
+- Próximo passo: Maestro revisar a entrega e encaminhar as três falhas de governança, a falha de Vitest threads e o E2E mobile para análise própria. Commit/push desta branch expressamente autorizados na tarefa; nenhum merge, push main, PR ou deploy.
 
 ## [2026-10-07] - Codex (Tear) - pacote de correções SPEC-AI-004 validado após esclarecimento do PO
 
