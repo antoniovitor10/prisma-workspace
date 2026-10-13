@@ -29,7 +29,7 @@ test('artifactsSummary reflete contagens canônicas', () => {
   assert.equal(model.artifactsSummary.domains, 18);
   assert.equal(model.artifactsSummary.specs.canonical, canonical.canonicalSpecs);
   assert.equal(model.artifactsSummary.tasks, canonical.canonicalTasks);
-  assert.equal(model.artifactsSummary.agents, 4);
+  assert.equal(model.artifactsSummary.agents, 5);
   assert.equal(model.artifactsSummary.process.nodes, 16);
   assert.equal(model.artifactsSummary.process.edges, 21);
   assert.equal(model.artifactsSummary.engine.states, 11);
@@ -109,10 +109,10 @@ test('architecture está marcada como conceptual: true', () => {
 
 test('model expõe contratos reais de agentes sem fallback', () => {
   assert.ok(Array.isArray(model.agents));
-  assert.ok(model.agents.length >= 4);
+  assert.equal(model.agents.length, 5);
   assert.deepEqual(
     model.agents.map((agent) => agent.id).sort(),
-    ['discovery', 'executor', 'planner', 'reviewer']
+    ['discovery', 'executor', 'planner', 'qa', 'reviewer']
   );
   for (const agent of model.agents) {
     assert.ok(agent.role);
