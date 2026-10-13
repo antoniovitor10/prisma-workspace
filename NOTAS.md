@@ -1,13 +1,9 @@
-# Continuidade — ambiente do servidor
+# Continuidade — tarefa 2 no servidor
 
-Atualizado em 2026-10-13, por Tear, tarefa 1 do Maestro.
+Atualizado em 2026-10-13, por Tear.
 
-- Branch: `chore/server-dev-env`; base `feat/ai-assistant-foundation` / `faed2ef7dba8620c14ba75f94bec8bcc0155dc98`.
-- Desenvolvimento ativo: containers `prisma-dev-app-1` e `prisma-dev-database-1`, saudáveis. App/API em `0.0.0.0:3100`; SQL exclusivo em `127.0.0.1:3102`. App usa rede host para alcançar fixture de testes em localhost. Nenhum container de produção ou de outro projeto alterado.
-- Subir/derrubar: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Volumes preservados. Configuração explícita: `docker compose -p prisma-dev --env-file .env.server-dev -f compose.server-dev.yaml ...`.
-- Usuário de teste: `admin@prisma.example.invalid`. Senha em `.env.e2e.seedpassword`; configuração local em `.env.server-dev` e `src/Prisma.Workspace.Web/.env.e2e.local`, ignoradas e modo 600. Nunca copiar valores para documentação ou handoff.
-- SDK .NET 8 e dependências frontend/Context Explorer instalados. Todos os navegadores Playwright instalados; suíte executa Chromium desktop/mobile.
-- Passaram: restore/build, xUnit 311, tsc -b, lint, Vitest padrão 145, build frontend, Python scripts 8, ponte 17, smoke HTTP e ciclo Linux down/up/API. Falharam: Context Explorer 3/42 (contagem/contratos de agentes), Vitest threads 1/145 (OrganizationSettings), E2E mobile 1/125 (project-assignment-access: task?.id undefined e timeout). E2E: 118 aprovações e 6 skips; nenhum retry.
-- Preparações iniciais foram corrigidas somente na infraestrutura: seed xUnit e conectividade do fixture IA. Resultados anteriores preservados. Produto, specs, testes e scripts PowerShell intactos.
-- Relatório completo: `docs/server-dev-validation.md`; operação: `docs/server-dev.md`. Logs locais: `.runlogs/server-dev`; artefatos E2E finais: `src/Prisma.Workspace.Web/test-results` e `playwright-report`. Os iniciais ficaram em `.runlogs/server-dev/e2e-initial-*`.
-- Próximo passo do Maestro: revisar branch e decidir análise das falhas preservadas. Tear não inicia correções fora da tarefa. Nenhuma pendência de implementação desta infraestrutura; sem publicação em produção, PR ou merge.
+- Branch `fix/server-test-failures`, base `1494b7a`. Três grupos em commits separados: expectativas de cinco agentes incluindo qa; ciclo assíncrono/mocks/limpeza de OrganizationSettings; fixture própria de projeto/item na atribuição E2E. Relatório em `docs/server-test-failures-validation.md`.
+- Checks aprovados: Context Explorer 42; frontend tipos/lint (12 avisos anteriores), Vitest padrão e threads 145 cada; atribuição desktop/mobile repetida três vezes (7 com setup) e aprovada também na suíte completa.
+- Suíte completa: 116 aprovados, 3 falhas, 6 skips em 843,32 s. Fora do escopo: board-stage-sync:24 desktop/mobile exige tarefa não concluída ausente no primeiro quadro D89; rich-task-description:63 mobile timeout ao reabrir detalhe, causa ainda não determinada. Não alterados esses specs, produto ou dados compartilhados para esconder falhas. Artefatos em test-results; logs ignorados em `.runlogs/server-test-failures`.
+- Próximo passo: Maestro revisar e encaminhar investigação própria das falhas adicionais. Nenhum merge, deploy, push main ou gate autoaprovado.
+- Ambiente prisma-dev preservado: app/API `0.0.0.0:3100`, SQL exclusivo `127.0.0.1:3102`; `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário `admin@prisma.example.invalid`, senha em `.env.e2e.seedpassword` (ignorado). Operação em `docs/server-dev.md`. Nenhum container alheio alterado.
