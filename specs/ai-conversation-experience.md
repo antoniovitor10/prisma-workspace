@@ -33,6 +33,7 @@ Adaptar a composição do chat do Zapmind ao Prisma, com seleção de provedor/m
 8. Persistir a escolha no servidor por conversa/dono/organização. Antes da primeira mensagem, criar a conversa ao salvar a escolha ou ao enviar, sem criar conversas adicionais por render. Trocar modelo depois de mensagens preserva o histórico; as próximas chamadas usam a nova escolha. Controles ficam desabilitados durante uma chamada em andamento.
 9. Preferência explícita não altera conexão/modelo/conta globais, não ativa provedores e não dispara login ou teste de inferência automaticamente. Catálogo não garante acesso; a própria chamada pode ser recusada pelo provedor e deve mostrar a recusa. O teste administrativo continua obrigatório para tornar a conexão elegível.
 10. Validar no servidor, antes de persistir/enviar: vínculo da conversa, organização habilitada, conexão ainda testada e método válido, modelo do catálogo permitido ou modelo configurado no fallback manual. Conexão apagada/inválida ou modelo removido exige nova escolha; não migrar silenciosamente para outro modelo/provedor, inclusive API paga.
+    Esclarecimento aprovado pelo PO Vitor em 2026-10-07, resposta "Recusar e avisar", repassada pelo Maestro: se o catálogo da conexão estiver temporariamente indisponível no envio (5xx, timeout, erro de rede ou 401/403), recusar sem inferência com HTTP 409, preservar a seleção e o texto digitado e mostrar "Não foi possível consultar os modelos desta conexão agora. Tente novamente", sem declarar modelo removido e sem fallback. A falha não entra em cache.
 11. Escolha nula mantém a resolução do padrão global a cada chamada. Conversas anteriores continuam assim, sem backfill. Oferecer Usar padrão da instalação para remover a preferência explícita.
 12. Todas as chamadas usam os mesmos controles da fundação: contexto/autorização, mascaramento, protocolo de leitura, tempo/saída, cancelamento e cotas da instalação/organização/usuário. Registrar conexão/modelo efetivamente utilizados no uso; reserva não pode ser contornada pela troca de provedor.
 13. Não reutilizar preço ou capacidade de ferramentas de um modelo diferente sem evidência. Preço do catálogo quando disponível; se o modelo mudou e o preço não é conhecido, custo desconhecido. Para modelos sem capacidade testada, usar envelope de ferramentas de leitura no backend.
@@ -77,3 +78,12 @@ ALTER TABLE [AiConversations] ADD
 ## Tests and Gates
 
 G-SPEC e G-MIGRATION explícitos antes de código/schema novos. Backend: permissões, seleção, catálogo, persistência, revogação, custo e cotas. Frontend: troca/consulta tardia/erros/expansão e build `tsc -b`. E2E com dois provedores falsos controlados, reabertura, outro usuário/organização, interrupção e regressões de configuração. Conferência visual desktop/mobile em uma rodada conjunta e no máximo uma confirmação após correções. Nenhuma autenticação humana ou inferência paga pelo agente.
+
+## Validation record
+
+- Implementação validada em 2026-10-07: 271 testes backend, 137 frontend, governança 42, build `tsc -b` e lint sem erros.
+- E2E final local: 114 cenários aprovados na primeira execução e três após repetição, seis skips condicionais, zero falhas finais. Fluxos IA/teclado passaram sem retries.
+- Revisão visual desktop/mobile confirmada após uma rodada de correções, preservando D68. Registro em docs/design/ai-conversation-review.md.
+- Migration aplicada primeiro ao E2E e depois à produção após checks, com backup verificado em 2026-10-07T13:39:50Z. Duas colunas nullable e histórico 28 conferidos; sem Down.
+- Main/API de produção `6eecba886b974d57cc055af9b8014b7c01b49434`; CI `37629372432` com seis jobs aprovados e 117 E2E aprovados sem retries, seis skips condicionais.
+- Revisão/saúde/schema/bundle e preservação de ambiente/mounts/volumes conferidos após publicação. Ponte permanece `aad03a3`; três CLIs disponíveis, sem conta humana autenticada pelo agente. Próximo teste humano: conectar/testar uma assinatura e escolher seu modelo no chat.

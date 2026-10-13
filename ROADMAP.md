@@ -1,19 +1,26 @@
+# Estado atual do workspace — 2026-10-06
+
+Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89 e D90 já têm registros de implementação/publicação em PROGRESS; checkpoints antigos abaixo não representam automaticamente trabalho pendente. Assistente IA: D91, SPEC-AI-001 aprovada pelo PO em 2026-10-06; G-SCOPE da flag Identity e G-MIGRATION aprovados, com validação em E2E. D92 autoriza somente a organização local.
+
 # ROADMAP - fases do projeto
 
 ## [~] Fase 15 - Assistente de IA (D91)
 
 - Recorte solicitado em 2026-10-07: chat visualmente inspirado no Zapmind e provedor/modelo por conversa.
   US-AI-011 / SPEC-AI-004 (`approved`), G-SPEC/G-MIGRATION concedidos pelo PO em 2026-10-07.
-  Duas colunas opcionais aplicadas ao banco E2E; implementação em validação antes da publicação.
+  Duas colunas opcionais aplicadas ao E2E e à produção com backup verificado; implementação validada.
+  Main/produção `6eecba8`, CI `37629372432` com todos os seis jobs aprovados,
+  117 E2E aprovados sem retries e seis skips condicionais. Próximo passo: teste humano da assinatura/chat.
+  Registro anterior na main: Duas colunas opcionais aplicadas ao banco E2E; implementação em validação antes da publicação.
 - Fundação autorizada pelo PO em 2026-10-06: SPEC-AI-001, conexões, chat de leitura, histórico privado,
   mascaramento, uso e cotas. Implementação na branch `feat/ai-assistant-foundation`.
 - G-SPEC, G-SCOPE e G-MIGRATION aprovados pelo PO. Autoridade da instalação por
   `IsPlatformAdministrator` no Identity, independente do perfil da organização.
 - Fundação implementada: conexões API/OAuth e ponte CLI experimental, seis ferramentas de leitura,
   chat privado com fontes/streaming, mascaramento, painéis de configuração/consumo e cotas.
-- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada somente ao SQL Server E2E.
-  Gates locais aprovados: 250 testes backend, 126 frontend e 109 E2E, com dois retries de mobile e seis skips condicionais.
-  Publicação e aplicação em produção ficam para G-DEPLOY próprio.
+- Migration `20261006134545_Add_AiAssistant_Foundation` aplicada ao E2E e à produção com backup verificado.
+  Gates locais: 250 testes backend e 126 frontend. Imagem da release: 109 E2E aprovados no CI sem retry, seis skips condicionais.
+  G-DEPLOY autorizado pelo PO; main/produção `1f2fe20` saudável em 2026-10-06. Próximo teste humano: configurar modelo e habilitar IA.
 - As fatias 2 a 6 da D91 exigem specs e aprovações próprias; não fazem parte desta implementação.
 - Refinamento aprovado após o teste humano em produção: US-AI-009 / SPEC-AI-002 (`approved`),
   seleção de modelos por provedor em todas as conexões, configuração simplificada e login CLI real
@@ -21,7 +28,8 @@
 - SPEC-AI-002 publicada na main/produção `758b032`: 266 testes backend, 130 frontend, 113 E2E finais
   e seis skips condicionais; ponte CLI instalada, sem conta autenticada. Teste humano nas Configurações.
 - PO aprovou Gemini por assinatura em 2026-10-07. US-AI-010 / SPEC-AI-003 (`approved`):
-  login Google oficial da Gemini CLI, catálogo e ponte isolada; implementação e validação em andamento, sem migration.
+  login Google oficial da Gemini CLI, catálogo e ponte isolada; publicados em `aad03a3`, CI com 115 E2E aprovados. Sem migration.
+  Registro anterior na main: login Google oficial da Gemini CLI, catálogo e ponte isolada; implementação e validação em andamento, sem migration.
 
 Objetivo do produto: construir o **Prisma WorkSpace**, plataforma open source
 integrada para demandas internas e solicitacoes externas (projetos, Scrum, Kanban,

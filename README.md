@@ -62,3 +62,23 @@ ser tratado como uma distribuição open source licenciada.
 
 Não publique credenciais em issues, commits ou pull requests. A política pública e o canal de reporte serão definidos
 em `SECURITY.md` antes do primeiro release candidate.
+
+
+## Organização do monorepo
+
+Aplicação, landing e ferramentas compartilham este repositório. Na instalação local do PO, a raiz é
+`C:\Users\Vitor\Desktop\prisma`; clones em outras máquinas podem usar outro nome de pasta.
+
+| Caminho | Responsabilidade |
+| --- | --- |
+| `src/Prisma.Workspace.*` | API, domínio, aplicação, infraestrutura e frontend |
+| `tests/` | Testes do backend |
+| `apps/landing/` | Landing estática e versões preservadas |
+| `tools/` | Context Explorer e loop de execução |
+| `stories/`, `specs/`, `backlog.md` | Intenção humana, contratos e tarefas estruturadas |
+| `docs/workspace/` | Visão atual, prioridades, equipe, fontes e passagem de contexto |
+
+O [painel do workspace](docs/workspace/README.md) reúne o estado atual. Maestri é o coordenador local;
+andares de planejamento compartilham a raiz e não autorizam execução concorrente sem isolamento Git.
+A landing pode ser servida para conferência com `python -m http.server 5500 --directory apps/landing`.
+O deploy da landing e o deploy da aplicação continuam separados. A consolidação local não publica nenhum deles.

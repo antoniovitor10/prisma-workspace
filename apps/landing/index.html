@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F4F0FF">
+
+  <title>Prisma WorkSpace — Plataforma open source de gestão ágil</title>
+  <meta name="description" content="O Prisma WorkSpace decompõe o trabalho da sua operação em fluxos claros: planejamento, colaboração, acompanhamento, decisão e entrega. Open source, sem licença por usuário, sem dependência de fornecedor.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Prisma WorkSpace — Plataforma open source de gestão ágil">
+  <meta property="og:description" content="Todo o trabalho da sua operação, decomposto em fluxos claros. Open source, auditável e sob o seu controle.">
+  <meta property="og:site_name" content="Prisma WorkSpace">
+
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("prisma-theme");
+      document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+    } catch (_) {}
+  </script>
+
+  <link rel="icon" href="assets/favicon.svg?v=4" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+
+  <link rel="stylesheet" href="css/styles.css?v=7">
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script src="js/main.js?v=7" defer></script>
+</head>
+
+<body>
+  <div class="beam-progress" aria-hidden="true"></div>
+
+  <header class="nav" id="topo">
+    <div class="nav-inner">
+      <a class="brand" href="#topo" aria-label="Prisma WorkSpace — início">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 2 L5 17 L16 14 Z" fill="#8B5CF6"/>
+          <path d="M16 2 L27 17 L16 14 Z" fill="#3B82F6"/>
+          <path d="M5 17 L16 30 L16 14 Z" fill="#5B21B6"/>
+          <path d="M27 17 L16 30 L16 14 Z" fill="#1D4ED8"/>
+          <path d="M13.5 25.5 L18.5 25.5 L16 30 Z" fill="#F97316"/>
+        </svg>
+        <span class="brand-name">Prisma<em>WorkSpace</em></span>
+      </a>
+
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="#recursos">Recursos</a>
+        <a href="#open-source">Open Source</a>
+        <a href="#edicoes">Edições</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#roadmap">Visão</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.5"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z"/>
+          </svg>
+        </button>
+        <!-- TODO: link real do CTA principal -->
+        <a class="btn btn-primary btn-sm nav-cta" href="#">Começar gratuitamente</a>
+        <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ HERO — cena espacial + gema 3D (three.js) ============ -->
+    <section class="hero-spatial" id="inicio" aria-labelledby="hero-title">
+      <div class="hero-spatial__glow" aria-hidden="true"></div>
+      <div class="hero-spatial__grid" aria-hidden="true"></div>
+
+      <div class="hero-spatial__inner">
+        <div class="gem-stage" aria-hidden="true">
+          <div class="gem-glow"></div>
+          <svg class="gem" viewBox="0 0 240 320" fill="none">
+            <defs>
+              <linearGradient id="gTL" x1="120" y1="24" x2="40" y2="150" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#EDE9FE"/><stop offset=".45" stop-color="#C4B5FD"/><stop offset="1" stop-color="#7C3AED"/>
+              </linearGradient>
+              <linearGradient id="gTR" x1="120" y1="24" x2="206" y2="150" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#DBEAFE"/><stop offset=".45" stop-color="#93C5FD"/><stop offset="1" stop-color="#2563EB"/>
+              </linearGradient>
+              <linearGradient id="gBL" x1="70" y1="140" x2="120" y2="302" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7C3AED"/><stop offset=".55" stop-color="#9333EA"/><stop offset="1" stop-color="#DB2777"/>
+              </linearGradient>
+              <linearGradient id="gBR" x1="170" y1="140" x2="120" y2="302" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2563EB"/><stop offset=".5" stop-color="#7C3AED"/><stop offset="1" stop-color="#F97316"/>
+              </linearGradient>
+              <linearGradient id="gBloom" x1="120" y1="24" x2="120" y2="300" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#A855F7"/><stop offset=".6" stop-color="#DB2777"/><stop offset="1" stop-color="#F97316"/>
+              </linearGradient>
+              <linearGradient id="gRidge" x1="120" y1="24" x2="120" y2="300" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#FFFFFF" stop-opacity=".9"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".15"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- raios de refração (espectro) -->
+            <g class="gem-rays" stroke-width="2" stroke-linecap="round">
+              <line x1="120" y1="160" x2="120" y2="-40" stroke="#A855F7"/>
+              <line x1="120" y1="160" x2="250" y2="10" stroke="#2563EB"/>
+              <line x1="120" y1="160" x2="300" y2="150" stroke="#06B6D4"/>
+              <line x1="120" y1="160" x2="250" y2="300" stroke="#DB2777"/>
+              <line x1="120" y1="160" x2="120" y2="360" stroke="#F97316"/>
+              <line x1="120" y1="160" x2="-10" y2="300" stroke="#DB2777"/>
+              <line x1="120" y1="160" x2="-60" y2="150" stroke="#7C3AED"/>
+              <line x1="120" y1="160" x2="-10" y2="10" stroke="#2563EB"/>
+            </g>
+
+            <!-- brilho externo -->
+            <path class="gem-bloom" d="M120 24 L214 146 L120 300 L26 146 Z"/>
+
+            <!-- facetas -->
+            <path d="M120 24 L26 146 L120 150 Z" fill="url(#gTL)"/>
+            <path d="M120 24 L214 146 L120 150 Z" fill="url(#gTR)"/>
+            <path d="M26 146 L120 300 L120 150 Z" fill="url(#gBL)"/>
+            <path d="M214 146 L120 300 L120 150 Z" fill="url(#gBR)"/>
+
+            <!-- ridge central luminoso -->
+            <path d="M120 24 L120 300" stroke="url(#gRidge)" stroke-width="2.5"/>
+
+            <!-- contornos das facetas -->
+            <path d="M120 24 L214 146 L120 300 L26 146 Z" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linejoin="round"/>
+            <path d="M26 146 L214 146" stroke="rgba(255,255,255,.16)" stroke-width="1"/>
+
+            <!-- reflexo especular -->
+            <path class="gem-spec" d="M120 24 L84 78 L120 96 Z" fill="#FFFFFF"/>
+            <path class="gem-spec gem-spec--2" d="M120 24 L150 66 L120 82 Z" fill="#FFFFFF"/>
+
+            <!-- faíscas -->
+            <g class="gem-sparks" fill="#FFFFFF">
+              <circle class="spark spark-a" cx="196" cy="96" r="2.4"/>
+              <circle class="spark spark-b" cx="54" cy="188" r="1.8"/>
+              <circle class="spark spark-c" cx="150" cy="250" r="2"/>
+            </g>
+          </svg>
+        </div>
+
+        <h1 class="wordmark" id="hero-title">
+          <span class="wordmark-prisma">PRISM<span class="a-spec">A</span></span>
+          <span class="wordmark-workspace">Workspace</span>
+        </h1>
+        <span class="spec-rule" aria-hidden="true"></span>
+
+        <p class="hero-tagline">Uma visão completa<br>do seu trabalho.</p>
+
+        <div class="hero-actions">
+          <!-- TODO: link real de download da Community Edition -->
+          <a class="btn btn-primary hero-primary" href="#">
+            Começar gratuitamente
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg>
+          </a>
+          <!-- TODO: link real da demonstração -->
+          <a class="btn hero-ghost" href="#">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m8 6 6 4-6 4V6Z" fill="currentColor"/></svg>
+            Ver demonstração
+          </a>
+        </div>
+
+        <ul class="hero-badges" aria-label="Características da plataforma">
+          <li>Open Source</li>
+          <li>Community Edition</li>
+          <li>Cloud</li>
+          <li>API REST</li>
+          <li>Docker Ready</li>
+          <li>Multiempresa</li>
+        </ul>
+      </div>
+
+      <p class="hero-note">Em desenvolvimento — Community Edition, Cloud e Enterprise a caminho.</p>
+    </section>
+
+    <!-- ============ CARD QUE CRESCE (assinatura estilo typebot) ============ -->
+    <section class="grow" aria-label="Uma plataforma para todo o ciclo do trabalho">
+      <div class="grow__pin">
+        <div class="grow__card" aria-hidden="true"></div>
+        <div class="grow__content container">
+          <p class="grow__intro">No Prisma WorkSpace você:</p>
+          <p class="grow__statement">
+            <span>Planeja.</span>
+            <span>Colabora.</span>
+            <span>Acompanha.</span>
+            <span>Decide.</span>
+            <span>Entrega.</span>
+          </p>
+          <p class="grow__close">Tudo em uma única plataforma.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRODUTO FLUTUANDO SOBRE O GRADIENTE ============ -->
+    <section class="product" aria-label="A plataforma na prática">
+      <div class="container">
+        <header class="section-head product__head">
+          <p class="eyebrow">A plataforma</p>
+          <h2>Do backlog à entrega, num quadro só</h2>
+          <p class="section-sub">Visualize o trabalho fluindo entre etapas — do que está previsto ao que já foi entregue, com o time inteiro no mesmo contexto.</p>
+        </header>
+
+        <div class="product__stage">
+          <div class="board" data-parallax="-30">
+            <div class="board__bar" aria-hidden="true">
+              <span class="board__dot"></span><span class="board__dot"></span><span class="board__dot"></span>
+              <span class="board__title">Sprint 14 · Plataforma</span>
+            </div>
+            <div class="board__cols">
+              <div class="board__col">
+                <p class="board__colhead">Backlog <em>6</em></p>
+                <div class="kcard"><span class="ktag kt-violet">Feature</span><p>Autenticação SSO</p><div class="kmeta"><span class="kav">MR</span><span class="kpri kpri-hi">Alta</span></div></div>
+                <div class="kcard"><span class="ktag kt-blue">API</span><p>Webhooks de tarefas</p><div class="kmeta"><span class="kav">JL</span><span class="kpri">Média</span></div></div>
+                <div class="kcard kcard-ghost"><p>Exportar relatório PDF</p></div>
+              </div>
+              <div class="board__col">
+                <p class="board__colhead">Fazendo <em>3</em></p>
+                <div class="kcard"><span class="ktag kt-pink">Dashboard</span><p>Burndown por sprint</p><div class="kbar"><i style="width:64%"></i></div><div class="kmeta"><span class="kav">AC</span><span class="kpri kpri-hi">Alta</span></div></div>
+                <div class="kcard"><span class="ktag kt-blue">Kanban</span><p>Dependências entre cards</p><div class="kbar"><i style="width:38%"></i></div><div class="kmeta"><span class="kav">TS</span><span class="kpri">Média</span></div></div>
+              </div>
+              <div class="board__col">
+                <p class="board__colhead">Feito <em>9</em></p>
+                <div class="kcard kcard-done"><span class="ktag kt-green">Entregue</span><p>Quadro Scrum</p><div class="kmeta"><span class="kav">MR</span><span class="kcheck">✓</span></div></div>
+                <div class="kcard kcard-done"><span class="ktag kt-green">Entregue</span><p>Permissões por papel</p><div class="kmeta"><span class="kav">JL</span><span class="kcheck">✓</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone" data-parallax="42" aria-hidden="true">
+            <div class="phone__notch"></div>
+            <p class="phone__head">Minhas tarefas</p>
+            <div class="pcard"><span class="ktag kt-pink">Hoje</span><p>Revisar burndown</p></div>
+            <div class="pcard"><span class="ktag kt-blue">Sprint 14</span><p>Webhooks de tarefas</p></div>
+            <div class="pcard pcard-done"><p>Quadro Scrum</p><span class="kcheck">✓</span></div>
+          </div>
+        </div>
+
+        <p class="product__note">Interface ilustrativa — plataforma em desenvolvimento.</p>
+      </div>
+    </section>
+
+    <!-- ============ RECURSOS ============ -->
+    <section class="recursos" id="recursos">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Recursos</p>
+          <h2>Tudo o que a sua operação precisa para sair do improviso</h2>
+          <p class="section-sub">Oito frentes que substituem planilhas dispersas, ferramentas desconectadas e relatórios montados à mão.</p>
+        </header>
+
+        <div class="feat">
+          <div class="feat__list" role="tablist" aria-label="Grupos de recursos">
+            <div class="feat__item is-open" data-feat="agil">
+              <button class="feat__head" aria-expanded="true"><span class="feat__ix">01</span><span class="feat__name">Gestão Ágil</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Métodos consagrados prontos para usar, sem consultoria para configurar o básico. Cada equipe trabalha do jeito que entrega melhor.</p><ul class="chip-list"><li>Scrum</li><li>Kanban</li><li>Backlog</li><li>Sprint</li><li>Roadmap</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="projetos">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">02</span><span class="feat__name">Projetos e Equipes</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Estruture áreas, times e clientes em uma hierarquia clara, com permissões por papel. Cada pessoa vê o que precisa — e nada além disso.</p><ul class="chip-list"><li>Projetos ilimitados</li><li>Times</li><li>Permissões</li><li>Multiempresa</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="tarefas">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">03</span><span class="feat__name">Tarefas</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Do épico à subtarefa, tudo rastreável. Dependências e prioridades explícitas evitam que o urgente atropele o importante.</p><ul class="chip-list"><li>Subtarefas</li><li>Checklists</li><li>Dependências</li><li>Prioridades</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="colab">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">04</span><span class="feat__name">Colaboração</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>A conversa acontece onde o trabalho está. Contexto, histórico e arquivos ficam na tarefa — não perdidos em threads de mensageiro.</p><ul class="chip-list"><li>Comentários</li><li>Menções</li><li>Histórico</li><li>Notificações</li><li>Upload de arquivos</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="dash">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">05</span><span class="feat__name">Dashboards</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Indicadores de fluxo calculados a partir do trabalho real, não de estimativas otimistas. Gargalos aparecem antes de virarem atraso.</p><ul class="chip-list"><li>Burndown</li><li>Velocity</li><li>Lead Time</li><li>Cycle Time</li><li>Produtividade</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="relatorios">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">06</span><span class="feat__name">Relatórios</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Reporte para diretoria, cliente ou auditoria sem montar planilha na véspera. Exportação nos formatos que a sua organização já usa.</p><ul class="chip-list"><li>PDF</li><li>Excel</li><li>CSV</li><li>Indicadores</li><li>SLA</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="integracoes">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">07</span><span class="feat__name">Integrações</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Conecta-se ao ecossistema que a sua equipe já opera — do repositório de código ao provedor de identidade corporativo.</p><ul class="chip-list"><li>GitHub</li><li>GitLab</li><li>Azure DevOps</li><li>Jenkins</li><li>Keycloak</li><li>LDAP</li><li>OAuth2</li><li>OpenID Connect</li><li>REST API</li><li>Webhooks</li></ul></div>
+            </div>
+            <div class="feat__item" data-feat="infra">
+              <button class="feat__head" aria-expanded="false"><span class="feat__ix">08</span><span class="feat__name">Infraestrutura</span><span class="feat__plus" aria-hidden="true"></span></button>
+              <div class="feat__body"><p>Roda onde a sua política de dados permitir: no seu datacenter, na sua nuvem ou na nossa. Com os bancos que a sua TI já domina.</p><ul class="chip-list"><li>Docker</li><li>Kubernetes</li><li>Linux</li><li>Windows</li><li>PostgreSQL</li><li>SQL Server</li><li>Oracle</li><li>MySQL</li></ul></div>
+            </div>
+          </div>
+
+          <div class="feat__media" aria-hidden="true">
+            <div class="feat__panel is-active" data-feat="agil"><span class="feat__glyph">01</span><p class="feat__panelname">Gestão Ágil</p><div class="feat__pills"><span>Scrum</span><span>Kanban</span><span>Backlog</span><span>Sprint</span><span>Roadmap</span></div></div>
+            <div class="feat__panel" data-feat="projetos"><span class="feat__glyph">02</span><p class="feat__panelname">Projetos e Equipes</p><div class="feat__pills"><span>Projetos ilimitados</span><span>Times</span><span>Permissões</span><span>Multiempresa</span></div></div>
+            <div class="feat__panel" data-feat="tarefas"><span class="feat__glyph">03</span><p class="feat__panelname">Tarefas</p><div class="feat__pills"><span>Subtarefas</span><span>Checklists</span><span>Dependências</span><span>Prioridades</span></div></div>
+            <div class="feat__panel" data-feat="colab"><span class="feat__glyph">04</span><p class="feat__panelname">Colaboração</p><div class="feat__pills"><span>Comentários</span><span>Menções</span><span>Histórico</span><span>Notificações</span><span>Upload</span></div></div>
+            <div class="feat__panel" data-feat="dash"><span class="feat__glyph">05</span><p class="feat__panelname">Dashboards</p><div class="feat__pills"><span>Burndown</span><span>Velocity</span><span>Lead Time</span><span>Cycle Time</span><span>Produtividade</span></div></div>
+            <div class="feat__panel" data-feat="relatorios"><span class="feat__glyph">06</span><p class="feat__panelname">Relatórios</p><div class="feat__pills"><span>PDF</span><span>Excel</span><span>CSV</span><span>Indicadores</span><span>SLA</span></div></div>
+            <div class="feat__panel" data-feat="integracoes"><span class="feat__glyph">07</span><p class="feat__panelname">Integrações</p><div class="feat__pills"><span>GitHub</span><span>GitLab</span><span>Azure DevOps</span><span>Jenkins</span><span>Keycloak</span><span>OAuth2</span><span>Webhooks</span></div></div>
+            <div class="feat__panel" data-feat="infra"><span class="feat__glyph">08</span><p class="feat__panelname">Infraestrutura</p><div class="feat__pills"><span>Docker</span><span>Kubernetes</span><span>Linux</span><span>Windows</span><span>PostgreSQL</span><span>SQL Server</span><span>Oracle</span><span>MySQL</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ POR QUE OPEN SOURCE ============ -->
+    <section class="opensource" id="open-source">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Por que open source</p>
+          <h2>Software que a sua empresa controla, não o contrário</h2>
+          <p class="section-sub">Ferramenta proprietária cria dependência: o preço sobe, o dado fica preso, a regra muda sem aviso. Código aberto devolve o poder de decisão para quem usa.</p>
+        </header>
+
+        <div class="os-grid">
+          <article class="os-item"><h3>Sem vendor lock-in</h3><p>Seus dados e processos não ficam reféns de um fornecedor. Migre, exporte ou hospede por conta própria a qualquer momento.</p></article>
+          <article class="os-item"><h3>Código aberto</h3><p>Qualquer equipe técnica pode inspecionar exatamente o que o software faz — sem caixa-preta.</p></article>
+          <article class="os-item"><h3>Segurança</h3><p>Transparência total do código permite validação independente, em vez de confiança cega no fabricante.</p></article>
+          <article class="os-item"><h3>Auditoria</h3><p>Registro de ações e trilhas de mudança para atender requisitos internos de conformidade e governança.</p></article>
+          <article class="os-item"><h3>Customização</h3><p>Adapte fluxos, campos e integrações à sua operação — em vez de adaptar a operação à ferramenta.</p></article>
+          <article class="os-item"><h3>Escalabilidade</h3><p>Do primeiro time ao portfólio inteiro da organização, na infraestrutura que fizer sentido para o seu porte.</p></article>
+          <article class="os-item"><h3>Comunidade</h3><p>Evolução contínua guiada por quem usa o produto todos os dias, não apenas por roadmap comercial.</p></article>
+          <article class="os-item"><h3>Transparência</h3><p>Roadmap, decisões e mudanças às claras. Você sabe para onde a plataforma está indo antes de depender dela.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EDIÇÕES ============ -->
+    <section class="edicoes" id="edicoes">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Edições</p>
+          <h2>Um produto, três formas de adotar</h2>
+          <p class="section-sub">Comece grátis com a Community. Evolua para Enterprise ou Cloud quando a operação pedir.</p>
+        </header>
+
+        <div class="ed-grid">
+          <article class="ed-card">
+            <span class="ed-badge ed-badge-green">Gratuito</span>
+            <h3>Community Edition</h3>
+            <p class="ed-for">Para desenvolvedores, startups e pequenas empresas que querem começar hoje, por conta própria.</p>
+            <ul class="ed-list">
+              <li>Código aberto</li>
+              <li>Kanban, Scrum, backlog e sprint</li>
+              <li>Dashboards e relatórios</li>
+              <li>API REST</li>
+              <li>Deploy via Docker</li>
+              <li>Atualizações contínuas</li>
+              <li>Suporte da comunidade</li>
+            </ul>
+            <!-- TODO: link real de download -->
+            <a class="btn btn-ghost btn-block" href="#">Baixar gratuitamente</a>
+          </article>
+
+          <article class="ed-card ed-card-featured">
+            <span class="ed-badge ed-badge-blue">Em breve</span>
+            <h3>Cloud</h3>
+            <p class="ed-for">Para empresas que querem toda a plataforma funcionando sem gerenciar infraestrutura.</p>
+            <ul class="ed-list">
+              <li>Tudo da Community, mais:</li>
+              <li>Hospedagem gerenciada</li>
+              <li>Backup diário e SSL</li>
+              <li>Atualizações automáticas</li>
+              <li>Alta disponibilidade e monitoramento</li>
+              <li>Domínio personalizado</li>
+              <li>SSO e suporte prioritário</li>
+            </ul>
+            <!-- TODO: link real da lista de espera da Cloud -->
+            <a class="btn btn-primary btn-block" href="#">Avise-me no lançamento</a>
+          </article>
+
+          <article class="ed-card">
+            <span class="ed-badge ed-badge-slate">Sob consulta</span>
+            <h3>Enterprise Edition</h3>
+            <p class="ed-for">Self-hosted para organizações com requisitos avançados de segurança e conformidade.</p>
+            <ul class="ed-list">
+              <li>Tudo da Community, mais:</li>
+              <li>SSO corporativo</li>
+              <li>Auditoria avançada</li>
+              <li>Suporte com SLA</li>
+              <li>Implantação assistida</li>
+            </ul>
+            <!-- TODO: link real do contato comercial -->
+            <a class="btn btn-ghost btn-block" href="#">Falar com vendas</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MODELO SUSTENTÁVEL ============ -->
+    <section class="servicos" id="servicos">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Modelo sustentável</p>
+          <h2>O código continua aberto. A receita vem de serviço especializado.</h2>
+          <p class="section-sub">O Prisma WorkSpace não depende de fechar o código para existir. Quem precisa de ajuda para implantar, treinar e escalar contrata quem mais entende da plataforma.</p>
+        </header>
+
+        <div class="srv-grid">
+          <article class="srv-item"><h3>Treinamentos</h3><p>Capacitação para equipes em Scrum e Kanban.</p></article>
+          <article class="srv-item"><h3>Consultoria</h3><p>Implantação completa da plataforma, do zero ao uso real.</p></article>
+          <article class="srv-item"><h3>Suporte corporativo</h3><p>Atendimento com SLA para operações críticas.</p></article>
+          <article class="srv-item"><h3>Customizações</h3><p>Desenvolvimento de funcionalidades exclusivas.</p></article>
+          <article class="srv-item"><h3>Integrações</h3><p>Conexão com ERPs, CRMs e sistemas legados.</p></article>
+          <article class="srv-item"><h3>Migração</h3><p>Transição assistida a partir de outras plataformas de gestão.</p></article>
+          <article class="srv-item"><h3>Arquitetura</h3><p>Consultoria para ambientes Kubernetes e Docker.</p></article>
+          <article class="srv-item"><h3>DevOps</h3><p>Esteiras de CI/CD e automação de operações.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DIFERENCIAIS TÉCNICOS ============ -->
+    <section class="tech" id="tech">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Para a sua equipe técnica</p>
+          <h2>Arquitetura que passa no crivo da TI</h2>
+          <p class="section-sub">A decisão é do gestor, mas quem valida é o time técnico. Estes são os fundamentos que eles vão querer conferir.</p>
+        </header>
+
+        <ul class="tech-grid">
+          <li>Arquitetura moderna</li>
+          <li>API First</li>
+          <li>OAuth2</li>
+          <li>OpenID Connect</li>
+          <li>JWT</li>
+          <li>Docker</li>
+          <li>Kubernetes</li>
+          <li>PostgreSQL</li>
+          <li>Alta disponibilidade</li>
+          <li>Multiempresa</li>
+          <li>Auditoria</li>
+          <li>Logs</li>
+          <li>Observabilidade</li>
+          <li>Webhooks</li>
+          <li>Integração contínua</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ VISÃO / ROADMAP ============ -->
+    <section class="roadmap" id="roadmap">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Visão</p>
+          <h2>De gestor de projetos a plataforma operacional de trabalho</h2>
+          <p class="section-sub">O Prisma WorkSpace está sendo construído em etapas, às claras. Esta é a direção do produto.</p>
+        </header>
+
+        <ol class="rm-list">
+          <li class="rm-item">
+            <span class="rm-status rm-status-dev">Em desenvolvimento</span>
+            <h3>Gestão ágil completa</h3>
+            <p>Scrum, Kanban, sprints, roadmaps, dashboards e relatórios — o núcleo da plataforma.</p>
+          </li>
+          <li class="rm-item">
+            <span class="rm-status">Planejado</span>
+            <h3>Documentação integrada</h3>
+            <p>Wiki e base de conhecimento conectadas aos projetos, para o contexto viver junto do trabalho.</p>
+          </li>
+          <li class="rm-item">
+            <span class="rm-status">Planejado</span>
+            <h3>Automações e workflows</h3>
+            <p>Fluxos de trabalho e regras de negócio automatizadas, sem depender de ferramenta externa.</p>
+          </li>
+          <li class="rm-item">
+            <span class="rm-status">Planejado</span>
+            <h3>Inteligência artificial de apoio à gestão</h3>
+            <p>Apoio a priorização, resumos de status e detecção de riscos a partir dos dados do próprio portfólio.</p>
+          </li>
+          <li class="rm-item">
+            <span class="rm-status">Planejado</span>
+            <h3>Dashboards executivos</h3>
+            <p>Indicadores em tempo real para diretoria acompanhar portfólio, capacidade e resultado.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section class="faq" id="faq">
+      <div class="container container-narrow">
+        <header class="section-head">
+          <p class="eyebrow">Perguntas frequentes</p>
+          <h2>O que costumam perguntar antes de adotar</h2>
+        </header>
+
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>O Prisma é gratuito?</summary>
+            <p>Sim. A Community Edition é e continuará sendo gratuita e de código aberto. As edições Cloud e Enterprise são pagas e financiam a evolução do produto.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Existe versão Cloud?</summary>
+            <p>Está a caminho. A Cloud será a forma de usar o Prisma sem gerenciar infraestrutura, com hospedagem, backup e atualizações inclusos. Cadastre-se para ser avisado no lançamento.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Posso instalar na minha empresa?</summary>
+            <p>Sim. A plataforma foi desenhada para rodar na sua própria infraestrutura, via Docker, em Linux ou Windows, com os principais bancos de dados do mercado.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Existe API?</summary>
+            <p>Sim. A plataforma segue o princípio API First: tudo o que a interface faz está disponível via API REST, com webhooks para integrações em tempo real.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Posso customizar?</summary>
+            <p>Sim. Além das configurações nativas, o código aberto permite adaptar a plataforma à sua operação — internamente ou com nosso serviço de customização.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Existe suporte?</summary>
+            <p>A Community conta com suporte da comunidade. Para operações que exigem garantias, as edições Enterprise e Cloud incluem suporte dedicado com SLA.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Como contratar consultoria?</summary>
+            <p>Implantação, treinamento, migração e integrações são feitos pelo time que constrói a plataforma. Fale com a gente pelo canal de contato no rodapé.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CTA FINAL ============ -->
+    <section class="cta-final">
+      <div class="container">
+        <div class="cta-box">
+          <svg class="cta-prism" viewBox="0 0 120 104" fill="none" aria-hidden="true">
+            <path d="M60 8 L112 96 H8 Z" stroke="rgba(248,250,252,.4)" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M8 96 L60 52" stroke="url(#ctaSpec)" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="ctaSpec" x1="8" y1="96" x2="60" y2="52">
+                <stop offset="0" stop-color="#7C3AED"/>
+                <stop offset=".5" stop-color="#2563EB"/>
+                <stop offset="1" stop-color="#06B6D4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <h2>Comece hoje mesmo.</h2>
+          <p>Instale gratuitamente ou entre na lista da versão Cloud.</p>
+          <div class="cta-actions">
+            <!-- TODO: link real de download -->
+            <a class="btn btn-light" href="#">Download Community Edition</a>
+            <!-- TODO: link real da Cloud -->
+            <a class="btn btn-outline" href="#">Experimentar Cloud</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="brand" href="#topo">
+            <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <path d="M16 2 L5 17 L16 14 Z" fill="#8B5CF6"/>
+              <path d="M16 2 L27 17 L16 14 Z" fill="#3B82F6"/>
+              <path d="M5 17 L16 30 L16 14 Z" fill="#5B21B6"/>
+              <path d="M27 17 L16 30 L16 14 Z" fill="#1D4ED8"/>
+              <path d="M13.5 25.5 L18.5 25.5 L16 30 Z" fill="#F97316"/>
+            </svg>
+            <span class="brand-name">Prisma<em>WorkSpace</em></span>
+          </a>
+          <p>Plataforma open source de gestão ágil de projetos.</p>
+        </div>
+
+        <nav class="footer-cols" aria-label="Links do rodapé">
+          <div>
+            <h4>Produto</h4>
+            <!-- TODO: URLs reais -->
+            <a href="#recursos">Recursos</a>
+            <a href="#edicoes">Edições</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="#">Documentação</a>
+            <a href="#">Blog</a>
+          </div>
+          <div>
+            <h4>Comunidade</h4>
+            <!-- TODO: URLs reais -->
+            <a href="#">GitHub</a>
+            <a href="#">Discord</a>
+            <a href="#">Community</a>
+          </div>
+          <div>
+            <h4>Empresa</h4>
+            <!-- TODO: URLs reais -->
+            <a href="#">Cloud</a>
+            <a href="#servicos">Serviços</a>
+            <a href="#">Contato</a>
+          </div>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© Prisma WorkSpace. Todos os direitos reservados.</p>
+        <div class="footer-social">
+          <!-- TODO: URLs reais -->
+          <a href="#">GitHub</a>
+          <a href="#">LinkedIn</a>
+          <a href="#">Discord</a>
+          <a href="#">YouTube</a>
+        </div>
+        <p class="footer-credit">Desenvolvido por Nordevs</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

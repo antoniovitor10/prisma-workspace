@@ -2562,7 +2562,10 @@ subindo com os dados preservados.
 ## Fundação IA autorizada em 2026-10-06
 
 Extensão solicitada em 2026-10-07: experiência semelhante ao Zapmind e escolha de provedor/modelo por conversa.
-US-AI-011 / SPEC-AI-004 aprovada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
+US-AI-011 / SPEC-AI-004 aprovada e implementada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
+Migration aplicada ao E2E e à produção com backup verificado. Main/produção 6eecba8;
+CI 37629372432 com seis jobs aprovados e 117 E2E aprovados sem retries.
+Registro anterior na main: US-AI-011 / SPEC-AI-004 aprovada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION aprovados em 2026-10-07.
 
 ```yaml
 - id: TASK-AI-004
@@ -2574,13 +2577,15 @@ US-AI-011 / SPEC-AI-004 aprovada. G-SCOPE definido pelo PO; G-SPEC e G-MIGRATION
   context_minimo: [AGENTS.md, context/index.yaml, stories/ai-conversation-experience.md, specs/ai-conversation-experience.md]
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
-  status: in_progress
+  status: implemented
+  # Estado anterior registrado na main: in_progress.
   priority: P1
 ```
 
 Extensão solicitada pelo PO em 2026-10-07: Gemini por assinatura (US-AI-010).
 SPEC-AI-003 aprovada explicitamente pelo PO, com login Google oficial, catálogo CLI e isolamento;
-implementação e validação em andamento, sem migration.
+implementada e publicada em `aad03a3`, CI `37618509581` com 115 E2E aprovados, sem migration.
+Registro anterior na main: implementação e validação em andamento, sem migration.
 
 ```yaml
 - id: TASK-AI-003
@@ -2592,7 +2597,8 @@ implementação e validação em andamento, sem migration.
   context_minimo: [AGENTS.md, context/index.yaml, stories/ai-gemini-subscription.md, specs/ai-gemini-subscription.md]
   tests: [tests/Prisma.Workspace.Tests/AiFoundationTests.cs, src/Prisma.Workspace.Web/e2e/ai-assistant.spec.ts]
   human_gate: sim
-  status: in_progress
+  status: implemented
+  # Estado anterior registrado na main: in_progress.
   priority: P1
 ```
 
@@ -2600,6 +2606,8 @@ Refinamento solicitado pelo PO após a publicação: `TASK-AI-002`, vinculado à
 `specs/ai-connection-onboarding.md` (SPEC-AI-002, approved). Configuração por provedor, seleção de modelos
 em todas as opções, login CLI real e aviso explícito com aceite do risco de perda da conta.
 Depende da TASK-AI-001 publicada; G-SPEC/G-DEPLOY concedidos pelo PO em 2026-10-06. Sem alteração de schema.
+Implementada e publicada em `758b032`, com 113 E2E finais aprovados, sem retries. Conta CLI real aguarda
+somente a autenticação e aceite do administrador pela tela, não intervenção técnica do instalador.
 
 ```yaml
 - id: TASK-AI-001

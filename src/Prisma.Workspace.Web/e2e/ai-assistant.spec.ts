@@ -5,6 +5,8 @@ const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const orgId = '11111111-1111-4111-8111-111111111111';
 let server: Server; let providerUrl = ''; let token = ''; let connectionId = ''; let itemId = ''; let modelRequests = 0;
 const receivedModels: string[] = [];
+let catalogStatus = 200;
+let catalogModels = [{ id: 'fake-e2e', name: 'Modelo E2E' }, { id: 'fake-other', name: 'Modelo alternativo E2E' }];
 const cliSessions = new Map<string, { owner: string; adapter: string; cancelled: boolean; authenticated: boolean }>();
 const headers = () => ({ Authorization: `Bearer ${token}`, 'X-Organization-Id': orgId });
 
@@ -24,7 +26,7 @@ test.beforeAll(async ({ request }) => {
     if ((req.url?.startsWith('/v1/cli/') || body.adapter) && (!req.headers['content-length'] || req.headers['transfer-encoding'])) {
       res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'Ponte exige Content-Length.' } })); return;
     }
-    if (req.url === '/v1/models') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: [{ id: 'fake-e2e', name: 'Modelo E2E' }, { id: 'fake-other', name: 'Modelo alternativo E2E' }] })); return; }
+    if (req.url === '/v1/models') { res.writeHead(catalogStatus, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ data: catalogModels })); return; }
     if (req.url?.startsWith('/v1/cli/')) {
       const [, , , adapter, operation] = req.url.split('/');
       const id = 'a'.repeat(32); const state = cliSessions.get(id);
@@ -60,7 +62,7 @@ test.beforeAll(async ({ request }) => {
     }
     send({ choices: [], usage: { prompt_tokens: 10, completion_tokens: 5 } }); res.end('data: [DONE]\n\n');
   });
-  await new Promise<void>(resolve => server.listen(18747, '0.0.0.0', resolve));
+  await new Promise<void>(resolve => server.listen(Number(process.env.E2E_AI_PROVIDER_PORT ?? 18747), '0.0.0.0', resolve));
   const address = server.address(); providerUrl = `http://${process.env.E2E_AI_PROVIDER_HOST ?? '127.0.0.1'}:${typeof address === 'object' && address ? address.port : 0}/v1`;
   const create = await request.post(`${apiUrl}/api/admin/ai/connections`, { headers: headers(), data: { name: 'E2E IA', type: 'OpenAiCompatible', provider: 'Custom', baseUrl: providerUrl, model: 'fake-e2e', secret: 'e2e-fake-secret-ABCD' } });
   expect(create.ok()).toBeTruthy(); const connection = await create.json(); connectionId = connection.id;
@@ -83,12 +85,13 @@ test('chat consulta dados, cita tarefa, fecha com Escape e respeita cota atingid
   const question = page.getByLabel('Pergunte ao workspace'); await expect(question).toBeFocused();
   await question.fill('Quais são minhas tarefas?'); await page.getByRole('button', { name: 'Enviar pergunta' }).click();
   await expect(page.getByRole('link', { name: /\[T:/ })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Enviar pergunta' })).toBeVisible();
   await page.screenshot({ path: `../../.local/ai-e2e/ai-${testInfo.project.name}.png` });
   await page.keyboard.press('Escape'); await expect(page.getByRole('complementary', { name: 'Assistente Prisma' })).toBeHidden(); await expect(launcher).toBeFocused();
   const listing = await request.get(`${apiUrl}/api/ai/conversations`, { headers: headers() }); const conversation = (await listing.json())[0];
-  const usage = await request.get(`${apiUrl}/api/organizations/current/ai/usage?groupBy=user`, { headers: headers() });
-  const rows = await usage.json(); const used = rows[0].inputTokens + rows[0].outputTokens;
-  await request.put(`${apiUrl}/api/organizations/current/ai`, { headers: headers(), data: { enabled: true, dailyTokenLimit: 0, userTokenLimit: used } });
+  // A chamada falsa já consumiu mais de um token hoje. O histórico do banco
+  // compartilhado pode conter uso de outros dias, que não conta na cota diária.
+  await request.put(`${apiUrl}/api/organizations/current/ai`, { headers: headers(), data: { enabled: true, dailyTokenLimit: 0, userTokenLimit: 1 } });
   const callsBefore = modelRequests;
   const blocked = await request.post(`${apiUrl}/api/ai/conversations/${conversation.id}/messages`, { headers: headers(), data: { text: 'Resumo novamente' } });
   expect(blocked.status()).toBe(429); expect(await blocked.text()).toContain('Limite diário de usuário atingido'); expect(modelRequests).toBe(callsBefore);
@@ -99,6 +102,9 @@ test('administrador de organização não recebe autoridade de instalação nem 
   const login = await request.post(`${apiUrl}/api/auth/login`, { data: { email: 'manager@prisma.example.invalid', password: process.env.E2E_TEST_USER_PASSWORD } });
   expect(login.ok()).toBeTruthy(); const managerHeaders = { ...headers(), Authorization: `Bearer ${(await login.json()).accessToken}` };
   expect((await request.get(`${apiUrl}/api/admin/ai/connections`, { headers: managerHeaders })).status()).toBe(403);
+  const options = await request.get(`${apiUrl}/api/ai/options`, { headers: managerHeaders });
+  expect(options.ok()).toBeTruthy(); expect((await options.json()).connections.some((c: { id: string }) => c.id === connectionId)).toBe(true);
+  expect(await options.text()).not.toMatch(/secretSuffix|encryptedSecret|baseUrl|e2e-fake-secret/);
   await request.put(`${apiUrl}/api/organizations/current/ai`, { headers: headers(), data: { enabled: true, dailyTokenLimit: 0, userTokenLimit: 0 } });
   const c = await request.post(`${apiUrl}/api/ai/conversations`, { headers: headers() }); const id = (await c.json()).id;
   expect((await request.get(`${apiUrl}/api/ai/conversations/${id}`, { headers: managerHeaders })).status()).toBe(404);
@@ -138,6 +144,78 @@ test('tela administrativa cadastra, testa e ativa conexão sem devolver a creden
   const saved = (await connections.json()).find((x: { name: string }) => x.name === name);
   await request.delete(`${apiUrl}/api/admin/ai/connections/${saved.id}`, { headers: headers() });
   expect((await request.post(`${apiUrl}/api/admin/ai/connections/${connectionId}/activate`, { headers: headers() })).ok()).toBeTruthy();
+});
+
+test('catálogo distingue falha temporária, modelo removido e conexão apagada, preservando conversa e rascunho', async ({ page, request }) => {
+  let conversation = ''; let alternative = '';
+  try {
+    await request.put(`${apiUrl}/api/organizations/current/ai`, { headers: headers(), data: { enabled: true, dailyTokenLimit: 0, userTokenLimit: 0 } });
+    await request.post(`${apiUrl}/api/admin/ai/connections/${connectionId}/activate`, { headers: headers() });
+    const created = await request.post(`${apiUrl}/api/admin/ai/connections`, { headers: headers(), data: { name: 'Correção catálogo E2E', provider: 'Custom', type: 'OpenAiCompatible', baseUrl: providerUrl, model: 'fake-e2e' } });
+    alternative = (await created.json()).id;
+    expect((await (await request.post(`${apiUrl}/api/admin/ai/connections/${alternative}/test`, { headers: headers() })).json()).testSucceeded).toBe(true);
+    await page.goto('/home'); await page.getByRole('button', { name: 'Abrir assistente Prisma' }).click();
+    const panel = page.getByRole('complementary', { name: 'Assistente Prisma' });
+    await panel.getByLabel('Provedor da conversa').selectOption(alternative);
+    await panel.getByLabel('Modelo da conversa').selectOption('fake-other');
+    await expect(panel.getByText('Salvando assistente da conversa…')).toHaveCount(0);
+    conversation = await panel.getByLabel('Conversa', { exact: true }).inputValue();
+    expect(conversation).not.toBe('');
+    catalogStatus = 503;
+    await panel.getByRole('button', { name: 'Atualizar conexões' }).click();
+    await expect(panel.getByText(/Não foi possível carregar os modelos/)).toBeVisible();
+    await expect(panel.getByLabel('Modelo da conversa')).toHaveValue('fake-other');
+    await expect(panel.getByLabel('Modelo da conversa')).toBeDisabled();
+    await expect(panel.getByText(/O modelo salvo não aparece/)).toHaveCount(0);
+    const beforeFailure = modelRequests;
+    const question = panel.getByLabel('Pergunte ao workspace'); await question.fill('Preserve esta pergunta.');
+    const refusal = page.waitForResponse(response => response.url().endsWith(`/api/ai/conversations/${conversation}/messages`) && response.request().method() === 'POST');
+    await panel.getByRole('button', { name: 'Enviar pergunta' }).click();
+    const rejected = await refusal;
+    expect(rejected.status()).toBe(409);
+    expect((await rejected.json()).detail).toBe('Não foi possível consultar os modelos desta conexão agora. Tente novamente');
+    await expect(panel.getByText('Não foi possível consultar os modelos desta conexão agora. Tente novamente', { exact: true })).toBeVisible();
+    await expect(question).toHaveValue('Preserve esta pergunta.'); expect(modelRequests).toBe(beforeFailure);
+    await expect(panel.getByLabel('Provedor da conversa')).toHaveValue(alternative);
+    let detail = await (await request.get(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() })).json();
+    expect(detail).toMatchObject({ selectedConnectionId: alternative, selectedModel: 'fake-other', selectionAvailable: false, messages: [] });
+    catalogStatus = 200;
+    // Recuperar o provedor permite enviar o mesmo rascunho sem limpar cache
+    // nem trocar a preferência; a falha anterior não é armazenada como catálogo.
+    await panel.getByRole('button', { name: 'Enviar pergunta' }).click();
+    await expect(panel.getByRole('link', { name: /\[T:/ })).toBeVisible({ timeout: 20000 });
+    await expect(panel.getByRole('button', { name: 'Enviar pergunta' })).toBeVisible();
+    await expect(question).toHaveValue('');
+    detail = await (await request.get(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() })).json();
+    expect(detail).toMatchObject({ selectedConnectionId: alternative, selectedModel: 'fake-other', selectionAvailable: true });
+    expect(detail.messages).toHaveLength(2);
+    await panel.getByRole('button', { name: 'Atualizar conexões' }).click();
+    await expect(panel.getByLabel('Modelo da conversa')).toBeEnabled();
+    await expect(panel.getByLabel('Modelo da conversa')).toHaveValue('fake-other');
+    catalogModels = [];
+    await panel.getByRole('button', { name: 'Atualizar conexões' }).click();
+    await expect(panel.getByText(/Nenhum modelo de conversa foi informado pelo endpoint/)).toBeVisible();
+    const before = modelRequests;
+    await question.fill('Preserve esta pergunta.');
+    await panel.getByRole('button', { name: 'Enviar pergunta' }).click();
+    await expect(panel.getByText(/O modelo não está mais disponível nesta conexão/)).toBeVisible();
+    await expect(question).toHaveValue('Preserve esta pergunta.'); expect(modelRequests).toBe(before);
+    detail = await (await request.get(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() })).json();
+    expect(detail).toMatchObject({ selectedConnectionId: alternative, selectedModel: 'fake-other', selectionAvailable: false });
+    expect(detail.messages).toHaveLength(2);
+    await request.delete(`${apiUrl}/api/admin/ai/connections/${alternative}`, { headers: headers() });
+    await panel.getByRole('button', { name: 'Atualizar conexões' }).click();
+    await expect(panel.getByRole('option', { name: 'Conexão salva indisponível' })).toBeAttached();
+    await panel.getByRole('button', { name: 'Enviar pergunta' }).click();
+    await expect(panel.getByText(/Esta conexão não está mais disponível. Escolha uma conexão testada/)).toBeVisible();
+    await expect(question).toHaveValue('Preserve esta pergunta.'); expect(modelRequests).toBe(before);
+    detail = await (await request.get(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() })).json();
+    expect(detail.messages).toHaveLength(2); expect(detail.selectedModel).toBe('fake-other');
+  } finally {
+    catalogStatus = 200; catalogModels = [{ id: 'fake-e2e', name: 'Modelo E2E' }, { id: 'fake-other', name: 'Modelo alternativo E2E' }];
+    if (conversation) await request.delete(`${apiUrl}/api/ai/conversations/${conversation}`, { headers: headers() });
+    if (alternative) await request.delete(`${apiUrl}/api/admin/ai/connections/${alternative}`, { headers: headers() });
+  }
 });
 
 test('modelos e métodos acompanham todos os provedores; OAuth inicia login explícito', async ({ page, request }) => {

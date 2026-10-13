@@ -210,7 +210,7 @@ function readProcessGraph() {
 }
 
 function readLoopProfile() {
-  const relPath = 'profiles/runrun-loop.yaml';
+  const relPath = 'profiles/prisma-loop.yaml';
   const text = readTextFile(relPath);
   const parsed = parseYaml(text);
   return {

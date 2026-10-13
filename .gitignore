@@ -59,5 +59,6 @@ __pycache__/
 /output/
 /tools/context-explorer/web/screenshots/
 
-# Recupera??o privada e worktrees locais
-.local/
+# Recuperação privada e isolamento local
+/.local/
+/.maestri/

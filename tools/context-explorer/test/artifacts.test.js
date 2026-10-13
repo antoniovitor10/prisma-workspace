@@ -51,10 +51,10 @@ test('backlog has the canonical tasks with normalized spec references', () => {
   assert.equal(first.specPath, 'specs/project-structure.md');
 });
 
-test('agents: 4 agents present', () => {
-  assert.equal(artifacts.agents.length, 4);
+test('agents: 5 agents present, including qa', () => {
+  assert.equal(artifacts.agents.length, 5);
   const ids = artifacts.agents.map((a) => a.id).sort();
-  assert.deepEqual(ids, ['discovery', 'executor', 'planner', 'reviewer']);
+  assert.deepEqual(ids, ['discovery', 'executor', 'planner', 'qa', 'reviewer']);
 });
 
 test('processGraph: 16 nodes, 21 edges, 7 human gates', () => {

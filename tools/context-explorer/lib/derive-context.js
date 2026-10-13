@@ -149,7 +149,7 @@ function deriveContextForDomain(domainName, artifacts) {
     const gates = domainEntry.gates || {};
     for (const gateName of Object.keys(gates)) {
       addCandidate(candidates, seen, {
-        path: `profiles/runrun-loop.yaml#gates.${gateName}`,
+        path: `profiles/prisma-loop.yaml#gates.${gateName}`,
         category: 'Gates',
         domain: domainName,
         source: 'context/index.yaml',

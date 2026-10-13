@@ -27,6 +27,7 @@ public sealed partial class AiService
         ValidateConnectionMethod(type, provider);
         if (type == "CliSubscription") return await BridgeAsync("models", provider, new { }, ct);
         var baseUrl = S(a, "baseUrl")?.Trim(); var secret = S(a, "secret");
+        if (string.IsNullOrEmpty(baseUrl)) baseUrl = null;
         if (secret?.Length > 4096 || secret?.Any(char.IsControl) == true) throw new AiException(400, "Credencial inválida.");
         if (!string.IsNullOrEmpty(baseUrl) && (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 || baseUrl.Length > 2048)) throw new AiException(400, "Informe uma URL HTTP válida e sem credenciais.");
         if (type == "OAuth" && !string.IsNullOrEmpty(baseUrl)) throw new AiException(400, "Login OpenRouter usa o endereço oficial.");
@@ -58,9 +59,11 @@ public sealed partial class AiService
                 }
                 if (nativeAnthropic) request.Headers.Add("anthropic-version", "2023-06-01");
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-                if (!response.IsSuccessStatusCode) return new { models = Array.Empty<ModelOption>(), state = "unavailable", source = provider, message = response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden ? "O provedor recusou a credencial. Confira a chave ou autentique novamente." : "O catálogo não está disponível neste endereço. Confira a conexão e tente novamente.", manualAllowed = provider == "Custom" || !string.IsNullOrEmpty(baseUrl) };
+                if (!response.IsSuccessStatusCode) return new { models = Array.Empty<ModelOption>(), state = "unavailable", source = provider, message = response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden ? "O provedor recusou a credencial. Confira a chave ou autentique novamente." : "O catálogo não está disponível neste endereço. Confira a conexão e tente novamente.",
+                    manualAllowed = (provider == "Custom" || baseUrl is not null) && response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.MethodNotAllowed };
                 using var data = await ReadLimitedJsonAsync(response, 8_000_000, timeout.Token);
-                var rows = data.RootElement.TryGetProperty(nativeGemini ? "models" : "data", out var list) && list.ValueKind == JsonValueKind.Array ? list.EnumerateArray() : JsonSerializer.SerializeToElement(Array.Empty<object>()).EnumerateArray();
+                if (data.RootElement.ValueKind != JsonValueKind.Object || !data.RootElement.TryGetProperty(nativeGemini ? "models" : "data", out var list) || list.ValueKind != JsonValueKind.Array) throw new JsonException("Resposta sem catálogo de modelos válido.");
+                var rows = list.EnumerateArray();
                 foreach (var row in rows)
                 {
                     var id = S(row, nativeGemini ? "name" : "id") ?? "";
@@ -85,11 +88,11 @@ public sealed partial class AiService
                 else break;
             }
             var result = models.DistinctBy(x => x.Id).OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Take(2000).ToArray();
-            return new { models = result, state = result.Length == 0 ? "empty" : "ready", source = provider, message = result.Length == 0 ? "Nenhum modelo de conversa foi informado pelo endpoint." : "Escolha um modelo; o teste verifica o acesso da sua conta.", manualAllowed = provider == "Custom" || !string.IsNullOrEmpty(baseUrl) };
+            return new { models = result, state = result.Length == 0 ? "empty" : "ready", source = provider, message = result.Length == 0 ? "Nenhum modelo de conversa foi informado pelo endpoint." : "Escolha um modelo; o teste verifica o acesso da sua conta.", manualAllowed = false };
         }
         catch (Exception e) when (e is HttpRequestException or JsonException or InvalidDataException || e is OperationCanceledException && !ct.IsCancellationRequested)
         {
-            return new { models = Array.Empty<ModelOption>(), state = "unavailable", source = provider, message = "Não foi possível carregar os modelos. Confira o endereço e tente novamente.", manualAllowed = provider == "Custom" || !string.IsNullOrEmpty(baseUrl) };
+            return new { models = Array.Empty<ModelOption>(), state = "unavailable", source = provider, message = "Não foi possível carregar os modelos. Confira o endereço e tente novamente.", manualAllowed = false };
         }
     }
     private static decimal? TokenPrice(JsonElement a, string key) => decimal.TryParse(S(a, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value is >= 0 and < 1_000_000 ? value * 1_000_000 : null;

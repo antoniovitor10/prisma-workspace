@@ -6,6 +6,16 @@ import { api } from '../../services/api';
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 const wrap = () => render(<AiConnectionForm onSaved={async () => undefined} onCancel={() => undefined}/>);
 describe('Configuração guiada da IA', () => {
+  it('mostra erro controlado do catálogo inicial OpenRouter sem chave e permite tentar novamente', async () => {
+    const request = vi.spyOn(api, 'request').mockResolvedValueOnce({ models: [], state: 'unavailable', manualAllowed: false, message: 'Não foi possível carregar os modelos. Confira o endereço e tente novamente.' })
+      .mockResolvedValue({ models: [{ id: 'router/model', name: 'OpenRouter' }], state: 'ready', message: 'Escolha um modelo' });
+    wrap();
+    await screen.findByText('Não foi possível carregar os modelos. Confira o endereço e tente novamente.');
+    expect(JSON.parse(request.mock.calls[0][1]?.body as string)).toMatchObject({ provider: 'OpenRouter', type: 'OAuth', baseUrl: null, secret: null });
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar modelos' }));
+    await screen.findByRole('option', { name: 'OpenRouter — router/model' });
+    expect(screen.getByLabelText('Modelo')).toBeEnabled();
+  });
   it('usa a chave atual ao carregar o catálogo após editar o endereço', async () => {
     const sent: Array<{ provider: string; secret: string }> = [];
     vi.spyOn(api, 'request').mockImplementation(async (_url, init) => {

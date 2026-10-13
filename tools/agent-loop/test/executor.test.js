@@ -15,7 +15,7 @@ const { createEnvelope, saveTask, loadTask, STATES } = require('../lib/engine');
 const { main } = require('../cli');
 
 const repositoryRoot = path.resolve(__dirname, '..', '..', '..');
-const profilePath = path.join(repositoryRoot, 'profiles', 'runrun-loop.yaml');
+const profilePath = path.join(repositoryRoot, 'profiles', 'prisma-loop.yaml');
 
 test('42 execution profile exposes the five active allowlisted product gates in order', () => {
   const profile = loadExecutionProfile(profilePath);

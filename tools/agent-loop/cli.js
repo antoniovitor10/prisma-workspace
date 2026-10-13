@@ -208,7 +208,7 @@ async function main(argv) {
     }
 
     const repositoryRoot = path.resolve(options['repo-root'] || path.join(__dirname, '..', '..'));
-    const profilePath = path.resolve(options.profile || path.join(repositoryRoot, 'profiles', 'runrun-loop.yaml'));
+    const profilePath = path.resolve(options.profile || path.join(repositoryRoot, 'profiles', 'prisma-loop.yaml'));
     const selectedGates = args[1] ? args[1].split(',').map((gate) => gate.trim()).filter(Boolean) : null;
     const summary = await runProductGates({
       repositoryRoot,

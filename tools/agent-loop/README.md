@@ -64,7 +64,7 @@ No PowerShell, adapte as aspas de JSON conforme necessário.
 - Specs `draft`, `review` ou `changed` bloqueiam implementação até aprovação `G-SPEC`.
 - Gates desconhecidos são registrados como coverage gap, nunca como PASS.
 - Falha externa bloqueia sem consumir tentativa.
-- `run-gates` executa somente gates ativos declarados em `profiles/runrun-loop.yaml`, somente quando o envelope está em `gating` e sem Human Gates pendentes.
+- `run-gates` executa somente gates ativos declarados em `profiles/prisma-loop.yaml`, somente quando o envelope está em `gating` e sem Human Gates pendentes.
 - Comandos e diretórios não são aceitos pela linha de comando: vêm exclusivamente do profile versionado; o diretório de execução não pode escapar da raiz do repositório.
 - O resultado registra gate, duração, código de saída e diretório, mas nunca persiste stdout/stderr na telemetria.
 - O motor não chama LLM/OpenCode, APIs, banco, migrations, deploy, PR/merge ou agentes. A execução automática limita-se aos product gates allowlisted.

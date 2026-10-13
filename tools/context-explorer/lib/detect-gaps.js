@@ -250,7 +250,7 @@ function detectGaps(artifacts) {
     'profile_gate_count',
     objectCount(profileGates),
     canonical.humanGates.length,
-    loopProfile.path || 'profiles/runrun-loop.yaml'
+    loopProfile.path || 'profiles/prisma-loop.yaml'
   );
   addMismatch(
     gaps,
@@ -271,14 +271,14 @@ function detectGaps(artifacts) {
     'profile_max_attempts',
     loopProfile.loop && loopProfile.loop.max_attempts,
     canonical.maxAttempts,
-    loopProfile.path || 'profiles/runrun-loop.yaml'
+    loopProfile.path || 'profiles/prisma-loop.yaml'
   );
   addMismatch(
     gaps,
     'stop_on_first_gate_failure',
     loopProfile.gateExecution && loopProfile.gateExecution.stop_on_first_gate_failure,
     canonical.stopOnFirstGateFailure,
-    loopProfile.path || 'profiles/runrun-loop.yaml'
+    loopProfile.path || 'profiles/prisma-loop.yaml'
   );
   addMismatch(
     gaps,

@@ -16,7 +16,8 @@ export function AiConversationControls({ tenantId, choice, disabled, dirty, onCo
   const connection = connections.find(c => c.id === choice.connectionId);
   const defaultConnection = connections.find(c => c.isDefault);
   const missing = !!choice.connectionId && options.isSuccess && !connection;
-  const validModel = catalog.data?.models.some(m => m.id === choice.model);
+  const catalogReady = catalog.isSuccess && !catalog.isFetching && catalog.data?.state === 'ready';
+  const validModel = catalogReady && catalog.data?.models.some(m => m.id === choice.model);
   const providers: Record<string, string> = { OpenAI: 'OpenAI / ChatGPT', Gemini: 'Google Gemini', Anthropic: 'Claude', OpenRouter: 'OpenRouter', Custom: 'Endpoint personalizado' };
   return <div className="assistant-selectors">
     <label>Provedor da conversa<select aria-label="Provedor da conversa" disabled={disabled || options.isPending} value={choice.connectionId ?? ''} onChange={e => onConnection(e.target.value || null)}>
@@ -24,16 +25,16 @@ export function AiConversationControls({ tenantId, choice, disabled, dirty, onCo
       {missing && <option value={choice.connectionId!}>Conexão salva indisponível</option>}
       {connections.map(c => <option key={c.id} value={c.id}>{providers[c.provider] ?? c.provider} · {c.name}</option>)}
     </select></label>
-    {choice.connectionId ? <label>Modelo da conversa<select aria-label="Modelo da conversa" value={choice.model ?? ''} disabled={disabled || missing || catalog.isPending || catalog.data?.state !== 'ready'} onChange={e => onModel(e.target.value)}>
-      <option value="">{catalog.isPending ? 'Carregando modelos…' : 'Escolha um modelo'}</option>
+    {choice.connectionId ? <label>Modelo da conversa<select aria-label="Modelo da conversa" value={choice.model ?? ''} disabled={disabled || missing || !catalogReady} onChange={e => onModel(e.target.value)}>
+      <option value="">{catalog.isFetching ? 'Carregando modelos…' : 'Escolha um modelo'}</option>
       {choice.model && !validModel && <option value={choice.model}>{choice.model} (salvo; confira disponibilidade)</option>}
-      {catalog.data?.models.map(m => <option key={m.id} value={m.id}>{m.name === m.id ? m.id : `${m.name} — ${m.id}`}</option>)}
+      {catalogReady && catalog.data?.models.map(m => <option key={m.id} value={m.id}>{m.name === m.id ? m.id : `${m.name} — ${m.id}`}</option>)}
     </select></label> : <p className="default-model">{defaultConnection ? `${providers[defaultConnection.provider] ?? defaultConnection.provider} · ${defaultConnection.model}` : 'A conexão padrão será usada.'}</p>}
     <button className="text-action" type="button" disabled={disabled || options.isFetching || !!choice.connectionId && catalog.isFetching} onClick={() => { void options.refetch(); if (choice.connectionId) void catalog.refetch(); }}>Atualizar conexões</button>
     {options.isError && <p className="selector-notice" role="alert">Não foi possível carregar as conexões. Tente atualizar.</p>}
     {missing && <p className="selector-notice" role="alert">Esta conexão não está mais disponível. Escolha outra ou o padrão da instalação.</p>}
-    {choice.connectionId && !missing && (catalog.isError || catalog.data?.state !== 'ready' && !catalog.isPending) && <p className="selector-notice" role="alert">{catalog.data?.message ?? 'Não foi possível carregar os modelos. Tente atualizar.'}</p>}
-    {choice.connectionId && catalog.data?.state === 'ready' && choice.model && !validModel && <p className="selector-notice" role="alert">O modelo salvo não aparece no catálogo. Escolha outro antes de perguntar.</p>}
+    {choice.connectionId && !missing && !catalog.isFetching && (catalog.isError || catalog.data?.state !== 'ready' && !catalog.isPending) && <p className="selector-notice" role="alert">{catalog.isError ? 'Não foi possível carregar os modelos. Tente atualizar.' : catalog.data?.message ?? 'Não foi possível carregar os modelos. Tente atualizar.'}</p>}
+    {choice.connectionId && catalogReady && choice.model && !validModel && <p className="selector-notice" role="alert">O modelo salvo não aparece no catálogo. Escolha outro antes de perguntar.</p>}
     {dirty && <small className="selector-notice">Escolha um modelo para confirmar o assistente desta conversa.</small>}
   </div>;
 }

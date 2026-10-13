@@ -120,7 +120,7 @@ Em caso de divergência ou ambiguidade, prevalece a seguinte cadeia estrita:
 2. `AGENTS.md` / `DECISIONS.md` / `ROADMAP.md`
 3. Histórias de usuário em `stories/` como intenção funcional humana rastreável
 4. Especificações em `specs/*.md` (status `approved`) como contrato funcional e técnico
-5. Grafo de Workflow (`workflows/feature.yaml`) e Perfil (`profiles/runrun-loop.yaml`)
+5. Grafo de Workflow (`workflows/feature.yaml`) e Perfil (`profiles/prisma-loop.yaml`)
 6. Agentes (`agents/*.yaml`) e saídas do loop engine
 
 ### 3. Spec-Driven Development (SDD)
@@ -159,7 +159,7 @@ Em caso de divergência ou ambiguidade, prevalece a seguinte cadeia estrita:
 - **Especificações Canônicas:** `specs/`
 - **Índice de Contexto:** `context/index.yaml`
 - **Grafo de Workflow:** `workflows/feature.yaml`
-- **Perfil de Execução do Loop:** `profiles/runrun-loop.yaml`
+- **Perfil de Execução do Loop:** `profiles/prisma-loop.yaml`
 - **Contratos de Agentes:** `agents/`
 - **Backlog Estruturado:** `backlog.md`
 - **Proposta de Arquitetura AI-Native:** `AI-NATIVE-V0.md`
@@ -190,4 +190,26 @@ O Context Explorer inclui um painel funcional para visualizar e aprovar Human Ga
    - `GET /api/model` — regenerar e retornar model.json
 
 ## Fase atual
-**Rebrand Prisma WorkSpace (D68) em andamento — MVP técnico preservado; próximo foco: open source, identidade e gaps do documento de análise (D69).** (Atualizar esta linha a cada fase.)
+Organização local concluída em 2026-10-05; desenvolvimento migrado para o servidor em 2026-10-13 (D97). Estado e próximos resultados em
+`docs/workspace/README.md`; o plano histórico de release segue em `docs/OPEN-SOURCE-PLAN.md`.
+
+## Coordenação e memória
+- Workspace único: Prisma no Batuta. Time fixo (D97): Maestro (Claude Code, no PC) planeja, despacha, revisa,
+  integra e publica; Tear (Codex, no servidor Contabo) executa; Prumo (Claude Code, Opus 5.5 em esforço alto, no
+  servidor) revisa em modo somente leitura; Farol (Codex, no PC) faz o QA visual no portal do Batuta. Tarefas e
+  respostas passam pelo Maestro. Não iniciar outros agentes sem demanda.
+- Código, worktrees, ambiente Docker (`prisma-dev`) e testes automáticos rodam no servidor, em
+  `/home/agentes/projetos/prisma`. Agente remoto não tem `batuta`, notas nem ai-memory: o plano vai na tarefa e o
+  relatório volta na resposta. O executor faz push somente da branch da tarefa; nunca na `main`, que dispara deploy.
+- Raiz no PC (planejamento e integração): `C:\Users\Vitor\Desktop\prisma`. Landing: `apps/landing`, sem Git aninhado.
+- Uma entrega que afete API, frontend e landing permanece no mesmo andar.
+- Os andares de planejamento não têm isolamento; trabalhos simultâneos exigem branches/worktrees próprios.
+  Criar o isolamento somente quando a execução começar. Não editar a mesma raiz por dois agentes.
+- `.local/` contém recuperação privada. Nunca carregar seus arquivos em massa, versionar, publicar ou copiá-los
+  para andares. Manifesto e orientações em `.local/recovery/20261005/README.md`.
+- Garantir ai-memory ativo em `http://127.0.0.1:49374`; iniciar pelo script idempotente já instalado se necessário.
+- Escopo estável em `.ai-memory.toml`: workspace `default`, projeto `prisma-workspace`.
+  Consultar handoff e decisões no início; registrar o que foi feito, falhou e como continuar ao terminar.
+- Não modificar hooks do Codex/Claude Code. Não usar o orquestrador anterior para este projeto.
+- Não ler históricos de conversas antes de conferir nomes/identificadores com o PO. Não enviar mensagens externas.
+- Textos novos devem ser escritos sem emojis, ícones ou emoticons.
