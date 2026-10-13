@@ -38,6 +38,10 @@ com as entradas mais recentes e com o código. Não reabrir N:N ou reimplementar
 um checkpoint antigo isoladamente.
 
 ## Equipe por demanda
+Desde 2026-10-13 (D97) a coordenação é pelo Batuta e o desenvolvimento roda no servidor Contabo: Maestro e
+Farol no PC, Tear e Prumo (agora Claude Code) no servidor, executor com push somente da branch da tarefa. O texto
+abaixo descreve o arranjo anterior e vale apenas no que não conflitar com D97.
+
 Desde 2026-10-07 (D96) o time ativo no Maestri é: Maestro (Claude Code, planejador principal), Tear (Codex,
 executor, antigo terminal Planejador), Prumo (Antigravity com Claude Opus 5.5, revisor) e Farol (Codex, QA no navegador do Maestri).
 O parágrafo abaixo é a orientação anterior de D92 e vale apenas no que não conflitar com D96.

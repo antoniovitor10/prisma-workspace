@@ -190,15 +190,18 @@ O Context Explorer inclui um painel funcional para visualizar e aprovar Human Ga
    - `GET /api/model` — regenerar e retornar model.json
 
 ## Fase atual
-Organização local pelo Maestri concluída em 2026-10-05. Estado e próximos resultados em
+Organização local concluída em 2026-10-05; desenvolvimento migrado para o servidor em 2026-10-13 (D97). Estado e próximos resultados em
 `docs/workspace/README.md`; o plano histórico de release segue em `docs/OPEN-SOURCE-PLAN.md`.
 
 ## Coordenação e memória
-- Workspace único: Prisma no Maestri. Time fixo (D96): Maestro (Claude Code) planeja, despacha, aceita e commita;
-  Tear (Codex) executa; Prumo (Antigravity, Claude Opus 5.5) revisa em modo somente leitura quando o planejador
-  pedir; Farol (Codex) faz o QA
-  da tarefa no navegador do Maestri. Tarefas e respostas passam pelo Maestro. Não iniciar outros agentes sem demanda.
-- Raiz local: `C:\Users\Vitor\Desktop\prisma`. Landing: `apps/landing`, sem Git aninhado.
+- Workspace único: Prisma no Batuta. Time fixo (D97): Maestro (Claude Code, no PC) planeja, despacha, revisa,
+  integra e publica; Tear (Codex, no servidor Contabo) executa; Prumo (Claude Code, Opus 5.5 em esforço alto, no
+  servidor) revisa em modo somente leitura; Farol (Codex, no PC) faz o QA visual no portal do Batuta. Tarefas e
+  respostas passam pelo Maestro. Não iniciar outros agentes sem demanda.
+- Código, worktrees, ambiente Docker (`prisma-dev`) e testes automáticos rodam no servidor, em
+  `/home/agentes/projetos/prisma`. Agente remoto não tem `batuta`, notas nem ai-memory: o plano vai na tarefa e o
+  relatório volta na resposta. O executor faz push somente da branch da tarefa; nunca na `main`, que dispara deploy.
+- Raiz no PC (planejamento e integração): `C:\Users\Vitor\Desktop\prisma`. Landing: `apps/landing`, sem Git aninhado.
 - Uma entrega que afete API, frontend e landing permanece no mesmo andar.
 - Os andares de planejamento não têm isolamento; trabalhos simultâneos exigem branches/worktrees próprios.
   Criar o isolamento somente quando a execução começar. Não editar a mesma raiz por dois agentes.
