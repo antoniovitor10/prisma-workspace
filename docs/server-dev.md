@@ -19,7 +19,7 @@ Apenas o container do app usa a rede do host para alcançar o fixture IA local, 
 firewall ou rede de outros serviços. Escuta explicitamente em `0.0.0.0:3100`; SQL escuta somente em `127.0.0.1:3102` no host.
 A porta 1433 fica interna ao container. A rede e os volumes recebem prefixo `prisma-dev`.
 O proxy existente respondeu HTTP 401 (autenticação) em
-`https://3100.dev.169-58-61-117.sslip.io`; use as credenciais de proxy já fornecidas pelo PO.
+o endereço de prévia do servidor de desenvolvimento, porta 3100 (o PO informa o host); use as credenciais de proxy já fornecidas pelo PO.
 Não houve teste autenticado desse proxy nem alteração de Caddy.
 Não usar `scripts/setup-docker.sh` sem adaptar o nome do projeto e as portas.
 
