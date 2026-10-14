@@ -145,6 +145,7 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           DEPLOY_SHA: ${{ github.sha }}
@@ -156,7 +157,8 @@ jobs:
           chmod 600 ~/.ssh/prisma-deploy
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           target="$DEPLOY_USER@$DEPLOY_HOST"
+          port="${DEPLOY_PORT:-22}"
           remote="/home/dev/prisma-deploy/incoming/$DEPLOY_SHA"
-          ssh -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "mkdir -p '$remote' && chmod 700 '$remote'"
-          scp -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes image/* scripts/deploy-production.py "$target:$remote/"
-          ssh -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "python3 '$remote/deploy-production.py' '$DEPLOY_SHA'"
+          ssh -p "$port" -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "mkdir -p '$remote' && chmod 700 '$remote'"
+          scp -P "$port" -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes image/* scripts/deploy-production.py "$target:$remote/"
+          ssh -p "$port" -i ~/.ssh/prisma-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes "$target" "python3 '$remote/deploy-production.py' '$DEPLOY_SHA'"
