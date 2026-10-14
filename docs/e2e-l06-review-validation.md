@@ -23,6 +23,6 @@ Comandos frontend em src/Prisma.Workspace.Web, contra prisma-dev em 3100, um wor
 | npm run e2e -- e2e/boards-columns-l06.spec.ts --repeat-each=3 --reporter=html,list,json (versão diagnóstica) | 60 passaram, um timeout de reload; um mobile de 20,30 s motivou divisão | 744,63 s |
 | npm run e2e -- e2e/boards-columns-l06.spec.ts --grep 'concluir coluna|reabrir coluna|reabertura via API|confirmar exclusão ocupada' --reporter=html,list,json (versão final) | 9/9, incluindo setup, desktop/mobile | 82,43 s |
 
-No focal final: exclusão 9,51/9,74 s; conclusão 15,59/10,20 s; reabertura UI 10,93/10,19 s; descendentes externos API 4,60/4,88 s (desktop/mobile). Sem defeito de produto nas guardas pedidas.
+No focal final: exclusão 9,54/9,73 s; conclusão 15,57/10,17 s; reabertura UI 10,95/10,16 s; descendentes externos API 4,56/4,94 s (desktop/mobile). Sem defeito de produto nas guardas pedidas.
 
 Repetição da versão final e suíte completa com banco limpo serão registradas no relatório L08, na branch descendente. Não executar reset na QA; não corrigir testes antigos. Logs/JSON ignorados em .runlogs/e2e-l08.
