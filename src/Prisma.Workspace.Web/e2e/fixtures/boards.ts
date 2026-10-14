@@ -5,6 +5,8 @@ import { expect } from './test';
 export type BoardStage = { id: string; name: string; category: number };
 export type BoardItem = { id: string; boardId: string; stageId: string; completedAt: string | null; version: string };
 export type BoardSession = { accessToken: string; organizationId: string };
+export type ItemOptions = { parentId?: string; kind?: number; description?: string; priority?: number;
+  startDate?: string; dueDate?: string; estimatedHours?: number; responsibleId?: string };
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const userId = (token: string): string => {
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
@@ -13,11 +15,12 @@ const userId = (token: string): string => {
 
 /** Dados exclusivos de uma execução; nunca consulta projeto/tarefa do seed. */
 export class BoardFactory {
-  private viewers: string[] = [];
+  private members: Array<{ id: string; role: number }> = [];
 
-  constructor(readonly request: APIRequestContext, readonly admin: BoardSession, readonly projectId: string) {}
+  constructor(readonly request: APIRequestContext, readonly admin: BoardSession, readonly projectId: string, readonly batch = 'L06') {}
 
-  name(label: string) { return `L06 ${label} ${randomUUID()}`; }
+  name(label: string) { return `${this.batch} ${label} ${randomUUID()}`; }
+  get actorId() { return userId(this.admin.accessToken); }
 
   api(path: string, method = 'GET', data?: unknown, session = this.admin): Promise<APIResponse> {
     return this.request.fetch(`${apiUrl}${path}`, { method, data, headers: {
@@ -53,7 +56,7 @@ export class BoardFactory {
     return { id, name, category };
   }
 
-  async item(boardId: string, stageId: string, options: { parentId?: string; kind?: number } = {}) {
+  async item(boardId: string, stageId: string, options: ItemOptions = {}) {
     const title = this.name('tarefa');
     const id = await this.create('/api/WorkItems', {
       boardId, stageId, title, responsibleId: userId(this.admin.accessToken), priority: 1, position: 100,
@@ -62,29 +65,40 @@ export class BoardFactory {
     return { id, title };
   }
 
-  async viewer(): Promise<BoardSession> {
-    const email = `l06-${randomUUID()}@example.test`;
-    const invitation = await this.api('/api/organizations/current/invitations', 'POST', { email, role: 10, expiresInDays: 1 });
+  async customField(type = 1) {
+    const name = this.name('campo');
+    const id = await this.create(`/api/projects/${this.projectId}/custom-fields`, {
+      name, type, isRequired: false, optionsJson: null, position: 100,
+    });
+    return { id, name };
+  }
+
+  async viewer(): Promise<BoardSession> { return this.member(10, 1); }
+
+  async member(role = 7, projectRole = 2) {
+    const email = `${this.batch.toLowerCase()}-${randomUUID()}@example.test`;
+    const name = this.name('pessoa');
+    const invitation = await this.api('/api/organizations/current/invitations', 'POST', { email, role, expiresInDays: 1 });
     expect(invitation.status()).toBe(200);
     const password = process.env.E2E_TEST_USER_PASSWORD;
     if (!password) throw new Error('Senha local de teste não configurada.');
     const completed = await this.request.post(`${apiUrl}/api/auth/invitation/complete`, { data: {
       token: (await invitation.json()).token, password, confirmPassword: password,
-      createAccount: true, fullName: this.name('leitor'),
+      createAccount: true, fullName: name,
     } });
     expect(completed.status()).toBe(200);
     const session: BoardSession = await completed.json();
     const id = userId(session.accessToken);
-    this.viewers.push(id);
-    expect((await this.api(`/api/projects/${this.projectId}/members/${id}`, 'PUT', { role: 1 })).status()).toBe(204);
-    return session;
+    this.members.push({ id, role });
+    expect((await this.api(`/api/projects/${this.projectId}/members/${id}`, 'PUT', { role: projectRole })).status()).toBe(204);
+    return { ...session, id, name };
   }
 
   async cleanup() {
     try {
-      for (const id of this.viewers) {
+      for (const { id, role } of this.members) {
         expect((await this.api(`/api/projects/${this.projectId}/members/${id}`, 'DELETE')).status()).toBe(204);
-        expect((await this.api(`/api/organizations/current/members/${id}`, 'PUT', { role: 10, isActive: false })).status()).toBe(204);
+        expect((await this.api(`/api/organizations/current/members/${id}`, 'PUT', { role, isActive: false })).status()).toBe(204);
       }
     } finally {
       expect((await this.api(`/api/projects/${this.projectId}/archive`, 'POST')).status()).toBe(204);
@@ -94,7 +108,7 @@ export class BoardFactory {
   }
 }
 
-export async function withBoardFactory(page: Page, request: APIRequestContext, run: (factory: BoardFactory) => Promise<void>) {
+export async function withBoardFactory(page: Page, request: APIRequestContext, run: (factory: BoardFactory) => Promise<void>, batch = 'L06') {
   const admin = await page.evaluate(() => ({
     accessToken: localStorage.getItem('prisma_workspace_token')!,
     organizationId: localStorage.getItem('prisma_workspace_organization')!,
@@ -102,8 +116,15 @@ export async function withBoardFactory(page: Page, request: APIRequestContext, r
   if (!admin.accessToken || !admin.organizationId) throw new Error('Sessão administrativa E2E ausente.');
   const response = await request.post(`${apiUrl}/api/projects`, { headers: {
     Authorization: `Bearer ${admin.accessToken}`, 'X-Organization-Id': admin.organizationId,
-  }, data: { name: `L06 projeto ${randomUUID()}`, description: 'Fixture exclusiva de quadros e colunas', nature: 1, workType: 1 } });
+  }, data: { name: `${batch} projeto ${randomUUID()}`, description: 'Fixture exclusiva E2E', nature: 1, workType: 1 } });
   expect(response.status()).toBe(201);
-  const fixture = new BoardFactory(request, admin, await response.json());
-  try { await run(fixture); } finally { await fixture.cleanup(); }
+  const fixture = new BoardFactory(request, admin, await response.json(), batch);
+  let runError: unknown;
+  try { await run(fixture); } catch (error) { runError = error; throw error; } finally {
+    try { await fixture.cleanup(); } catch (cleanupError) {
+      // Preserva a causa inicial se um timeout também encerrar o contexto da limpeza.
+      if (runError) throw new AggregateError([runError, cleanupError], 'Falha no cenário e na limpeza da fixture.');
+      throw cleanupError;
+    }
+  }
 }
