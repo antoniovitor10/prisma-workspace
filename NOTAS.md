@@ -1,12 +1,10 @@
-# Continuidade — tarefa 6, parte A
+# Continuidade — tarefa 6, parte A concluída
 
 Atualizado em 2026-10-14 por Tear.
 
-- Revisão L06 em test/e2e-l07: casos divididos, recusas API 400 comprovadas, nenhum PUT de UI sem consentimento, editor novo para distinguir segundo erro. Reabertura UI e descendentes externos API separados; sem produto/spec/schema.
-- Focal final 9/9 desktop/mobile, 82,43 s, máximo 15,57 s; tsc -b/lint/tipos E2E aprovados. Diagnóstico anterior 60/61, timeout por resposta antiga em reload, e 20,30 s mobile motivando divisão. Relatório docs/e2e-l06-review-validation.md.
-- Próximo passo da mesma tarefa: criar test/e2e-l08 deste commit e implementar horas com usuário/projeto próprios; repetir L06+L08 três vezes, recriar somente banco prisma-dev e suíte completa. Não alterar rich-task-description antigo; registrar se reaparecer.
-- QA prisma-qa em 3110/SQL3111/PrismaWorkspace_QA permanece separada; login privado .env.qa.login modo 600, nunca imprimir senha. Dev em 3100/SQL3102/DetranKanban_E2E. Sem produção/main/deploy/PR/agentes.
-
-- Complemento A: conclusão UI e recursão profunda API separadas, payload de consentimento verdadeiro comprovado, todas as recargas/navegações L06 aguardam HTTP. Spec budget 20 s. Focal final 25/25 / 164,98 s, máximo 10,51 s. Banco histórico: GET Boards 446 em 4,01 s, 433 de 215 projetos arquivados; rodada conjunta diagnóstica interrompida (32 normais, 3 esperadas L08, 5 erros de carga, 1 interrupção, 401,15 s). Sem correção de produto. Reset inicial somente dev 40,67 s / 28 migrations / 1 seed. Repetição final e suíte limpa ainda seguem nesta tarefa B.
-
-- Barreira final de navegação: requestfinished + timing posterior aos headers do documento novo; evita refetch cancelado antigo, mantém GET 200 obrigatório. Fixture functional.ts opt-in L06/L08 com Google Fonts CSS vazio no headless; API/ativos locais reais, produto/QA intactos. Diagnóstico 31 reproduções sem pageerror, não comprovado crash. Focal 19/19, três vezes por dispositivo. Ainda repetir todos os specs finais e suíte limpa na branch B.
+- test/e2e-l07 contém a revisão L06: 17 casos técnicos, API 400 sem destino/consentimentos, zero PUT de UI sem consentimento, alerta novo, conclusão/reabertura/recursão profunda separados. Confirmação de exclusão aguarda GET real do destino e consulta IDs/estado novamente no servidor. Sem produto/spec/schema.
+- Repetição final conjunta no mesmo banco: 145 normais, 18 falhas esperadas L08, zero inesperadas/retries; 1336,53 s; máximo 16,28 s. L06 102/102. Frontend tsc -b 69,20 s e lint 0,76 s, 12 avisos anteriores; tipos/lint E2E explícitos aprovados. docs/e2e-l06-review-validation.md tem tempos e histórico honesto dos diagnósticos.
+- Chrome no host apresentou net::ERR_NETWORK_CHANGED. Origem não identificada. Driver local .runlogs/e2e-l08/run-isolated.sh usa somente container prisma-dev-e2e-runner, Playwright 1.62.1 / Node 24.18.1, rede none, loopback 3100 encaminhado ao mesmo API por socket Unix privado. Host proxy ainda ativo, .runlogs/e2e-l08/prisma-dev-http.sock (600); PID no arquivo .sock.pid. Código/receita em tcp-proxy.cjs. Nada de firewall, produção ou QA.
+- L08 implementado em arquivos ainda não commitados: fixtures/time.ts, time-tracking-l08.spec.ts, README e docs/e2e-l08-validation.md. Três defeitos isolados test.fail: B07 relatório sem escopo, sobreposição, distribuição por dia de Brasília. Sem alteração/exclusão de TimeEntry.
+- Próximo passo da mesma tarefa: commit/push A somente l07; avançar test/e2e-l08 por ff a partir dele; reset somente DetranKanban_E2E no prisma-dev com SQL oficial; suíte completa uma vez, registrar rich-task-description mobile se reaparecer; PROGRESS/NOTAS/relatório B, commit/push somente l08. Finalizar proxy local depois dos testes, deixar app dev 3100 e QA 3110.
+- QA permanece separada em 3110/SQL3111/PrismaWorkspace_QA, login privado .env.qa.login 600. Dev SQL3102. Sem main, deploy, PR, outros agentes ou segredos nos relatos.

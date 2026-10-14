@@ -76,7 +76,7 @@ test('L06 cria quadro pela UI, copia somente colunas e persiste após recarga', 
     expect(response.status()).toBe(201);
     const id: string = await response.json();
     await page.getByRole('button', { name: 'Ir para o quadro', exact: true }).click();
-    await expect(page.getByLabel('Selecionar quadro')).toHaveValue(id);
+    await page.waitForURL(`**/boards/${id}`);
     await loadedBoard(page, id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(id);
     await expect(page.getByRole('option', { name, exact: true })).toBeAttached();
@@ -89,19 +89,30 @@ test('L06 cria quadro pela UI, copia somente colunas e persiste após recarga', 
   });
 });
 
-test('L06 cancelar exclusão de quadro preserva itens; confirmar exige destino e transfere sem perda', async ({ page, request, authenticatedGoto }) => {
+test('L06 cancelar exclusão de quadro preserva quadro e tarefas após recarga', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
-    const source = await f.board(); const target = await f.board();
-    const from = await f.stage(source.id); const to = await f.stage(target.id);
-    const tasks = [await f.item(source.id, from.id), await f.item(source.id, from.id)];
-    const before = await state(f, tasks.map(task => task.id));
+    const source = await f.board(); const column = await f.stage(source.id);
+    const tasks = [await f.item(source.id, column.id), await f.item(source.id, column.id)];
+    const ids = tasks.map(task => task.id); const before = await state(f, ids);
     await loadedBoard(page, source.id, () => page.goto(`/boards/${source.id}`, { waitUntil: 'domcontentloaded' }));
     await page.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
     await deleteBoardModal(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
     await loadedBoard(page, source.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(source.id);
-    expect(await state(f, tasks.map(task => task.id))).toEqual(before);
+    expect(await f.get(`/api/Boards/${source.id}`)).toMatchObject({ id: source.id, name: source.name });
+    expect(await state(f, ids)).toEqual(before);
+  });
+});
+
+test('L06 excluir quadro ocupado sem destino é recusado pela UI e preserva tarefas', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const source = await f.board(); const target = await f.board();
+    const from = await f.stage(source.id); await f.stage(target.id);
+    const tasks = [await f.item(source.id, from.id), await f.item(source.id, from.id)];
+    const before = await state(f, tasks.map(task => task.id));
+    await loadedBoard(page, source.id, () => page.goto(`/boards/${source.id}`, { waitUntil: 'domcontentloaded' }));
 
     await page.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
     const modal = deleteBoardModal(page);
@@ -112,15 +123,34 @@ test('L06 cancelar exclusão de quadro preserva itens; confirmar exige destino e
     expect((await refused).status()).toBe(400);
     await expect(modal).toContainText('Escolha quadro e coluna de destino');
     expect(await state(f, tasks.map(task => task.id))).toEqual(before);
+    await modal.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    expect(await f.get(`/api/Boards/${source.id}`)).toMatchObject({ id: source.id });
+  });
+});
+
+test('L06 confirmar exclusão de quadro mostra destino na UI e persiste transferência', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const source = await f.board(); const target = await f.board();
+    const from = await f.stage(source.id); const to = await f.stage(target.id);
+    const tasks = [await f.item(source.id, from.id), await f.item(source.id, from.id)];
+    await loadedBoard(page, source.id, () => page.goto(`/boards/${source.id}`, { waitUntil: 'domcontentloaded' }));
+
+    await page.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
+    const modal = deleteBoardModal(page);
     await modal.getByRole('combobox').filter({ has: page.getByRole('option', { name: 'Escolha o quadro de destino', exact: true }) }).selectOption(target.id);
     await expect(modal.getByRole('option', { name: to.name, exact: true })).toBeAttached();
     await modal.getByLabel('Coluna de destino', { exact: true }).selectOption(to.id);
     const removed = responseTo(page, 'DELETE', `/api/Boards/${source.id}`);
+    const destinationItems = responseTo(page, 'GET', `/api/WorkItems/board/${target.id}`);
     await modal.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
     expect((await removed).status()).toBe(204);
     await expect(modal).toBeHidden();
-    await loadedBoard(page, target.id, () => page.goto(`/boards/${target.id}`, { waitUntil: 'domcontentloaded' }));
-    await loadedBoard(page, target.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
+    // Aguarda a seleção automática e seu GET real, sem disputar os cinco segundos do matcher com a listagem.
+    const destination = await destinationItems; expect(destination.status()).toBe(200);
+    expect((await destination.json() as BoardItem[]).map(task => task.id).sort()).toEqual(tasks.map(task => task.id).sort());
+    // As consultas abaixo comprovam de novo a persistência no servidor.
+    await expect(page.getByLabel('Selecionar quadro')).toHaveValue(target.id);
     await expect(page.getByRole('option', { name: source.name, exact: true })).toHaveCount(0);
     expect((await f.api(`/api/Boards/${source.id}`)).status()).toBe(404);
     for (const task of tasks) {
@@ -130,7 +160,7 @@ test('L06 cancelar exclusão de quadro preserva itens; confirmar exige destino e
   });
 });
 
-test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cancelamento', async ({ page, request, authenticatedGoto }) => {
+test('L06 criar coluna pela UI persiste nome e categoria após recarga', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
     const board = await f.board(); const name = f.name('coluna UI');
@@ -139,32 +169,46 @@ test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cance
     await page.getByPlaceholder('Nome da Coluna', { exact: true }).fill(name);
     const created = responseTo(page, 'POST', `/api/Stages/board/${board.id}`);
     await page.getByRole('button', { name: 'Adicionar', exact: true }).click();
-    const response = await created; expect(response.status()).toBe(201);
-    const id: string = await response.json();
+    const response = await created; expect(response.status()).toBe(201); const id: string = await response.json();
     await expect(page.getByRole('heading', { name: 'Nova Coluna', exact: true })).toBeHidden();
     await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${name}`, exact: true })).toBeVisible();
     expect((await stages(f, board.id)).find(stage => stage.id === id)).toMatchObject({ name, category: 3 });
-    await page.getByRole('button', { name: `Editar coluna ${name}`, exact: true }).click();
-    const renamed = f.name('coluna renomeada');
+  });
+});
+
+test('L06 renomear coluna pela UI conserva categoria e persiste após recarga', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const board = await f.board(); const column = await f.stage(board.id); const renamed = f.name('coluna renomeada');
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
     await editor(page).getByPlaceholder('Nome da Coluna', { exact: true }).fill(renamed);
-    const updated = responseTo(page, 'PUT', `/api/Stages/${id}`);
-    await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
-    expect((await updated).status()).toBe(204);
+    const updated = responseTo(page, 'PUT', `/api/Stages/${column.id}`);
+    await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click(); expect((await updated).status()).toBe(204);
     await expect(editor(page)).toBeHidden();
     await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toBeVisible();
-    expect((await stages(f, board.id)).find(stage => stage.id === id)).toMatchObject({ name: renamed, category: 3 });
-    await page.getByRole('button', { name: `Excluir coluna ${renamed}`, exact: true }).click();
+    await expect(page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true })).toHaveCount(0);
+    expect((await stages(f, board.id)).find(stage => stage.id === column.id)).toMatchObject({ name: renamed, category: 3 });
+  });
+});
+
+test('L06 excluir coluna vazia: cancelar preserva; confirmar remove sem afetar outras', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const board = await f.board(); const column = await f.stage(board.id); const original = await stages(f, board.id);
+    expect(await f.get(`/api/WorkItems/board/${board.id}`)).toEqual([]);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    await page.getByRole('button', { name: `Excluir coluna ${column.name}`, exact: true }).click();
     expect(await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), false)).toContain('coluna vazia');
-    expect((await stages(f, board.id)).some(stage => stage.id === id)).toBe(true);
-    const removed = responseTo(page, 'DELETE', `/api/Stages/${id}`);
+    expect(await stages(f, board.id)).toEqual(original);
+    const removed = responseTo(page, 'DELETE', `/api/Stages/${column.id}`);
     await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), true);
-    expect((await removed).status()).toBe(204);
-    await expect(editor(page)).toBeHidden();
+    expect((await removed).status()).toBe(204); await expect(editor(page)).toBeHidden();
     await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
-    await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toHaveCount(0);
-    expect((await stages(f, board.id)).some(stage => stage.id === id)).toBe(false);
+    await expect(page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true })).toHaveCount(0);
+    expect(await stages(f, board.id)).toEqual(original.filter(stage => stage.id !== column.id));
   });
 });
 
@@ -213,10 +257,10 @@ test('L06 confirmar exclusão ocupada transfere os mesmos IDs e persiste após r
   });
 });
 
-test('L06 reclassificação: API e UI exigem ambos os consentimentos; cancelamento não altera estado', async ({ page, request, authenticatedGoto }) => {
+test('L06 D62: API recusa reclassificação sem consentimento da categoria ou descendentes', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
-    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
+    const { column, ids } = await stageFamily(f); const before = await state(f, ids);
     const impact = await f.get<{ snapshotToken: string; openDescendants: number }>(`/api/Stages/${column.id}/impact?category=5`);
     expect(impact.openDescendants).toBe(2);
     const refusedCategory = await f.api(`/api/Stages/${column.id}`, 'PUT', { name: column.name, category: 5, impactToken: impact.snapshotToken });
@@ -228,6 +272,13 @@ test('L06 reclassificação: API e UI exigem ambos os consentimentos; cancelamen
     expect(refusedDescendants.status()).toBe(400);
     expect((await refusedDescendants.json()).detail).toContain('Confirme separadamente a conclusão de 2 descendente(s)');
     expect(await state(f, ids)).toEqual(before);
+  });
+});
+
+test('L06 UI exige ambos os consentimentos com alerta novo e zero PUTs; cancelar preserva', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
     await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
     const observed = writesTo(page, 'PUT', `/api/Stages/${column.id}`);
     try {
