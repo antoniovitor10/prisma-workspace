@@ -83,3 +83,30 @@ docker compose -p prisma-dev --env-file .env.server-dev -f compose.server-dev.ya
 ```
 
 Não há comando global de limpeza. Não publicar a porta 1433 nem reutilizar nomes de produção.
+
+## QA visual com banco separado
+
+O perfil `qa` reutiliza o Compose com projeto `prisma-qa`, app em `0.0.0.0:3110`,
+SQL exclusivo em `127.0.0.1:3111` e banco `PrismaWorkspace_QA`. Rede e volumes têm
+prefixo próprio. As migrations e o seed oficiais são aplicados no boot; não usa
+nem recria o banco `DetranKanban_E2E` do perfil `dev`.
+
+```bash
+scripts/run-local.sh up qa
+scripts/run-local.sh down qa
+```
+
+O segundo argumento seleciona somente `dev` ou `qa`; sem argumento, o comportamento
+continua sendo `prisma-dev` em 3100/3102. Scripts recusam portas/banco incompatíveis.
+`setup-e2e-database.sh qa` não altera arquivos de conexão/login do Playwright.
+
+QA usa `prisma-qa-app:2c3816c`, imagem local pinada com o mesmo produto da main 2c3816c;
+`up qa` exige essa imagem já preparada e nunca reconstrói a partir da branch de testes.
+Nesta preparação a imagem existente do desenvolvimento foi conferida contra os fontes
+runtime da main e recebeu essa tag, sem copiar imagem/configuração de produção.
+
+Login oficial do seed: `admin@prisma.example.invalid`. URL, e-mail e senha gerada ficam
+em `.env.qa.login`; somente a senha também fica em `.env.qa.seedpassword`. Configuração
+completa em `.env.server-qa`. Arquivos ignorados pelo Git, modo 600; não copiar valores
+para notas, logs ou mensagens. Perfil QA não fornece ponte IA; seu endereço local
+separado está reservado e as conexões não são copiadas do banco E2E.
