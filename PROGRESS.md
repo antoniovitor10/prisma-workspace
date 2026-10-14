@@ -1,3 +1,13 @@
+## [2026-10-14] - Claude Code (Maestro) - integração na main e deploy pelo Contabo
+
+- Com as respostas do PO em 2026-10-13: três falhas de teste corrigidas pelo Tear em `fix/server-test-failures` (Context Explorer 42/42, Vitest em threads 145/145, `project-assignment-access.spec.ts` com fixture própria), sem código de produto; feat reconciliada com a `main` em `integration/ai-foundation-main` (merge `91b8d07`, código igual ao da feat, sem migration); revisão do Prumo aprovada com ressalvas, sem achado bloqueante. O endereço do servidor de desenvolvimento foi retirado de `docs/server-dev.md` antes do merge, por ser repositório público.
+- PR #20 integrado na `main` (`8235841`) com CI verde. O deploy falhou no primeiro `ssh` (`Permission denied`): os secrets ainda apontavam para o servidor anterior e o `ci.yml` não usava a porta SSH do Contabo. Produção não foi alterada nessa tentativa.
+- Conserto autorizado pelo PO: `ci.yml` passa a usar o secret `DEPLOY_PORT` (padrão 22) em `ssh -p` e `scp -P`; secrets `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS` e `DEPLOY_PORT` atualizados, com a chave de host conferida contra o próprio servidor. PR #21 integrado (`2c3816c`); run 38505622466 concluiu todos os jobs, incluindo `Deploy produção`. `prisma.nordevs.com.br` e `/health` respondem 200.
+- Não verificado: a revisão do container em produção não foi lida diretamente, porque o SSH do PC para o servidor passou a dar timeout logo após o deploy (HTTPS segue normal; provável bloqueio temporário do fail2ban após várias conexões seguidas do Maestro). Não houve QA visual da versão publicada.
+- Worktrees antigas do PC removidas com `git worktree remove`; terminal Antigravity trocado por Claude Code (Reserva).
+- Esta entrada está na branch `docs/progress-deploy-20261014`, sem push na `main`, para não disparar novo deploy só por documentação.
+- Próximo passo: confirmar a revisão publicada quando o SSH voltar; tarefa separada para xUnit no CI; plano de ampliação dos testes de ponta a ponta.
+
 ## [2026-10-13] - Codex (Tear) - reconciliação da feat com main para integração
 
 - Tarefa 3 autorizada pelo Maestro/PO: criada `integration/ai-foundation-main` de `origin/feat/ai-assistant-foundation` (`457c6d2`), merge de `origin/main` (`6eecba8`), sem rebase/force push. Resolvidos 14 conflitos com comparação de ambos os pais e SPEC-AI-004 aprovada; base publicada preservada e correções posteriores aceitas da feat mantidas. Nenhuma correção exclusiva da main ausente no código final; produto/testes finais coincidem com a feat, sem refatoração ou correção adicional.
