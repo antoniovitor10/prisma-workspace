@@ -5,11 +5,11 @@ export { expect };
 // Estes lotes verificam comportamento com API real. Tipografia externa fica no QA visual:
 // a folha do Google falha no servidor e pode atrasar a execução dos scripts da página.
 export const test = base.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, providePage) => {
     await page.route('https://fonts.googleapis.com/**', route => route.fulfill({
       status: 200, contentType: 'text/css', body: '',
     }));
-    await use(page);
+    await providePage(page);
   },
 });
 
