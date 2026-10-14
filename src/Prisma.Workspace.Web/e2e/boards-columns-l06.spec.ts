@@ -2,6 +2,8 @@ import type { Locator, Page, Request } from '@playwright/test';
 import { test, expect } from './fixtures/test';
 import { withBoardFactory, type BoardFactory, type BoardItem, type BoardStage } from './fixtures/boards';
 
+test.setTimeout(20_000);
+
 const responseTo = (page: Page, method: string, path: string) => page.waitForResponse(response =>
   response.request().method() === method && new URL(response.url()).pathname.toLowerCase() === path.toLowerCase());
 const editor = (page: Page) => page.getByRole('heading', { name: 'Editar Coluna', exact: true }).locator('..');
@@ -45,11 +47,11 @@ async function stageFamily(f: BoardFactory, category = 3) {
   const other = await f.item(board.id, column.id);
   return { board, column, outside, parent, child, grandchild, other, ids: [parent.id, other.id, child.id, grandchild.id] };
 }
-async function selectCategory(page: Page, column: BoardStage, category: string) {
+async function selectCategory(page: Page, column: BoardStage, category: string, affected = 2) {
   await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
   await expect(editor(page).getByRole('alert')).toHaveCount(0);
   await editor(page).getByLabel('Classificação da coluna').selectOption(category);
-  await expect(page.getByLabel('Impacto da reclassificação')).toContainText('2 tarefa(s) na coluna; 2 terão o estado alterado');
+  await expect(page.getByLabel('Impacto da reclassificação')).toContainText(`${affected} tarefa(s) na coluna; ${affected} terão o estado alterado`);
 }
 
 // O diálogo nativo deve ser resolvido durante o click, antes de este terminar.
@@ -70,7 +72,7 @@ test('L06 cria quadro pela UI, copia somente colunas e persiste após recarga', 
     const column = await f.stage(source.id);
     await f.item(source.id, column.id);
     const original = await stages(f, source.id);
-    await authenticatedGoto(`/boards/${source.id}`);
+    await loadedBoard(page, source.id, () => page.goto(`/boards/${source.id}`, { waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(source.id);
     await page.getByRole('button', { name: 'Novo Quadro', exact: true }).click();
     const name = f.name('quadro UI');
@@ -83,7 +85,7 @@ test('L06 cria quadro pela UI, copia somente colunas e persiste após recarga', 
     const id: string = await response.json();
     await page.getByRole('button', { name: 'Ir para o quadro', exact: true }).click();
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(id);
-    await page.reload();
+    await loadedBoard(page, id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(id);
     await expect(page.getByRole('option', { name, exact: true })).toBeAttached();
     const persisted = await f.get<{ projectId: string; name: string }>(`/api/Boards/${id}`);
@@ -102,10 +104,10 @@ test('L06 cancelar exclusão de quadro preserva itens; confirmar exige destino e
     const from = await f.stage(source.id); const to = await f.stage(target.id);
     const tasks = [await f.item(source.id, from.id), await f.item(source.id, from.id)];
     const before = await state(f, tasks.map(task => task.id));
-    await authenticatedGoto(`/boards/${source.id}`);
+    await loadedBoard(page, source.id, () => page.goto(`/boards/${source.id}`, { waitUntil: 'domcontentloaded' }));
     await page.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
     await deleteBoardModal(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
-    await page.reload();
+    await loadedBoard(page, source.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(source.id);
     expect(await state(f, tasks.map(task => task.id))).toEqual(before);
 
@@ -125,8 +127,8 @@ test('L06 cancelar exclusão de quadro preserva itens; confirmar exige destino e
     await modal.getByRole('button', { name: 'Excluir Quadro', exact: true }).click();
     expect((await removed).status()).toBe(204);
     await expect(modal).toBeHidden();
-    await authenticatedGoto(`/boards/${target.id}`);
-    await page.reload();
+    await loadedBoard(page, target.id, () => page.goto(`/boards/${target.id}`, { waitUntil: 'domcontentloaded' }));
+    await loadedBoard(page, target.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('option', { name: source.name, exact: true })).toHaveCount(0);
     expect((await f.api(`/api/Boards/${source.id}`)).status()).toBe(404);
     for (const task of tasks) {
@@ -140,14 +142,15 @@ test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cance
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
     const board = await f.board(); const name = f.name('coluna UI');
-    await authenticatedGoto(`/boards/${board.id}`);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
     await page.getByRole('button', { name: 'Nova Coluna', exact: true }).click();
     await page.getByPlaceholder('Nome da Coluna', { exact: true }).fill(name);
     const created = responseTo(page, 'POST', `/api/Stages/board/${board.id}`);
     await page.getByRole('button', { name: 'Adicionar', exact: true }).click();
     const response = await created; expect(response.status()).toBe(201);
     const id: string = await response.json();
-    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Nova Coluna', exact: true })).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${name}`, exact: true })).toBeVisible();
     expect((await stages(f, board.id)).find(stage => stage.id === id)).toMatchObject({ name, category: 3 });
     await page.getByRole('button', { name: `Editar coluna ${name}`, exact: true }).click();
@@ -156,7 +159,8 @@ test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cance
     const updated = responseTo(page, 'PUT', `/api/Stages/${id}`);
     await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
     expect((await updated).status()).toBe(204);
-    await page.reload();
+    await expect(editor(page)).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toBeVisible();
     expect((await stages(f, board.id)).find(stage => stage.id === id)).toMatchObject({ name: renamed, category: 3 });
     await page.getByRole('button', { name: `Excluir coluna ${renamed}`, exact: true }).click();
@@ -165,7 +169,8 @@ test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cance
     const removed = responseTo(page, 'DELETE', `/api/Stages/${id}`);
     await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), true);
     expect((await removed).status()).toBe(204);
-    await page.reload();
+    await expect(editor(page)).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toHaveCount(0);
     expect((await stages(f, board.id)).some(stage => stage.id === id)).toBe(false);
   });
@@ -254,22 +259,45 @@ test('L06 reclassificação: API e UI exigem ambos os consentimentos; cancelamen
   });
 });
 
-test('L06 concluir coluna ocupada confirma descendência recursiva e persiste histórico individual', async ({ page, request, authenticatedGoto }) => {
+test('L06 concluir pela UI consente descendência externa e persiste estado e histórico', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
-    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
+    const board = await f.board(); const column = await f.stage(board.id); const outside = await f.stage(board.id);
+    const parent = await f.item(board.id, column.id, { kind: 1 });
+    const child = await f.item(board.id, outside.id, { parentId: parent.id, kind: 2 });
+    const ids = [parent.id, child.id]; const before = await state(f, ids);
     await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
-    await selectCategory(page, column, '5');
+    await selectCategory(page, column, '5', 1);
     await editor(page).getByRole('checkbox', { name: 'Confirmo alterar o estado das tarefas desta coluna', exact: true }).check();
-    await editor(page).getByRole('checkbox', { name: /Aceito concluir também todos os 2 descendentes abertos/ }).check();
+    await editor(page).getByRole('checkbox', { name: /Aceito concluir também todos os 1 descendentes abertos/ }).check();
     const done = responseTo(page, 'PUT', `/api/Stages/${column.id}`);
     await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
-    expect((await done).status()).toBe(204);
+    const response = await done; expect(response.status()).toBe(204);
+    expect(response.request().postDataJSON()).toMatchObject({ confirmCategoryChange: true, confirmDescendants: true });
     await expect(editor(page)).toBeHidden();
     await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 5 })]));
-    const persisted = await state(f, ids);
-    for (const current of persisted) {
+    for (const current of await state(f, ids)) {
+      expect(current.completedAt).not.toBeNull();
+      expect(current.stageId).toBe(before.find(row => row.id === current.id)!.stageId);
+    }
+    const events = await Promise.all(ids.map(id => f.get<Array<{ kind: string }>>(`/api/WorkItems/${id}/events`)));
+    for (const feed of events) expect(feed.filter(event => event.kind === 'stage_reclassified')).toHaveLength(1);
+  });
+});
+
+test('L06 conclusão via API alcança neto externo, preserva colunas e histórico individual', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
+    const impact = await f.get<{ snapshotToken: string; openDescendants: number }>(`/api/Stages/${column.id}/impact?category=5`);
+    expect(impact.openDescendants).toBe(2);
+    const done = await f.api(`/api/Stages/${column.id}`, 'PUT', {
+      name: column.name, category: 5, confirmCategoryChange: true, confirmDescendants: true, impactToken: impact.snapshotToken,
+    });
+    expect(done.status()).toBe(204);
+    expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 5 })]));
+    for (const current of await state(f, ids)) {
       expect(current.completedAt).not.toBeNull();
       expect(current.stageId).toBe(before.find(row => row.id === current.id)!.stageId);
     }
@@ -349,7 +377,7 @@ test('L06 leitor não cria nem exclui coluna pela UI ou API', async ({ page, req
       localStorage.setItem('prisma_workspace_token', session.accessToken);
       localStorage.setItem('prisma_workspace_organization', session.organizationId);
     }, viewer);
-    await authenticatedGoto(`/boards/${board.id}`);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
     await expect(page.getByLabel('Selecionar quadro')).toHaveValue(board.id);
     await page.getByRole('button', { name: 'Nova Coluna', exact: true }).click();
     await page.getByPlaceholder('Nome da Coluna', { exact: true }).fill(data.name);
@@ -363,7 +391,7 @@ test('L06 leitor não cria nem exclui coluna pela UI ou API', async ({ page, req
     await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), true);
     expect((await deniedDelete).status()).toBe(404);
     await expect(editor(page).getByRole('alert')).toBeVisible();
-    await page.reload();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true })).toBeVisible();
     expect(await stages(f, board.id)).toEqual(original);
   });
