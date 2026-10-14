@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator, Page, Request } from '@playwright/test';
 import { test, expect } from './fixtures/test';
 import { withBoardFactory, type BoardFactory, type BoardItem, type BoardStage } from './fixtures/boards';
 
@@ -13,6 +13,43 @@ async function state(f: BoardFactory, ids: string[]) {
     const value = await item(f, id);
     return { id, boardId: value.boardId, stageId: value.stageId, completedAt: value.completedAt, version: value.version };
   }));
+}
+
+
+// A recarga só pode ser conferida depois que o quadro e suas projeções próprias chegarem.
+async function loadedBoard(page: Page, boardId: string, navigate: () => Promise<unknown>) {
+  // Observa requisições novas, não respostas tardias do refresh anterior à recarga.
+  const loaded = ['/api/Boards', `/api/Stages/board/${boardId}`, `/api/WorkItems/board/${boardId}`]
+    .map(path => page.waitForRequest(request => request.method() === 'GET'
+      && new URL(request.url()).pathname.toLowerCase() === path.toLowerCase()));
+  await navigate();
+  for (const request of await Promise.all(loaded)) {
+    const response = await request.response();
+    expect(response).not.toBeNull(); expect(response!.status()).toBe(200);
+    expect(await response!.finished()).toBeNull();
+  }
+}
+function writesTo(page: Page, method: string, path: string) {
+  let count = 0;
+  const listener = (request: Request) => {
+    if (request.method() === method && new URL(request.url()).pathname.toLowerCase() === path.toLowerCase()) count++;
+  };
+  page.on('request', listener);
+  return { count: () => count, dispose: () => page.off('request', listener) };
+}
+async function stageFamily(f: BoardFactory, category = 3) {
+  const board = await f.board(); const column = await f.stage(board.id, category); const outside = await f.stage(board.id, category);
+  const parent = await f.item(board.id, column.id, { kind: 1 });
+  const child = await f.item(board.id, outside.id, { parentId: parent.id, kind: 2 });
+  const grandchild = await f.item(board.id, outside.id, { parentId: child.id, kind: 3 });
+  const other = await f.item(board.id, column.id);
+  return { board, column, outside, parent, child, grandchild, other, ids: [parent.id, other.id, child.id, grandchild.id] };
+}
+async function selectCategory(page: Page, column: BoardStage, category: string) {
+  await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
+  await expect(editor(page).getByRole('alert')).toHaveCount(0);
+  await editor(page).getByLabel('Classificação da coluna').selectOption(category);
+  await expect(page.getByLabel('Impacto da reclassificação')).toContainText('2 tarefa(s) na coluna; 2 terão o estado alterado');
 }
 
 // O diálogo nativo deve ser resolvido durante o click, antes de este terminar.
@@ -134,105 +171,169 @@ test('L06 cria, renomeia e exclui coluna vazia pela UI com persistência e cance
   });
 });
 
-test('L06 excluir coluna ocupada exige destino, mostra impacto e cancelar preserva tarefas', async ({ page, request, authenticatedGoto }) => {
+test('L06 excluir coluna ocupada: API exige destino; UI informa impacto e cancelar preserva tarefas', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
     const board = await f.board(); const source = await f.stage(board.id); const target = await f.stage(board.id);
     const tasks = [await f.item(board.id, source.id), await f.item(board.id, source.id)];
     const ids = tasks.map(task => task.id); const before = await state(f, ids);
-    await authenticatedGoto(`/boards/${board.id}`);
-    for (const task of tasks) await expect(page.getByRole('heading', { name: new RegExp(task.title) })).toBeVisible();
+    const refused = await f.api(`/api/Stages/${source.id}`, 'DELETE');
+    expect(refused.status()).toBe(400);
+    expect((await refused.json()).detail).toContain('Escolha a coluna de destino');
+    expect(await state(f, ids)).toEqual(before);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
     await page.getByRole('button', { name: `Excluir coluna ${source.name}`, exact: true }).click();
     await editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }).click();
     await expect(editor(page).getByRole('alert')).toContainText('transferir 2 tarefa(s)');
-    expect(await state(f, ids)).toEqual(before);
     await editor(page).getByLabel('Ao excluir, transferir tarefas para').selectOption(target.id);
     const cancelled = await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), false);
     expect(cancelled).toContain('2 tarefa(s)'); expect(cancelled).toContain(target.name);
     await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
-    await page.reload();
-    await expect(page.getByRole('button', { name: `Editar coluna ${source.name}`, exact: true })).toBeVisible();
     expect(await state(f, ids)).toEqual(before);
+    expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: source.id })]));
+    await expect(page.getByRole('button', { name: `Editar coluna ${source.name}`, exact: true })).toBeVisible();
+  });
+});
+
+test('L06 confirmar exclusão ocupada transfere os mesmos IDs e persiste após recarga', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const board = await f.board(); const source = await f.stage(board.id); const target = await f.stage(board.id);
+    const tasks = [await f.item(board.id, source.id), await f.item(board.id, source.id)];
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
     await page.getByRole('button', { name: `Excluir coluna ${source.name}`, exact: true }).click();
     await editor(page).getByLabel('Ao excluir, transferir tarefas para').selectOption(target.id);
     const removed = responseTo(page, 'DELETE', `/api/Stages/${source.id}`);
     expect(await confirmDeletion(page, editor(page).getByRole('button', { name: 'Excluir coluna', exact: true }), true)).toContain('2 tarefa(s)');
     expect((await removed).status()).toBe(204);
-    await page.reload();
+    await expect(editor(page)).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${source.name}`, exact: true })).toHaveCount(0);
     expect((await stages(f, board.id)).some(stage => stage.id === source.id)).toBe(false);
-    for (const task of tasks) {
-      expect(await item(f, task.id)).toMatchObject({ boardId: board.id, stageId: target.id, completedAt: null });
-      await expect(page.getByRole('heading', { name: new RegExp(task.title) })).toBeVisible();
-    }
+    const persisted = await Promise.all(tasks.map(task => item(f, task.id)));
+    for (const current of persisted) expect(current).toMatchObject({ boardId: board.id, stageId: target.id, completedAt: null });
+    for (const task of tasks) await expect(page.getByRole('heading', { name: new RegExp(task.title) })).toBeVisible();
   });
 });
 
-test('L06 reclassificar coluna ocupada confirma impacto e descendência; cancelar e reabrir persistem corretamente', async ({ page, request, authenticatedGoto }) => {
+test('L06 reclassificação: API e UI exigem ambos os consentimentos; cancelamento não altera estado', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
-    const board = await f.board(); const column = await f.stage(board.id); const outside = await f.stage(board.id);
-    const parent = await f.item(board.id, column.id, { kind: 1 });
-    const child = await f.item(board.id, outside.id, { parentId: parent.id, kind: 2 });
-    const grandchild = await f.item(board.id, outside.id, { parentId: child.id, kind: 3 });
-    const other = await f.item(board.id, column.id);
-    const ids = [parent.id, other.id, child.id, grandchild.id]; const before = await state(f, ids);
-    await authenticatedGoto(`/boards/${board.id}`);
-    await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
-    await editor(page).getByLabel('Classificação da coluna').selectOption('5');
-    await expect(page.getByLabel('Impacto da reclassificação')).toContainText('2 tarefa(s) na coluna; 2 terão o estado alterado; 2 descendente(s)');
-    await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
-    await expect(editor(page).getByRole('alert')).toContainText('confirme explicitamente');
-    await editor(page).getByRole('checkbox', { name: 'Confirmo alterar o estado das tarefas desta coluna', exact: true }).check();
-    await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
-    await expect(editor(page).getByRole('alert')).toContainText('confirme explicitamente');
-    await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
-    await page.reload();
+    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
+    const impact = await f.get<{ snapshotToken: string; openDescendants: number }>(`/api/Stages/${column.id}/impact?category=5`);
+    expect(impact.openDescendants).toBe(2);
+    const refusedCategory = await f.api(`/api/Stages/${column.id}`, 'PUT', { name: column.name, category: 5, impactToken: impact.snapshotToken });
+    expect(refusedCategory.status()).toBe(400);
+    expect((await refusedCategory.json()).detail).toContain('Confirme a mudança de classificação');
+    const refusedDescendants = await f.api(`/api/Stages/${column.id}`, 'PUT', {
+      name: column.name, category: 5, confirmCategoryChange: true, impactToken: impact.snapshotToken,
+    });
+    expect(refusedDescendants.status()).toBe(400);
+    expect((await refusedDescendants.json()).detail).toContain('Confirme separadamente a conclusão de 2 descendente(s)');
     expect(await state(f, ids)).toEqual(before);
-    expect((await stages(f, board.id)).find(stage => stage.id === column.id)?.category).toBe(3);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    const observed = writesTo(page, 'PUT', `/api/Stages/${column.id}`);
+    try {
+      await selectCategory(page, column, '5');
+      await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
+      await expect(editor(page).getByRole('alert')).toHaveText('Revise o impacto e confirme explicitamente as alterações.');
+      expect(observed.count()).toBe(0);
+      await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
+      // Nova abertura elimina o alerta anterior: a segunda recusa precisa produzir um novo erro.
+      await selectCategory(page, column, '5');
+      await editor(page).getByRole('checkbox', { name: 'Confirmo alterar o estado das tarefas desta coluna', exact: true }).check();
+      await expect(editor(page).getByRole('alert')).toHaveCount(0);
+      await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
+      await expect(editor(page).getByRole('alert')).toHaveText('Revise o impacto e confirme explicitamente as alterações.');
+      expect(observed.count()).toBe(0);
+      await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
+      expect(await state(f, ids)).toEqual(before);
+      expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 3 })]));
+      expect(observed.count()).toBe(0);
+    } finally { observed.dispose(); }
+  });
+});
 
-    await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
-    await editor(page).getByLabel('Classificação da coluna').selectOption('5');
-    await expect(page.getByLabel('Impacto da reclassificação')).toContainText('2 descendente(s)');
+test('L06 concluir coluna ocupada confirma descendência recursiva e persiste histórico individual', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const { board, column, ids } = await stageFamily(f); const before = await state(f, ids);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    await selectCategory(page, column, '5');
     await editor(page).getByRole('checkbox', { name: 'Confirmo alterar o estado das tarefas desta coluna', exact: true }).check();
     await editor(page).getByRole('checkbox', { name: /Aceito concluir também todos os 2 descendentes abertos/ }).check();
     const done = responseTo(page, 'PUT', `/api/Stages/${column.id}`);
     await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
     expect((await done).status()).toBe(204);
-    await page.reload();
-    for (const id of ids) {
-      const current = await item(f, id);
+    await expect(editor(page)).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
+    expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 5 })]));
+    const persisted = await state(f, ids);
+    for (const current of persisted) {
       expect(current.completedAt).not.toBeNull();
-      expect(current.stageId).toBe(before.find(row => row.id === id)!.stageId);
-      const events = await f.get<Array<{ kind: string }>>(`/api/WorkItems/${id}/events`);
-      expect(events.filter(event => event.kind === 'stage_reclassified')).toHaveLength(1);
+      expect(current.stageId).toBe(before.find(row => row.id === current.id)!.stageId);
     }
-    const completed = await state(f, ids);
-    await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
-    await expect(editor(page).getByLabel('Classificação da coluna')).toHaveValue('5');
-    await editor(page).getByLabel('Classificação da coluna').selectOption('3');
-    await expect(page.getByLabel('Impacto da reclassificação')).toContainText('reabrir. 2 tarefa(s) na coluna; 2 terão o estado alterado');
-    await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
-    await expect(editor(page).getByRole('alert')).toContainText('confirme explicitamente');
-    await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
-    await page.reload();
-    expect(await state(f, ids)).toEqual(completed);
-    expect((await stages(f, board.id)).find(stage => stage.id === column.id)?.category).toBe(5);
-    await page.getByRole('button', { name: `Editar coluna ${column.name}`, exact: true }).click();
-    await editor(page).getByLabel('Classificação da coluna').selectOption('3');
-    await expect(page.getByLabel('Impacto da reclassificação')).toContainText('2 terão o estado alterado');
+    const events = await Promise.all(ids.map(id => f.get<Array<{ kind: string }>>(`/api/WorkItems/${id}/events`)));
+    for (const feed of events) expect(feed.filter(event => event.kind === 'stage_reclassified')).toHaveLength(1);
+  });
+});
+
+test('L06 reabrir: API e UI exigem confirmação; cancelar preserva tarefas concluídas', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const { board, column, ids } = await stageFamily(f, 5); const before = await state(f, ids);
+    const impact = await f.get<{ snapshotToken: string }>(`/api/Stages/${column.id}/impact?category=3`);
+    const refused = await f.api(`/api/Stages/${column.id}`, 'PUT', { name: column.name, category: 3, impactToken: impact.snapshotToken });
+    expect(refused.status()).toBe(400); expect((await refused.json()).detail).toContain('Confirme a mudança de classificação');
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    const observed = writesTo(page, 'PUT', `/api/Stages/${column.id}`);
+    try {
+      await selectCategory(page, column, '3');
+      await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
+      await expect(editor(page).getByRole('alert')).toHaveText('Revise o impacto e confirme explicitamente as alterações.');
+      expect(observed.count()).toBe(0);
+      await editor(page).getByRole('button', { name: 'Cancelar', exact: true }).click();
+      expect(await state(f, ids)).toEqual(before);
+      expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 5 })]));
+      expect(observed.count()).toBe(0);
+    } finally { observed.dispose(); }
+  });
+});
+
+test('L06 reabrir coluna ocupada pela UI persiste estado e histórico das tarefas nela', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const board = await f.board(); const column = await f.stage(board.id, 5);
+    const ids = [await f.item(board.id, column.id), await f.item(board.id, column.id)].map(value => value.id);
+    await loadedBoard(page, board.id, () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
+    await selectCategory(page, column, '3');
     await editor(page).getByRole('checkbox', { name: 'Confirmo alterar o estado das tarefas desta coluna', exact: true }).check();
     const reopened = responseTo(page, 'PUT', `/api/Stages/${column.id}`);
     await editor(page).getByRole('button', { name: 'Salvar', exact: true }).click();
     expect((await reopened).status()).toBe(204);
-    await page.reload();
-    expect((await stages(f, board.id)).find(stage => stage.id === column.id)?.category).toBe(3);
-    for (const id of [parent.id, other.id]) {
-      expect(await item(f, id)).toMatchObject({ completedAt: null, stageId: column.id });
-      const events = await f.get<Array<{ kind: string }>>(`/api/WorkItems/${id}/events`);
-      expect(events.filter(event => event.kind === 'stage_reclassified')).toHaveLength(2);
-    }
-    for (const id of [child.id, grandchild.id]) expect(await item(f, id)).toMatchObject({ stageId: outside.id, completedAt: completed.find(row => row.id === id)!.completedAt });
+    await expect(editor(page)).toBeHidden();
+    await loadedBoard(page, board.id, () => page.reload({ waitUntil: 'domcontentloaded' }));
+    expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 3 })]));
+    for (const current of await state(f, ids)) expect(current).toMatchObject({ completedAt: null, stageId: column.id });
+    const events = await Promise.all(ids.map(id => f.get<Array<{ kind: string }>>(`/api/WorkItems/${id}/events`)));
+    for (const feed of events) expect(feed.filter(event => event.kind === 'stage_reclassified')).toHaveLength(1);
+  });
+});
+
+test('L06 reabertura via API preserva descendentes concluídos fora da coluna', async ({ page, request, authenticatedGoto }) => {
+  await authenticatedGoto('/projects');
+  await withBoardFactory(page, request, async f => {
+    const { board, column, outside, parent, other, child, grandchild, ids } = await stageFamily(f, 5);
+    const before = await state(f, ids);
+    const impact = await f.get<{ snapshotToken: string }>(`/api/Stages/${column.id}/impact?category=3`);
+    const reopened = await f.api(`/api/Stages/${column.id}`, 'PUT', {
+      name: column.name, category: 3, confirmCategoryChange: true, impactToken: impact.snapshotToken,
+    });
+    expect(reopened.status()).toBe(204);
+    expect(await stages(f, board.id)).toEqual(expect.arrayContaining([expect.objectContaining({ id: column.id, category: 3 })]));
+    const persisted = await state(f, ids);
+    for (const id of [parent.id, other.id]) expect(persisted.find(row => row.id === id)).toMatchObject({ completedAt: null, stageId: column.id });
+    for (const id of [child.id, grandchild.id]) expect(persisted.find(row => row.id === id)).toMatchObject({ stageId: outside.id, completedAt: before.find(row => row.id === id)!.completedAt });
   });
 });
 
