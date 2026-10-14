@@ -34,3 +34,13 @@ A primeira rodada conjunta no banco histórico foi interrompida: 32 aprovações
 A conclusão agora tem UI com pai/filho externo (inclui payload confirmDescendants=true) e API com neto/segunda tarefa, preservando toda a prova de histórico e localização. As navegações/recargas dos casos anteriores também aguardam requisições novas e hidratação. As asserções originais foram mantidas. O spec aplica orçamento de 20 segundos.
 
 Reset inicial guardado de prisma-dev com SQL versionado: 40,67 s, 28 migrations existentes e um projeto seed. Após o reset: focal da conclusão dividida 5/5 em 36,29 s; todo o L06 desktop/mobile 25/25 em 164,98 s, máximo 10,51 s. As três repetições finais seguem no mesmo banco, sem resets intermediários; outra recriação antecede a suíte completa. Nenhuma produção/QA alterada.
+
+## Barreira final de navegação
+
+A repetição intermediária após reset terminou com 112 normais, 18 falhas esperadas L08 e três falhas de navegação (1002,41 s). O listener anterior podia aceitar um refetch do documento anterior e receber resposta nula ao recarregar. A versão final espera requestfinished, rejeita requisições iniciadas antes dos headers do documento novo e mantém 200 obrigatório para cada caminho. Não ignora respostas HTTP de erro.
+
+Somente os specs L06/L08 usam fixtures/functional.ts: a folha de Google Fonts falha no servidor e é substituída por CSS vazio no headless para remover a dependência externa de tipografia. API, ativos locais, scripts, banco e ações são reais; QA visual/instância QA não recebem esse tratamento. Diagnóstico de 31 reproduções não registrou erro de JavaScript; não foi comprovado crash de produto.
+
+Focal da barreira final: 19/19, três repetições desktop/mobile; tempo 203,35 s e máximo 17,80 s. As verificações finais completas seguem no relatório L08.
+
+Referência técnica: [eventos e timings de Request](https://playwright.dev/docs/api/class-request#request-timing) e [ciclo de navegação](https://playwright.dev/docs/navigations#navigation-events). Consultados também via Context7 /microsoft/playwright, sem credenciais.

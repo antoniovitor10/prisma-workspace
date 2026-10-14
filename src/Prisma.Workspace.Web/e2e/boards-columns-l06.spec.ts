@@ -1,5 +1,5 @@
-import type { Locator, Page, Request } from '@playwright/test';
-import { test, expect } from './fixtures/test';
+import type { Locator, Page, Request, Response } from '@playwright/test';
+import { test, expect, navigateWithApi } from './fixtures/functional';
 import { withBoardFactory, type BoardFactory, type BoardItem, type BoardStage } from './fixtures/boards';
 
 test.setTimeout(20_000);
@@ -19,18 +19,10 @@ async function state(f: BoardFactory, ids: string[]) {
 
 
 // A recarga só pode ser conferida depois que o quadro e suas projeções próprias chegarem.
-async function loadedBoard(page: Page, boardId: string, navigate: () => Promise<unknown>) {
-  // Observa requisições novas, não respostas tardias do refresh anterior à recarga.
-  const loaded = ['/api/Boards', `/api/Stages/board/${boardId}`, `/api/WorkItems/board/${boardId}`]
-    .map(path => page.waitForRequest(request => request.method() === 'GET'
-      && new URL(request.url()).pathname.toLowerCase() === path.toLowerCase()));
-  await navigate();
-  for (const request of await Promise.all(loaded)) {
-    const response = await request.response();
-    expect(response).not.toBeNull(); expect(response!.status()).toBe(200);
-    expect(await response!.finished()).toBeNull();
-  }
+async function loadedBoard(page: Page, boardId: string, navigate: () => Promise<Response | null>) {
+  await navigateWithApi(page, ['/api/Boards', `/api/Stages/board/${boardId}`, `/api/WorkItems/board/${boardId}`], navigate);
 }
+
 function writesTo(page: Page, method: string, path: string) {
   let count = 0;
   const listener = (request: Request) => {
