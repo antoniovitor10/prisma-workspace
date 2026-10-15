@@ -1,3 +1,11 @@
+## T7 - correção de horas (2026-10-15)
+
+- Branch fix/time-tracking-20261015 de main 2c3816c; commits funcionais c99d18e / 25654af, cobertura 9a4f448, identificador interno final d7758c1. Sem migration, main ou produção. Contagem sem duplicar, CRUD próprio auditado, busca de tarefas e dia de Brasília implementados; contrato em specs/time-tracking.md.
+- Build, xUnit 325, Vitest 151, tsc -b, lint e build frontend passam. Oito E2E novos passam em desktop/mobile; rodada da imagem final 9/9 com setup, 163.88 s. Suíte completa executada: 122 aprovados / 5 falhas em specs antigos / 6 skips, 1480,79 s. Rich description mobile :63 reapareceu; IA :221 desktop e :340 desktop/mobile, board-stage-sync :12 desktop também falharam. Não alterados; não afirmar suíte global verde.
+- Dev e QA usam mesma imagem funcional d7758c1, apps 3100/3110, SQL 3102/3111 e bancos distintos. QA preservou SQL/banco/volumes e login privado .env.qa.login (600). Compose QA local ignorado .runlogs/time-fixes/compose-qa.yaml; receita no relatório. Não usar run-local.sh up qa deste checkout: script da main é só prisma-dev. Dev sobe por scripts/run-local.sh up (reconstrói); QA usa imagem prisma-qa-app:time-tracking-20261015 com Compose próprio. Nunca tocar produção.
+- MCR Playwright 1.62.1 network none contorna ERR_NETWORK_CHANGED do host; transporte Unix/HTTP para 3100, réplica API 3115 e Unix/SQL somente durante suíte completa para fake IA 3103. Drivers em .runlogs/e2e-l08 e .runlogs/time-fixes, env da réplica ignorado 600. Exigir login 200 além do health: a primeira preparação perdeu o transporte SQL e a API precisou restart próprio. Temporários/proxies encerrados após concluir.
+- Artefatos da suíte antes do novo reset: .runlogs/e2e-l08/t7-full-verified.json e .runlogs/time-fixes/full-failures. Imagem final: t7-final-image.json. Relatório completo com tempos/limites e lista de arquivos em docs/time-tracking-fixes-validation.md. Próximo: Maestro revisar, Farol QA visual; PO decide rateio/limite/administração de horas. Não ampliar para criação manual, relatório B07 ou falhas antigas sem nova tarefa.
+
 # Continuidade — integração feat/main no servidor
 
 Atualizado em 2026-10-13, por Tear, tarefa 3.
