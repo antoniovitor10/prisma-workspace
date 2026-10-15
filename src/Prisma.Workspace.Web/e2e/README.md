@@ -90,3 +90,9 @@ Com a API e o frontend rodando:
 - Sem sleeps fixos (page.waitForTimeout). Use waitForLoadState ou expect com retry.
 - Nunca execute contra producao.
 - Chromium em cada PR. Firefox/WebKit em execucao noturna ou pre-release.
+
+## Correção de horas (tarefa 7, 2026-10-15)
+
+`time-tracking-fixes.spec.ts` cobre timer após reload, edição com persistência e atualização diária/semanal, exclusão com confirmação/cancelamento e busca por título/número com teclado, ordem de atribuição e exclusão de arquivadas. Usa projeto, usuário, quadro, coluna e tarefas UUID próprios via `fixtures/time.ts` e `boards.ts`, copiados seletivamente de L08 sem integrar a branch. Limpeza em finally desativa o membro e arquiva o projeto. Nenhuma entidade de negócio do seed é usada.
+
+Executar `npm run e2e -- time-tracking-fixes.spec.ts` contra prisma-dev / DetranKanban_E2E. A fixture funcional usa CSS de fallback somente para a fonte externa indisponível no servidor; API, scripts, ativos e persistência são reais. Datas do editor são de Brasília. O teste aguarda tempo real por polling do timestamp, sem sleeps.

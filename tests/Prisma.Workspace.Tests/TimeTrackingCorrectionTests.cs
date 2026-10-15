@@ -77,7 +77,7 @@ public class TimeTrackingCorrectionTests
     {
         await using var f = new Fixture();
         var entry = await f.Entry();
-        var dto = await f.Update(entry);
+        var dto = await f.Update(entry, start:f.Start.AddMinutes(5), end:f.Start.AddMinutes(35));
         Assert.Equal(1800, dto.DurationSeconds);
         Assert.Equal("corrigido", dto.Note);
         Assert.True(dto.IsManual);
@@ -87,7 +87,9 @@ public class TimeTrackingCorrectionTests
         Assert.Equal("original", JsonDocument.Parse(audit.PreviousValuesJson!).RootElement.GetProperty("Note").GetString());
         Assert.Equal("corrigido", JsonDocument.Parse(audit.NewValuesJson!).RootElement.GetProperty("Note").GetString());
         Assert.Equal(f.Start.AddHours(1), JsonDocument.Parse(audit.PreviousValuesJson!).RootElement.GetProperty("EndedAt").GetDateTimeOffset());
-        Assert.Equal(f.Start.AddMinutes(30), JsonDocument.Parse(audit.NewValuesJson!).RootElement.GetProperty("EndedAt").GetDateTimeOffset());
+        Assert.Equal(f.Start.AddMinutes(35), JsonDocument.Parse(audit.NewValuesJson!).RootElement.GetProperty("EndedAt").GetDateTimeOffset());
+        Assert.Equal(f.Start, JsonDocument.Parse(audit.PreviousValuesJson!).RootElement.GetProperty("StartedAt").GetDateTimeOffset());
+        Assert.Equal(f.Start.AddMinutes(5), JsonDocument.Parse(audit.NewValuesJson!).RootElement.GetProperty("StartedAt").GetDateTimeOffset());
         f.Db.ChangeTracker.Clear();
         await f.Delete(entry);
         Assert.Empty(await f.Db.TimeEntries.ToListAsync());

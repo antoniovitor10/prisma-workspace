@@ -82,7 +82,7 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 
 - **Usuário autenticado:** inicia e encerra seu cronômetro, cria lançamentos manuais e consulta dados permitidos.
 - **Proprietário do apontamento:** altera e exclui seus próprios registros.
-- **Administrador autorizado:** altera e exclui registros de usuários pertencentes à organização e ao escopo administrado.
+- **Administrador:** não recebe autorização implícita para horas de terceiros; permissão específica permanece pendente.
 - **Usuário comum:** não altera nem exclui registros de terceiros.
 - **Usuário anônimo:** não acessa operações protegidas.
 
@@ -161,7 +161,7 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
   último fim ou estado em andamento e o total acumulado de cada pessoa.
 - Cada intervalo individual, sua observação e duração permanecem disponíveis no `Log de apontamentos`,
   recolhido por padrão para não competir com o resumo operacional.
-- Deve permitir que o proprietário altere e exclua seus apontamentos e que administradores autorizados façam o mesmo dentro de seu escopo.
+- Deve permitir que o proprietário altere e exclua seus apontamentos. Administração de horas de terceiros permanece pendente.
 - Deve permitir apontamentos em tarefas concluídas.
 - Deve comunicar claramente conflitos de sobreposição. Limite diário depende de decisão futura.
 - Deve exibir tempos sem arredondamento para blocos de minutos.
@@ -192,9 +192,9 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
 - **Dado** um cronômetro ativo em outra tarefa, **quando** o usuário iniciar um novo, **então** o anterior é encerrado e o novo é iniciado.
 - **Dado** um período manual válido e sem conflito, **quando** o usuário lançá-lo, **então** a duração exata é contabilizada sem arredondamento por blocos.
 - **Dado** qualquer apontamento sobreposto do mesmo usuário, **quando** houver criação ou alteração conflitante, **então** a operação é rejeitada sem persistência parcial.
-- **Dado** que um intervalo faria o total ultrapassar 24 horas em um dia de Brasília, **quando** houver criação ou alteração, **então** a operação é rejeitada.
+- **Pendente do PO (2026-10-15):** limite diário e rateio dos períodos à meia-noite. Não bloquear nem dividir nesta entrega.
 - **Dado** um apontamento próprio, **quando** o proprietário o alterar ou excluir, **então** a operação é permitida e os totais são atualizados.
-- **Dado** um administrador autorizado, **quando** alterar ou excluir apontamento de usuário do seu escopo, **então** a operação é permitida.
+- **Pendente:** autorização administrativa específica para alterar/excluir horas de terceiros.
 - **Dado** um usuário comum, **quando** tentar alterar ou excluir apontamento de terceiro, **então** a operação é negada sem vazamento de dados.
 - **Dado** uma tarefa concluída e acessível, **quando** houver lançamento ou correção de horas, **então** a operação segue as mesmas regras de uma tarefa aberta.
 - **Dado** um apontamento válido, **quando** for persistido, **então** ele é contabilizado imediatamente, sem aprovação.
@@ -235,7 +235,7 @@ Os cenários ligados aos gaps devem permanecer como não homologáveis até a re
 
 - Sobreposição e concorrência podem inflar totais enquanto os gaps não forem corrigidos.
 - Agrupamentos podem divergir na virada do dia por uso inconsistente de UTC e horário de Brasília.
-- Ausência de endpoints de correção/exclusão impede cumprir a matriz de autorização aprovada.
+- Correção/exclusão estão disponíveis para o dono; a permissão administrativa específica permanece pendente.
 - Sem teste específico, lançamento em tarefa concluída pode regredir silenciosamente.
 
 ## Decisões pendentes
