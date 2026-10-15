@@ -1,7 +1,20 @@
 # SPEC-TIME-TRACKING: Apontamento de horas e justificativas diárias
 
 **Status:** approved
-**Baseline:** contrato revisado e aprovado por PO em 2026-08-24; comportamento atual e gaps estão separados abaixo.
+**Baseline:** contrato aprovado em 2026-08-24, com revisão expressamente autorizada pelo PO na tarefa 7 de 2026-10-15. A revisão abaixo prevalece nos pontos indicados.
+
+## Revisão aprovada em 2026-10-15 — correção de horas (tarefa 7)
+
+- Totais de cartões incluem o timer aberto até `timeCalculatedAt`, calculado uma única vez por resposta. O navegador soma somente o decorrido após esse instante (ou após o início, quando posterior). `GET /api/me/work` continua retornando somente horas encerradas em `userTimeSeconds`; Meu trabalho soma o intervalo ativo uma vez. Painel/drawer usam intervalos individuais sem acrescentar a duração aberta duas vezes.
+- `PUT /api/timeentries/{id}` recebe `startedAt`, `endedAt` e `note` (até 2000 caracteres); retorna o lançamento atualizado (200). `DELETE /api/timeentries/{id}` retorna 204.
+- Somente o dono, autenticado e com acesso de edição à tarefa na organização corrente, pode corrigir/excluir. Não existe permissão administrativa específica implementada para horas de terceiros: permanece lacuna, sem usar permissões administrativas genéricas como autorização implícita.
+- Timer aberto não pode ser editado ou excluído: deve ser parado primeiro. Edição exige fim maior que início, nenhum instante futuro e ausência de sobreposição com outro lançamento do mesmo usuário; o próprio registro é desconsiderado. Erros temporais/de regra retornam 400, terceiro 403, recurso inexistente/inacessível no tenant 404. Não há minutos negativos.
+- Alteração/exclusão reutilizam a auditoria imutável de `AppDbContext` (D34), na mesma gravação: ator autenticado, valores anteriores/novos alterados, origem e correlação. Exclusão mantém snapshot anterior e novo nulo. Sem mudança de estrutura de auditoria.
+- `GET /api/me/time/entries?date=yyyy-MM-dd` lista somente os lançamentos próprios iniciados no dia de Brasília, com tarefa, horários, duração, observação e `isManual`. Diário por tarefa e semana usam a mesma política `America/Sao_Paulo`.
+- No modal Ajustar tarefas: listar intervalos, editar início/fim/observação e excluir com confirmação na própria UI; atualizar total diário, semana e cartões após mutações. Horários do editor são explicitamente de Brasília, independentemente do fuso do navegador.
+- `GET /api/me/time/tasks?query=` busca título ou número, somente tarefas e projetos não arquivados em projetos acessíveis; atribuídas ao usuário primeiro, até 50 resultados. Campo operável por teclado e mobile; sem requisição por quadro.
+- **Decisões pendentes do PO:** não dividir intervalos que atravessam meia-noite e não limitar cronômetro esquecido nesta entrega. O intervalo inteiro continua no dia em que começou, tanto no diário quanto na semana. As regras anteriores de rateio e limite diário ficam pendentes, não são implementadas por esta correção. Exemplo: 14/10 12:44 até 15/10 07:12 pertence integralmente a 14/10; o intervalo entre esses horários é 18h28.
+- A precisão continua em segundos inteiros, sem arredondamento de negócio. Nenhuma migration necessária nesta implementação.
 
 ## Propósito
 
@@ -28,7 +41,6 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 - Arredondamento para blocos de 5, 10 ou 15 minutos.
 - Fechamento mensal e bloqueio retroativo não definidos nesta revisão.
 - Novas regras para conteúdo, unicidade ou aprovação de `DayJustification`.
-- Alterações de código, API ou schema nesta etapa documental.
 
 ## Contrato funcional aprovado
 
@@ -49,23 +61,22 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 ### Sobreposição e limite diário
 
 - O mesmo usuário não pode possuir períodos de trabalho sobrepostos, independentemente de terem sido criados manualmente ou pelo cronômetro.
-- O total de horas de um usuário não pode ultrapassar 24 horas em um mesmo dia civil.
-- Para períodos que atravessam a meia-noite, cada fração deve ser atribuída ao respectivo dia civil para verificar o limite.
+- Rateio à meia-noite, limite diário e limite para timer esquecido dependem de nova decisão do PO (2026-10-15). Nesta entrega o intervalo inteiro pertence ao dia de início.
 - Dias, relatórios e agrupamentos usam o horário de Brasília.
 
 ### Alteração, exclusão e aprovação
 
 - O proprietário do apontamento pode alterar ou excluir seus próprios registros.
-- Administradores autorizados podem alterar ou excluir registros de outros usuários dentro da organização e do escopo permitido.
+- A autorização administrativa específica para horas de terceiros permanece lacuna; nesta entrega somente o proprietário pode alterar/excluir.
 - Usuários comuns não podem alterar ou excluir apontamentos de terceiros.
 - Apontamentos não exigem aprovação para serem contabilizados.
-- Alterar um apontamento deve reaplicar as mesmas validações de intervalo, sobreposição, limite diário, usuário, tarefa e autorização usadas na criação.
+- Alterar um apontamento deve reaplicar as mesmas validações de intervalo, futuro, sobreposição, usuário, tarefa e autorização. O limite diário permanece pendente.
 
 ### Precisão e timezone
 
 - A fonte de verdade é o intervalo `StartedAt`/`EndedAt`.
 - A duração deve ser calculada a partir desses timestamps, sem arredondamento de negócio.
-- Persistência e transporte podem continuar usando `DateTimeOffset`; a apresentação, a separação por dia e os relatórios devem converter os instantes para o horário de Brasília.
+- Persistência e transporte podem continuar usando `DateTimeOffset`; a apresentação e os agrupamentos pelo início dos períodos devem converter os instantes para o horário de Brasília.
 
 ## Atores e permissões
 
@@ -75,7 +86,7 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 - **Usuário comum:** não altera nem exclui registros de terceiros.
 - **Usuário anônimo:** não acessa operações protegidas.
 
-## Comportamento atual comprovado (as-built)
+## Baseline anterior à correção de 2026-10-15 (histórico)
 
 - `TimeEntry` persiste `WorkItemId`, `UserId`, `StartedAt`, `EndedAt`, `Note`, `IsManual` e `CreatedAt`.
 - `TimeEntry.IniciarAgora` abre um cronômetro usando `DateTimeOffset.UtcNow`.
@@ -90,12 +101,12 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 - `DayJustification` existe como recurso separado, isolado por organização, com inclusão, consulta e exclusão próprias.
 - Não há estado ou fluxo de aprovação de `TimeEntry`, compatível com a decisão de não exigir aprovação.
 
-## Gaps entre contrato e implementação atual
+## Gaps identificados na baseline anterior
 
-1. **Alterar e excluir `TimeEntry`:** não foram encontrados commands/endpoints de edição ou exclusão de apontamentos; a autorização do proprietário e do administrador ainda não está implementada nesse fluxo.
+1. **Alterar e excluir `TimeEntry`:** resolvido para o proprietário na tarefa 7; autorização administrativa específica permanece pendente.
 2. **Sobreposição:** o lançamento manual não consulta intervalos existentes do usuário e pode sobrepor outro lançamento ou um cronômetro aberto.
 3. **Limite de 24 horas por dia:** não existe validação consolidada do total diário, incluindo a divisão de períodos que atravessam a meia-noite.
-4. **Timezone uniforme:** a visão semanal usa UTC-03:00, mas `GetMyDailyByTaskQueryHandler` monta o intervalo diário com UTC. Os agrupamentos ainda não seguem uma única política de horário de Brasília.
+4. **Timezone diário/semanal:** resolvido na tarefa 7 pela política compartilhada `TimeTrackingDay` / `America/Sao_Paulo`.
 5. **Administrador:** falta comprovar e implementar a permissão administrativa específica para alteração e exclusão de horas de terceiros sem permitir acesso horizontal indevido.
 6. **Tarefa concluída:** o código não contém bloqueio explícito, mas faltam testes que comprovem criar, alterar e excluir horas em tarefa concluída.
 7. **Concorrência:** a regra de cronômetro único é aplicada no handler, porém não foi comprovada uma constraint ou estratégia transacional que impeça dois cronômetros abertos em requisições simultâneas.
@@ -114,8 +125,8 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 
 - **Em andamento:** `EndedAt` é nulo.
 - **Encerrado:** `EndedAt` está preenchido e a duração pode ser totalizada.
-- **Alterado:** início, fim ou observação foram corrigidos por ator autorizado, quando o gap de edição for implementado.
-- **Excluído:** registro removido do fluxo de consulta por ator autorizado, quando o gap de exclusão for implementado.
+- **Alterado:** início, fim ou observação foram corrigidos pelo proprietário autorizado.
+- **Excluído:** registro removido do fluxo de consulta pelo proprietário autorizado; auditoria preservada.
 - **Rejeitado:** validação temporal, sobreposição, limite diário, acesso ou referência impede a operação.
 
 Esses estados descrevem o ciclo operacional; não exigem a criação de um enum persistido.
@@ -126,7 +137,7 @@ Esses estados descrevem o ciclo operacional; não exigem a criação de um enum 
 - `DurationSeconds` é derivado do intervalo e não representa uma coluna independente.
 - `IsManual` diferencia lançamento manual de cronômetro.
 - `DayJustification` implementa `IOrganizationOwned` e permanece isolado por organização.
-- Esta spec não autoriza migration nem alteração de schema. Caso uma constraint seja necessária para garantir cronômetro único ou outra regra no banco, deve ser submetida ao `G-MIGRATION` antes da implementação.
+- A tarefa 7 autorizou migration se necessária para esta correção; nenhuma foi necessária. Constraints futuras exigem análise e autorização próprias.
 
 ## API atual
 
@@ -141,7 +152,7 @@ Esses estados descrevem o ciclo operacional; não exigem a criação de um enum 
 - `GET /api/timeentries/my/weekly`
 - Endpoints de `MeTimeController` para consulta diária e justificativas.
 
-Os endpoints necessários para corrigir e excluir apontamentos são gaps; seus contratos HTTP devem ser definidos na tarefa de implementação, sem alterar as regras funcionais aprovadas nesta spec.
+Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10-15 acima.
 
 ## Interface
 
@@ -152,7 +163,7 @@ Os endpoints necessários para corrigir e excluir apontamentos são gaps; seus c
   recolhido por padrão para não competir com o resumo operacional.
 - Deve permitir que o proprietário altere e exclua seus apontamentos e que administradores autorizados façam o mesmo dentro de seu escopo.
 - Deve permitir apontamentos em tarefas concluídas.
-- Deve comunicar claramente conflitos de sobreposição e estouro do limite diário.
+- Deve comunicar claramente conflitos de sobreposição. Limite diário depende de decisão futura.
 - Deve exibir tempos sem arredondamento para blocos de minutos.
 - Datas e agrupamentos diários devem seguir o horário de Brasília.
 - Não deve apresentar aprovação de horas como etapa obrigatória.
@@ -161,7 +172,7 @@ Os endpoints necessários para corrigir e excluir apontamentos são gaps; seus c
 
 - Rejeitar fim menor ou igual ao início.
 - Rejeitar período que sobreponha qualquer apontamento existente do mesmo usuário.
-- Rejeitar operação que faça o usuário ultrapassar 24 horas em qualquer dia civil de Brasília afetado pelo intervalo.
+- Não aplicar limite diário nem rateio nesta entrega (decisão pendente do PO).
 - Ao alterar, desconsiderar o próprio registro na busca por conflito e revalidar o intervalo completo.
 - Rejeitar usuário ou tarefa inexistente/inacessível.
 - Rejeitar alteração ou exclusão de terceiro sem permissão administrativa adequada.

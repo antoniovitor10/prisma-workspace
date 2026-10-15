@@ -27,6 +27,7 @@ public class GetSubItemsQueryHandler : IRequestHandler<GetSubItemsQuery, IReadOn
             PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
         var items = await _workItemRepository.GetSubItemsAsync(request.ParentId, cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
         return items.Select(w => new WorkItemDto
         {
             Id = w.Id,
@@ -65,16 +66,17 @@ public class GetSubItemsQueryHandler : IRequestHandler<GetSubItemsQuery, IReadOn
             }).ToList().AsReadOnly(),
             SubItemsCount = w.SubItems.Count,
             AttachmentsCount = w.Attachments.Count,
+            TimeCalculatedAt = now,
             TotalTimeSeconds = w.TimeEntries.Sum(entry =>
             {
-                var ended = entry.EndedAt ?? DateTimeOffset.UtcNow;
+                var ended = entry.EndedAt ?? now;
                 return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);
             }),
             UserTimeSeconds = string.IsNullOrEmpty(request.CurrentUserId) ? 0 : w.TimeEntries
                 .Where(entry => entry.UserId == request.CurrentUserId)
                 .Sum(entry =>
                 {
-                    var ended = entry.EndedAt ?? DateTimeOffset.UtcNow;
+                    var ended = entry.EndedAt ?? now;
                     return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);
                 })
         }).ToList().AsReadOnly();

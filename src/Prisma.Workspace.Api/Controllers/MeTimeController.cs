@@ -38,6 +38,17 @@ public class MeTimeController : ControllerBase
         return Ok(await _mediator.Send(new GetMyDailyByTaskQuery(UserId, day), cancellationToken));
     }
 
+    [HttpGet("entries")]
+    public async Task<IActionResult> Entries([FromQuery] string date, CancellationToken ct)
+    {
+        if (!TryParseDate(date, out var day)) return BadRequest(new { detail = "Data inválida (use yyyy-MM-dd)." });
+        return Ok(await _mediator.Send(new GetMyDailyEntriesQuery(UserId, day), ct));
+    }
+
+    [HttpGet("tasks")]
+    public async Task<IActionResult> Tasks([FromQuery] string? query, CancellationToken ct)
+        => Ok(await _mediator.Send(new SearchTimeAdjustmentTasksQuery(UserId, query ?? ""), ct));
+
     /// <summary>Justificativas de um dia.</summary>
     [HttpGet("justifications")]
     [ProducesResponseType(typeof(IReadOnlyList<DayJustificationDto>), StatusCodes.Status200OK)]

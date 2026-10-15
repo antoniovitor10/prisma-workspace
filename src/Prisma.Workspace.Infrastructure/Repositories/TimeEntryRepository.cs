@@ -11,10 +11,12 @@ namespace Prisma.Workspace.Infrastructure.Repositories;
 public class TimeEntryRepository : ITimeEntryRepository
 {
     private readonly AppDbContext _context;
+    private readonly IProjectAccessService? _projectAccess;
 
-    public TimeEntryRepository(AppDbContext context)
+    public TimeEntryRepository(AppDbContext context, IProjectAccessService? projectAccess = null)
     {
         _context = context;
+        _projectAccess = projectAccess;
     }
 
     public async Task<TimeEntry?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -52,9 +54,40 @@ public class TimeEntryRepository : ITimeEntryRepository
         return timeEntry;
     }
 
+    public async Task DeleteAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default)
+    {
+        _context.TimeEntries.Remove(timeEntry);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> HasOverlapAsync(string userId, Guid exceptId, DateTimeOffset start, DateTimeOffset end, CancellationToken cancellationToken = default)
+        => _context.TimeEntries.IgnoreQueryFilters().AnyAsync(t => t.UserId == userId && t.Id != exceptId
+            && t.StartedAt < end && (t.EndedAt == null || t.EndedAt > start), cancellationToken);
+
+    public async Task<IReadOnlyList<Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto>> SearchAdjustmentTasksAsync(
+        string userId, string query, CancellationToken cancellationToken = default)
+    {
+        // Uma consulta de candidatos, sem carregar cartões nem fazer uma requisição por quadro.
+        var text = query.Trim().TrimStart('#');
+        var candidates = await _context.WorkItems.AsNoTracking()
+            .Where(w => !w.IsArchived && !w.Board.Project.IsArchived
+                && (text == "" || w.Title.Contains(text) || w.Number.ToString().Contains(text)))
+            .OrderByDescending(w => w.ResponsibleId == userId || w.Assignees.Any(a => a.UserId == userId))
+            .ThenBy(w => w.Title).ThenBy(w => w.Id)
+            .Select(w => new { w.Id, w.Number, w.Title, BoardName = w.Board.Name,
+                w.Board.ProjectId, Assigned = w.ResponsibleId == userId || w.Assignees.Any(a => a.UserId == userId) })
+            .ToListAsync(cancellationToken);
+        var accessible = _projectAccess is null ? new HashSet<Guid>()
+            : await _projectAccess.GetAccessibleProjectIdsAsync(candidates.Select(w => w.ProjectId), userId, cancellationToken);
+        return candidates.Where(w => accessible.Contains(w.ProjectId)).Take(50)
+            .Select(w => new Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto(
+                w.Id, w.Number, w.Title, w.BoardName, w.Assigned)).ToList();
+    }
+
     public async Task UpdateAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default)
     {
-        _context.TimeEntries.Update(timeEntry);
+        if (_context.Entry(timeEntry).State == EntityState.Detached)
+            _context.TimeEntries.Update(timeEntry);
         await _context.SaveChangesAsync(cancellationToken);
     }
 

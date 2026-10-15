@@ -8,6 +8,7 @@ public class TimeEntryDto
     public Guid Id { get; set; }
     public Guid WorkItemId { get; set; }
     public string UserId { get; set; } = string.Empty;
+    public bool IsManual { get; set; }
     public string? DisplayName { get; set; }
     public DateTimeOffset StartedAt { get; set; }
     public DateTimeOffset? EndedAt { get; set; }

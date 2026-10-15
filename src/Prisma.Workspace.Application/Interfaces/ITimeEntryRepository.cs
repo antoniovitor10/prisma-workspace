@@ -11,6 +11,9 @@ public interface ITimeEntryRepository
     Task<TimeEntry?> GetRunningByUserAsync(string userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TimeEntry>> GetByWorkItemIdAsync(Guid workItemId, CancellationToken cancellationToken = default);
     Task<TimeEntry> AddAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
+    Task DeleteAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
+    Task<bool> HasOverlapAsync(string userId, Guid exceptId, DateTimeOffset start, DateTimeOffset end, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto>> SearchAdjustmentTasksAsync(string userId, string query, CancellationToken cancellationToken = default);
     Task UpdateAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
     Task<int> GetTotalSecondsByWorkItemIdAsync(Guid workItemId, CancellationToken cancellationToken = default);
     Task<int> GetTotalSecondsByUserIdAsync(string userId, CancellationToken cancellationToken = default);

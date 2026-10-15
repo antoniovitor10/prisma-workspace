@@ -18,6 +18,7 @@ public static class TimeEntryMapper
             WorkItemId = entry.WorkItemId,
             UserId = entry.UserId,
             DisplayName = displayName,
+            IsManual = entry.IsManual,
             StartedAt = entry.StartedAt,
             EndedAt = entry.EndedAt,
             Note = entry.Note,

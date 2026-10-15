@@ -21,6 +21,7 @@ public static class WorkItemCardProjection
         IEnumerable<WorkItem> items,
         string? currentUserId)
     {
+        var now = DateTimeOffset.UtcNow;
         return items.Select(w =>
         {
             // Etapa e posição vêm do próprio item: fonte única, sem projeção por quadro.
@@ -67,16 +68,17 @@ public static class WorkItemCardProjection
             }).ToList().AsReadOnly(),
             SubItemsCount = w.SubItems.Count,
             AttachmentsCount = w.Attachments.Count,
+            TimeCalculatedAt = now,
             TotalTimeSeconds = w.TimeEntries.Sum(entry =>
             {
-                var ended = entry.EndedAt ?? DateTimeOffset.UtcNow;
+                var ended = entry.EndedAt ?? now;
                 return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);
             }),
             UserTimeSeconds = string.IsNullOrEmpty(currentUserId) ? 0 : w.TimeEntries
                 .Where(entry => entry.UserId == currentUserId)
                 .Sum(entry =>
                 {
-                    var ended = entry.EndedAt ?? DateTimeOffset.UtcNow;
+                    var ended = entry.EndedAt ?? now;
                     return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);
                 }),
             TaskTypeId = w.TaskTypeId,

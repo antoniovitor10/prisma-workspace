@@ -44,6 +44,7 @@ public class WorkItemDto
     public IReadOnlyList<WorkItemAssigneeDto> Assignees { get; set; } = Array.Empty<WorkItemAssigneeDto>();
     public int SubItemsCount { get; set; }
     public int AttachmentsCount { get; set; }
+    public DateTimeOffset TimeCalculatedAt { get; set; }
     public int TotalTimeSeconds { get; set; }
     public int UserTimeSeconds { get; set; }
 

@@ -17,6 +17,7 @@ public class MeTaskDto
     public string? DueDate { get; set; }
     public int PersonalPriority { get; set; }
     public DateTimeOffset AssignedAt { get; set; }
+    public DateTimeOffset TimeCalculatedAt { get; set; }
     public int TotalTimeSeconds { get; set; }
     public int UserTimeSeconds { get; set; }
 }

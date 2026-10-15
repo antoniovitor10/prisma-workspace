@@ -18,8 +18,8 @@ public class GetMyDailyByTaskQueryHandler
         GetMyDailyByTaskQuery request,
         CancellationToken cancellationToken)
     {
-        var start = new DateTimeOffset(request.Date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var end = start.AddDays(1);
+        var start = Prisma.Workspace.Application.Features.TimeEntries.TimeTrackingDay.Start(request.Date);
+        var end = Prisma.Workspace.Application.Features.TimeEntries.TimeTrackingDay.Start(request.Date.AddDays(1));
 
         var entries = await _timeEntries.GetByUserInRangeWithWorkItemAsync(
             request.UserId, start, end, cancellationToken);

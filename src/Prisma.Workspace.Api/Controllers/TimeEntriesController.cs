@@ -74,6 +74,18 @@ public class TimeEntriesController : ControllerBase
         return CreatedAtAction(nameof(GetByWorkItem), new { workItemId = request.WorkItemId }, dto);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTimeEntryRequest request, CancellationToken ct)
+        => Ok(await _mediator.Send(new UpdateTimeEntryCommand(id, UserId,
+            request.StartedAt, request.EndedAt, request.Note), ct));
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteTimeEntryCommand(id, UserId), ct);
+        return NoContent();
+    }
+
     [HttpGet("work-item/{workItemId:guid}/total")]
     [ProducesResponseType(typeof(TimeTotalDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWorkItemTotal(Guid workItemId, CancellationToken cancellationToken)
@@ -126,3 +138,5 @@ public record CreateManualTimeEntryRequest(
     DateTimeOffset StartedAt,
     DateTimeOffset EndedAt,
     string? Note);
+
+public record UpdateTimeEntryRequest(DateTimeOffset StartedAt, DateTimeOffset EndedAt, string? Note);

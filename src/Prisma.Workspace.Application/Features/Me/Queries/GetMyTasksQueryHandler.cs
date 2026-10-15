@@ -43,6 +43,7 @@ public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, IReadOnly
                     DueDate = w.DueDate?.ToString("yyyy-MM-dd"),
                     PersonalPriority = mine.PersonalPriority,
                     AssignedAt = mine.AssignedAt,
+                    TimeCalculatedAt = now,
                     TotalTimeSeconds = w.TimeEntries.Sum(e =>
                         Math.Max(0, (int)((e.EndedAt ?? now) - e.StartedAt).TotalSeconds)),
                     UserTimeSeconds = w.TimeEntries

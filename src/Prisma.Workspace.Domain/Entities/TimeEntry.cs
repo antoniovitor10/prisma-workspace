@@ -95,6 +95,17 @@ public class TimeEntry
         if (!string.IsNullOrWhiteSpace(note)) Note = note.Trim();
     }
 
+    /// <summary>Corrige um intervalo encerrado; a autoria e a origem são preservadas.</summary>
+    public void Corrigir(DateTimeOffset startedAt, DateTimeOffset endedAt, string? note)
+    {
+        DomainException.Garantir(!EstaAberto, "Pare o cronômetro antes de alterar o lançamento.");
+        DomainException.Garantir(endedAt > startedAt, "O fim deve ser maior que o início.");
+        DomainException.Garantir(endedAt <= DateTimeOffset.UtcNow, "O lançamento não pode estar no futuro.");
+        StartedAt = startedAt;
+        EndedAt = endedAt;
+        Note = Normalizar(note);
+    }
+
     private static string? Normalizar(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }
