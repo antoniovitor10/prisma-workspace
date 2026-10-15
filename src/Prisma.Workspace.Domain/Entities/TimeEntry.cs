@@ -96,7 +96,7 @@ public class TimeEntry
     }
 
     /// <summary>Corrige um intervalo encerrado; a autoria e a origem são preservadas.</summary>
-    public void Corrigir(DateTimeOffset startedAt, DateTimeOffset endedAt, string? note)
+    public void Correct(DateTimeOffset startedAt, DateTimeOffset endedAt, string? note)
     {
         DomainException.Garantir(!EstaAberto, "Pare o cronômetro antes de alterar o lançamento.");
         DomainException.Garantir(endedAt > startedAt, "O fim deve ser maior que o início.");

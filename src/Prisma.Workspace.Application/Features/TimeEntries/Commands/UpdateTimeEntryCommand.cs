@@ -26,7 +26,7 @@ public sealed class UpdateTimeEntryCommandHandler(ITimeEntryRepository entries, 
         DomainException.Garantir(request.Note?.Length <= 2000 || request.Note is null, "A observação deve ter até 2000 caracteres.");
         DomainException.Garantir(!await entries.HasOverlapAsync(request.UserId, entry.Id, request.StartedAt, request.EndedAt, ct),
             "O período se sobrepõe a outro lançamento seu.");
-        entry.Corrigir(request.StartedAt, request.EndedAt, request.Note);
+        entry.Correct(request.StartedAt, request.EndedAt, request.Note);
         await entries.UpdateAsync(entry, ct);
         return entry.ToDto();
     }
