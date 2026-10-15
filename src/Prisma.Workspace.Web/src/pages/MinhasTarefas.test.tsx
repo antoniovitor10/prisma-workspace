@@ -44,3 +44,19 @@ describe('Meu trabalho', () => {
   });
 });
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+it('recarga com timer aberto soma o intervalo uma vez às horas encerradas',async()=>{
+  const now=Date.now();
+  vi.spyOn(Date,'now').mockReturnValue(now);
+  const startedAt=new Date(now-(18*3600+28*60)*1000).toISOString();
+  vi.spyOn(api,'getMyWork').mockResolvedValue({...dashboard,tasks:[{...dashboard.tasks[0],userTimeSeconds:3600}]});
+  vi.spyOn(api,'getMyActiveTimer').mockResolvedValue({workItemId:'task-1',startedAt});
+  vi.spyOn(api,'getUserId').mockReturnValue('user-1');
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const content=<MemoryRouter><QueryClientProvider client={client}><AppThemeProvider><MinhasTarefas/></AppThemeProvider></QueryClientProvider></MemoryRouter>;
+  const first=render(content);
+  expect(await screen.findByText('19:28:00')).toBeInTheDocument();
+  first.unmount();
+  render(content);
+  expect(await screen.findByText('19:28:00')).toBeInTheDocument();
+});

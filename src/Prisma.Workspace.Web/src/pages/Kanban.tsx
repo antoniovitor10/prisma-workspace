@@ -1,3 +1,5 @@
+import { liveTimeSeconds } from '../utils/liveTime';
+import { DayTimeEntries, TimeTaskSearch, type DayEntry } from '../features/time/TimeAdjustment';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
@@ -201,6 +203,7 @@ interface WorkItem {
   attachmentsCount?: number;
   createdAt: string;
   totalTimeSeconds?: number;
+  timeCalculatedAt?: string;
   userTimeSeconds?: number;
   taskTypeId?: string | null;
   taskTypeName?: string | null;
@@ -347,7 +350,8 @@ export const Kanban: React.FC = () => {
   const [adjustDay, setAdjustDay] = useState<string | null>(null);
   const [adjustTaskId, setAdjustTaskId] = useState('');
   const [adjustMinutes, setAdjustMinutes] = useState<number | undefined>(undefined);
-  const [adjustTasks, setAdjustTasks] = useState<{ id: string; title: string; boardName: string }[]>([]);
+  const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
+  const [adjustError, setAdjustError] = useState('');
   const [adjustTab, setAdjustTab] = useState<'tarefas' | 'justificar'>('tarefas');
   const [dailyByTask, setDailyByTask] = useState<{ workItemId: string; title: string; seconds: number }[]>([]);
   const [justifications, setJustifications] = useState<{ id: string; reason: string; hours: number }[]>([]);
@@ -356,10 +360,12 @@ export const Kanban: React.FC = () => {
 
   const loadAdjustData = useCallback(async (date: string) => {
     try {
-      const [daily, just] = await Promise.all([api.getDailyByTask(date), api.getJustifications(date)]);
+      const [daily, just, entries] = await Promise.all([api.getDailyByTask(date), api.getJustifications(date), api.getMyDailyEntries(date)]);
+      setDayEntries(entries);
+      setAdjustError('');
       setDailyByTask(daily);
       setJustifications(just);
-    } catch { /* silencioso */ }
+    } catch (e) { setAdjustError((e as Error).message); }
   }, []);
 
   const submitJustification = async (event: React.FormEvent) => {
@@ -445,7 +451,7 @@ export const Kanban: React.FC = () => {
   // Timer persistido em TimeEntry.
   const [runningItemId, setRunningItemId] = useState<string | null>(null);
   const [runningStartedAt, setRunningStartedAt] = useState<string | null>(null);
-  const [activeTime, setActiveTime] = useState<number>(0);
+  const [, setActiveTime] = useState<number>(0);
 
   const fetchBoards = useCallback(async () => {
     setBoardsStatus('loading');
@@ -623,20 +629,6 @@ export const Kanban: React.FC = () => {
     return `${h}h${String(m).padStart(2, '0')}`;
   };
 
-  const loadAllTasks = useCallback(async () => {
-    try {
-      const bs = await api.getBoards() as { id: string; name: string }[];
-      const lists = await Promise.all(
-        bs.map(b => api.getWorkItems(b.id).then((items: WorkItem[]) =>
-          items.map(it => ({ id: it.id, title: it.title, boardName: b.name }))
-        ))
-      );
-      setAdjustTasks(lists.flat());
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   const submitAdjust = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!adjustDay || !adjustTaskId || !adjustMinutes) return;
@@ -655,7 +647,7 @@ export const Kanban: React.FC = () => {
       await loadWeekly(weeklyTime?.weekStart);
     } catch (e) {
       console.error(e);
-      alert('Erro ao ajustar o tempo.');
+      setAdjustError((e as Error).message);
     }
   };
 
@@ -1602,8 +1594,8 @@ export const Kanban: React.FC = () => {
                               <span>
                                 {(() => {
                                   const isCurrent = runningItemId === item.id;
-                                  const userSecs = (item.userTimeSeconds || 0) + (isCurrent ? activeTime : 0);
-                                  const totalSecs = (item.totalTimeSeconds || 0) + (isCurrent ? activeTime : 0);
+                                  const userSecs = liveTimeSeconds(item.userTimeSeconds || 0, item.timeCalculatedAt, isCurrent ? runningStartedAt : null, Date.now());
+                                  const totalSecs = liveTimeSeconds(item.totalTimeSeconds || 0, item.timeCalculatedAt, isCurrent ? runningStartedAt : null, Date.now());
 
                                   if (totalSecs === userSecs) {
                                     return formatTime(totalSecs);
@@ -2131,7 +2123,7 @@ export const Kanban: React.FC = () => {
                         <TempoPct $over={pct >= 100}>{day.totalSeconds > 0 ? `${pct}%` : '0%'}</TempoPct>
                         <TempoAdjust
                           type="button"
-                          onClick={() => { setAdjustDay(day.date); setAdjustTaskId(''); setAdjustMinutes(undefined); setAdjustTab('tarefas'); loadAllTasks(); loadAdjustData(day.date); }}
+                          onClick={() => { setAdjustDay(day.date); setAdjustTaskId(''); setAdjustMinutes(undefined); setAdjustTab('tarefas'); setDayEntries([]); loadAdjustData(day.date); }}
                         >
                           Ajustar
                         </TempoAdjust>
@@ -2167,6 +2159,8 @@ export const Kanban: React.FC = () => {
 
             {adjustTab === 'tarefas' && (
               <>
+                {adjustError&&<p role="alert">{adjustError}</p>}
+                <DayTimeEntries entries={dayEntries} onChanged={async()=>{await Promise.all([loadAdjustData(adjustDay),loadWeekly(weeklyTime?.weekStart),loadBoardData(selectedBoardId)]);}}/>
                 {dailyByTask.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
                     <DetailText style={{ fontWeight: 700, marginBottom: 6 }}>Horas neste dia por tarefa</DetailText>
@@ -2181,16 +2175,8 @@ export const Kanban: React.FC = () => {
                 <DetailText style={{ marginBottom: '12px' }}>
                   Adicione tempo a uma tarefa neste dia (lançamento manual).
                 </DetailText>
-                {adjustTasks.length === 0 ? (
-                  <DetailText>Nenhuma tarefa encontrada.</DetailText>
-                ) : (
-                  <ModalForm onSubmit={async e => { await submitAdjust(e); if (adjustDay) await loadAdjustData(adjustDay); }}>
-                    <Select value={adjustTaskId} onChange={e => setAdjustTaskId(e.target.value)}>
-                      <option value="">Selecionar tarefa</option>
-                      {adjustTasks.map(t => (
-                        <option key={t.id} value={t.id}>{t.boardName} — {t.title}</option>
-                      ))}
-                    </Select>
+                <ModalForm onSubmit={submitAdjust}>
+                    <TimeTaskSearch value={adjustTaskId} onChange={setAdjustTaskId}/>
                     <Input
                       type="number"
                       min="1"
@@ -2203,7 +2189,6 @@ export const Kanban: React.FC = () => {
                       <SubmitButton type="submit" disabled={!adjustTaskId || !adjustMinutes}>Adicionar</SubmitButton>
                     </ModalActions>
                   </ModalForm>
-                )}
               </>
             )}
 

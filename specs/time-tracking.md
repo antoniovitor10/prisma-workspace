@@ -242,11 +242,12 @@ Os cenários ligados aos gaps devem permanecer como não homologáveis até a re
 
 - Política de fechamento mensal ou bloqueio retroativo, caso o produto venha a exigir.
 - Regras específicas de conteúdo e unicidade das justificativas diárias.
-- Forma técnica de exclusão do apontamento, que não foi definida nesta revisão.
+- Permissão administrativa específica para horas de terceiros.
+- Rateio à meia-noite e limite para cronômetro esquecido (PO, tarefa 7).
 
 ## Rollback
 
-Esta atualização é exclusivamente documental. Não altera produto, dados, endpoints ou schema. A implementação futura dos gaps exigirá planejamento, testes e os gates aplicáveis.
+Reverter o código da tarefa 7 remove os novos endpoints e a interface de correção, sem rollback de schema. Lançamentos já corrigidos/excluídos permanecem auditados; restaurar valores exige ação autorizada a partir da auditoria. Não há migration.
 
 ## Referências
 

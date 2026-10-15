@@ -53,3 +53,19 @@ it('resume o tempo por responsavel e deixa cada intervalo no log', async () => {
   fireEvent.click(screen.getByText('Log de apontamentos (3)'));
   expect(log).toHaveAttribute('open');
 });
+
+it('drawer com timer já aberto usa o intervalo uma vez, mesmo com duração aberta no DTO',async()=>{
+  const now=Date.now();vi.spyOn(Date,'now').mockReturnValue(now);
+  const startedAt=new Date(now-(18*3600+28*60)*1000).toISOString();
+  vi.spyOn(api,'getTimeEntriesByWorkItem').mockResolvedValue([
+    {id:'closed',userId:'user',startedAt:'2026-01-01T10:00:00Z',endedAt:'2026-01-01T11:00:00Z',durationSeconds:3600},
+    {id:'active',userId:'user',startedAt,endedAt:null,durationSeconds:18*3600+28*60},
+  ]);
+  vi.spyOn(api,'getRunningTimeEntry').mockResolvedValue({id:'active',userId:'user',workItemId:'task',startedAt});
+  vi.spyOn(api,'getAssignableUsers').mockResolvedValue([{id:'user',displayName:'Pessoa'}]);
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  render(<QueryClientProvider client={client}><ThemeProvider theme={theme}><TaskTimePanel workItemId="task" realizedHours={19.47}/></ThemeProvider></QueryClientProvider>);
+  const summary=await screen.findByRole('region',{name:'Tempo geral por responsável'});
+  await waitFor(()=>expect(summary).toHaveTextContent('19h 28min'));
+  expect(screen.getByRole('status')).toHaveTextContent('18h 28min desde o início');
+});

@@ -1160,6 +1160,22 @@ export const api = {
   },
 
   // Area pessoal ("Eu")
+  async getMyDailyEntries(date: string) {
+    return this.request(`/api/me/time/entries?date=${encodeURIComponent(date)}`);
+  },
+
+  async getTimeAdjustmentTasks(query: string) {
+    return this.request(`/api/me/time/tasks?query=${encodeURIComponent(query)}`);
+  },
+
+  async updateTimeEntry(id: string, payload: {startedAt:string;endedAt:string;note?:string}) {
+    return this.request(`/api/timeentries/${id}`, {method:'PUT',body:JSON.stringify(payload)});
+  },
+
+  async deleteTimeEntry(id: string) {
+    return this.request(`/api/timeentries/${id}`, {method:'DELETE'});
+  },
+
   async getMyTasks() {
     return this.request('/api/me/tasks');
   },
