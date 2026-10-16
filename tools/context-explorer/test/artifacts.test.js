@@ -8,8 +8,8 @@ const canonical = require('../lib/canonical');
 
 const artifacts = readArtifacts();
 
-test('contextIndex has 18 domains, including AI foundation and conversation experience', () => {
-  assert.equal(Object.keys(artifacts.contextIndex.domains).length, 18);
+test('contextIndex has 19 domains, including AI foundation and conversation experience', () => {
+  assert.equal(Object.keys(artifacts.contextIndex.domains).length, 19);
   assert.equal(artifacts.contextIndex.domains.ai_assistant.spec, 'specs/ai-assistant-foundation.md');
   assert.equal(artifacts.contextIndex.domains.ai_connection_onboarding.spec, 'specs/ai-connection-onboarding.md');
 });

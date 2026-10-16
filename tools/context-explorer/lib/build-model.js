@@ -34,7 +34,8 @@ const DOMAIN_ORDER = [
   'ai_assistant',
   'ai_connection_onboarding',
   'ai_gemini_subscription',
-  'ai_conversation_experience'
+  'ai_conversation_experience',
+  'method_git'
 ];
 
 function domainLabel(domainKey) {
