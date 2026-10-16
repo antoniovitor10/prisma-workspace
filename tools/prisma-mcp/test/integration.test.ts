@@ -3,6 +3,8 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -34,8 +36,11 @@ function semSegredo(texto: string, onde: string) {
 }
 
 async function importar(...flags: string[]) {
-  const { stdout, stderr } = await run(process.execPath, ['--import', 'tsx', 'src/import.ts', FIXTURE, ...flags],
-    { cwd: ROOT, env: envPara('humano'), timeout: 120_000 });
+  return importarDe(FIXTURE, 'humano', ...flags);
+}
+async function importarDe(pasta: string, papel: 'agente' | 'humano', ...flags: string[]) {
+  const { stdout, stderr } = await run(process.execPath, ['--import', 'tsx', 'src/import.ts', pasta, ...flags],
+    { cwd: ROOT, env: envPara(papel), timeout: 120_000 });
   semSegredo(stdout + stderr, 'saída do import');
   const n = (rotulo: string) => Number(new RegExp(`${rotulo}:\\s*(\\d+)`, 'i').exec(stdout)?.[1] ?? NaN);
   return { stdout, criados: n('Criados'), atualizados: n('atualizados'), semMudanca: n('sem mudança'), vinculos: n('vínculos criados') };
@@ -246,5 +251,30 @@ describe('integração com o Prisma', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver
     assert.equal(r.criados, 0, r.stdout);
     assert.equal(await statusDe(agente, 'T-9002'), 'em-revisao');
     assert.equal(await statusDe(agente, 'T-9003'), 'backlog');
+  });
+
+  test('import com papel agente não cria task já autorizada', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'prisma-mcp-it-'));
+    try {
+      await cp(FIXTURE, dir, { recursive: true });
+      const tasks = join(dir, 'HU-9001-exemplo-teste', 'tasks');
+      const base = await readFile(join(tasks, 'T-9003-aguardando-autorizacao.md'), 'utf8');
+      await writeFile(join(tasks, 'T-9010-nova-autorizada.md'), base
+        .replace('id: T-9003', 'id: T-9010').replace('status: backlog', 'status: em-desenvolvimento')
+        .replace('Aguardando autorização humana', 'Nova com status autorizado no arquivo'));
+      let saida = '';
+      try { saida = (await importarDe(dir, 'agente')).stdout; } catch (e) { saida = String((e as Error).message); }
+      const t = await agente.chamar('obter_task', { id: 'T-9010' });
+      assert.ok(t.erro || !['em-desenvolvimento', 'pronta', 'em-revisao', 'em-teste'].includes(t.dados.task?.status),
+        `agente criou T-9010 em ${t.dados.task?.status} pelo import: ${saida}`);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
+  test('--sincronizar-status: agente recusado, humano reaplica o frontmatter', async () => {
+    await assert.rejects(importarDe(FIXTURE, 'agente', '--sincronizar-status'));
+    assert.equal(await statusDe(agente, 'T-9002'), 'em-revisao');
+    const r = await importar('--sincronizar-status');
+    assert.ok(r.atualizados >= 1, r.stdout);
+    assert.equal(await statusDe(agente, 'T-9002'), 'em-desenvolvimento');
   });
 });
