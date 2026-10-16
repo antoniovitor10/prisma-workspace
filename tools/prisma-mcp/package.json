@@ -1,0 +1,27 @@
+{
+  "name": "@prisma-workspace/metodo-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": {
+    "prisma-mcp": "dist/server.js",
+    "prisma-metodo-import": "dist/import.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "import": "tsx src/import.ts",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.0",
+    "zod": "^3.25.76",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "tsx": "^4.20.6",
+    "@types/node": "^22.18.0"
+  }
+}
