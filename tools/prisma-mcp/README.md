@@ -141,18 +141,20 @@ arquivo do repositório.
 
 ### Claude Code
 
-Opção 1, por comando (fica no seu `~/.claude.json`, fora do repositório):
+Opção 1, por comando, com escopo local. Rode na pasta do repositório do projeto; a configuração
+vale só para ele e fica no seu `%USERPROFILE%\.claude.json`, fora do repositório:
 
 ```powershell
-claude mcp add prisma --scope user `
-  -e PRISMA_URL=http://127.0.0.1:13100 `
-  -e PRISMA_PROJECT=canais-mobile `
-  -e PRISMA_ROLE=agente `
-  -- node C:\dev\prisma-workspace\tools\prisma-mcp\dist\server.js
+claude mcp add --scope local `
+  --env PRISMA_URL=http://127.0.0.1:13100 `
+  --env PRISMA_PROJECT=canais-mobile `
+  --env PRISMA_ROLE=agente `
+  prisma -- node C:\dev\prisma-workspace\tools\prisma-mcp\dist\server.js
 ```
 
-`PRISMA_EMAIL` e `PRISMA_PASSWORD` não entram no comando: o servidor herda o ambiente do terminal
-em que o Claude Code foi aberto, onde as variáveis do usuário já estão.
+`PRISMA_EMAIL` e `PRISMA_PASSWORD` não entram no comando nem em arquivo nenhum: o servidor herda
+o ambiente do terminal em que o Claude Code foi aberto, onde as variáveis do usuário já estão.
+Abra o Claude Code num terminal novo depois de criar as variáveis.
 
 Opção 2, `.mcp.json` na raiz do repositório do projeto (pode ser versionado, porque só referencia
 as variáveis com `${...}`; o Claude Code as expande ao subir o servidor):
