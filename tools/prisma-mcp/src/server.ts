@@ -23,7 +23,7 @@ function listSummary(tasks: MethodTask[], empty: string): string {
 /** Não registra credenciais nem deixa texto de erro transportá-las ao cliente. */
 function safeError(error: unknown, service: TaskService): string {
   let message = error instanceof Error ? error.message : 'Falha ao executar a operação no Prisma. Pare e avise.';
-  for (const secret of [service.api.config.password, service.api.config.token]) {
+  for (const secret of [service.api.config.token]) {
     if (secret) message = message.split(secret).join('[removido]');
   }
   return message.replace(/Bearer\s+\S+/gi, 'Bearer [removido]');
@@ -49,7 +49,7 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
     description: 'Leia no início da sessão: papel atual, matriz de status, autonomia e convenções do método.',
     inputSchema: {}, annotations: readOnly,
   }, () => execute(async () => {
-    const rules = service.regrasDoProjeto();
+    const rules = await service.regrasDoProjeto();
     return {
       summary: `Projeto: ${rules.projeto} · Papel: ${rules.papel}\n${rules.condicoes.join('\n')}\n${rules.convencoes.join('\n')}`,
       data: rules,
@@ -93,7 +93,7 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }));
 
   server.registerTool('mover_status', {
-    description: 'Move conforme a matriz do papel e registra motivo no histórico. Agente nunca autoriza backlog/pronta; só retoma o próprio bloqueio.',
+    description: 'Move conforme a matriz do papel e registra motivo no histórico. A API verifica autorização e liberação humana de retomada por principal e ciclo.',
     inputSchema: { id: taskId, novo_status: status, motivo: text }, annotations: write,
   }, ({ id, novo_status, motivo }) => execute(async () => {
     const task = await service.moverStatus(id, novo_status, motivo);
@@ -109,7 +109,7 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }));
 
   server.registerTool('vincular_pr', {
-    description: 'Grava a URL no campo PR da task e registra comentário de vínculo.',
+    description: 'Vincula o PR no backend e grava campo e comentário na mesma transação.',
     inputSchema: { id: taskId, url: z.string().url('Informe uma URL válida para o PR.') }, annotations: write,
   }, ({ id, url }) => execute(async () => {
     const task = await service.vincularPr(id, url);
@@ -119,7 +119,9 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
 }
 
 export async function startServer(): Promise<void> {
-  const server = createMcpServer();
+  const service = new TaskService();
+  await service.initialize();
+  const server = createMcpServer(service);
   const transport = new StdioServerTransport();
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => { void server.close().finally(() => process.exit(0)); });

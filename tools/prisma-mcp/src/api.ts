@@ -1,4 +1,4 @@
-import { readConfig, type PrismaConfig } from './config.js';
+import { readConfig, type PrismaConfig, type PrismaRole } from './config.js';
 import type { StageCategory } from './mapping.js';
 
 export interface ProjectDto { id: string; name: string; isArchived?: boolean; customFields?: ProjectCustomFieldDto[]; }
@@ -31,6 +31,37 @@ export interface CreateWorkItemDto {
 export type UpdateWorkItemDto = Partial<Pick<WorkItemDto, 'title' | 'description' | 'kind' | 'stageId' | 'priority' | 'responsibleId' | 'teamId' | 'origin' | 'requesterId' | 'requesterName' | 'requesterEmail' | 'startDate' | 'dueDate' | 'estimatedHours' | 'remainingHours' | 'points' | 'acceptanceCriteria'>>;
 export interface CustomFieldDefinition { name: string; type?: number; isRequired?: boolean; optionsJson?: string | null; position?: number; }
 
+
+export interface MethodIdentityDto {
+  authenticationKind: string; role: PrismaRole; principalId: string; userId: string; displayName: string;
+  organizationId: string; projectId: string; projectName: string; boardId: string; boardName: string;
+  tokenId: string; expiresAtUtc: string; capabilities: string[];
+}
+export interface MethodProjectDto {
+  organizationId: string; projectId: string; projectName: string; boardId: string; boardName: string;
+  methodIdFieldId: string; huFieldId: string; prFieldId: string; enabled: boolean;
+  gitPhase: number; autonomyLevel: number; policyVersion: number;
+  stageMappings: Record<string, string>; fields?: Record<string, string> | null;
+}
+export interface MethodRulesDto {
+  identity: MethodIdentityDto; project: MethodProjectDto;
+  allowedTransitions: Record<string, string[]>; conventions: string[];
+  requiresInteractiveAuthorization: boolean; requiresInteractiveResumeApproval: boolean;
+}
+export interface MethodTaskDto {
+  workItemId: string; id: string; title: string; status: string; hu: string | null;
+  filePath: string | null; covers: string[]; risk: string | null; pr: string | null;
+  dependsOn: string[]; authorized: boolean; canResume: boolean;
+  cycleId?: string | null; blockingEventId?: string | null;
+  blockingPrincipalId?: string | null; blockingOriginStatus?: string | null;
+}
+export interface CreateMethodTaskDto {
+  id: string; title: string; hu: string; filePath: string; covers: string[]; risk: string; status: string;
+}
+export type UpdateMethodTaskDto = Omit<CreateMethodTaskDto, 'id' | 'status'>;
+export interface MethodCommentDto { id: string; workItemId: string; text: string; author: string; createdAtUtc: string; }
+export interface MethodPullRequestLinkDto { id: string; workItemId: string; url: string | null; source: string; }
+
 export class PrismaApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(`Prisma HTTP ${status}: ${message}`);
@@ -39,48 +70,58 @@ export class PrismaApiError extends Error {
 }
 
 export class PrismaApi {
-  #token: string | undefined;
-  #organizationId: string | undefined;
-  #loginPromise: Promise<void> | undefined;
-  #organizationPromise: Promise<void> | undefined;
+  readonly #token: string;
+  #organizationId?: string;
+  #identity?: MethodIdentityDto;
+  #initialization?: Promise<MethodIdentityDto>;
 
-  constructor(public readonly config: PrismaConfig) { this.#token = config.token; }
+  constructor(public readonly config: PrismaConfig) {
+    if (!/^pmt_[A-Za-z0-9_-]{43}$/.test(config.token ?? '')) {
+      throw new Error('PRISMA_TOKEN deve ser um token opaco do método; JWT de login não é aceito. Pare e avise.');
+    }
+    this.#token = config.token;
+  }
   static fromEnv(): PrismaApi { return new PrismaApi(readConfig()); }
 
-  get userId(): string {
-    try {
-      const payload = JSON.parse(Buffer.from(this.#token!.split('.')[1], 'base64url').toString());
-      const id = payload.sub ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? payload.nameid;
-      if (typeof id === 'string' && id) return id;
-    } catch { /* A identidade só é usada após autenticação pela API. */ }
-    throw new Error('Não foi possível identificar o autor no token Prisma. Faça login novamente.');
+  get identity(): MethodIdentityDto {
+    if (!this.#identity) throw new Error('Inicialize a identidade do método pela API antes de operar.');
+    return this.#identity;
+  }
+  get userId(): string { return this.identity.userId; }
+
+  private validateIdentity(identity: MethodIdentityDto): void {
+    if (identity.authenticationKind !== 'methodToken' || !['agente', 'humano', 'sistema'].includes(identity.role)
+      || !identity.principalId || !identity.userId || !identity.organizationId || !identity.projectId || !identity.boardId
+      || !Number.isFinite(Date.parse(identity.expiresAtUtc)) || Date.parse(identity.expiresAtUtc) <= Date.now()) {
+      throw new Error('A API não confirmou um token de método válido e vigente. Pare e avise.');
+    }
+    const matches = (expected: string, id: string, name: string) => expected === name || expected.toLowerCase() === id.toLowerCase();
+    if (!matches(this.config.project, identity.projectId, identity.projectName)
+      || (this.config.board && !matches(this.config.board, identity.boardId, identity.boardName))) {
+      throw new Error('PRISMA_PROJECT ou PRISMA_BOARD diverge do escopo do token. Pare e avise.');
+    }
+    if (this.config.role && this.config.role !== identity.role) {
+      throw new Error('PRISMA_ROLE diverge do papel autenticado pela API. Pare e avise.');
+    }
   }
 
-  async login(): Promise<void> {
-    if (this.#token) return;
-    await this.authenticate();
-  }
-
-  private async authenticate(): Promise<void> {
-    if (this.#loginPromise) return this.#loginPromise;
-    this.#loginPromise = (async () => {
-      if (!this.config.email || !this.config.password) {
-        throw new PrismaApiError(401, 'Token expirado ou inválido. Renove PRISMA_TOKEN.');
-      }
-      const auth = await this.raw<{ accessToken: string }>('/api/auth/login', 'POST', {
-        email: this.config.email, password: this.config.password,
-      }, false);
-      if (!auth.accessToken) throw new Error('Resposta de autenticação Prisma inválida.');
-      this.#token = auth.accessToken;
+  async initialize(): Promise<MethodIdentityDto> {
+    if (this.#identity) return this.#identity;
+    if (this.#initialization) return this.#initialization;
+    this.#initialization = (async () => {
+      const identity = await this.raw<MethodIdentityDto>('/api/method/me');
+      this.validateIdentity(identity);
+      this.#organizationId = identity.organizationId;
+      this.#identity = identity;
+      return identity;
     })();
-    try { await this.#loginPromise; } finally { this.#loginPromise = undefined; }
+    try { return await this.#initialization; } finally { this.#initialization = undefined; }
   }
 
   private redact(message: string): string {
-    for (const secret of [this.#token, this.config.token, this.config.password]) {
-      if (secret) message = message.split(secret).join('[redigido]');
-    }
-    return message.replace(/Bearer\s+\S+/gi, 'Bearer [redigido]')
+    return message.split(this.#token).join('[redigido]')
+      .replace(/Bearer\s+\S+/gi, 'Bearer [redigido]')
+      .replace(/pmt_[A-Za-z0-9_-]{43}/g, '[token redigido]')
       .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[token redigido]');
   }
 
@@ -111,7 +152,7 @@ export class PrismaApi {
           message = details || problem.detail || problem.title || message;
         } catch { /* Resposta não estruturada: mantém a mensagem segura. */ }
       }
-      throw new PrismaApiError(response.status, this.redact(message));
+      throw new PrismaApiError(response.status, this.redact(message) + ([401, 403].includes(response.status) ? ' Pare e avise; confira o token e as permissões com o administrador.' : ''));
     }
     if (response.status === 204) return undefined as T;
     const text = await response.text();
@@ -120,42 +161,44 @@ export class PrismaApi {
     catch { throw new Error('A API Prisma retornou uma resposta JSON inválida.'); }
   }
 
-  private async authorized<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-    await this.login();
-    try { return await this.raw<T>(path, method, body); }
-    catch (error) {
-      if (!(error instanceof PrismaApiError) || error.status !== 401) throw error;
-      // Repetição única: novo login em vez de persistir cookie de refresh.
-      await this.authenticate();
-      return this.raw<T>(path, method, body);
-    }
-  }
-
-  private async ensureOrganization(): Promise<void> {
-    if (this.#organizationId) return;
-    if (this.#organizationPromise) return this.#organizationPromise;
-    this.#organizationPromise = (async () => {
-      const organizations = (await this.authorized<{ id: string; isActive?: boolean }[]>('/api/organizations'))
-        .filter(x => x.isActive !== false);
-      if (organizations.length === 1) { this.#organizationId = organizations[0].id; return; }
-      if (!organizations.length) throw new Error('A conta Prisma não possui uma organização ativa.');
-      const matches: string[] = [];
-      for (const organization of organizations) {
-        this.#organizationId = organization.id;
-        try {
-          const projects = await this.authorized<ProjectDto[]>('/api/projects');
-          if (projects.some(x => x.name === this.config.project && !x.isArchived)) matches.push(organization.id);
-        } finally { this.#organizationId = undefined; }
-      }
-      if (matches.length !== 1) throw new Error('Não foi possível determinar uma organização única para PRISMA_PROJECT. Use uma conta com acesso apenas à organização desejada.');
-      this.#organizationId = matches[0];
-    })();
-    try { await this.#organizationPromise; } finally { this.#organizationPromise = undefined; }
-  }
-
   private async request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-    await this.ensureOrganization();
-    return this.authorized<T>(path, method, body);
+    await this.initialize();
+    return this.raw<T>(path, method, body);
+  }
+
+  private async methodPath(suffix = ''): Promise<string> {
+    const identity = await this.initialize();
+    return `/api/projects/${encodeURIComponent(identity.projectId)}/method${suffix}`;
+  }
+  async getMethodRules(): Promise<MethodRulesDto> {
+    const rules = await this.request<MethodRulesDto>(await this.methodPath('/rules'));
+    this.validateIdentity(rules.identity);
+    if (rules.identity.projectId !== this.identity.projectId || rules.identity.organizationId !== this.identity.organizationId
+      || rules.identity.boardId !== this.identity.boardId || rules.identity.principalId !== this.identity.principalId
+      || rules.project.projectId !== this.identity.projectId || rules.project.boardId !== this.identity.boardId) {
+      throw new Error('A identidade ou o projeto das regras diverge do token. Pare e avise.');
+    }
+    return rules;
+  }
+  async listMethodTasks(status?: string): Promise<MethodTaskDto[]> {
+    return this.request(await this.methodPath(`/tasks${status ? `?status=${encodeURIComponent(status)}` : ''}`));
+  }
+  async nextMethodTasks(): Promise<MethodTaskDto[]> { return this.request(await this.methodPath('/tasks/next')); }
+  async getMethodTask(id: string): Promise<MethodTaskDto> { return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}`)); }
+  async createMethodTask(dto: CreateMethodTaskDto): Promise<MethodTaskDto> {
+    return this.request(await this.methodPath('/tasks'), 'POST', dto);
+  }
+  async updateMethodTask(id: string, dto: UpdateMethodTaskDto): Promise<MethodTaskDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}`), 'PUT', dto);
+  }
+  async moveMethodTask(id: string, newStatus: string, reason: string): Promise<MethodTaskDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/move`), 'POST', { newStatus, reason });
+  }
+  async commentMethodTask(id: string, text: string): Promise<MethodCommentDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/comments`), 'POST', { text });
+  }
+  async linkMethodPullRequest(id: string, url: string): Promise<MethodPullRequestLinkDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-requests`), 'POST', { url, reason: 'Vínculo explícito do PR pelo MCP.' });
   }
 
   async listProjects(): Promise<ProjectDto[]> { return this.request('/api/projects'); }
@@ -242,7 +285,7 @@ export class PrismaApi {
     return this.request(`/api/WorkItems/${encodeURIComponent(id)}/links`, 'POST', { targetWorkItemId: targetId, type });
   }
   async getCurrentUserId(): Promise<string> {
-    await this.ensureOrganization();
+    await this.initialize();
     return this.userId;
   }
   async getStateGraph(id: string): Promise<TaskStateGraphDto> {
