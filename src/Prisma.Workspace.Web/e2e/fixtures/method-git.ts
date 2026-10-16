@@ -149,7 +149,7 @@ export interface PrSpec {
 export async function setPullRequest(p: MethodProject, pr: PrSpec) {
   const merged = !!pr.merged;
   const now = new Date().toISOString();
-  await fake('PUT', `/__fixture/pulls/${pr.number}`, {
+  await fake('PUT', `/__fixture/pulls/${pr.number}?repo=${encodeURIComponent(p.repositoryFullName)}`, {
     title: pr.title ?? `PR ${pr.number}`, state: pr.state ?? 'open', draft: !!pr.draft, merged,
     merged_at: merged ? now : null, merge_commit_sha: merged ? 'a'.repeat(40) : null, closed_at: pr.state === 'closed' ? now : null,
     head: { ref: pr.branch, sha: pr.headSha ?? 'b'.repeat(40),
@@ -203,6 +203,6 @@ export async function pullRequestEvent(p: MethodProject, action: string, pr: PrS
 export async function reviewEvent(p: MethodProject, pr: PrSpec, state: 'changes_requested' | 'approved' | 'commented', reviewId: number, commitId?: string) {
   const payload = await setPullRequest(p, pr);
   const review = { id: reviewId, state: state.toUpperCase(), commit_id: commitId ?? pr.headSha ?? 'b'.repeat(40), submitted_at: new Date().toISOString(), user: { id: 4343, login: 'revisor' } };
-  await fake('PUT', `/__fixture/pulls/${pr.number}/reviews`, [review]);
+  await fake('PUT', `/__fixture/pulls/${pr.number}/reviews?repo=${encodeURIComponent(p.repositoryFullName)}`, [review]);
   return sendWebhook(p, 'pull_request_review', { action: 'submitted', ...payload, review: { ...review, state } });
 }

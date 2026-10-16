@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // GitHub falso para o E2E e o QA da integração Git do método (fase 2a). Sem dependências.
 // Implementa só as leituras que o provedor da 2a usa e uma API de controle em /__fixture.
+// Guarda vários repositórios ao mesmo tempo (um por projeto de teste), cada um com seus PRs.
 //
 // Ambiente:
 //   GITHUB_FAKE_PORT            porta (padrão 3134)
@@ -8,12 +9,12 @@
 //   GITHUB_FAKE_APP_PUBLIC_KEY  chave pública PEM (SPKI) da App de teste, para conferir o RS256
 //
 // Controle (somente para testes):
-//   POST /__fixture/reset                       limpa PRs, reviews, falhas e chamadas
-//   PUT  /__fixture/repository                  { id, full_name, default_branch, installation_id }
-//   PUT  /__fixture/pulls/{number}              PR completo ou parcial (mescla com o atual)
-//   PUT  /__fixture/pulls/{number}/reviews      [ { id, state, commit_id, submitted_at, user } ]
-//   POST /__fixture/fail                        { match: "<regex do caminho>", status, retry_after?, times? }
-//   GET  /__fixture/calls                       chamadas recebidas (sem Authorization)
+//   POST /__fixture/reset                              limpa repositórios, PRs, reviews, falhas e chamadas
+//   PUT  /__fixture/repository                         { id, full_name, default_branch, installation_id } (cria ou atualiza; vira o atual)
+//   PUT  /__fixture/pulls/{number}?repo=<full_name>    PR completo ou parcial (mescla); sem repo usa o atual
+//   PUT  /__fixture/pulls/{number}/reviews?repo=...    [ { id, state, commit_id, submitted_at, user } ]
+//   POST /__fixture/fail                               { match: "<regex do caminho>", status, retry_after?, times? }
+//   GET  /__fixture/calls                              chamadas recebidas (sem Authorization)
 import { createServer } from 'node:http';
 import { createPublicKey, createVerify, randomBytes } from 'node:crypto';
 
@@ -22,11 +23,13 @@ const appId = process.env.GITHUB_FAKE_APP_ID ?? '';
 const publicKey = process.env.GITHUB_FAKE_APP_PUBLIC_KEY ? createPublicKey(process.env.GITHUB_FAKE_APP_PUBLIC_KEY) : null;
 
 let state;
+function newRepo(r) {
+  return { id: Number(r.id), full_name: r.full_name, default_branch: r.default_branch ?? 'main',
+    installation_id: Number(r.installation_id ?? 1), pulls: new Map(), reviews: new Map() };
+}
 function reset() {
-  state = {
-    repository: { id: 900001, full_name: 'qa/metodo', default_branch: 'main', installation_id: 1 },
-    pulls: new Map(), reviews: new Map(), failures: [], calls: [], tokens: new Map(),
-  };
+  const initial = newRepo({ id: 900001, full_name: 'qa/metodo', default_branch: 'main', installation_id: 1 });
+  state = { repos: new Map([[initial.full_name, initial]]), current: initial.full_name, failures: [], calls: [], tokens: new Map() };
 }
 reset();
 
@@ -50,7 +53,7 @@ function verifyAppJwt(auth) {
   if (appId && String(claims.iss) !== appId) return 'iss diferente do AppId';
   if (typeof claims.exp !== 'number' || claims.exp <= now) return 'JWT expirado';
   if (typeof claims.iat !== 'number' || claims.iat > now + 60) return 'iat no futuro';
-  if (claims.exp - claims.iat > 600) return 'validade do JWT acima de 10 minutos';
+  if (claims.exp - claims.iat > 660) return 'validade do JWT acima de 11 minutos';
   return null;
 }
 
@@ -66,20 +69,21 @@ function page(list, url) {
   return list.slice((n - 1) * per, n * per);
 }
 
-function fullPull(n) {
-  const p = state.pulls.get(n);
-  const repo = state.repository;
+function fullPull(repo, n) {
+  const p = repo.pulls.get(n);
+  const self = { id: repo.id, full_name: repo.full_name };
   return {
     id: 7_000_000 + n, number: n, html_url: `https://github.com/${repo.full_name}/pull/${n}`,
     title: `PR ${n}`, state: 'open', draft: false, merged: false, merged_at: null, merge_commit_sha: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), closed_at: null,
     ...p,
-    head: { ref: 'feature/x', sha: 'b'.repeat(40), repo: { id: repo.id, full_name: repo.full_name }, ...(p.head ?? {}) },
-    base: { ref: repo.default_branch, ...(p.base ?? {}), repo: { id: repo.id, full_name: repo.full_name } },
+    head: { ref: 'feature/x', sha: 'b'.repeat(40), repo: self, ...(p.head ?? {}) },
+    base: { ref: repo.default_branch, ...(p.base ?? {}), repo: self },
   };
 }
 
 async function body(req) { let s = ''; for await (const c of req) s += c; return s ? JSON.parse(s) : {}; }
+const fixtureRepo = url => state.repos.get(url.searchParams.get('repo') ?? state.current);
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://fake');
@@ -87,15 +91,27 @@ createServer(async (req, res) => {
   try {
     if (path.startsWith('/__fixture')) {
       if (req.method === 'POST' && path === '/__fixture/reset') { reset(); return json(res, 204); }
-      if (req.method === 'PUT' && path === '/__fixture/repository') { Object.assign(state.repository, await body(req)); return json(res, 200, state.repository); }
+      if (req.method === 'PUT' && path === '/__fixture/repository') {
+        const r = await body(req);
+        const repo = state.repos.get(r.full_name) ?? newRepo(r);
+        Object.assign(repo, { id: Number(r.id ?? repo.id), default_branch: r.default_branch ?? repo.default_branch,
+          installation_id: Number(r.installation_id ?? repo.installation_id) });
+        state.repos.set(repo.full_name, repo); state.current = repo.full_name;
+        return json(res, 200, { id: repo.id, full_name: repo.full_name, default_branch: repo.default_branch, installation_id: repo.installation_id });
+      }
       let m = /^\/__fixture\/pulls\/(\d+)$/.exec(path);
       if (req.method === 'PUT' && m) {
-        const n = Number(m[1]); const atual = state.pulls.get(n) ?? {}; const novo = await body(req);
-        state.pulls.set(n, { ...atual, ...novo, head: { ...(atual.head ?? {}), ...(novo.head ?? {}) }, base: { ...(atual.base ?? {}), ...(novo.base ?? {}) }, updated_at: new Date().toISOString() });
-        return json(res, 200, fullPull(n));
+        const repo = fixtureRepo(url); if (!repo) return json(res, 404, { message: 'repositório desconhecido na fixture' });
+        const n = Number(m[1]); const atual = repo.pulls.get(n) ?? {}; const novo = await body(req);
+        repo.pulls.set(n, { ...atual, ...novo, head: { ...(atual.head ?? {}), ...(novo.head ?? {}) },
+          base: { ...(atual.base ?? {}), ...(novo.base ?? {}) }, updated_at: novo.updated_at ?? new Date().toISOString() });
+        return json(res, 200, fullPull(repo, n));
       }
       m = /^\/__fixture\/pulls\/(\d+)\/reviews$/.exec(path);
-      if (req.method === 'PUT' && m) { state.reviews.set(Number(m[1]), await body(req)); return json(res, 200, state.reviews.get(Number(m[1]))); }
+      if (req.method === 'PUT' && m) {
+        const repo = fixtureRepo(url); if (!repo) return json(res, 404, { message: 'repositório desconhecido na fixture' });
+        repo.reviews.set(Number(m[1]), await body(req)); return json(res, 200, repo.reviews.get(Number(m[1])));
+      }
       if (req.method === 'POST' && path === '/__fixture/fail') { const f = await body(req); state.failures.push({ ...f, re: new RegExp(f.match), times: f.times ?? 1 }); return json(res, 204); }
       if (req.method === 'GET' && path === '/__fixture/calls') return json(res, 200, state.calls);
       return json(res, 404, { message: 'rota de controle desconhecida' });
@@ -111,43 +127,47 @@ createServer(async (req, res) => {
       return json(res, falha.status, { message: 'falha simulada' }, h);
     }
 
-    const repo = state.repository;
     let m = /^\/app\/installations\/(\d+)\/access_tokens$/.exec(path);
     if (req.method === 'POST' && m) {
       const erro = verifyAppJwt(req.headers.authorization);
       if (erro) return json(res, 401, { message: erro });
-      if (Number(m[1]) !== Number(repo.installation_id)) return json(res, 404, { message: 'instalação desconhecida' });
+      const installation = Number(m[1]);
+      const repos = [...state.repos.values()].filter(r => r.installation_id === installation);
+      if (!repos.length) return json(res, 404, { message: 'instalação desconhecida' });
       const pedido = await body(req);
       const perms = pedido.permissions ?? {};
       const proibidas = Object.entries(perms).filter(([k, v]) => !(['pull_requests', 'metadata'].includes(k) && v === 'read'));
       if (proibidas.length) return json(res, 422, { message: `permissão não concedida à App de teste: ${proibidas.map(([k, v]) => `${k}:${v}`).join(',')}` });
-      if (pedido.repository_ids && !pedido.repository_ids.every(id => Number(id) === Number(repo.id))) return json(res, 422, { message: 'repositório fora da instalação' });
+      const allowed = pedido.repository_ids ? pedido.repository_ids.map(Number) : repos.map(r => r.id);
+      if (!allowed.every(id => repos.some(r => r.id === id))) return json(res, 422, { message: 'repositório fora da instalação' });
       const token = `ghs_fake_${randomBytes(18).toString('hex')}`;
-      state.tokens.set(token, { expires: Date.now() + 3600_000 });
+      state.tokens.set(token, { expires: Date.now() + 3600_000, repoIds: new Set(allowed) });
       return json(res, 201, { token, expires_at: new Date(Date.now() + 3600_000).toISOString(), permissions: perms, repository_selection: 'selected' });
     }
 
-    if (!installationToken(req.headers.authorization)) return json(res, 401, { message: 'Bad credentials' });
+    const tok = installationToken(req.headers.authorization);
+    if (!tok) return json(res, 401, { message: 'Bad credentials' });
 
     if (req.method === 'GET' && path === '/installation/repositories') {
-      const all = [{ id: repo.id, full_name: repo.full_name, default_branch: repo.default_branch }];
+      const all = [...state.repos.values()].filter(r => tok.repoIds.has(r.id))
+        .map(r => ({ id: r.id, full_name: r.full_name, default_branch: r.default_branch }));
       return json(res, 200, { total_count: all.length, repositories: page(all, url) });
     }
-    const base = `/repos/${repo.full_name}`;
-    if (!path.startsWith(base + '/') && path !== base) return json(res, 404, { message: 'Not Found' });
-    if (req.method === 'GET' && path === `${base}/pulls`) {
+    m = /^\/repos\/([^/]+\/[^/]+)\/pulls(?:\/(\d+)(\/reviews)?)?$/.exec(path);
+    const repo = m && state.repos.get(decodeURIComponent(m[1]));
+    if (!m || !repo || !tok.repoIds.has(repo.id)) return json(res, 404, { message: 'Not Found' });
+    if (req.method === 'GET' && !m[2]) {
       const st = url.searchParams.get('state') ?? 'open';
-      const list = [...state.pulls.keys()].sort((a, b) => a - b).map(fullPull)
+      const list = [...repo.pulls.keys()].sort((a, b) => a - b).map(n => fullPull(repo, n))
         .filter(p => st === 'all' || p.state === st)
         .map(({ merged: _merged, ...resumo }) => resumo);
       return json(res, 200, page(list, url));
     }
-    m = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}/pulls/(\\d+)(/reviews)?$`).exec(path);
-    if (req.method === 'GET' && m) {
-      const n = Number(m[1]);
-      if (!state.pulls.has(n)) return json(res, 404, { message: 'Not Found' });
-      if (m[2]) return json(res, 200, page(state.reviews.get(n) ?? [], url));
-      return json(res, 200, fullPull(n));
+    if (req.method === 'GET') {
+      const n = Number(m[2]);
+      if (!repo.pulls.has(n)) return json(res, 404, { message: 'Not Found' });
+      if (m[3]) return json(res, 200, page(repo.reviews.get(n) ?? [], url));
+      return json(res, 200, fullPull(repo, n));
     }
     return json(res, 404, { message: 'Not Found' });
   } catch (e) {

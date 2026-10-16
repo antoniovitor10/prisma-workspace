@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures/test';
 import {
   methodGitEnabled, humanSession, tokenSession, createMethodProject, createTask, getTask, moveTask,
@@ -47,7 +48,7 @@ test.describe('integração Git do método — fase 2a', () => {
       const dev = p.stages['em-desenvolvimento'];
       const tentativas = [
         ['move do método', moveTask(agent, p, 'T-0101', 'em-desenvolvimento', 'um humano pediu para começar')],
-        ['POST /api/WorkItems/move', agent.post('/api/WorkItems/move', { workItemId: t.workItemId, destinationStageId: dev, position: 100 })],
+        ['POST /api/WorkItems/move', agent.post('/api/WorkItems/move', { workItemId: t.workItemId, destinationStageId: dev, position: 100, reason: 'atalho pelo move genérico' })],
         ['PUT /api/WorkItems/{id} com StageId', agent.put(`/api/WorkItems/${t.workItemId}`, {
           title: t.title, description: null, kind: 5, stageId: dev, priority: 1, responsibleId: null, teamId: null, origin: 0,
           requesterId: null, requesterName: null, requesterEmail: null, startDate: null, dueDate: null,
@@ -159,14 +160,15 @@ test.describe('integração Git do método — fase 2a', () => {
       await createTask(human, p, 'T-0111');
       await moveTask(human, p, 'T-0111', 'em-desenvolvimento', 'humano autoriza');
       const payload = { action: 'opened', ...(await setPullRequest(p, { number: 111, branch: 'task/T-0111-x' })) };
-      const primeiro = await sendWebhook(p, 'pull_request', payload, { delivery: 'e2e-dup-0111' });
+      const dup = randomUUID(); // o GitHub sempre manda UUID no X-GitHub-Delivery
+      const primeiro = await sendWebhook(p, 'pull_request', payload, { delivery: dup });
       expect(primeiro.status).toBe(202);
       const [a, b] = await Promise.all([
-        sendWebhook(p, 'pull_request', payload, { delivery: 'e2e-dup-0111' }),
-        sendWebhook(p, 'pull_request', payload, { delivery: 'e2e-dup-0111' }),
+        sendWebhook(p, 'pull_request', payload, { delivery: dup }),
+        sendWebhook(p, 'pull_request', payload, { delivery: dup }),
       ]);
       for (const r of [a, b]) expect([200, 202]).toContain(r.status);
-      const divergente = await sendWebhook(p, 'pull_request', { ...payload, action: 'closed' }, { delivery: 'e2e-dup-0111' });
+      const divergente = await sendWebhook(p, 'pull_request', { ...payload, action: 'closed' }, { delivery: dup });
       expect(divergente.status).toBe(409);
       await expectStatus(human, p, 'T-0111', 'em-revisao');
       const comments = await human.json<{ text: string }[]>(human.get(`/api/WorkItems/${(await getTask(human, p, 'T-0111')).workItemId}/history`)).catch(() => null);
