@@ -55,6 +55,8 @@ export function TimeTaskSearch({value,onChange}:{value:string;onChange:(id:strin
 
 const inputTime=(value:string)=>new Date(Date.parse(value)-3*3600_000).toISOString().slice(0,19);
 const instant=(value:string)=>new Date(`${value}-03:00`).toISOString();
+// O editor mostra segundos inteiros; campos não alterados mantêm toda a precisão da API.
+const editedInstant=(value:string,original:string)=>instant(value)===instant(inputTime(original))?original:instant(value);
 const displayTime=(value:string)=>new Date(value).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'});
 const durationLabel=(seconds:number)=>`${Math.floor(seconds/3600)}h ${String(Math.floor(seconds%3600/60)).padStart(2,'0')}min ${String(seconds%60).padStart(2,'0')}s`;
 export function DayTimeEntries({entries,onChanged}:{entries:DayEntry[];onChanged:()=>Promise<void>}){
@@ -70,7 +72,7 @@ export function DayTimeEntries({entries,onChanged}:{entries:DayEntry[];onChanged
     {entries.map(({entry,title})=><article key={entry.id} aria-label={`Lançamento ${title}`}>
       <strong>{title}</strong><small>{displayTime(entry.startedAt)} — {entry.endedAt?displayTime(entry.endedAt):'Em andamento'} · {durationLabel(entry.durationSeconds)} · {entry.isManual?'Manual':'Cronômetro'}</small>
       {entry.note&&<p>{entry.note}</p>}
-      {editing===entry.id?<form onSubmit={e=>{e.preventDefault();void mutate(()=>api.updateTimeEntry(entry.id,{startedAt:instant(draft.startedAt),endedAt:instant(draft.endedAt),note:draft.note}));}}>
+      {editing===entry.id?<form onSubmit={e=>{e.preventDefault();void mutate(()=>api.updateTimeEntry(entry.id,{startedAt:editedInstant(draft.startedAt,entry.startedAt),endedAt:editedInstant(draft.endedAt,entry.endedAt!),note:draft.note}));}}>
         <label>Início (Brasília)<input type="datetime-local" step="1" required value={draft.startedAt} onChange={e=>setDraft({...draft,startedAt:e.target.value})}/></label>
         <label>Fim (Brasília)<input type="datetime-local" step="1" required value={draft.endedAt} onChange={e=>setDraft({...draft,endedAt:e.target.value})}/></label>
         <label>Observação<textarea maxLength={2000} value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})}/></label>

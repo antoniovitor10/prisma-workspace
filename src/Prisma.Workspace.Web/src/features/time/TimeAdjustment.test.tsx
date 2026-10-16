@@ -1,11 +1,56 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '../../styles/theme';
 import { api } from '../../services/api';
-import { TimeTaskSearch } from './TimeAdjustment';
+import { DayTimeEntries, TimeTaskSearch, type DayEntry } from './TimeAdjustment';
 
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
+
+it.each([
+  ['2026-10-15T12:00:00.9999999+00:00','2026-10-15T12:01:00.0000001+00:00'],
+  ['2026-10-15T09:00:00.9999999-03:00','2026-10-15T09:01:00.0000001-03:00'],
+])('editar só a observação preserva os instantes integrais (%s)',async(startedAt,endedAt)=>{
+  const entry:DayEntry={title:'Tarefa própria',entry:{id:'entry',workItemId:'task',startedAt,endedAt,note:'Anterior',durationSeconds:59,isManual:false}};
+  const update=vi.spyOn(api,'updateTimeEntry').mockResolvedValue({...entry.entry,note:'Nova observação'});
+  const changed=vi.fn().mockResolvedValue(undefined);
+  render(<ThemeProvider theme={theme}><DayTimeEntries entries={[entry]} onChanged={changed}/></ThemeProvider>);
+  fireEvent.click(screen.getByRole('button',{name:'Editar lançamento'}));
+  fireEvent.change(screen.getByRole('textbox',{name:'Observação'}),{target:{value:'Nova observação'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar lançamento'}));
+  await waitFor(()=>expect(changed).toHaveBeenCalledOnce());
+  expect(update).toHaveBeenCalledOnce();
+  expect(update).toHaveBeenCalledWith('entry',{startedAt,endedAt,note:'Nova observação'});
+});
+
+it.each(['startedAt','endedAt'] as const)('editar %s preserva a precisão do outro horário',async(field)=>{
+  const entry:DayEntry={title:'Tarefa própria',entry:{id:'entry',workItemId:'task',startedAt:'2026-10-15T12:00:00.9999999Z',endedAt:'2026-10-15T12:01:00.0000001Z',note:'Nota',durationSeconds:59,isManual:true}};
+  const update=vi.spyOn(api,'updateTimeEntry').mockResolvedValue(entry.entry);
+  const changed=vi.fn().mockResolvedValue(undefined);
+  render(<ThemeProvider theme={theme}><DayTimeEntries entries={[entry]} onChanged={changed}/></ThemeProvider>);
+  fireEvent.click(screen.getByRole('button',{name:'Editar lançamento'}));
+  fireEvent.change(screen.getByLabelText(field==='startedAt'?'Início (Brasília)':'Fim (Brasília)'),{target:{value:'2026-10-15T09:00:30'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar lançamento'}));
+  await waitFor(()=>expect(changed).toHaveBeenCalledOnce());
+  expect(update).toHaveBeenCalledOnce();
+  expect(update).toHaveBeenCalledWith('entry',{
+    startedAt:entry.entry.startedAt,endedAt:entry.entry.endedAt,note:'Nota',
+    [field]:'2026-10-15T12:00:30.000Z',
+  });
+});
+
+it('preserva os instantes quando o campo normaliza segundos zero para horas e minutos',async()=>{
+  const entry:DayEntry={title:'Tarefa própria',entry:{id:'entry',workItemId:'task',startedAt:'2026-10-15T12:00:00.9999999Z',endedAt:'2026-10-15T12:01:00.0000001Z',durationSeconds:59,isManual:true}};
+  const update=vi.spyOn(api,'updateTimeEntry').mockResolvedValue(entry.entry);
+  const changed=vi.fn().mockResolvedValue(undefined);
+  render(<ThemeProvider theme={theme}><DayTimeEntries entries={[entry]} onChanged={changed}/></ThemeProvider>);
+  fireEvent.click(screen.getByRole('button',{name:'Editar lançamento'}));
+  fireEvent.change(screen.getByLabelText('Início (Brasília)'),{target:{value:'2026-10-15T09:00'}});
+  fireEvent.change(screen.getByLabelText('Fim (Brasília)'),{target:{value:'2026-10-15T09:01'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar lançamento'}));
+  await waitFor(()=>expect(changed).toHaveBeenCalledOnce());
+  expect(update).toHaveBeenCalledWith('entry',{startedAt:entry.entry.startedAt,endedAt:entry.entry.endedAt,note:''});
+});
 it('mantém a opção ativa visível ao avançar e voltar sem tirar o foco do campo',async()=>{
   const tasks=Array.from({length:6},(_,index)=>({id:`task-${index}`,number:index+1,title:`Tarefa ${index+1}`,boardName:'Quadro',assigned:true}));
   vi.spyOn(api,'getTimeAdjustmentTasks').mockResolvedValue(tasks);

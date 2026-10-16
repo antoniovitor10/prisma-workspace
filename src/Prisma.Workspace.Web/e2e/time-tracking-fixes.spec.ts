@@ -75,6 +75,67 @@ test('editar lançamento no ajuste persiste horários, observação e atualiza d
   });
 });
 
+test('editar só a observação preserva períodos contíguos com frações de segundo',async({page,request})=>{
+  await withTimeFactory(page,request,async f=>{
+    const task=await f.task();const date=today();
+    const previous=await f.manual(task.id,`${date}T00:00:00.9999999-03:00`,`${date}T00:01:00.9999999-03:00`);
+    const note=f.boards.name('Observação contígua');
+    const entry=await f.manual(task.id,`${date}T00:01:00.9999999-03:00`,`${date}T00:02:00.9999999-03:00`,note);
+    expect(previous.durationSeconds).toBe(60);expect(entry.durationSeconds).toBe(60);
+    expect(previous.endedAt).toBe(entry.startedAt);
+    expect((await total(f,task.id)).totalSeconds).toBe(120);
+    const modal=await day(page,f,date);
+    const row=modal.getByRole('article',{name:`Lançamento ${task.title}`,exact:true}).filter({hasText:note});
+    await row.getByRole('button',{name:'Editar lançamento',exact:true}).click();
+    const updatedNote=f.boards.name('Somente a observação mudou');
+    await row.getByRole('textbox',{name:'Observação',exact:true}).fill(updatedNote);
+    const saved=responseTo(page,'PUT',`/api/timeentries/${entry.id}`);
+    const daily=responseTo(page,'GET','/api/me/time/daily-by-task');
+    const weekly=responseTo(page,'GET','/api/TimeEntries/my/weekly');
+    await row.getByRole('button',{name:'Salvar lançamento',exact:true}).click();
+    const response=await saved;expect(response.status()).toBe(200);
+    expect(response.request().postDataJSON()).toEqual({startedAt:entry.startedAt,endedAt:entry.endedAt,note:updatedNote});
+    expect(await response.json()).toMatchObject({id:entry.id,startedAt:entry.startedAt,endedAt:entry.endedAt,durationSeconds:60,note:updatedNote});
+    expect(await (await daily).json()).toEqual([expect.objectContaining({workItemId:task.id,seconds:120})]);
+    const week:WeeklyTime=await (await weekly).json();expect(week.days.find(d=>d.date===date)?.totalSeconds).toBe(120);
+    expect(await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`)).toEqual(expect.arrayContaining([
+      expect.objectContaining(previous),expect.objectContaining({id:entry.id,startedAt:entry.startedAt,endedAt:entry.endedAt,note:updatedNote}),
+    ]));
+    expect((await total(f,task.id)).totalSeconds).toBe(120);
+    const reopened=await day(page,f,date,true);
+    await expect(reopened.getByRole('article',{name:`Lançamento ${task.title}`,exact:true}).filter({hasText:updatedNote})).toContainText('0h 01min 00s');
+  });
+});
+
+test('editar só a observação mantém 59 segundos e os instantes de um período isolado',async({page,request})=>{
+  await withTimeFactory(page,request,async f=>{
+    const task=await f.task();const date=today();
+    const entry=await f.manual(task.id,`${date}T00:10:00.9999999-03:00`,`${date}T00:11:00.0000001-03:00`);
+    expect(entry.durationSeconds).toBe(59);
+    const modal=await day(page,f,date);
+    const row=modal.getByRole('article',{name:`Lançamento ${task.title}`,exact:true});
+    await row.getByRole('button',{name:'Editar lançamento',exact:true}).click();
+    const note=f.boards.name('Nota sem alterar os horários');
+    await row.getByRole('textbox',{name:'Observação',exact:true}).fill(note);
+    const saved=responseTo(page,'PUT',`/api/timeentries/${entry.id}`);
+    const daily=responseTo(page,'GET','/api/me/time/daily-by-task');
+    const weekly=responseTo(page,'GET','/api/TimeEntries/my/weekly');
+    await row.getByRole('button',{name:'Salvar lançamento',exact:true}).click();
+    const response=await saved;expect(response.status()).toBe(200);
+    expect(response.request().postDataJSON()).toEqual({startedAt:entry.startedAt,endedAt:entry.endedAt,note});
+    expect(await response.json()).toMatchObject({startedAt:entry.startedAt,endedAt:entry.endedAt,durationSeconds:59,note});
+    expect(await (await daily).json()).toEqual([expect.objectContaining({workItemId:task.id,seconds:59})]);
+    const week:WeeklyTime=await (await weekly).json();expect(week.days.find(d=>d.date===date)?.totalSeconds).toBe(59);
+    expect((await total(f,task.id)).totalSeconds).toBe(59);
+    const reopened=await day(page,f,date,true);
+    const persisted=reopened.getByRole('article',{name:`Lançamento ${task.title}`,exact:true});
+    await expect(persisted).toContainText(note);await expect(persisted).toContainText('0h 00min 59s');
+    expect(await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`)).toEqual([
+      expect.objectContaining({id:entry.id,startedAt:entry.startedAt,endedAt:entry.endedAt,durationSeconds:59,note}),
+    ]);
+  });
+});
+
 test('excluir lançamento exige confirmação, cancelar preserva e confirmar atualiza os totais',async({page,request})=>{
   await withTimeFactory(page,request,async f=>{
     const task=await f.task();const date=today();
