@@ -5,6 +5,7 @@ import { PrismaApi, type WorkItemDto } from './api.js';
 import { FIELD_NAMES, isMetodoStatus, type MetodoStatus } from './mapping.js';
 import { readMetodo, type MetodoHu, type MetodoTask } from './metodo.js';
 import { ensureProjeto, type ProjetoSetup } from './setup.js';
+import { assertTransition } from './rules.js';
 
 export interface ImportOptions { dryRun?: boolean; sincronizarStatus?: boolean; }
 export interface ImportSummary {
@@ -49,6 +50,21 @@ export async function importMetodo(directory: string, options: ImportOptions = {
     const item = byId.get(task.id);
     if (item && item.parentId !== byId.get(task.hu)?.id) {
       throw new Error(`A task ${task.id} está vinculada a outra HU no Prisma. Corrija o vínculo antes de importar.`);
+    }
+  }
+
+  // A opção de sincronização não pode contornar a autorização por papel.
+  // A importação inicial migra o estado legado; alterar um item existente
+  // continua sujeito à matriz, inclusive na execução do CLI.
+  if (options.sincronizarStatus) {
+    for (const source of [...metodo.hus, ...metodo.tasks]) {
+      const item = byId.get(source.id);
+      if (!item || !isMetodoStatus(source.status) || item.stageId === setup.stages.get(source.status)) continue;
+      const from = statusForStage(setup, item.stageId);
+      if (api.config.role === 'agente' && !isMetodoStatus(from)) {
+        throw new Error(`A sincronização de ${source.id} fora das colunas do método exige papel humano.`);
+      }
+      if (isMetodoStatus(from)) assertTransition(api.config.role, from, source.status);
     }
   }
 
