@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test';
-import { expect } from './test';
+import { cleanupFor, expect } from './test';
 import { BoardFactory, withBoardFactory, type BoardSession } from './boards';
 
 export type TimeEntry = { id: string; workItemId: string; userId: string; startedAt: string;
@@ -50,26 +50,19 @@ export class TimeFactory {
 }
 
 export async function withTimeFactory(page: Page, request: APIRequestContext, run: (f: TimeFactory) => Promise<void>) {
+  const cleanup = cleanupFor(request);
   await page.goto('/projects', { waitUntil: 'domcontentloaded' });
   await withBoardFactory(page, request, async boards => {
     const person = await boards.member(); const board = await boards.board(); const stage = await boards.stage(board.id);
     const fixture = new TimeFactory(boards, person, board, stage);
-    let runFailure: { error: unknown } | undefined;
-    let cleanupFailure: { error: unknown } | undefined;
-    try {
-      expect((await fixture.api('/api/TimeEntries/running')).status()).toBe(204);
-      await page.evaluate(session => {
-        localStorage.setItem('prisma_workspace_token', session.accessToken);
-        localStorage.setItem('prisma_workspace_organization', session.organizationId);
-      }, person);
-      await run(fixture);
-    } catch (error) { runFailure = { error }; } finally {
-      try { await fixture.cleanup(); } catch (error) { cleanupFailure = { error }; }
-    }
-    if (runFailure && cleanupFailure)
-      throw new AggregateError([runFailure.error, cleanupFailure.error], 'Falha no cenário de horas e na limpeza.');
-    if (runFailure) throw runFailure.error;
-    if (cleanupFailure) throw cleanupFailure.error;
+    // A pilha executa esta ação antes de arquivar projeto/desativar seus membros.
+    cleanup(() => fixture.cleanup());
+    expect((await fixture.api('/api/TimeEntries/running')).status()).toBe(204);
+    await page.evaluate(session => {
+      localStorage.setItem('prisma_workspace_token', session.accessToken);
+      localStorage.setItem('prisma_workspace_organization', session.organizationId);
+    }, person);
+    await run(fixture);
   }, 'T7');
 }
 

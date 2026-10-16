@@ -1,4 +1,4 @@
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type APIRequestContext, type Page } from '@playwright/test';
 
 type SeedBoard = { id: string; name: string; teamId?: string };
 
@@ -16,6 +16,24 @@ type TestFixtures = {
 };
 
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
+const cleanupActions = new WeakMap<APIRequestContext, Array<() => Promise<void>>>();
+const httpMethods = new Set(['fetch', 'get', 'post', 'put', 'patch', 'delete', 'head']);
+
+/** Registra recursos antes de executá-los, mantendo a limpeza fora do corpo do teste. */
+export function cleanupFor(request: APIRequestContext) {
+  const actions = cleanupActions.get(request);
+  if (!actions) throw new Error('A factory requer a fixture request de e2e/fixtures/test.ts.');
+  return (action: () => Promise<void>) => { actions.push(action); };
+}
+
+function safeTransportError(error: unknown) {
+  // O call log de transporte do Playwright inclui Authorization e cookies.
+  // Preservar o motivo sem propagar cabeçalhos, credenciais ou a causa bruta.
+  const reason = (error instanceof Error ? error.message : String(error)).split('\n')[0]
+    .replace(/\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[token removido]')
+    .replace(/prisma_refresh=[^\s;]+/g, 'prisma_refresh=[removido]');
+  return new Error(reason);
+}
 
 export async function authenticatedApiGet<T>(page: Page, path: string): Promise<T> {
   return page.evaluate(async ({ baseUrl, requestPath }) => {
@@ -34,6 +52,34 @@ export async function authenticatedApiGet<T>(page: Page, path: string): Promise<
 }
 
 export const test = base.extend<TestFixtures>({
+  request: [async ({ request }, provideRequest, testInfo) => {
+    const safeRequest = new Proxy(request, {
+      get(target, property) {
+        const member = Reflect.get(target, property);
+        if (typeof member !== 'function') return member;
+        if (typeof property !== 'string' || !httpMethods.has(property)) return member.bind(target);
+        return async (...args: unknown[]) => {
+          try { return await member.apply(target, args); }
+          catch (error) { throw safeTransportError(error); }
+        };
+      },
+    });
+    const actions: Array<() => Promise<void>> = [];
+    cleanupActions.set(safeRequest, actions);
+    try { await provideRequest(safeRequest); } finally {
+      const startedAt = Date.now();
+      const errors: unknown[] = [];
+      const count = actions.length;
+      for (const action of actions.reverse()) {
+        try { await action(); } catch (error) { errors.push(safeTransportError(error)); }
+      }
+      cleanupActions.delete(safeRequest);
+      if (count) testInfo.annotations.push({ type: 'fixture-cleanup',
+        description: `${count} ações; ${Date.now() - startedAt} ms; ${errors.length} falhas` });
+      if (errors.length) throw new AggregateError(errors, 'Falha na limpeza dos dados próprios E2E.');
+    }
+    // A fixture tem prazo próprio; o corpo do cenário continua com 30s.
+  }, { scope: 'test', timeout: 20_000 }],
   authenticatedGoto: async ({ page }, provideAuthenticatedGoto) => {
     await provideAuthenticatedGoto(async (appPath: string) => {
       const response = await page.goto(appPath, { waitUntil: 'domcontentloaded' });

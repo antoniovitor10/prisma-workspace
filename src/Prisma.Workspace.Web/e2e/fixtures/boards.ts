@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
-import { expect } from './test';
+import { cleanupFor, expect } from './test';
 
 export type BoardStage = { id: string; name: string; category: number };
 export type BoardItem = { id: string; boardId: string; stageId: string; completedAt: string | null; version: string };
@@ -109,6 +109,7 @@ export class BoardFactory {
 }
 
 export async function withBoardFactory(page: Page, request: APIRequestContext, run: (factory: BoardFactory) => Promise<void>, batch = 'L06') {
+  const cleanup = cleanupFor(request);
   const admin = await page.evaluate(() => ({
     accessToken: localStorage.getItem('prisma_workspace_token')!,
     organizationId: localStorage.getItem('prisma_workspace_organization')!,
@@ -119,13 +120,6 @@ export async function withBoardFactory(page: Page, request: APIRequestContext, r
   }, data: { name: `${batch} projeto ${randomUUID()}`, description: 'Fixture exclusiva E2E', nature: 1, workType: 1 } });
   expect(response.status()).toBe(201);
   const fixture = new BoardFactory(request, admin, await response.json(), batch);
-  let runFailure: { error: unknown } | undefined;
-  let cleanupFailure: { error: unknown } | undefined;
-  try { await run(fixture); } catch (error) { runFailure = { error }; } finally {
-    try { await fixture.cleanup(); } catch (error) { cleanupFailure = { error }; }
-  }
-  if (runFailure && cleanupFailure)
-    throw new AggregateError([runFailure.error, cleanupFailure.error], 'Falha no cenário e na limpeza.');
-  if (runFailure) throw runFailure.error;
-  if (cleanupFailure) throw cleanupFailure.error;
+  cleanup(() => fixture.cleanup());
+  await run(fixture);
 }
