@@ -73,12 +73,16 @@ public class GetOrganizationHoursReportQueryHandler
         IReadOnlyCollection<Guid>? allowedTeamIds = null;
         if (!ownOnly)
         {
+            // Admin e gestor já possuem ViewReport no catálogo; aplicar as negações carregadas
+            // evita repetir consultas de membro e grants para cada equipe da organização.
+            var deniedTeams = grants.Where(g => g.UserId == request.ActorId && !g.IsAllowed
+                && g.Permission == PlatformPermission.ViewReport && g.Scope == PermissionScope.Team
+                && g.ScopeId.HasValue).Select(g => g.ScopeId!.Value).ToHashSet();
             var managedTeams = new List<Guid>();
             if (member.Role == OrganizationRole.Administrator) managedTeams.Add(Guid.Empty); // Sem equipe.
             foreach (var team in await _teams.GetAllWithMembersAsync(ct))
                 if ((member.Role == OrganizationRole.Administrator || team.LeaderId == request.ActorId)
-                    && await _permissions.HasAsync(request.ActorId, PlatformPermission.ViewReport,
-                        PermissionScope.Team, team.Id, ct))
+                    && !deniedTeams.Contains(team.Id))
                     managedTeams.Add(team.Id);
             allowedTeamIds = managedTeams;
         }
