@@ -6,6 +6,8 @@ using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Application.Features.MethodGit.Contracts;
+using Prisma.Workspace.Application.Features.MethodSecurity;
 
 namespace Prisma.Workspace.Infrastructure.Services;
 
@@ -16,9 +18,12 @@ public sealed class AutomationExecutor : IAutomationExecutor
     private readonly AppDbContext _context;
     private readonly IWorkflowRepository _workflow;
     private readonly IProjectAccessService _projectAccess;
+    private readonly IMethodFeatureConfiguration? _methodFeature;
+    private readonly IMethodTransitionPolicy? _methodPolicy;
 
-    public AutomationExecutor(AppDbContext context, IWorkflowRepository workflow, IProjectAccessService projectAccess)
-        => (_context, _workflow, _projectAccess) = (context, workflow, projectAccess);
+    public AutomationExecutor(AppDbContext context, IWorkflowRepository workflow, IProjectAccessService projectAccess,
+        IMethodFeatureConfiguration? methodFeature = null, IMethodTransitionPolicy? methodPolicy = null)
+        => (_context, _workflow, _projectAccess, _methodFeature, _methodPolicy) = (context, workflow, projectAccess, methodFeature, methodPolicy);
 
     public async Task ExecuteStageEnteredAsync(
         Guid workItemId,
@@ -27,6 +32,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         CancellationToken ct = default)
     {
         var item = await _context.WorkItems
+            .Include(x => x.Board)
             .Include(x => x.Assignees)
             .Include(x => x.WorkItemTags)
             .Include(x => x.StageHistories)
@@ -69,6 +75,13 @@ public sealed class AutomationExecutor : IAutomationExecutor
                 {
                     _context.TaskEvents.Add(TaskEvent.Registrar(item.Id, actorId, "automation_skipped",
                         JsonSerializer.Serialize(new { ruleId = rule.Id, reason = outcome.Reason })));
+                }
+
+                // Cada passo passa pela mesma barreira e grava sua própria prova. Uma cadeia não esconde passos intermediários.
+                if (_methodFeature?.Enabled == true)
+                {
+                    if (outcome.Changed) item.UpdatedAt = DateTimeOffset.UtcNow;
+                    await _context.SaveChangesAsync(ct);
                 }
 
                 if (!outcome.DestinationStageId.HasValue) continue;
@@ -153,6 +166,12 @@ public sealed class AutomationExecutor : IAutomationExecutor
         try
         {
             await WorkflowMoveGuard.EnsureAllowedAsync(item, destination, _workflow, ct);
+            if (_methodFeature?.Enabled == true && _methodPolicy is not null)
+            {
+                var decision = await _methodPolicy.EvaluateAsync(new MethodMutation(item.Board.ProjectId, item.BoardId,
+                    item.Id, item.StageId, destination.Id, "Movimentação por automação de entrada em coluna."), ct);
+                if (!decision.Allowed) return AutomationOutcome.Skip(decision.Message);
+            }
         }
         catch (DomainException exception)
         {
@@ -160,6 +179,9 @@ public sealed class AutomationExecutor : IAutomationExecutor
         }
 
         var now = DateTimeOffset.UtcNow;
+        if (_methodFeature?.Enabled == true)
+            _context.TaskEvents.Add(TaskEvent.Registrar(item.Id, string.Empty, "stage_changed",
+                JsonSerializer.Serialize(new { reason = "Movimentação por automação de entrada em coluna." })));
         foreach (var history in item.StageHistories.Where(x => x.LeftAt is null))
             history.LeftAt = now;
         item.StageHistories.Add(new StageHistory

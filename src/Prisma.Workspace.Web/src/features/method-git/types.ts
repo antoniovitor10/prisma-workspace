@@ -32,6 +32,7 @@ export interface MethodProjectSettings {
   policyVersion: number;
   stageMappings: Record<MethodStatus, string>;
   fields: Record<string, string> | null;
+  identityIssues?: { id: string; code: string; message: string; workItemIds: string[] }[] | null;
 }
 
 export interface MethodToken {
@@ -116,6 +117,7 @@ export interface MethodTask {
   dependsOn: string[];
   authorized: boolean;
   canResume: boolean;
+  resumeApprovalEventId?: string | null;
   cycleId: string | null;
   blockingEventId: string | null;
   blockingPrincipalId: string | null;

@@ -1,6 +1,6 @@
 namespace Prisma.Workspace.Application.Interfaces;
 
-public sealed record InstallationSetupStatus(bool Initialized, bool SetupAvailable);
+public sealed record InstallationSetupStatus(bool Initialized, bool SetupAvailable, bool MethodEnabled = false);
 
 public sealed record InstallationSetupRequest(
     string AdministratorName,

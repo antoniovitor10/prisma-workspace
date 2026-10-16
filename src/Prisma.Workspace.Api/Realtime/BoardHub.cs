@@ -4,6 +4,8 @@ using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Application.Features.MethodSecurity;
+using Prisma.Workspace.Domain.Enums;
 
 namespace Prisma.Workspace.Api.Realtime;
 
@@ -11,12 +13,25 @@ namespace Prisma.Workspace.Api.Realtime;
 public sealed class BoardHub : Hub
 {
     private readonly AppDbContext _db;
-    public BoardHub(AppDbContext db) => _db = db;
+    private readonly IMethodAccessContext? _method;
+    private readonly IMethodPermissionEvaluator? _methodPermissions;
+    public BoardHub(AppDbContext db, IMethodAccessContext? method = null, IMethodPermissionEvaluator? methodPermissions = null)
+        => (_db, _method, _methodPermissions) = (db, method, methodPermissions);
 
     public async Task JoinBoard(Guid organizationId, Guid boardId)
     {
         var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new HubException("Usuário não autenticado.");
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken } actor)
+        {
+            if (actor.OrganizationId != organizationId || actor.ProjectId is not { } projectId || actor.ActorId != userId
+                || _methodPermissions is null || !await _db.Boards.IgnoreQueryFilters().AsNoTracking()
+                    .AnyAsync(x => x.Id == boardId && x.OrganizationId == organizationId && x.ProjectId == projectId)
+                || !await _methodPermissions.HasAsync(actor, PlatformPermission.View, PermissionScope.Project, projectId))
+                throw new HubException("Acesso ao quadro negado.");
+            await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(boardId));
+            return;
+        }
         var member = await _db.OrganizationMembers.IgnoreQueryFilters().AsNoTracking()
             .AnyAsync(x => x.OrganizationId == organizationId && x.UserId == userId
                 && x.IsActive && x.Organization.IsActive);

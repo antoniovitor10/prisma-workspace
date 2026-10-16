@@ -9,6 +9,20 @@ function externalUrl(value: string): string | undefined {
   catch { return undefined; }
 }
 
+const unlinkedReasons: Record<string, string> = {
+  task_not_identified: 'A branch e o título não identificam uma task. Confirme o vínculo abaixo.',
+  task_not_found: 'O ID informado não foi encontrado neste projeto. Confira a branch e a task.',
+  ambiguous_method_task_id: 'O ID do método está duplicado no projeto, inclusive em cards arquivados ou de outros quadros. Resolva a duplicidade antes de vincular.',
+  explicit_task_unavailable: 'A task vinculada está arquivada, fora do quadro do método ou com ID duplicado. Confira a configuração e os cards arquivados.',
+  ambiguous_title: 'O título contém IDs de tasks diferentes. Confirme a task correta.',
+  invalid_task_branch: 'A branch precisa seguir o formato task/T-0001-descricao, ou o PR precisa de vínculo explícito.',
+  invalid_method_task_id: 'O ID do método é inválido. Use T- seguido de pelo menos quatro dígitos.',
+  task_outside_project: 'A task precisa estar ativa no topo do quadro do método deste projeto.',
+  head_repository_requires_explicit_link: 'O PR vem de outro repositório. Confirme explicitamente a task deste projeto.',
+  legacy_confirmation_required: 'Este PR foi encontrado no campo legado. Confirme o vínculo para usar a evidência Git.',
+  explicit_confirmation_pending: 'Confirme o vínculo do PR com a task.',
+};
+
 export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; canEdit: boolean }) {
   const [page, setPage] = useState(1);
   const requests = useQuery({ queryKey: [...methodKey(projectId), 'unlinked', page], queryFn: () => methodApi.unlinked(projectId, page), retry: false });
@@ -31,7 +45,8 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
           <strong>{externalUrl(request.url) ? <a href={externalUrl(request.url)} target="_blank" rel="noreferrer">#{request.pullRequestNumber} · {request.title}</a>
             : `#${request.pullRequestNumber} · ${request.title}`}</strong>
           <small>Branch: {request.headBranch} · Destino: {request.baseBranch}</small>
-          <Hint>{request.unlinkedReason ?? 'Escolha a task correspondente.'}</Hint>
+          <Hint>{request.unlinkedReason ? unlinkedReasons[request.unlinkedReason] ?? 'Confira a identidade da task e a configuração do método antes de confirmar o vínculo.'
+            : 'Escolha a task correspondente.'}</Hint>
           {canEdit && <Form onSubmit={event => {
             event.preventDefault();
             void action.run(request.id, () => methodApi.link(projectId, request.id, selection[request.id], reasons[request.id].trim()), 'PR vinculado.').then(result => {

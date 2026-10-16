@@ -1,6 +1,7 @@
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Domain.Entities;
 
 namespace Prisma.Workspace.Infrastructure.Identity;
 
@@ -43,7 +44,18 @@ public class UserDirectory : IUserDirectory
             .Where(x => ids.Contains(x.Id))
             .ToListAsync(cancellationToken);
 
-        return users.ToDictionary(u => u.Id, ResolveDisplayName);
+        var names = users.ToDictionary(u => u.Id, ResolveDisplayName);
+        var principalIds = ids.Where(id => id.StartsWith("method:", StringComparison.Ordinal))
+            .Select(id => Guid.TryParse(id["method:".Length..], out var principalId) ? (Guid?)principalId : null)
+            .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
+        if (principalIds.Length > 0)
+        {
+            var principals = await _context.Set<MethodPrincipal>().AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId && principalIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.DisplayName }).ToListAsync(cancellationToken);
+            foreach (var principal in principals) names[$"method:{principal.Id:D}"] = principal.DisplayName;
+        }
+        return names;
     }
 
     public async Task<IReadOnlyList<UserSummary>> GetAllAsync(CancellationToken cancellationToken = default)

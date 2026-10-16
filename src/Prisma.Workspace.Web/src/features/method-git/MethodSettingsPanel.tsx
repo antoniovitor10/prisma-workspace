@@ -56,11 +56,23 @@ export function MethodSettingsPanel({ projectId, boards = [] }: Props) {
           <Field>Quadro do método<select value={boardId} onChange={event => setBoardId(event.target.value)} disabled={action.pending !== null}>
             <option value="">Criar quadro Método</option>{boards.map(board => <option value={board.id} key={board.id}>{board.name}</option>)}
           </select></Field>
+          {boardId && <Hint>O quadro selecionado receberá as colunas ausentes desta lista: Backlog, Pronta, Em desenvolvimento,
+            Em revisão, Em teste, Concluída e Bloqueada. As colunas e os cards existentes serão preservados.</Hint>}
+          {!boardId && boards.some(board => board.name === 'Método') && <Hint>Já existe um quadro chamado Método neste projeto.
+            Selecione-o acima para configurá-lo; a opção atual solicita outro quadro com esse nome.</Hint>}
           <Actions><Button $primary type="submit" disabled={action.pending !== null}>
             {action.pending === 'provision' ? 'Configurando método...' : 'Configurar método neste projeto'}</Button></Actions>
         </Form> : <Hint>Peça a um administrador com permissão de gerenciar o projeto para configurar o método.</Hint>}
       </> : <>
         <Hint>Quadro: <strong>{settings.data.boardName}</strong> · {settings.data.enabled ? 'Método ativo' : 'Método pausado'}</Hint>
+        {canManage && settings.data.identityIssues && settings.data.identityIssues.length > 0 && <Feedback role="alert">
+          <strong>Identidades que precisam de revisão</strong>
+          <ul>{settings.data.identityIssues.map(issue => <li key={`${issue.code}-${issue.id}`}>
+            <strong>{issue.id}</strong>: {issue.message}{' '}
+            {issue.workItemIds.map((id, index) => <a key={id} href={`/projects/${encodeURIComponent(projectId)}/backlog?item=${encodeURIComponent(id)}`}>
+              Ver card {index + 1}{index < issue.workItemIds.length - 1 ? ' · ' : ''}</a>)}
+          </li>)}</ul>
+        </Feedback>}
         {!settings.data.enabled && <Feedback>Integrações e agentes estão pausados. Administradores podem configurar os acessos e reativar o método.</Feedback>}
         <Navigation aria-label="Seções do método">
           {tabs.filter(tab => tab.visible).map(tab => <Button key={tab.id} type="button" aria-pressed={currentView === tab.id}

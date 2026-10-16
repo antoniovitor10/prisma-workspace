@@ -4,6 +4,7 @@ using Prisma.Workspace.Domain.Authorization;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Application.Features.MethodSecurity;
 
 namespace Prisma.Workspace.Infrastructure.Identity;
 
@@ -11,9 +12,12 @@ public class PermissionService : IPermissionService
 {
     private readonly AppDbContext _context;
     private readonly IOrganizationContext _organizationContext;
+    private readonly IMethodAccessContext? _method;
+    private readonly IMethodPermissionEvaluator? _methodPermissions;
 
-    public PermissionService(AppDbContext context, IOrganizationContext organizationContext)
-        => (_context, _organizationContext) = (context, organizationContext);
+    public PermissionService(AppDbContext context, IOrganizationContext organizationContext,
+        IMethodAccessContext? method = null, IMethodPermissionEvaluator? methodPermissions = null)
+        => (_context, _organizationContext, _method, _methodPermissions) = (context, organizationContext, method, methodPermissions);
 
     public async Task<bool> HasAsync(
         string userId,
@@ -22,6 +26,10 @@ public class PermissionService : IPermissionService
         Guid? scopeId = null,
         CancellationToken cancellationToken = default)
     {
+        // Também cobre token humano cujo ActorId é um usuário Identity real: nunca emprestar seu papel global.
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+            return userId == actor.ActorId && _methodPermissions is not null
+                && await _methodPermissions.HasAsync(actor, permission, scope, scopeId, cancellationToken);
         var organizationId = _organizationContext.OrganizationId;
         if (organizationId is null)
             return false;

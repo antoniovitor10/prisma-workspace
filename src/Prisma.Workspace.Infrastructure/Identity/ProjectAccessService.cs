@@ -3,6 +3,7 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Infrastructure.Identity.MethodTokens;
 
 namespace Prisma.Workspace.Infrastructure.Identity;
 
@@ -10,11 +11,35 @@ public class ProjectAccessService : IProjectAccessService
 {
     private readonly AppDbContext _context;
     private readonly IPermissionService _permissions;
-    public ProjectAccessService(AppDbContext context, IPermissionService permissions)
-        => (_context, _permissions) = (context, permissions);
+    private readonly IMethodAccessContext? _method;
+    private readonly MethodPermissionEvaluator? _methodPermissions;
+    public ProjectAccessService(AppDbContext context, IPermissionService permissions,
+        IMethodAccessContext? method = null, MethodPermissionEvaluator? methodPermissions = null)
+        => (_context, _permissions, _method, _methodPermissions) = (context, permissions, method, methodPermissions);
 
     public async Task<ProjectRole?> GetRoleAsync(Guid projectId, string userId, CancellationToken cancellationToken = default)
     {
+        var targetMembershipOnly = false;
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+        {
+            if (actor.ProjectId != projectId || actor.OrganizationId is null || _methodPermissions is null
+                || !await _methodPermissions.HasAsync(actor, PlatformPermission.View, PermissionScope.Project, projectId, cancellationToken))
+                return null;
+            if (userId == actor.ActorId)
+            {
+                if (actor.Role == MethodRole.Human && await _methodPermissions.HasAsync(actor,
+                        PlatformPermission.ManagePermissions, PermissionScope.Project, projectId, cancellationToken))
+                    return ProjectRole.ProjectAdmin;
+                return await _methodPermissions.HasAsync(actor, PlatformPermission.Edit, PermissionScope.Project, projectId, cancellationToken)
+                    || await _methodPermissions.HasAsync(actor, PlatformPermission.Create, PermissionScope.Project, projectId, cancellationToken)
+                    || await _methodPermissions.HasAsync(actor, PlatformPermission.ChangeStatus, PermissionScope.Project, projectId, cancellationToken)
+                    ? ProjectRole.Member : ProjectRole.Viewer;
+            }
+            // Leitura de elegibilidade de um participante não autoriza a operação em nome dele.
+            targetMembershipOnly = await _methodPermissions.HasUserPermissionAsync(actor.OrganizationId.Value,
+                projectId, userId, PlatformPermission.View, PermissionScope.Project, projectId, cancellationToken);
+            if (!targetMembershipOnly) return null;
+        }
         var globalAdmin = await (from userRole in _context.UserRoles
                                  join role in _context.Roles on userRole.RoleId equals role.Id
                                  where userRole.UserId == userId
@@ -33,7 +58,7 @@ public class ProjectAccessService : IProjectAccessService
             .Select(x => (OrganizationRole?)x.Role)
             .FirstOrDefaultAsync(cancellationToken);
         if (activeOrganizationMember is null) return null;
-        if (!await _permissions.HasAsync(userId, PlatformPermission.View,
+        if (!targetMembershipOnly && !await _permissions.HasAsync(userId, PlatformPermission.View,
             PermissionScope.Project, projectId, cancellationToken))
             return null;
 
@@ -59,6 +84,8 @@ public class ProjectAccessService : IProjectAccessService
 
     public async Task EnsureAtLeastAsync(Guid projectId, string userId, ProjectRole minimumRole, CancellationToken cancellationToken = default)
     {
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor
+            && userId != actor.ActorId) throw new NaoEncontradoException("Projeto");
         var role = await GetRoleAsync(projectId, userId, cancellationToken);
         if (role is null || role.Value < minimumRole) throw new NaoEncontradoException("Projeto");
     }
@@ -68,6 +95,8 @@ public class ProjectAccessService : IProjectAccessService
         string userId,
         CancellationToken cancellationToken = default)
     {
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor
+            && userId != actor.ActorId) return new HashSet<Guid>();
         var ids = projectIds.Where(x => x != Guid.Empty).Distinct().ToArray();
         if (ids.Length == 0) return new HashSet<Guid>();
 

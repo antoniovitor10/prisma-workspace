@@ -23,7 +23,7 @@ export function ResumePanel({ projectId, enabled }: { projectId: string; enabled
     </Feedback> : blocked.length === 0 ? <Hint>Nenhum bloqueio de execução autorizada aguardando liberação.</Hint> : <List>
       {blocked.map(task => <Row key={task.workItemId}>
         <strong>{task.id} · {task.title}</strong>
-        {approved.has(task.blockingEventId!) ? <Hint>Retomada liberada para este bloqueio.</Hint> : <Form onSubmit={event => {
+        {task.resumeApprovalEventId || approved.has(task.blockingEventId!) ? <Hint>Retomada liberada para este bloqueio.</Hint> : <Form onSubmit={event => {
           event.preventDefault();
           void action.run(task.workItemId, () => methodApi.approveResume(projectId, task, reasons[task.workItemId].trim()),
             'Retomada liberada. O agente pode retomar seu próprio bloqueio.').then(result => {

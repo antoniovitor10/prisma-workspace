@@ -18,7 +18,10 @@ public sealed record MethodProjectSnapshot(
     Guid MethodIdFieldId, Guid HuFieldId, Guid PrFieldId, bool Enabled,
     MethodGitPhase GitPhase, int AutonomyLevel, int PolicyVersion,
     IReadOnlyDictionary<string, Guid> StageMappings,
-    IReadOnlyDictionary<string, Guid>? Fields = null);
+    IReadOnlyDictionary<string, Guid>? Fields = null,
+    IReadOnlyList<MethodTaskIdentityIssueDto>? IdentityIssues = null);
+
+public sealed record MethodTaskIdentityIssueDto(string Id, string Code, string Message, IReadOnlyList<Guid> WorkItemIds);
 
 /// <summary>Estado canônico vem do WorkItem; o restante comprova autorização, bloqueio e concorrência.</summary>
 public sealed record MethodTaskSnapshot(
@@ -79,7 +82,7 @@ public sealed record MethodTaskDto(
     string? FilePath, IReadOnlyList<string> Covers, string? Risk, string? Pr,
     IReadOnlyList<string> DependsOn, bool Authorized, bool CanResume,
     Guid? CycleId = null, Guid? BlockingEventId = null, Guid? BlockingPrincipalId = null,
-    string? BlockingOriginStatus = null);
+    string? BlockingOriginStatus = null, Guid? ResumeApprovalEventId = null);
 public sealed record CreateMethodTaskRequest(
     string Id, string Title, string Hu, string FilePath, IReadOnlyList<string> Covers,
     string Risk, string Status = MethodStatusCodes.Backlog);

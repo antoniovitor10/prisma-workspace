@@ -1,6 +1,15 @@
-# Contratos F0 — método Git 2a
+# Contratos F0/F1 — método Git 2a
 
-Fonte: US-METODO-GIT-001, SPEC-METODO-GIT-INTEGRATION, GOALS/D102 e revisão git-spec-2. Forja detém este arquivo, enums, DTOs e interfaces de F0. Ponte solicita extensões por ESTADO e não altera esses arquivos. Esta entrega congela contratos compiláveis; não declara endpoints ou persistência implementados.
+Fonte: US-METODO-GIT-001, SPEC-METODO-GIT-INTEGRATION, GOALS/D102 e revisão git-spec-2. Forja detém este arquivo, enums, DTOs e interfaces de F0. Ponte solicita extensões por ESTADO e não altera esses arquivos. O F1 integra os endpoints e a persistência sob `MethodGit:Enabled`, desligada por padrão; a liberação exige revisão, suítes completas e QA independente no SHA final.
+
+## Acréscimos compatíveis do F1
+
+- `GET /api/setup/status` inclui `methodEnabled` para apresentar a configuração do método somente nas instalações habilitadas. Não revela segredos nem provisiona projetos.
+- `MethodIdentityDto.capabilities` contém os nomes das permissões, como `View`, `ChangeStatus` e `ManagePermissions`, inclusive para a sessão UI antes do provisionamento. Um JWT em rota pública de portal não estabelece autorização interativa de projeto; a origem pública continua desconhecida para concessão de execução.
+- `MethodProjectSnapshot.identityIssues` é opcional. A fachada retorna diagnóstico de IDs inválidos/duplicados ao administrador humano da UI, incluindo colisões com cards arquivados e de outros quadros do projeto. Não escolhe candidato nem renumera cards. Os consumidores de Git/MCP podem ignorar esse campo.
+- `MethodTaskDto.resumeApprovalEventId` é opcional, para apresentar uma liberação vigente depois de recarregar a UI. Repetir a liberação do mesmo bloqueio/ciclo retorna o evento existente. Nenhuma liberação move o card; nenhum token do método a concede.
+- O provisioner de estrutura `IMethodProjectProvisioner`/`MethodProjectProvisioner` e seu teste SQL pertencem à Ponte, conforme transferência expressa em ESTADO em 16/10. Fachadas, controllers de identidade/settings/tasks, DI, guard, backfill, serviço de movimento e migration permanecem com a Forja.
+- Criação/edição/comentário notificam o quadro após persistir. A operação dedicada de mover mantém a execução das automações existentes com o principal iniciador; cada passo passa pela barreira comum. Worker Git não recebe autorização humana por esse caminho.
 
 ## Identidade e segurança
 
