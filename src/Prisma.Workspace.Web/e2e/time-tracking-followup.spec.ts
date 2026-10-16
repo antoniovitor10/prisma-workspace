@@ -97,6 +97,24 @@ test('Brasília: período 22h–02h contribui 2h em cada dia no diário, semana 
   });
 });
 
+test('criação manual recusa futuro e sobreposição sem alterar o total anterior', async ({ page, request }) => {
+  await withTimeFactory(page, request, async f => {
+    const task = await f.task();
+    await f.manual(task.id, '2026-10-12T09:00:00-03:00', '2026-10-12T09:01:00-03:00');
+    const future = new Date(Date.now() + 24 * 3600_000);
+    const periods = [
+      { startedAt: '2026-10-12T09:00:30-03:00', endedAt: '2026-10-12T09:01:30-03:00' },
+      { startedAt: future.toISOString(), endedAt: new Date(future.getTime() + 60_000).toISOString() },
+    ];
+    for (const period of periods) {
+      const response = await f.api('/api/TimeEntries/manual', 'POST', { workItemId: task.id, ...period });
+      expect(response.status()).toBe(400);
+    }
+    expect(await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`)).toHaveLength(1);
+    expect(await total(f, task.id)).toMatchObject({ totalSeconds: 60 });
+  });
+});
+
 test('dois ajustes pela UI escolhem períodos livres e permitem editar observação', async ({ page, request }) => {
   await withTimeFactory(page, request, async f => {
     const task = await f.task();
