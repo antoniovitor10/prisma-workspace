@@ -123,6 +123,46 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         Assert.True((await c.Context.Set<MethodProjectSettings>().AsNoTracking().SingleAsync(x => x.ProjectId == c.ProjectId)).Enabled);
     }
     [MethodGitSqlFact]
+    public async Task All_six_canonical_fields_remain_required_and_unambiguous_after_activation()
+    {
+        await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
+        var fields = await c.Context.Set<ProjectCustomFieldDefinition>().Where(x => x.ProjectId == c.ProjectId).ToListAsync();
+        Assert.Equal(6, fields.Count); Assert.True((await store.GetProjectAsync(c.ProjectId))!.Enabled);
+        async Task AssertSuspended()
+        {
+            Assert.False((await store.GetProjectAsync(c.ProjectId))!.Enabled);
+            // A leitura suspende a automação sem reparar a alteração humana nem desativar a configuração persistida.
+            Assert.True((await c.Context.Set<MethodProjectSettings>().AsNoTracking().SingleAsync(x => x.ProjectId == c.ProjectId)).Enabled);
+        }
+        foreach (var field in fields)
+        {
+            field.IsActive = false; await c.Context.SaveChangesAsync(); await AssertSuspended();
+            field.IsActive = true; await c.Context.SaveChangesAsync();
+            field.Type = CustomFieldType.Number; await c.Context.SaveChangesAsync(); await AssertSuspended();
+            field.Type = CustomFieldType.Text; await c.Context.SaveChangesAsync();
+            var canonical = field.Name; field.Name = canonical.ToLowerInvariant();
+            await c.Context.SaveChangesAsync(); await AssertSuspended();
+            field.Name = canonical; await c.Context.SaveChangesAsync();
+            foreach (var active in new[] { false, true })
+            {
+                var duplicate = ProjectCustomFieldDefinition.Create(c.ProjectId, canonical.ToLowerInvariant(), CustomFieldType.Text, false, null, 900);
+                duplicate.IsActive = active; c.Context.Add(duplicate); await c.Context.SaveChangesAsync(); await AssertSuspended();
+                c.Context.Remove(duplicate); await c.Context.SaveChangesAsync();
+            }
+            if (canonical is "Arquivo" or "Cobre" or "Risco")
+            {
+                c.Context.Remove(field); await c.Context.SaveChangesAsync(); await AssertSuspended();
+                c.Context.Add(field); await c.Context.SaveChangesAsync();
+            }
+            Assert.True((await store.GetProjectAsync(c.ProjectId))!.Enabled);
+        }
+        var settings = await c.Context.Set<MethodProjectSettings>().SingleAsync(x => x.ProjectId == c.ProjectId);
+        var originalId = settings.MethodIdFieldId; settings.MethodIdFieldId = settings.HuFieldId;
+        await c.Context.SaveChangesAsync(); await AssertSuspended();
+        settings.MethodIdFieldId = originalId; await c.Context.SaveChangesAsync();
+        Assert.True((await store.GetProjectAsync(c.ProjectId))!.Enabled);
+    }
+    [MethodGitSqlFact]
     public async Task Unknown_server_movement_protects_causality_without_becoming_interactive_proof()
     {
         await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
@@ -144,6 +184,29 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
             if (i < 2) lastManual = when;
             var snapshot = await store.GetTaskAsync(c.ItemId);
             Assert.Equal(lastManual, snapshot!.LastManualChangeAtUtc);
+            Assert.Equal(c.Now.AddMinutes(-5), snapshot.LastInteractiveChangeAtUtc);
+            Assert.Null(snapshot.ActiveAuthorizationEventId); Assert.Null(snapshot.AuthorizedAtUtc);
+        }
+    }
+    [MethodGitSqlFact]
+    public async Task Legacy_movement_without_authentication_kind_protects_causality_without_granting_authority()
+    {
+        await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
+        var state = await c.Context.Set<MethodTaskState>().SingleAsync(x => x.ProjectId == c.ProjectId && x.WorkItemId == c.ItemId);
+        var human = (await c.Context.Set<MethodAuthorizationEvent>().SingleAsync(x => x.Id == state.ActiveAuthorizationEventId)).ActorUserId!;
+        string?[] payloads = [null, "{}", "{\"fromStatus\":\"em-desenvolvimento\",\"toStatus\":\"em-revisao\"}"];
+        for (var i = 0; i < payloads.Length; i++)
+        {
+            var when = c.Now.AddSeconds(i);
+            var entry = new TaskEvent { Id = Guid.NewGuid(), WorkItemId = c.ItemId, ActorId = human, Kind = "stage_changed", CreatedAt = when,
+                Payload = payloads[i] };
+            var invalidGrant = new MethodAuthorizationEvent { Id = Guid.NewGuid(), OrganizationId = c.Repository.OrganizationId, ProjectId = c.ProjectId,
+                WorkItemId = c.ItemId, CycleId = state.CycleId, EventKind = "Granted", ActorUserId = human, ActorName = "Fixture SQL", TaskEventId = entry.Id,
+                Reason = "Evento legado não comprova uma sessão humana.", CreatedAtUtc = when };
+            c.Context.AddRange(entry, invalidGrant); state.ActiveAuthorizationEventId = invalidGrant.Id;
+            await c.Context.SaveChangesAsync();
+            var snapshot = await store.GetTaskAsync(c.ItemId);
+            Assert.Equal(when, snapshot!.LastManualChangeAtUtc);
             Assert.Equal(c.Now.AddMinutes(-5), snapshot.LastInteractiveChangeAtUtc);
             Assert.Null(snapshot.ActiveAuthorizationEventId); Assert.Null(snapshot.AuthorizedAtUtc);
         }
@@ -186,6 +249,8 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         var newState = new MethodTaskState { ProjectId = beta.Id, WorkItemId = item.Id, OrganizationId = beta.OrganizationId,
             MethodTaskId = "T-0001", CycleId = originalState.CycleId }; // Mesmo ciclo adversarial: a FK precisa conferir também ProjectId.
         c.Context.AddRange(beta, board, idField, huField, prField, settings, newState);
+        c.Context.AddRange(new[] { "Arquivo", "Cobre", "Risco" }.Select((name, index) =>
+            ProjectCustomFieldDefinition.Create(beta.Id, name, CustomFieldType.Text, false, null, 400 + index * 100)));
         c.Context.AddRange(stages.Values);
         c.Context.Add(new WorkItemCustomFieldValue { WorkItemId = item.Id, FieldDefinitionId = idField.Id, Value = "T-0001", UpdatedAt = c.Now, UpdatedBy = owner });
         await c.Context.SaveChangesAsync();
@@ -354,6 +419,8 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
             _actor.Current = new(MethodAuthenticationKind.UiSession, MethodRole.Human, null, _human, "Humano SQL", _organization, ProjectId, null, null,
                 Enum.GetValues<PlatformPermission>().ToHashSet(), "ui", "sql-correlation");
             Context.AddRange(new IdentityUser { Id = _human, UserName = _human }, org, project, board, idField, huField, prField, settings, principal, item, state, integration);
+            Context.AddRange(new[] { "Arquivo", "Cobre", "Risco" }.Select((name, index) =>
+                ProjectCustomFieldDefinition.Create(ProjectId, name, CustomFieldType.Text, false, null, 400 + index * 100)));
             Context.AddRange(stages.Values);
             Context.AddRange(new WorkItemCustomFieldValue { WorkItemId = ItemId, FieldDefinitionId = idField.Id, Value = "T-0001", UpdatedBy = _human, UpdatedAt = Now },
                 new WorkItemCustomFieldValue { WorkItemId = ItemId, FieldDefinitionId = prField.Id, Value = "original preservado", UpdatedBy = _human, UpdatedAt = Now });

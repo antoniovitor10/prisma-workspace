@@ -94,14 +94,21 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         if (settings is null || project is null) return null;
         var board = await db.Boards.AsNoTracking().SingleOrDefaultAsync(x => x.Id == settings.BoardId && x.OrganizationId == Tenant && x.ProjectId == projectId, ct);
         if (board is null) return null;
-        var definitions = await db.Set<ProjectCustomFieldDefinition>().AsNoTracking().Where(x => x.ProjectId == projectId && x.IsActive && x.Type == CustomFieldType.Text).ToListAsync(ct);
-        var fields = definitions.GroupBy(x => x.Name, StringComparer.Ordinal).Where(group => group.Count() == 1).ToDictionary(group => group.Key, group => group.Single().Id, StringComparer.Ordinal);
+        // Inclui os inativos para não esconder uma duplicata do nome canônico.
+        var definitions = await db.Set<ProjectCustomFieldDefinition>().AsNoTracking().Where(x => x.ProjectId == projectId).ToListAsync(ct);
+        var fields = definitions.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() == 1 && group.Single().IsActive && group.Single().Type == CustomFieldType.Text)
+            .ToDictionary(group => group.Single().Name, group => group.Single().Id, StringComparer.Ordinal);
+        string[] requiredFields = ["ID do metodo", "HU", "Arquivo", "Cobre", "Risco", "PR"];
         var mappings = settings.StageMappings.ToDictionary(x => x.StatusCode, x => x.StageId);
         var ids = mappings.Values.ToArray();
         var columns = await db.Stages.AsNoTracking().Where(x => x.ProjectId == projectId && x.BoardId == board.Id && ids.Contains(x.Id)).ToListAsync(ct);
         var valid = mappings.Count == 7 && mappings.Keys.All(MethodStatusCodes.IsValid) && ids.Distinct().Count() == 7 && columns.Count == 7
             && mappings.All(pair => columns.Any(stage => stage.Id == pair.Value && (pair.Key == MethodStatusCodes.Completed ? stage.Category == StageCategory.Done : stage.Category != StageCategory.Done)))
-            && new[] { settings.MethodIdFieldId, settings.HuFieldId, settings.PrFieldId }.All(id => definitions.Any(definition => definition.Id == id));
+            && requiredFields.All(fields.ContainsKey)
+            && fields.GetValueOrDefault("ID do metodo") == settings.MethodIdFieldId
+            && fields.GetValueOrDefault("HU") == settings.HuFieldId
+            && fields.GetValueOrDefault("PR") == settings.PrFieldId;
         return new(Tenant, projectId, project.Name, board.Id, board.Name, settings.MethodIdFieldId, settings.HuFieldId, settings.PrFieldId,
             settings.Enabled && valid, settings.GitPhase, settings.AutonomyLevel, settings.PolicyVersion, mappings, fields);
     }
@@ -295,12 +302,14 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     }
     private static bool HasManualProof(string? payload)
     {
-        if (payload is null) return false;
+        // Eventos legados sem o carimbo de autenticação interrompem a causalidade,
+        // mas continuam sem comprovar uma sessão humana em HasUiProof.
+        if (payload is null) return true;
         try
         {
             using var json = JsonDocument.Parse(payload);
-            return json.RootElement.TryGetProperty("authenticationKind", out var kind)
-                && ((kind.ValueKind == JsonValueKind.String && kind.GetString() is "uiSession" or "methodToken" or "unknown")
+            return !json.RootElement.TryGetProperty("authenticationKind", out var kind)
+                || ((kind.ValueKind == JsonValueKind.String && kind.GetString() is "uiSession" or "methodToken" or "unknown")
                     || (kind.ValueKind == JsonValueKind.Number && kind.TryGetInt32(out var value) && value is 0 or 1 or 2));
         }
         catch (JsonException) { return false; }
