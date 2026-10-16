@@ -129,7 +129,7 @@ public sealed class MethodMovementSqlTests(GitDeliverySqlFixture fixture) : ICla
         Assert.Equal(GitDeliveryStates.Processing, (await check.Set<GitWebhookDelivery>().SingleAsync(x => x.Id == request.DeliveryId)).Status);
     }
 
-    private static async Task PrepareDelegation(GitDeliverySqlFixture.SqlCase c)
+    internal static async Task PrepareDelegation(GitDeliverySqlFixture.SqlCase c)
     {
         var human = (await c.Context.Set<MethodAuthorizationEvent>().SingleAsync(x => x.WorkItemId == c.ItemId)).ActorUserId!;
         (await c.Context.Users.SingleAsync(x => x.Id == human)).EmailConfirmed = true;
@@ -151,12 +151,14 @@ public sealed class MethodMovementSqlTests(GitDeliverySqlFixture fixture) : ICla
         return new(c.ItemId, project.StageMappings[MethodStatusCodes.InReview], "PR aberto comprovado.", GitFact: fact,
             DeliveryId: delivery.Id, ExpectedRowVersion: task.RowVersion, ExpectedDeliveryRowVersion: delivery.RowVersion);
     }
-    private sealed class MovementScope : IAsyncDisposable
+    internal sealed class MovementScope : IAsyncDisposable
     {
         public AppDbContext Db { get; }
         public EfMethodGitStore Store { get; }
         public MethodMoveService Service { get; }
         public MethodActorIdentity Actor { get; }
+        internal MethodAccessContext Access { get; }
+        internal PermissionService Permissions { get; }
         public MovementScope(GitDeliverySqlFixture.SqlCase c, FailAfterSave? failure = null, MethodActorIdentity? actor = null)
         {
             var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(c.Context.Database.GetConnectionString());
@@ -166,16 +168,16 @@ public sealed class MethodMovementSqlTests(GitDeliverySqlFixture fixture) : ICla
             Actor = actor ?? new(MethodAuthenticationKind.IntegrationWorker, MethodRole.System, c.Repository.SystemPrincipalId,
                 $"method:{c.Repository.SystemPrincipalId:D}", "Integração SQL", c.Repository.OrganizationId, c.ProjectId, null, null,
                 new HashSet<PlatformPermission> { PlatformPermission.View, PlatformPermission.Edit, PlatformPermission.ChangeStatus }, "webhook", "forja-sql-worker");
-            access.Initialize(Actor);
+            access.Initialize(Actor); Access = access;
             var audit = new CurrentAuditContext(); audit.Set(Actor.ActorId, Actor.Channel, null, Actor.CorrelationId);
             Db = new(options.Options, tenant, audit, access, new EnabledFeature(), c.Clock);
-            var permissions = new PermissionService(Db, tenant, access, new MethodPermissionEvaluator(Db, c.Clock));
+            var permissions = new PermissionService(Db, tenant, access, new MethodPermissionEvaluator(Db, c.Clock)); Permissions = permissions;
             Store = new(Db, tenant, access, permissions, c.Clock);
             Service = new(Db, access, Store, new WorkflowRepository(Db), permissions, new SilentRealtime(), NullLogger<MethodMoveService>.Instance, c.Clock);
         }
         public ValueTask DisposeAsync() => Db.DisposeAsync();
     }
-    private sealed class FailAfterSave : SaveChangesInterceptor
+    internal sealed class FailAfterSave : SaveChangesInterceptor
     {
         public bool Enabled { get; set; }
         public override ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)

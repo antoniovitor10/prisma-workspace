@@ -184,6 +184,8 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
         }
         foreach (var entry in entries)
         {
+            if (entry.Entity is MethodTaskState state && await IsVersionPulseAsync(entry, state, ct))
+                continue;
             if (entry.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or AuditLog)
                 throw Denied("method_authority_write", "A credencial não pode modificar diretamente configuração, autorização ou provas do método.");
             if (actor.Role != MethodRole.Human && entry.Entity is Board or Stage or Project or ProjectCustomFieldDefinition
@@ -244,6 +246,30 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
             if (projectId is not null && projectId == actor.ProjectId) continue;
             throw Denied("method_project_scope", "A credencial do método não permite escrever fora do seu projeto.");
         }
+    }
+
+    private async Task<bool> IsVersionPulseAsync(EntityEntry entry, MethodTaskState state, CancellationToken ct)
+    {
+        // O store atualiza o MESMO ID para gerar rowversion ao vincular PR/branch.
+        // Só esse pulso é permitido; nenhum dado de identidade ou autoridade pode mudar.
+        if (entry.State != EntityState.Modified || state.ProjectId != Actor!.ProjectId
+            || state.OrganizationId != Actor.OrganizationId
+            || entry.Properties.Any(x => x.IsModified && (x.Metadata.Name != nameof(MethodTaskState.MethodTaskId)
+                || !Equals(x.CurrentValue, x.OriginalValue)))) return false;
+        var stored = await db.Set<MethodTaskState>().IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(x =>
+            x.ProjectId == state.ProjectId && x.OrganizationId == state.OrganizationId && x.WorkItemId == state.WorkItemId, ct);
+        if (stored is null) return false;
+        if (!state.RowVersion.SequenceEqual(stored.RowVersion)
+            || entry.Property(nameof(MethodTaskState.RowVersion)).OriginalValue is not byte[] original
+            || !original.SequenceEqual(stored.RowVersion)) throw Conflict();
+        // OriginalValues pode vir de Attach: comparar apenas com ele permitiria um ID forjado.
+        if (state.MethodTaskId != stored.MethodTaskId || state.CycleId != stored.CycleId
+            || state.ActiveAuthorizationEventId != stored.ActiveAuthorizationEventId
+            || state.BlockingEventId != stored.BlockingEventId || state.BlockingPrincipalId != stored.BlockingPrincipalId
+            || state.ResumeApprovalEventId != stored.ResumeApprovalEventId || state.LastObservedFactId != stored.LastObservedFactId)
+            return false;
+        await RequireItemPermissionAsync(state.WorkItemId, PlatformPermission.Edit, ct);
+        return true;
     }
 
     private async Task RequireItemPermissionAsync(Guid id, PlatformPermission permission, CancellationToken ct)
