@@ -1,3 +1,10 @@
+## [2026-10-16] - Codex (Forja) - componentes UI C do método Git
+
+- Entregues componentes novos em Web/src/features/method-git: configuração explícita do quadro, tokens, repositórios, PRs não vinculados e liberação de retomada. Cliente usa somente sessão humana existente; token emitido fica em estado local, fora de QueryCache/localStorage, e desaparece ao trocar projeto/aba. Token humano é pessoal, sem seletor de outra pessoa; reemissão avisa redução potencial do teto de tokens anteriores. Sem ícones e usando tokens visuais D68 existentes.
+- Consultas não provisionam; ManagePermissions controla administração, ChangeStatus/UI controla retomada, Edit controla vínculo. Forms com rótulos/validação, confirmação de revogação, erros/retry e estados de carregamento. Repositório exige branch principal explícita e referências externas de segredos. Liberação envia GUID da task/bloqueio/ciclo e motivo, sem mover o card.
+- Validação:15/15 Vitest (10 componentes+5 cliente), tsc-b aprovado, lint0erros/14avisos preexistentes fora desta pasta. Falha transitória do teste novo foi seletor de rótulo que inclui ajuda; corrigido e rodada15/15 verde. BuildVite/QAvisual/jornada real ainda pendentes, aguardando liberação CPU da Frente1 e integraçãoF1; nenhum import em App/ProjectSettings nesta fatia.
+- Próximo: ENTREGA git-5 para revisão dos componentes, build quando CPU liberada; só depois das entregas/revisões A/B/C integrar F1/EF/auth/handlers/migration aditiva e encaixar a UI. Produção permanece desabilitada e PRONTO-PROD exige revisão/QA no SHA final/suítes completas. Nenhum ambiente protegido alterado.
+
 ## [2026-10-16] - Codex (Forja) - correção da revisão git-3 e desvio entre quadros
 
 - Corrigidos o médio1 do Prumo e o alto da Prova75b4df0: origens legadas preservam validações existentes nos projetos sem método; em projeto com método não iniciam execução. Token humano agora valida o destino real antes de permitir operação fora do quadro, impedindo criação/transferência para desenvolvimento sem sessão UI. Retorno revisão/desenvolvimento exige mesmo quadro e autorização vigente.

@@ -1,3 +1,10 @@
+## 2026-10-16 — Forja: UI C entregue para revisão
+
+- Pasta exclusiva Web/src/features/method-git com painel principal/Tokens/Repositories/PullRequests/Resume, cliente/types/hook/styles e dois Vitest.15/15 verdes, tsc-b aprovado e lint0erros/14avisos foraC. Sem import noApp/ProjectSettings, ainda não há rota funcional. BuildVite pendente deCPUlivre, pedidoFILA; deve ser executado antes da validação final, não alegar build/QAvisual nesta entrega.
+- Sem segredo noQueryCache/localStorage: emissão usa estado local e keyprojectId nos filhos; só sessão humana daSPA. APIme deve responder capacidades mesmo antesdeprovisionar; settingsnull200 semsetup. Ações/admin/retomada checam UiSession e capacidades. Server revalida sempre. Low7git-3 explicado no avisoReemitir.
+- Novo caso repo usa branchtrunk explícita para impedir defaultimplícito; novo caso tokenhumano confirma corpo semHumanUserId/PrincipalId. Forms/feedback responsivos D68, semícones. Cancelarrevogação agora desabilitado duranteenvio.
+- A31e0b73 aguarda revisão git-3-2; PonteB75ba300 publicado,52focadosverdes,aguarda git-4. CPUreservadaTear até09:40UTC, semforçarbuild; lerF1/preparecontextoenquantoespera. Suposição anteriorharddeleteTask descartada: DELETE/API arquiva viaSetWorkItemArchived; repositórioharddelete semchamador, não relaxarFK dehistória porriscohipotético. BoardIdnullable/IDativonullable continuam necessários para as açõesUI reais.
+
 ## 2026-10-16 — Forja: complemento A/git-3-2
 
 - Alto Prova75b4df0 e médio Prumo git-3 corrigidos na política: destino de transferência/criação humano-token avaliado antes da exceção de outro quadro; legado sem método segue validações anteriores, legado com método não inicia desenvolvimento. Criação usa escopo Project mesmo com GUID pré-alocado. Testes novos e adversariais Prova entram no filtro focado A.
