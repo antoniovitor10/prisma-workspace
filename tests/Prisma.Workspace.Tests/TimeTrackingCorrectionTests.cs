@@ -245,6 +245,19 @@ public class TimeTrackingCorrectionTests
     }
 
     [Fact]
+    public async Task LegacyIntervalCanMoveToReduceOverlapButCannotCreateANewConflict()
+    {
+        await using var f = new Fixture();
+        var entry = await f.Entry();
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",f.Start,f.Start.AddHours(1),null));
+        f.Db.ChangeTracker.Clear();
+        Assert.Equal(3600,(await f.Update(entry,start:f.Start.AddMinutes(30),end:f.Start.AddMinutes(90))).DurationSeconds);
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",f.Start.AddMinutes(105),f.Start.AddHours(2),null));
+        f.Db.ChangeTracker.Clear();
+        await Assert.ThrowsAsync<DomainException>(() => f.Update(entry,start:f.Start.AddMinutes(45),end:f.Start.AddHours(2)));
+    }
+
+    [Fact]
     public void CardSnapshotIncludesOpenIntervalExactlyOnce()
     {
         var item = new WorkItem { Id=Guid.NewGuid() };
