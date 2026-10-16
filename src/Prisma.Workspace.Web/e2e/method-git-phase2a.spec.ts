@@ -26,7 +26,7 @@ test.describe('integração Git do método — fase 2a', () => {
   });
 
   test.describe('API', () => {
-    test.beforeEach(({}, testInfo) => {
+    test.beforeEach(({ request: _request }, testInfo) => {
       test.skip(testInfo.project.name.includes('mobile'), 'Casos de API rodam uma vez, no desktop.');
     });
 

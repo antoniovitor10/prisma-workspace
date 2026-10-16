@@ -139,7 +139,7 @@ createServer(async (req, res) => {
       const st = url.searchParams.get('state') ?? 'open';
       const list = [...state.pulls.keys()].sort((a, b) => a - b).map(fullPull)
         .filter(p => st === 'all' || p.state === st)
-        .map(({ merged, ...resumo }) => resumo);
+        .map(({ merged: _merged, ...resumo }) => resumo);
       return json(res, 200, page(list, url));
     }
     m = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}/pulls/(\\d+)(/reviews)?$`).exec(path);
