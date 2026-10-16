@@ -158,7 +158,7 @@ Destino já alcançado pelo mesmo fato é resultado sem movimento. Origem incomp
 
 - Intenção humana fornecida na tarefa 8: como responsável pelo método, acompanhar autorização, revisão, teste e conclusão no Prisma com evidência Git e sem depender de arquivos versionados ou títulos padronizados no Detran.
 - Fontes funcionais: `prisma.md`, seções “Operações do MCP”, “O que o webhook move” e “Fases de implantação”; `fluxo.md`, seções “Autorização”, “Entrega e autonomia” e “Quem move o status”; `local.md`, separação entre os modos.
-- Não foi encontrada história canônica específica desta integração em `stories/`. Criar/vincular a história e seu ID no catálogo é pendência para o Maestro antes da implementação; este draft não inventa um ID aprovado nem altera histórias existentes.
+- História canônica: [US-METODO-GIT-001](../stories/US-METODO-GIT-001.md), registrada pelo Maestro a partir do pedido do PO (D100, D101).
 
 ## Acceptance Criteria
 
