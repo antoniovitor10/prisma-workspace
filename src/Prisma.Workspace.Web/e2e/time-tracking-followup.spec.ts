@@ -145,6 +145,8 @@ test('dois ajustes pela UI escolhem períodos livres e permitem editar observaç
 });
 
 test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ page, request }, testInfo) => {
+  const mobile = testInfo.project.use.isMobile === true;
+  await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
   await withTimeFactory(page, request, async f => {
     const { week, modal } = await openWeek(page, f);
     expect(week.days).toHaveLength(7);
@@ -153,7 +155,8 @@ test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ pa
       const button = grid.getByRole('button', { name: 'Ajustar', exact: true }).nth(index);
       await button.scrollIntoViewIfNeeded();
       const loaded = responseTo(page, 'GET', '/api/me/time/entries');
-      await button.click();
+      if (mobile) await button.tap();
+      else await button.click();
       expect((await loaded).status()).toBe(200);
       const adjust = page.getByRole('heading', { name: /^Ajustar: / }).locator('..');
       await expect(adjust).toBeVisible();
@@ -161,6 +164,6 @@ test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ pa
     }
     await grid.evaluate(element => { element.scrollLeft = 0; });
     await expect(grid.getByRole('button', { name: 'Ajustar', exact: true }).first()).toBeInViewport();
-    await page.screenshot({ path: testInfo.outputPath('sete-dias-acessiveis.png') });
+    await page.screenshot({ path: testInfo.outputPath('sete-dias-acessiveis.png'), scale: 'css' });
   });
 });
