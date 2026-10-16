@@ -1,4 +1,5 @@
 import { test, expect, authenticatedApiGet } from './fixtures/test';
+import { navigateWithApi } from './fixtures/functional';
 
 type Stage = { id: string; name: string; category: number };
 
@@ -47,7 +48,10 @@ test('coluna é criada sem combobox ambígua e pode ser reclassificada na ediç�
       page.getByRole('button', { name: 'Salvar', exact: true }).click(),
     ]);
     expect(updated.status()).toBe(204);
-    await page.reload();
+    await navigateWithApi(page, [
+      `/api/Stages/board/${board.id}`,
+      `/api/WorkItems/board/${board.id}`,
+    ], () => page.reload({ waitUntil: 'domcontentloaded' }));
     await expect(page.getByRole('button', { name: `Editar coluna ${renamed}`, exact: true })).toBeVisible();
     const persisted = await authenticatedApiGet<Stage[]>(page, `/api/Stages/board/${board.id}`);
     expect(persisted.find(stage => stage.id === criada!.id)).toMatchObject({ name: renamed, category: DONE });
