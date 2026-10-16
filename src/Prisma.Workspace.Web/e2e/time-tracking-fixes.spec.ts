@@ -122,30 +122,37 @@ test('buscar tarefa pelo título e número no ajuste funciona com teclado',async
   });
 });
 
+async function longTaskSearch(page:Page,f:TimeFactory){
+  const prefix=f.boards.name('Busca legível');
+  const tasks:Array<{id:string;title:string}>=[];
+  for(let index=0;index<6;index++){
+    const title=`${prefix} tarefa ${index+1} com descrição longa para distinguir as opções e conferir leitura, toque e seleção no ajuste de horas, incluindo uma referência sem espaços ${'referencia'.repeat(10)}`;
+    const created=await f.boards.api('/api/WorkItems','POST',{
+      boardId:f.board.id,stageId:f.stage.id,title,responsibleId:f.person.id,priority:1,position:index,
+    });
+    expect(created.status()).toBe(201);
+    tasks.push({id:await created.json() as string,title});
+  }
+  const modal=await day(page,f,today());
+  const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
+  const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
+    &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
+    &&new URL(response.url()).searchParams.get('query')===prefix);
+  const loaded=filtered();
+  await field.fill(prefix);
+  expect((await loaded).status()).toBe(200);
+  const list=modal.getByRole('listbox',{name:'Tarefas para apontamento'});
+  await expect(list).toHaveAttribute('aria-busy','false');
+  const options=list.getByRole('option');
+  await expect(options).toHaveCount(tasks.length);
+  return {prefix,tasks,modal,field,list,options};
+}
+
 test('busca do ajuste mantém seis títulos longos legíveis e permite selecionar após rolar',async({page,request})=>{
+  const began=performance.now();
   await withTimeFactory(page,request,async f=>{
-    const prefix=f.boards.name('Busca legível');
-    const tasks:Array<{id:string;title:string}>=[];
-    for(let index=0;index<6;index++){
-      const title=`${prefix} tarefa ${index+1} com descrição longa para distinguir as opções e conferir leitura, toque e seleção no ajuste de horas, incluindo uma referência sem espaços ${'referencia'.repeat(10)}`;
-      const created=await f.boards.api('/api/WorkItems','POST',{
-        boardId:f.board.id,stageId:f.stage.id,title,responsibleId:f.person.id,priority:1,position:index,
-      });
-      expect(created.status()).toBe(201);
-      tasks.push({id:await created.json() as string,title});
-    }
-    const modal=await day(page,f,today());
-    const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
-    const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
-      &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
-      &&new URL(response.url()).searchParams.get('query')===prefix);
-    const loaded=filtered();
-    await field.fill(prefix);
-    expect((await loaded).status()).toBe(200);
-    const list=modal.getByRole('listbox',{name:'Tarefas para apontamento'});
-    await expect(list).toHaveAttribute('aria-busy','false');
-    const options=list.getByRole('option');
-    await expect(options).toHaveCount(tasks.length);
+    const {tasks,modal,list,options}=await longTaskSearch(page,f);
+    test.info().annotations.push({type:'fixture-phase',description:`Arranjo/API/UI: ${Math.round(performance.now()-began)} ms`});
     const listBox=await list.evaluate(element=>element.getBoundingClientRect().toJSON());
     expect(listBox.left).toBeGreaterThanOrEqual(0);
     expect(listBox.right).toBeLessThanOrEqual(await page.evaluate(()=>window.innerWidth));
@@ -168,6 +175,25 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
     expect(await list.evaluate(element=>element.scrollHeight>element.clientHeight)).toBe(true);
     const selected=tasks[tasks.length-1];
     const last=options.filter({hasText:selected.title});
+    await last.scrollIntoViewIfNeeded();
+    expect(await list.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+    await last.click();
+    await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
+    await modal.getByPlaceholder('Minutos a adicionar').fill('1');
+    const created=responseTo(page,'POST','/api/TimeEntries/manual');
+    await modal.getByRole('button',{name:'Adicionar',exact:true}).click();
+    expect((await created).status()).toBe(201);
+    expect((await total(f,selected.id)).totalSeconds).toBe(60);
+  });
+});
+
+test('busca do ajuste mantém a opção ativa visível no teclado e grava o destino do Enter',async({page,request})=>{
+  const began=performance.now();
+  await withTimeFactory(page,request,async f=>{
+    const {prefix,tasks,modal,field,list,options}=await longTaskSearch(page,f);
+    test.info().annotations.push({type:'fixture-phase',description:`Arranjo/API/UI: ${Math.round(performance.now()-began)} ms`});
+    const selected=tasks[tasks.length-1];
+    const last=options.filter({hasText:selected.title});
     const inView=async(option:Locator)=>expect.poll(()=>option.evaluate(button=>{
       const list=button.closest('[role="listbox"]');
       if(!list)throw new Error('A opção ativa precisa pertencer à lista.');
@@ -186,19 +212,18 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
     const persisted=await f.get<{number:number}>(`/api/WorkItems/${selected.id}`);
     await expect(field).toHaveValue(`#${persisted.number}`);
     await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
-    await field.click();const reloaded=filtered();await field.fill(prefix);
-    expect((await reloaded).status()).toBe(200);await expect(list).toHaveAttribute('aria-busy','false');
-    await expect(options).toHaveCount(tasks.length);
-    await field.press('Escape');await expect(list).toHaveCount(0);
-    await field.click();await expect(options).toHaveCount(tasks.length);
-    await last.scrollIntoViewIfNeeded();
-    expect(await list.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
-    await last.click();
-    await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
     await modal.getByPlaceholder('Minutos a adicionar').fill('1');
     const created=responseTo(page,'POST','/api/TimeEntries/manual');
     await modal.getByRole('button',{name:'Adicionar',exact:true}).click();
     expect((await created).status()).toBe(201);
     expect((await total(f,selected.id)).totalSeconds).toBe(60);
+    const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
+      &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
+      &&new URL(response.url()).searchParams.get('query')===prefix);
+    await field.click();const reloaded=filtered();await field.fill(prefix);
+    expect((await reloaded).status()).toBe(200);await expect(list).toHaveAttribute('aria-busy','false');
+    await expect(options).toHaveCount(tasks.length);
+    await field.press('Escape');await expect(list).toHaveCount(0);
+    await field.click();await expect(options).toHaveCount(tasks.length);
   });
 });
