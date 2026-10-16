@@ -13,7 +13,8 @@ using Prisma.Workspace.Infrastructure.Persistence;
 namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 
 public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationContext organization,
-    IMethodAccessContext access, IPermissionService permissions, TimeProvider? clock = null) : IMethodGitStore
+    IMethodAccessContext access, IPermissionService permissions, TimeProvider? clock = null,
+    GitWebhookIngressLimiter? ingressLimiter = null) : IMethodGitStore
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -237,6 +238,7 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     }
     private async Task<string?> OperationalErrorAsync(Guid integrationId, CancellationToken ct)
     {
+        if (ingressLimiter?.OperationalError(integrationId, _clock.GetUtcNow()) is { } ingressError) return ingressError;
         var code = await Deliveries.AsNoTracking().Where(x => x.IntegrationId == integrationId && x.LastErrorCode != null
             && (x.Status == GitDeliveryStates.RetryableFailure || x.Status == GitDeliveryStates.PermanentFailure
                 || (x.Status == GitDeliveryStates.Ignored && x.LastErrorCode == "retained_merge_closed_without_merge")))
@@ -245,8 +247,10 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         {
             null => null,
             "git_rate_limited" => "Limite de consultas do GitHub atingido; a integração aguardará o prazo indicado pelo provedor.",
-            "merge_waiting_open_pr" => "Há outro PR aberto da mesma task. A promoção para teste está aguardando.",
-            "effective_changes_requested" => "Há alterações solicitadas na revisão vigente do PR.",
+            "merge_waiting_open_pr" => "Há outro PR aberto da mesma task. Aguardando com consultas espaçadas; a promoção para teste permanece pendente.",
+            "effective_changes_requested" => "Há alterações solicitadas na revisão vigente do PR. Aguardando com consultas espaçadas.",
+            "git_repository_disabled" => "Há um repositório desabilitado. Aguardando a atualização da integração antes de confirmar a visão dos PRs.",
+            "method_disabled" or "method_git_disabled" => "Automação do método suspensa. Aguardando a configuração com consultas espaçadas, sem mover tasks.",
             "method_mapping" => "Mapeamento das colunas indisponível. Revise a configuração do método.",
             "retained_merge_closed_without_merge" => "Um PR fechou sem merge após um merge retido. Confira o status e o histórico da task antes de prosseguir.",
             "git_access_unavailable" or "git_app_key_invalid" or "git_repository_access_mismatch" => "Acesso da GitHub App indisponível. Confira a instalação e as credenciais externas.",

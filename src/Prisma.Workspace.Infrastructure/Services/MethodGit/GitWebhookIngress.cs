@@ -12,12 +12,18 @@ namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 public sealed class GitWebhookIngressLimiter
 {
     private readonly ConcurrentDictionary<Guid, (long Window, int Count)> _windows = new();
-    public bool TryConsume(Guid integrationId, DateTimeOffset now)
+    private readonly ConcurrentDictionary<Guid, DateTimeOffset> _limited = new();
+    public bool TryConsumeInvalid(Guid integrationId, DateTimeOffset now)
     {
         var window = now.ToUnixTimeSeconds() / 60;
         var value = _windows.AddOrUpdate(integrationId, (window, 1), (_, old) => old.Window == window ? (window, old.Count + 1) : (window, 1));
-        return value.Count <= 60;
+        if (value.Count <= 60) return true;
+        _limited[integrationId] = now;
+        return false;
     }
+    public string? OperationalError(Guid integrationId, DateTimeOffset now) => _limited.TryGetValue(integrationId, out var at) && at >= now.AddHours(-24)
+        ? "Webhooks com assinatura inválida atingiram o limite (429). Confira o segredo e configure somente create, pull_request e pull_request_review; após corrigir, reenvie manualmente as entregas recusadas no GitHub."
+        : null;
 }
 
 public sealed partial class GitWebhookIngress(
@@ -28,7 +34,7 @@ public sealed partial class GitWebhookIngress(
     public const int MaximumBodyBytes = 5 * 1024 * 1024;
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
 
-    public async Task<GitDeliveryReceipt> AcceptAsync(GitWebhookInput input, CancellationToken cancellationToken = default, bool rateAlreadyChecked = false)
+    public async Task<GitDeliveryReceipt> AcceptAsync(GitWebhookInput input, CancellationToken cancellationToken = default)
     {
         if (input.OriginalBody.Length > MaximumBodyBytes)
             throw new MethodOperationException(413, "git_payload_too_large", "Webhook acima de 5 MiB recusado sem efeito. Avise o administrador para reenvio controlado.");
@@ -38,8 +44,6 @@ public sealed partial class GitWebhookIngress(
         var repository = await store.GetRepositoryForIngressAsync(input.IntegrationId, cancellationToken);
         if (repository is null || !repository.Enabled || repository.Provider != provider.Provider)
             throw new MethodOperationException(401, "invalid_git_signature", "Webhook não autenticado.");
-        if (!rateAlreadyChecked && !limiter.TryConsume(repository.Id, _clock.GetUtcNow()))
-            throw new MethodOperationException(429, "git_ingress_rate_limited", "Limite do webhook atingido. Aguarde 60 segundos.");
         var currentSecret = await secrets.ResolveAsync(repository.WebhookSecretRef, cancellationToken);
         var version = "current";
         var valid = provider.VerifyWebhookSignature(input.OriginalBody.Span, input.Signature, currentSecret);
@@ -49,7 +53,17 @@ public sealed partial class GitWebhookIngress(
             valid = provider.VerifyWebhookSignature(input.OriginalBody.Span, input.Signature, previous);
             version = "previous";
         }
-        if (!valid) throw new MethodOperationException(401, "invalid_git_signature", "Assinatura do webhook inválida.");
+        if (!valid)
+        {
+            if (!limiter.TryConsumeInvalid(repository.Id, _clock.GetUtcNow()))
+            {
+                logger.LogWarning("Integração Git {IntegrationId}: limite de assinaturas inválidas; confira a configuração e reenvie manualmente as entregas recusadas no GitHub.", repository.Id);
+                throw new MethodOperationException(429, "git_ingress_rate_limited", "Limite de assinaturas inválidas atingido. Aguarde 60 segundos, confira o segredo e reenvie manualmente as entregas recusadas no GitHub.");
+            }
+            throw new MethodOperationException(401, "invalid_git_signature", "Assinatura do webhook inválida.");
+        }
+        // Assinaturas válidas não compartilham o balde de falhas: rajadas legítimas
+        // permanecem duráveis na inbox, pois o GitHub não garante reenvio automático.
         var normalized = provider.NormalizeWebhook(input.EventName, input.OriginalBody.Span);
         if (normalized.RepositoryId != repository.RepositoryId
             || (normalized.InstallationId.HasValue && normalized.InstallationId != repository.InstallationId))
@@ -76,8 +90,8 @@ public sealed partial class GitWebhookIngress(
     [GeneratedRegex("^[a-z_]{1,64}$", RegexOptions.CultureInvariant)] private static partial Regex EventPattern();
 }
 
-public sealed record AcceptGitWebhookCommand(GitWebhookInput Input, bool RateAlreadyChecked = false) : IRequest<GitDeliveryReceipt>;
+public sealed record AcceptGitWebhookCommand(GitWebhookInput Input) : IRequest<GitDeliveryReceipt>;
 public sealed class AcceptGitWebhookHandler(GitWebhookIngress ingress) : IRequestHandler<AcceptGitWebhookCommand, GitDeliveryReceipt>
 {
-    public Task<GitDeliveryReceipt> Handle(AcceptGitWebhookCommand request, CancellationToken ct) => ingress.AcceptAsync(request.Input, ct, request.RateAlreadyChecked);
+    public Task<GitDeliveryReceipt> Handle(AcceptGitWebhookCommand request, CancellationToken ct) => ingress.AcceptAsync(request.Input, ct);
 }

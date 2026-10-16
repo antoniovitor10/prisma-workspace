@@ -104,6 +104,26 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         Assert.Equal(c.Now.AddMinutes(-5), task!.LastInteractiveChangeAtUtc); Assert.Equal(c.Now, task.LastManualChangeAtUtc);
     }
     [MethodGitSqlFact]
+    public async Task Direct_observation_lookup_is_project_scoped_and_link_records_Git_author_separately()
+    {
+        await using var c = await _fixture.CaseAsync(); var limiter = new GitWebhookIngressLimiter(); var store = c.Store(c.Context, limiter);
+        var pr = new GitPullRequestSnapshot(7, "https://github.com/qa/metodo/pull/7", "Autor externo", "feature/livre", "main", new string('a', 40), null,
+            "open", false, false, c.Now, c.Now, HeadRepositoryId: 777777, PullRequestAuthorId: "42", PullRequestAuthorName: "outro-autor-git");
+        var observation = await store.UpsertObservationAsync(c.Repository.Id, pr, "head_repository_requires_explicit_link");
+        Assert.Null(await store.GetPullRequestObservationAsync(Guid.NewGuid(), observation.Id));
+        Assert.Equal(observation.Id, (await store.GetPullRequestObservationAsync(c.ProjectId, observation.Id))!.Id);
+        await store.LinkExplicitAsync(c.Repository.Id, c.ItemId, observation.Id, "Confirmação humana do fork.");
+        var entry = await c.Context.TaskEvents.SingleAsync(x => x.WorkItemId == c.ItemId && x.Kind == "git_pr_linked");
+        using var payload = System.Text.Json.JsonDocument.Parse(entry.Payload!);
+        Assert.Equal("42", payload.RootElement.GetProperty("gitPullRequestAuthorId").GetString());
+        Assert.Equal("outro-autor-git", payload.RootElement.GetProperty("gitPullRequestAuthorName").GetString());
+        Assert.Equal("uiSession", payload.RootElement.GetProperty("authenticationKind").GetString());
+        Assert.NotEqual("42", entry.ActorId);
+        for (var i = 0; i < 61; i++) limiter.TryConsumeInvalid(c.Repository.Id, c.Now);
+        Assert.Contains("429", (await store.GetRepositoryAsync(c.Repository.Id))!.OperationalError);
+        Assert.Contains("reenvie manualmente", (await store.GetRepositoryAsync(c.Repository.Id))!.OperationalError);
+    }
+    [MethodGitSqlFact]
     public async Task Repository_update_rejects_stale_version_and_operational_error_is_safe()
     {
         await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
@@ -203,7 +223,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
             Context = new(_options(failure), new SqlTenant(_organization), _audit);
         }
         public AppDbContext NewContext() => new(_options(null), new SqlTenant(_organization), _audit);
-        public EfMethodGitStore Store(AppDbContext context) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock);
+        public EfMethodGitStore Store(AppDbContext context, GitWebhookIngressLimiter? limiter = null) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock, limiter);
         public async Task SeedAsync()
         {
             var org = new Organization { Id = _organization, Name = "Método SQL próprio", Slug = "method-" + _organization.ToString("N"), CreatedAt = Now, UpdatedAt = Now };

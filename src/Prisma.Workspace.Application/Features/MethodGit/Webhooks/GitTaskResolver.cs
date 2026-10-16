@@ -7,7 +7,7 @@ namespace Prisma.Workspace.Application.Features.MethodGit.Webhooks;
 public sealed partial class GitTaskResolver(IMethodGitStore store)
 {
     public async Task<GitTaskResolution> ResolveAsync(GitRepositoryDescriptor repository, int? number,
-        string? branch, string? title, CancellationToken cancellationToken = default)
+        string? branch, string? title, CancellationToken cancellationToken = default, bool allowInference = true)
     {
         if (number.HasValue)
         {
@@ -18,6 +18,7 @@ public sealed partial class GitTaskResolver(IMethodGitStore store)
                 return Valid(task, repository) ? new(task, "explicit", null) : new(null, "explicit", "explicit_task_unavailable");
             }
         }
+        if (!allowInference) return new(null, "none", "head_repository_requires_explicit_link");
         string? id = null;
         var source = "none";
         if (branch is not null)
@@ -28,9 +29,9 @@ public sealed partial class GitTaskResolver(IMethodGitStore store)
         }
         if (id is null && title is not null)
         {
-            var markers = TitlePattern().Matches(title);
-            if (markers.Count > 1) return new(null, "title", "ambiguous_title", true);
-            if (markers.Count == 1) { id = markers[0].Groups[1].Value; source = "title"; }
+            var markers = TitlePattern().Matches(title).Select(marker => marker.Groups[1].Value).Distinct(StringComparer.Ordinal).ToArray();
+            if (markers.Length > 1) return new(null, "title", "ambiguous_title", true);
+            if (markers.Length == 1) { id = markers[0]; source = "title"; }
         }
         if (id is null) return new(null, "none", "task_not_identified");
         if (id.Length > 32) return new(null, source, "invalid_method_task_id");

@@ -39,6 +39,9 @@ public sealed class GitPullRequestObservation
     public string BaseBranch { get; set; } = string.Empty;
     public string HeadSha { get; set; } = string.Empty;
     public string? MergeSha { get; set; }
+    public long? HeadRepositoryId { get; set; }
+    public string? PullRequestAuthorId { get; set; }
+    public string? PullRequestAuthorName { get; set; }
     public string State { get; set; } = string.Empty;
     public bool IsDraft { get; set; }
     public DateTimeOffset ProviderUpdatedAtUtc { get; set; }

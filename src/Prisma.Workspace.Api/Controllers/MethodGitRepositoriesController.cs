@@ -41,11 +41,14 @@ public sealed class MethodGitEndpointFilter(IConfiguration configuration) : IAsy
         {
             var executed = await next();
             if (executed.Exception is MethodOperationException method)
-            { executed.Result = Problem(method.StatusCode, method.Code, method.Message); executed.ExceptionHandled = true; }
+            { if (method.StatusCode == 429) context.HttpContext.Response.Headers.RetryAfter = "60";
+                executed.Result = Problem(method.StatusCode, method.Code, method.Message); executed.ExceptionHandled = true; }
             else if (executed.Exception is GitHubUnavailableException github)
             { executed.Result = Problem(503, github.Code, "GitHub indisponível ou sem acesso completo. Avise o administrador."); executed.ExceptionHandled = true; }
         }
-        catch (MethodOperationException method) { context.Result = Problem(method.StatusCode, method.Code, method.Message); }
+        catch (MethodOperationException method)
+        { if (method.StatusCode == 429) context.HttpContext.Response.Headers.RetryAfter = "60";
+            context.Result = Problem(method.StatusCode, method.Code, method.Message); }
         catch (GitHubUnavailableException github) { context.Result = Problem(503, github.Code, "GitHub indisponível ou sem acesso completo. Avise o administrador."); }
     }
     private static ObjectResult Problem(int status, string code, string message)

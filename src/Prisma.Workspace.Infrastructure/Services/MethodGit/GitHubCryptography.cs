@@ -6,9 +6,11 @@ namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 
 public static class GitHubCryptography
 {
+    public static bool HasSignatureFormat(string? signature) => signature is { Length: 71 }
+        && signature.StartsWith("sha256=", StringComparison.Ordinal) && signature.AsSpan(7).IndexOfAnyExcept("0123456789abcdefABCDEF") < 0;
     public static bool VerifySignature(ReadOnlySpan<byte> body, string signature, string secret)
     {
-        if (string.IsNullOrEmpty(secret) || signature is null || signature.Length != 71 || !signature.StartsWith("sha256=", StringComparison.Ordinal)) return false;
+        if (string.IsNullOrEmpty(secret) || !HasSignatureFormat(signature)) return false;
         byte[] supplied;
         try { supplied = Convert.FromHexString(signature[7..]); }
         catch (FormatException) { return false; }

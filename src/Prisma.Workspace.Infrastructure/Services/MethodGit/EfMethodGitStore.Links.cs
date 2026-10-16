@@ -39,6 +39,7 @@ public sealed partial class EfMethodGitStore
         {
             row.PullRequestNumber = pr.Number; row.Url = pr.Url; row.Title = pr.Title; row.HeadBranch = pr.HeadBranch;
             row.BaseBranch = pr.BaseBranch; row.HeadSha = pr.HeadSha; row.MergeSha = pr.MergeSha;
+            row.HeadRepositoryId = pr.HeadRepositoryId; row.PullRequestAuthorId = pr.PullRequestAuthorId; row.PullRequestAuthorName = pr.PullRequestAuthorName;
             row.State = pr.State; row.IsDraft = pr.IsDraft; row.ProviderUpdatedAtUtc = pr.UpdatedAtUtc;
             row.ObservedAtUtc = _clock.GetUtcNow(); row.UnlinkedReason = reason;
         }
@@ -118,7 +119,8 @@ public sealed partial class EfMethodGitStore
                 }
                 db.Add(new TaskEvent { Id = Guid.NewGuid(), WorkItemId = oldItem, ActorId = actor.ActorId, Kind = "git_pr_unlinked", CreatedAt = _clock.GetUtcNow(),
                     Payload = JsonSerializer.Serialize(new { principalId = actor.PrincipalId, actorName = actor.DisplayName, authenticationKind = "uiSession",
-                        channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, observationId, url = observation.Url, reason }, JsonOptions) });
+                        channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, observationId, url = observation.Url, reason,
+                        gitPullRequestAuthorId = observation.PullRequestAuthorId, gitPullRequestAuthorName = observation.PullRequestAuthorName }, JsonOptions) });
                 await TouchTaskVersionAsync(oldItem, task.ProjectId, ct);
                 existing.WorkItemId = workItemId; existing.Source = "branch"; // Abaixo promove explicitamente e preserva evidência anterior no histórico.
                 existing.CreatedAtUtc = _clock.GetUtcNow();
@@ -141,7 +143,8 @@ public sealed partial class EfMethodGitStore
             db.Add(new TaskEvent { Id = Guid.NewGuid(), WorkItemId = workItemId, ActorId = actor.ActorId, Kind = "git_pr_linked", CreatedAt = _clock.GetUtcNow(),
                 Payload = JsonSerializer.Serialize(new { principalId = actor.PrincipalId, actorName = actor.DisplayName,
                     methodRole = actor.Role.ToCode(), authenticationKind = actor.AuthenticationKind == MethodAuthenticationKind.UiSession ? "uiSession" : "methodToken",
-                    channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, observationId, url = observation.Url, reason }, JsonOptions) });
+                    channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, observationId, url = observation.Url, reason,
+                    gitPullRequestAuthorId = observation.PullRequestAuthorId, gitPullRequestAuthorName = observation.PullRequestAuthorName }, JsonOptions) });
             observation.UnlinkedReason = null;
             await TouchTaskVersionAsync(workItemId, task.ProjectId, ct);
             var evaluation = new NormalizedGitEvent("github", repository.RepositoryId, repository.InstallationId,
@@ -171,6 +174,12 @@ public sealed partial class EfMethodGitStore
         var result = new List<GitPullRequestObservationDto>();
         foreach (var row in rows) result.Add(await ObservationDtoAsync(row, ct));
         return new(result, page, pageSize, total);
+    }
+    public async Task<GitPullRequestObservationDto?> GetPullRequestObservationAsync(Guid projectId, Guid observationId, CancellationToken ct = default)
+    {
+        Scope(projectId);
+        var row = await Observations.AsNoTracking().SingleOrDefaultAsync(x => x.ProjectId == projectId && x.Id == observationId, ct);
+        return row is null ? null : await ObservationDtoAsync(row, ct);
     }
     private async Task<GitPullRequestObservationDto> ObservationDtoAsync(GitPullRequestObservation row, CancellationToken ct)
     {

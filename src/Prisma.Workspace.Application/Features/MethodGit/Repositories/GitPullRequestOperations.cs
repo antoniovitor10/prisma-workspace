@@ -40,14 +40,7 @@ public sealed class GitPullRequestOperations(IMethodGitStore store, IGitProvider
     {
         await projects.EnsureAccessAsync(projectId, actor, false, ct);
         await EnsureLinkPermission(request.WorkItemId, actor, ct);
-        GitPullRequestObservationDto? observation = null;
-        // Mantém a consulta no projeto autorizado; nenhuma procura global por observationId.
-        for (var page = 1; ; page++)
-        {
-            var rows = await store.ListPullRequestsAsync(projectId, null, page, 100, ct);
-            observation = rows.Items.FirstOrDefault(row => row.Id == observationId);
-            if (observation is not null || (long)page * 100 >= rows.Total) break;
-        }
+        var observation = await store.GetPullRequestObservationAsync(projectId, observationId, ct);
         if (observation is null) throw new MethodOperationException(404, "git_observation_not_found", "PR observado não encontrado neste projeto.");
         var repository = await store.GetRepositoryAsync(observation.IntegrationId, ct);
         if (repository is null || !repository.Enabled || repository.ProjectId != projectId) throw new MethodOperationException(409, "git_repository_unavailable", "Integração do PR indisponível.");

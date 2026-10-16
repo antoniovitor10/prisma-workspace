@@ -98,7 +98,21 @@ public sealed partial class GitHubProvider : IGitProvider
         }
         throw new GitHubUnavailableException("git_review_pagination_incomplete");
     }
-    public async Task<GitPullRequestReadSet> ListPullRequestsAsync(GitRepositoryDescriptor repository, string state, CancellationToken cancellationToken = default)
+    public Task<GitPullRequestReadSet> ListPullRequestsAsync(GitRepositoryDescriptor repository, string state, CancellationToken cancellationToken = default)
+        => ReadPullRequestsAsync(repository, state, null, cancellationToken);
+    public async Task<GitPullRequestReadSet> ListPullRequestsForCycleAsync(GitRepositoryDescriptor repository, DateTimeOffset authorizedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        // PR aberto anterior ao ciclo também impede promoção: nunca é cortado pela data.
+        var open = await ReadPullRequestsAsync(repository, "open", null, cancellationToken);
+        if (!open.Complete) return open;
+        var recent = await ReadPullRequestsAsync(repository, "all", authorizedAtUtc, cancellationToken);
+        if (!recent.Complete) return recent;
+        return new(open.PullRequests.Concat(recent.PullRequests).GroupBy(pr => pr.Number)
+            .Select(group => group.OrderByDescending(pr => pr.UpdatedAtUtc).First()).ToArray(), true);
+    }
+    private async Task<GitPullRequestReadSet> ReadPullRequestsAsync(GitRepositoryDescriptor repository, string state,
+        DateTimeOffset? stopBeforeUtc, CancellationToken cancellationToken)
     {
         if (state is not ("open" or "closed" or "all")) throw new ArgumentException("Estado Git inválido.", nameof(state));
         var session = await SessionAsync(repository, cancellationToken);
@@ -107,9 +121,14 @@ public sealed partial class GitHubProvider : IGitProvider
         {
             for (var page = 1; page <= 50; page++)
             {
-                using var json = await GetAsync(repository, session, $"repos/{session.FullName}/pulls?state={state}&per_page=100&page={page}", cancellationToken);
+                using var json = await GetAsync(repository, session, $"repos/{session.FullName}/pulls?state={state}&sort=updated&direction=desc&per_page=100&page={page}", cancellationToken);
                 if (json.RootElement.ValueKind != JsonValueKind.Array) throw new GitHubUnavailableException("invalid_git_response");
-                result.AddRange(json.RootElement.EnumerateArray().Select(row => ParsePullRequest(row, repository, session.FullName)));
+                foreach (var row in json.RootElement.EnumerateArray())
+                {
+                    var pr = ParsePullRequest(row, repository, session.FullName);
+                    if (stopBeforeUtc.HasValue && pr.UpdatedAtUtc < stopBeforeUtc) return new(result, true);
+                    result.Add(pr);
+                }
                 if (json.RootElement.GetArrayLength() < 100) return new(result, true);
             }
             return new(result, false, "git_pull_request_pagination_incomplete");
@@ -237,20 +256,23 @@ public sealed partial class GitHubProvider : IGitProvider
                 throw new GitHubUnavailableException("git_response_mismatch");
             var mergedAt = OptionalDate(row, "merged_at");
             var merged = row.TryGetProperty("merged", out var value) ? value.GetBoolean() : mergedAt.HasValue;
-            return new(number, expectedUrl, RequiredString(row, "title", 1000, true), RequiredString(head, "ref", 255), RequiredString(@base, "ref", 255),
+            return new(number, expectedUrl, RequiredString(row, "title", 1000, true, normalizeControls: true), RequiredString(head, "ref", 255), RequiredString(@base, "ref", 255),
                 RequiredSha(head, "sha"), OptionalSha(row, "merge_commit_sha"), state, row.GetProperty("draft").GetBoolean(), merged,
                 OptionalDate(row, "updated_at") ?? throw new GitHubUnavailableException("invalid_git_timestamp"),
-                OptionalDate(row, "created_at"), mergedAt, ClosedAtUtc: OptionalDate(row, "closed_at"));
+                OptionalDate(row, "created_at"), mergedAt, ClosedAtUtc: OptionalDate(row, "closed_at"),
+                HeadRepositoryId: head.TryGetProperty("repo", out var headRepo) && headRepo.ValueKind != JsonValueKind.Null ? headRepo.GetProperty("id").GetInt64() : null,
+                PullRequestAuthorId: row.TryGetProperty("user", out var user) && user.ValueKind != JsonValueKind.Null ? user.GetProperty("id").GetInt64().ToString(CultureInfo.InvariantCulture) : null,
+                PullRequestAuthorName: row.TryGetProperty("user", out user) && user.ValueKind != JsonValueKind.Null ? RequiredString(user, "login", 200) : null);
         }
         catch (Exception exception) when (exception is KeyNotFoundException or InvalidOperationException or FormatException)
         { throw new GitHubUnavailableException("invalid_git_response"); }
     }
-    private static string RequiredString(JsonElement parent, string name, int max, bool allowEmpty = false)
+    private static string RequiredString(JsonElement parent, string name, int max, bool allowEmpty = false, bool normalizeControls = false)
     {
         var value = parent.GetProperty(name).GetString();
-        if (value is null || value.Length > max || (!allowEmpty && value.Length == 0) || value.Any(char.IsControl))
+        if (value is null || value.Length > max || (!allowEmpty && value.Length == 0) || (!normalizeControls && value.Any(char.IsControl)))
             throw new GitHubUnavailableException("invalid_git_response");
-        return value;
+        return normalizeControls ? new string(value.Select(c => char.IsControl(c) ? ' ' : c).ToArray()) : value;
     }
     private static string? OptionalString(JsonElement row, string name, int max) => !row.TryGetProperty(name, out var value)
         || value.ValueKind == JsonValueKind.Null ? null : RequiredString(row, name, max);

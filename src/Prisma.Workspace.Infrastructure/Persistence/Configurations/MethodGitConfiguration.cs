@@ -46,6 +46,8 @@ public sealed class GitPullRequestObservationConfiguration : IEntityTypeConfigur
         b.Property(x => x.BaseBranch).HasMaxLength(255).IsRequired();
         b.Property(x => x.HeadSha).HasColumnType("varchar(64)").IsRequired();
         b.Property(x => x.MergeSha).HasColumnType("varchar(64)");
+        b.Property(x => x.PullRequestAuthorId).HasColumnType("varchar(32)");
+        b.Property(x => x.PullRequestAuthorName).HasMaxLength(200);
         b.Property(x => x.State).HasColumnType("varchar(16)").IsRequired();
         b.Property(x => x.UnlinkedReason).HasMaxLength(500);
         b.Property(x => x.RowVersion).IsRowVersion();

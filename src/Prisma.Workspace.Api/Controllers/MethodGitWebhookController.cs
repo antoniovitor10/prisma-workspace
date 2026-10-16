@@ -34,7 +34,7 @@ public sealed class MethodGitWebhookController(IMediator mediator) : ControllerB
         }
         catch (BadHttpRequestException exception) when (exception.StatusCode == 413) { throw TooLarge(); }
         var receipt = await mediator.Send(new AcceptGitWebhookCommand(new(integrationId, delivery, eventName,
-            signature, memory.ToArray(), HttpContext.TraceIdentifier), HttpContext.Items.ContainsKey(MethodGitWebhookRateFilter.CheckedKey)), ct);
+            signature, memory.ToArray(), HttpContext.TraceIdentifier)), ct);
         return StatusCode(receipt.Conflict ? 409 : receipt.Duplicate ? 200 : 202, receipt);
     }
     private string Header(string name, bool signature = false)
@@ -46,11 +46,10 @@ public sealed class MethodGitWebhookController(IMediator mediator) : ControllerB
     private static MethodOperationException TooLarge() => new(413, "git_payload_too_large", "Webhook acima de 5 MiB recusado sem efeito. Avise o administrador para reenvio controlado.");
 }
 
-/// <summary>A contenção ocorre antes de ler/alocar o corpo, inclusive em requisições concorrentes.</summary>
+/// <summary>Recusa assinaturas malformadas antes de ler/alocar o corpo; HMAC válido sempre alcança a inbox.</summary>
 public sealed class MethodGitWebhookRateFilter(IMethodGitStore store, GitWebhookIngressLimiter limiter,
     IConfiguration configuration, TimeProvider? clock = null) : IAsyncResourceFilter
 {
-    internal const string CheckedKey = "Prisma.MethodGit.IngressRateChecked";
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
     {
@@ -60,15 +59,17 @@ public sealed class MethodGitWebhookRateFilter(IMethodGitStore store, GitWebhook
         {
             var repository = await store.GetRepositoryForIngressAsync(id, context.HttpContext.RequestAborted);
             if (repository is null || !repository.Enabled) { context.Result = Failure(401, "Webhook não autenticado."); return; }
-            if (!limiter.TryConsume(id, _clock.GetUtcNow()))
+            var signatures = context.HttpContext.Request.Headers["X-Hub-Signature-256"];
+            if (signatures.Count != 1 || !GitHubCryptography.HasSignatureFormat(signatures[0]))
             {
-                context.HttpContext.Response.Headers.RetryAfter = "60";
-                context.Result = Failure(429, "Limite do webhook atingido. Aguarde 60 segundos."); return;
+                var allowed = limiter.TryConsumeInvalid(id, _clock.GetUtcNow());
+                if (!allowed) context.HttpContext.Response.Headers.RetryAfter = "60";
+                context.Result = Failure(allowed ? 401 : 429, allowed ? "Assinatura do webhook ausente ou inválida."
+                    : "Limite de assinaturas inválidas atingido. Confira o segredo e reenvie manualmente as entregas recusadas no GitHub."); return;
             }
         }
         catch (OperationCanceledException) when (context.HttpContext.RequestAborted.IsCancellationRequested) { throw; }
         catch (Exception) { context.Result = Failure(503, "Não foi possível consultar a integração. O webhook não foi aceito; tente novamente."); return; }
-        context.HttpContext.Items[CheckedKey] = true;
         await next();
     }
     private static ObjectResult Failure(int status, string message) => new(new ProblemDetails { Status = status, Title = message }) { StatusCode = status };

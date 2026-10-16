@@ -53,7 +53,8 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
             return await Finish(delivery, GitDeliveryStates.Ignored, "unsupported_event", ct);
         if (e.PullRequestNumber is not { } number) return await Finish(delivery, GitDeliveryStates.PermanentFailure, "missing_pull_request", ct);
         var pr = await provider.GetPullRequestAsync(repository, number, ct);
-        var resolution = await resolver.ResolveAsync(repository, number, pr.HeadBranch, pr.Title, ct);
+        var resolution = await resolver.ResolveAsync(repository, number, pr.HeadBranch, pr.Title, ct,
+            allowInference: pr.HeadRepositoryId == repository.RepositoryId);
         var observation = await store.UpsertObservationAsync(repository.Id, pr, resolution.Task is null ? resolution.Reason : null, ct);
         if (resolution.Task is null) return await Finish(delivery, GitDeliveryStates.Ignored, resolution.Reason ?? "task_not_identified", ct);
         if (resolution.Source != "explicit")
@@ -160,7 +161,7 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
         var otherOpen = false; var changes = false; var closedAfterMerge = false;
         foreach (var repository in repositories)
         {
-            var read = await provider.ListPullRequestsAsync(repository, "all", ct);
+            var read = await provider.ListPullRequestsForCycleAsync(repository, task.AuthorizedAtUtc!.Value, ct);
             if (!read.Complete) return new(false, otherOpen, changes, closedAfterMerge, read.IncompleteReason);
             if (repository.Id == currentRepository.Id && !read.PullRequests.Any(pr => pr.Number == merged.Number && pr.State == "closed" && pr.IsMerged))
                 return new(false, otherOpen, changes, closedAfterMerge, "git_view_not_current");
@@ -169,7 +170,8 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
                 if (repository.Id == currentRepository.Id && candidate.Number == merged.Number) continue;
                 var known = knownLinks.Any(link => link.IntegrationId == repository.Id && PullRequestNumber(link.Url) == candidate.Number);
                 if (!known && !MayIdentify(candidate, task.MethodTaskId)) continue;
-                var resolution = await resolver.ResolveAsync(repository, candidate.Number, candidate.HeadBranch, candidate.Title, ct);
+                var resolution = await resolver.ResolveAsync(repository, candidate.Number, candidate.HeadBranch, candidate.Title, ct,
+                    allowInference: candidate.HeadRepositoryId == repository.RepositoryId);
                 if (resolution.Conflict) return new(false, otherOpen, changes, closedAfterMerge, "ambiguous_related_task");
                 if (resolution.Task?.WorkItemId != task.WorkItemId)
                 {
@@ -197,7 +199,8 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
     private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     private async Task<GitProcessingOutcome> Finish(GitDeliverySnapshot delivery, string status, string code, CancellationToken ct)
     {
-        DateTimeOffset? next = status == GitDeliveryStates.RetryableFailure ? _clock.GetUtcNow().AddMinutes(1) : null;
+        DateTimeOffset? next = status == GitDeliveryStates.RetryableFailure
+            ? _clock.GetUtcNow().AddMinutes(Math.Min(60, Math.Pow(2, Math.Clamp(delivery.Attempts - 1, 0, 6)))) : null;
         var completed = await store.CompleteDeliveryAsync(delivery.Id, delivery.RowVersion, status, code, next, ct);
         return new(completed ? status : "lease_lost", completed ? code : "lease_lost");
     }

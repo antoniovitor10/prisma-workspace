@@ -64,9 +64,11 @@ public static partial class GitEventNormalizer
             if (reviewId.HasValue) revision = $"review:{reviewId}:{reviewState}:{occurred:O}:{reviewCommit}";
             revision = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(revision))).ToLowerInvariant();
             return AttachActor(new("github", repositoryId, installationId, eventName, action, occurred, revision, null,
-                (int)number, url, Text(pr, "title", 1000, allowEmpty: true), Text(head, "ref", 255),
+                (int)number, url, Text(pr, "title", 1000, allowEmpty: true, normalizeControls: true), Text(head, "ref", 255),
                 Text(@base, "ref", 255), headSha, OptionalSha(pr, "merge_commit_sha"), state,
-                Boolean(pr, "draft"), Boolean(pr, "merged"), reviewId, reviewState, reviewCommit), root);
+                Boolean(pr, "draft"), Boolean(pr, "merged"), reviewId, reviewState, reviewCommit,
+                HeadRepositoryId: head.TryGetProperty("repo", out var headRepo) && headRepo.ValueKind != JsonValueKind.Null
+                    ? PositiveId(headRepo, "id") : null), root);
         }
         catch (MethodOperationException) { throw; }
         catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or OverflowException)
@@ -84,11 +86,11 @@ public static partial class GitEventNormalizer
         if (!parent.GetProperty(name).TryGetInt64(out var value) || value <= 0) throw Invalid();
         return value;
     }
-    private static string Text(JsonElement parent, string name, int length, bool allowEmpty = false)
+    private static string Text(JsonElement parent, string name, int length, bool allowEmpty = false, bool normalizeControls = false)
     {
         var value = parent.GetProperty(name).GetString();
-        if (value is null || value.Length > length || (!allowEmpty && value.Length == 0) || value.Any(char.IsControl)) throw Invalid();
-        return value;
+        if (value is null || value.Length > length || (!allowEmpty && value.Length == 0) || (!normalizeControls && value.Any(char.IsControl))) throw Invalid();
+        return normalizeControls ? new string(value.Select(c => char.IsControl(c) ? ' ' : c).ToArray()) : value;
     }
     private static DateTimeOffset Timestamp(JsonElement parent, string name)
     {

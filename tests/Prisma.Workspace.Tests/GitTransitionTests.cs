@@ -12,6 +12,32 @@ namespace Prisma.Workspace.Tests;
 public class GitTransitionTests
 {
     [Theory]
+    [InlineData(null)]
+    [InlineData(777777L)]
+    public async Task Fork_or_missing_head_repository_needs_explicit_link(long? headRepositoryId)
+    {
+        var f = new Fixture();
+        f.Provider.PullRequests[(f.Store.Repository.Id, 1)] = f.Pr with { HeadRepositoryId = headRepositoryId, Title = "[T-0001] tentativa" };
+        Assert.Equal("head_repository_requires_explicit_link", (await f.Process("opened")).Code);
+        Assert.Empty(f.Move.Requests);
+        var task = f.Store.Tasks[0];
+        f.Store.Explicit = new(Guid.NewGuid(), f.Store.Repository.Id, task.WorkItemId, Guid.NewGuid(), null, "explicit", f.Pr.Url, null, "human", f.Store.Now);
+        Assert.True((await f.Process("opened")).Moved);
+    }
+    [Fact]
+    public async Task Business_pending_retries_back_off_and_stop_at_one_hour()
+    {
+        var f = new Fixture(MethodStatusCodes.InReview); f.SetMerged();
+        f.Provider.PullRequests[(f.Store.Repository.Id, 2)] = f.Pr with { Number = 2, Url = "https://github.com/qa/metodo/pull/2", IsDraft = true };
+        foreach (var (attempt, minutes) in new[] { (1, 1), (2, 2), (3, 4), (6, 32), (7, 60), (100, 60) })
+        {
+            var delivery = f.Delivery(f.Event("closed")) with { Attempts = attempt };
+            Assert.Equal("merge_waiting_open_pr", (await f.Processor.ProcessAsync(delivery)).Code);
+            Assert.Equal(f.Store.Now.AddMinutes(minutes), f.Store.LastNextAttemptAtUtc);
+        }
+        Assert.Empty(f.Move.Requests);
+    }
+    [Theory]
     [InlineData("opened")][InlineData("ready_for_review")][InlineData("reopened")]
     public async Task Ready_open_PR_moves_only_authorized_development(string action)
     {
@@ -89,7 +115,7 @@ public class GitTransitionTests
     {
         var f = new Fixture(MethodStatusCodes.InReview); f.SetMerged();
         var second = f.AddRepository();
-        f.Provider.PullRequests[(second.Id, 2)] = f.Pr with { Number = 2, Url = "https://github.com/qa/second/pull/2", IsDraft = true };
+        f.Provider.PullRequests[(second.Id, 2)] = f.Pr with { Number = 2, Url = "https://github.com/qa/second/pull/2", IsDraft = true, HeadRepositoryId = second.RepositoryId };
         Assert.Equal("merge_waiting_open_pr", (await f.Process("closed")).Code);
         Assert.Empty(f.Move.Requests); Assert.Contains(second.Id, f.Provider.ListedRepositories);
     }
@@ -152,7 +178,8 @@ public class GitTransitionTests
         public Fixture(string status = MethodStatusCodes.InDevelopment)
         {
             Store.AddTask("T-0001", status);
-            Pr = new(1, "https://github.com/qa/metodo/pull/1", "Título livre", "task/T-0001-feature", "main", new string('b', 40), null, "open", false, false, Store.Now, Store.Now);
+            Pr = new(1, "https://github.com/qa/metodo/pull/1", "Título livre", "task/T-0001-feature", "main", new string('b', 40), null, "open", false, false, Store.Now, Store.Now,
+                HeadRepositoryId: Store.Repository.RepositoryId);
             Provider.PullRequests[(Store.Repository.Id, 1)] = Pr;
             Move = new(Store);
             Processor = new(Store, Provider, new GitTaskResolver(Store), Move, NullLogger<GitDeliveryProcessor>.Instance, new GitTestClock(Store.Now));
@@ -174,6 +201,9 @@ public class GitTransitionTests
     {
         public List<GitRepositoryDescriptor> Repositories { get; } = [];
         public HashSet<string> Applied { get; } = [];
+        public DateTimeOffset? LastNextAttemptAtUtc { get; private set; }
+        public override Task<bool> CompleteDeliveryAsync(Guid id, byte[] version, string status, string? code, DateTimeOffset? retry, CancellationToken ct = default)
+        { LastNextAttemptAtUtc = retry; return Task.FromResult(true); }
         public override Task<IReadOnlyList<GitRepositoryDescriptor>> ListRepositoriesAsync(Guid project, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<GitRepositoryDescriptor>>([Repository, .. Repositories]);
         public override Task<GitRepositoryDescriptor?> GetRepositoryAsync(Guid id, CancellationToken ct = default)

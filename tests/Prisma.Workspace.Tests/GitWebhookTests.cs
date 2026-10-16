@@ -79,6 +79,38 @@ public class GitWebhookTests
         Assert.Equal(413, error.StatusCode); Assert.Equal(0, store.Accepted);
     }
     [Fact]
+    public async Task Invalid_signature_flood_does_not_drop_a_valid_burst()
+    {
+        var store = new GitTestStore(); var initializer = new TestWorkerInitializer(); var limiter = new GitWebhookIngressLimiter();
+        var ingress = new GitWebhookIngress(store, new TestGitProvider(), new TestGitSecrets(), initializer, limiter,
+            NullLogger<GitWebhookIngress>.Instance, new GitTestClock(store.Now));
+        var body = Ping(store.Repository.RepositoryId);
+        for (var i = 0; i < 61; i++)
+        {
+            var error = await Assert.ThrowsAsync<MethodOperationException>(() => ingress.AcceptAsync(Input(store, body, Sign(body, "wrong"))));
+            Assert.Equal(i < 60 ? 401 : 429, error.StatusCode);
+        }
+        Assert.Equal(0, initializer.Calls); Assert.Equal(0, store.Accepted);
+        Assert.Contains("reenvie manualmente", limiter.OperationalError(store.Repository.Id, store.Now));
+        for (var i = 0; i < 700; i++) await ingress.AcceptAsync(Input(store, body, Sign(body, "current")));
+        Assert.Equal(700, store.Accepted); Assert.Equal(700, initializer.Calls);
+    }
+    [Fact]
+    public async Task Cycle_query_keeps_old_open_PR_and_stops_before_historic_pages()
+    {
+        using var rsa = RSA.Create(2048); var store = new GitTestStore();
+        var factory = new GitHttpTestFactory(rsa, store.Now) { LargeHistory = true };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        { ["MethodGit:GitHubApiBaseUrl"] = "http://fixture:3134/", ["MethodGit:Secrets:app-key"] = rsa.ExportRSAPrivateKeyPem() }).Build();
+        var provider = new GitHubProvider(factory, new ConfigurationMethodGitSecretStore(config), config, new GitHttpTestEnvironment(), new GitTestClock(store.Now));
+        var result = await provider.ListPullRequestsForCycleAsync(store.Repository, store.Now.AddMinutes(-5));
+        Assert.True(result.Complete); Assert.Equal(new[] { 1, 2 }, result.PullRequests.Select(pr => pr.Number).Order().ToArray());
+        Assert.Contains(result.PullRequests, pr => pr.Number == 2 && pr.UpdatedAtUtc < store.Now.AddDays(-1) && pr.State == "open");
+        Assert.Equal(2, factory.Paths.Count(path => path.StartsWith("/repos/qa/metodo/pulls?", StringComparison.Ordinal)));
+        Assert.All(factory.Paths.Where(path => path.Contains("?state=")), path => Assert.Contains("sort=updated&direction=desc", path));
+        Assert.DoesNotContain(factory.Paths, path => path.Contains("page=2", StringComparison.Ordinal));
+    }
+    [Fact]
     public async Task Invalid_mapping_preserves_authenticated_delivery_for_later_processing()
     {
         var store = new GitTestStore(); store.Project = store.Project with { Enabled = false };
@@ -97,7 +129,9 @@ public class GitWebhookTests
         { ["MethodGit:GitHubApiBaseUrl"] = "http://fixture:3134/", ["MethodGit:Secrets:app-key"] = key }).Build();
         var provider = new GitHubProvider(factory, new ConfigurationMethodGitSecretStore(config), config, new GitHttpTestEnvironment(), new GitTestClock(store.Now));
         Assert.True((await provider.ValidateInstallationAsync(store.Repository)).Allowed);
-        Assert.Equal(1, (await provider.GetPullRequestAsync(store.Repository, 1)).Number);
+        var pr = await provider.GetPullRequestAsync(store.Repository, 1);
+        Assert.Equal(1, pr.Number); Assert.Equal(900001, pr.HeadRepositoryId);
+        Assert.Equal("42", pr.PullRequestAuthorId); Assert.Equal("autor-git", pr.PullRequestAuthorName);
         Assert.True((await provider.ListPullRequestsAsync(store.Repository, "all")).Complete);
         Assert.Equal("changes_requested", Assert.Single(await provider.GetReviewsAsync(store.Repository, 1)).State);
         Assert.Equal(1, factory.TokenRequests); Assert.Equal(1, factory.RepositoryRequests);
@@ -156,6 +190,7 @@ internal sealed class GitHttpTestEnvironment : IHostEnvironment
 }
 internal sealed class GitHttpTestFactory(RSA rsa, DateTimeOffset now) : HttpMessageHandler, IHttpClientFactory
 {
+    public bool LargeHistory { get; init; }
     private readonly string _token = "ghs_" + new string('x', 1024);
     public int TokenRequests { get; private set; }
     public int RepositoryRequests { get; private set; }
@@ -191,8 +226,13 @@ internal sealed class GitHttpTestFactory(RSA rsa, DateTimeOffset now) : HttpMess
             {
                 var pr = new { number = 1, html_url = "https://github.com/qa/metodo/pull/1", title = "Teste", state = "open", draft = false,
                     created_at = now, updated_at = now, closed_at = (DateTimeOffset?)null, merged = false, merged_at = (DateTimeOffset?)null, merge_commit_sha = (string?)null,
-                    head = new { @ref = "task/T-0001-branch", sha = new string('b', 40) }, @base = new { @ref = "main", repo = new { id = 900001 } } };
-                body = path.Contains("?state=", StringComparison.Ordinal) ? (object)new[] { pr } : pr;
+                    head = new { @ref = "task/T-0001-branch", sha = new string('b', 40), repo = new { id = 900001 } }, @base = new { @ref = "main", repo = new { id = 900001 } },
+                    user = new { id = 42, login = "autor-git" } };
+                body = LargeHistory && path.Contains("?state=open", StringComparison.Ordinal)
+                    ? new[] { pr, pr with { number = 2, html_url = "https://github.com/qa/metodo/pull/2", updated_at = now.AddDays(-30) } }
+                    : LargeHistory && path.Contains("?state=all", StringComparison.Ordinal)
+                    ? Enumerable.Range(1, 100).Select(n => pr with { number = n, html_url = $"https://github.com/qa/metodo/pull/{n}", updated_at = n == 1 ? now : now.AddDays(-30) }).ToArray()
+                    : path.Contains("?state=", StringComparison.Ordinal) ? (object)new[] { pr } : pr;
             }
         }
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
