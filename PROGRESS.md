@@ -1,3 +1,7 @@
+## [2026-10-16] - Codex (Tear) - ajuste do modelo de HU do método
+
+- Por decisão atualizada do PO, a spec de integração Git passa a representar tasks como work items de topo, sem `ParentId`, e HU pelo campo personalizado **HU** e tag homônima, sem work item próprio. Mantido o nome literal **ID do metodo**, sem acento. Não há D100 nesta branch nem referência a ela na spec. Conferidas as referências e `git diff --check`; somente documentação, sem testes de produto ou alteração do prisma-dev/banco. Próximo passo: revisão do Maestro/PO.
+
 ## [2026-10-16] - Codex (Tear) - proposta de integração Git do método
 
 - Tarefa 8, somente documentação, em `docs/spec-metodo-git` a partir de `origin/main` (`2c3816c`). Criada `specs/metodo-git-integration.md` como draft conforme o template e os contratos recebidos: fases 2/3, assinatura/idempotência, vínculo explícito > branch > título, matriz aplicada pela API, reconciliação, gate `prisma/autorizacao`, deploy, caso Detran e modelo de dados proposto.
