@@ -2,6 +2,7 @@
 
 Atualizado em 2026-10-16, por Tear, tarefa 8.
 
+- Ajuste posterior solicitado pelo PO: tasks de topo (`ParentId` nulo), HU somente no campo **HU** e tag homônima; nome literal **ID do metodo** preservado. Spec corrigida em Context, Invariants e Data Impact. D100 ausente nesta branch, sem referência na spec. Ajuste exclusivamente documental, com `git diff --check`, sem tocar prisma-dev/banco.
 - Branch `docs/spec-metodo-git`, baseada em `origin/main` (`2c3816c`): entrega exclusivamente documental. Spec `specs/metodo-git-integration.md` em draft, com todas as seções do template, fases 2/3, 24 critérios e plano de testes; PROGRESS atualizado.
 - Fontes lidas: AGENTS, DECISIONS, ROADMAP, duas entradas mais recentes de PROGRESS, template e `prisma.md`/`fluxo.md`/`local.md` no handoff externo. Mapeamento do PO e caso Detran preservados; nenhuma dependência de documentos versionados para identificar PR.
 - Validação documental aprovada; não houve testes de produto, alterações de código/schema, containers ou banco. Nenhuma falha técnica nesta tarefa. Compatibilidade com D91, autorização/gate, múltiplos PRs, retenção e parâmetros operacionais permanecem perguntas para aprovação, não decisões tomadas por agente.

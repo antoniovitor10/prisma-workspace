@@ -20,12 +20,14 @@ Mapeamento já decidido pelo PO:
 
 | Conceito do método | Representação no Prisma |
 |---|---|
-| Task `T-0001` | Work item com valor no campo personalizado de projeto **ID do metodo**; ID único dentro do projeto, não global |
-| HU | Work item pai do tipo **Historia**; tasks como subitens |
+| Task `T-0001` | Work item de topo do quadro, sem `ParentId`, com valor no campo personalizado de projeto **ID do metodo** (sem acento); ID único dentro do projeto, não global |
+| HU `HU-0001` | Valor no campo personalizado de projeto **HU** da task e tag com o mesmo nome, por exemplo **HU-0001**; a HU não vira work item |
 | Status | Colunas **Backlog**, **Pronta**, **Em desenvolvimento**, **Em revisao**, **Em teste**, **Concluida**, **Bloqueada** |
 | PR na fase 1 | Comentário padronizado e campo personalizado **PR**, gravados por `vincular_pr` |
 
 Os nomes da API do método usam `backlog`, `pronta`, `em-desenvolvimento`, `em-revisao`, `em-teste`, `concluida` e `bloqueada`. A integração resolve cada um para um `StageId` configurado no quadro, mantendo a coluna como status canônico (D65/D89); não cria um segundo status no work item. Não converte automaticamente essas sete colunas em categorias abertas/concluídas: esse mapeamento precisa ser validado antes da implementação.
+
+Atualização do PO em 2026-10-16: as tasks ficam no topo para aparecerem no Kanban, cuja consulta lista itens sem pai (`WorkItemRepository.cs`, filtro por `ParentId`). O vínculo com a HU usa o campo **HU** e a tag, sem hierarquia de work items.
 
 No modo local, status e histórico ficam no frontmatter da task. No modo Prisma, as tasks não têm `status:` e não há escrita de volta nos arquivos. O status próprio da HU permanece em seu documento, conforme o contrato; mover uma task não conclui automaticamente a HU.
 
@@ -143,6 +145,7 @@ Destino já alcançado pelo mesmo fato é resultado sem movimento. Origem incomp
 ## Invariants
 
 - Status da task é a coluna atual, nunca outro campo nem frontmatter duplicado.
+- Tasks do método são work items de topo, sem `ParentId`; a HU é representada pelo campo **HU** e pela tag correspondente, nunca por um work item pai.
 - ID do método resolve dentro do projeto e tenant; mesmo `T-0007` em dois projetos não cruza escopos.
 - Agente nunca autoriza `backlog/pronta → em-desenvolvimento`, inclusive por chamada REST direta, lote, troca de coluna ou manipulação de papel/canal.
 - Criar branch, abrir PR, vincular PR ou receber webhook não supre autorização humana ausente.
@@ -201,7 +204,7 @@ Modelo **proposto**, sem criação de entidades, SQL, migration ou alteração d
 | `GitStatusPublication` | Repositório/PR/SHA, decisão e versão, contexto, estado de publicação e retentativas; saída durável para RF-07 |
 | Histórico existente | Referência ao fato/entrega/rodada, papel e canal confiáveis; preservar D34/D47 e retenção permanente |
 
-O campo **ID do metodo** é uma definição personalizada no projeto e um valor na task. Exigir unicidade por projeto e busca inequívoca sem substituir o ID interno do work item. O campo **PR** e o comentário da fase 1 não suportam sozinhos múltiplos PRs nem unicidade; projetar apresentação a partir dos vínculos estruturados após aprovar a compatibilidade.
+O campo **ID do metodo** (nome literal, sem acento) é uma definição personalizada no projeto e um valor na task. Exigir unicidade por projeto e busca inequívoca sem substituir o ID interno do work item. Cada task é um work item de topo, com `ParentId` nulo. A referência à HU fica no valor do campo personalizado de projeto **HU**, por exemplo **HU-0001**, e numa tag com o mesmo nome; não criar work item para a HU nem usar subitens para esse vínculo. O campo **PR** e o comentário da fase 1 não suportam sozinhos múltiplos PRs nem unicidade; projetar apresentação a partir dos vínculos estruturados após aprovar a compatibilidade.
 
 Implementar este modelo provavelmente exigirá migrations aditivas; o desenho final, índices, backfill e estratégia de retenção precisam de **G-MIGRATION**. Mudança na estrutura imutável de auditoria exige **G-HISTORY**. Nada é aprovado por esta proposta.
 
