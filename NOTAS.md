@@ -1,3 +1,13 @@
+# Continuidade — horas-3 após primeiro full interrompido (2026-10-16)
+
+- Produto congelado/validado noSHA918c626; remoto atual80ddb56 contém só testes/docs posteriores. Build82,33sPASS/xUnit383/38364,46s; matrizHTTP inicial39/39PASS590,95s; UIbuilder3x19/19PASS190,45s. Tiposfixture11,54s/lint1,17s e coleta47casos12,13sPASS. GatesUI completos tsc-b97,11s/Vitest155/155286,65s/build107,77s verdes.
+- Full207 comSQLversionado/bancoQA limpo foi INTERROMPIDA comSIGINT próprio após24pass/1timeout/182não executados. Novo caso HTTP membro tinha arranjo+primeira leitura fria no corpo30s; stack na primeira consulta de cartões. Sem falha de asserção de conteúdo. NÃO é gateverde. Nova fixture hours agora tem setup30s próprio, corpo30s intacto e métricas de cadafase;62asserts ASTidênticos. Ainda não executada no browser nessa forma. UIbuilder muda data fixa por ontemBrasília para continuar na janela30dias.
+- CPU+QA liberados14:11. Prova temCPUaté14:36 para fullMetodopróprio; aguardar liberação explícita e reservarantes de qualquerbrowser/suítepesada. Agora só edição/leitura/checagens leves. AppQA3110imagem918c626healthy, SQL3111bancoPrismaWorkspace_QA; unidadePrisma_BoardColumns_Horas2 preservada. Próximafull deve terNOVObackup/reset SOMENTEQA; NUNCAdev/prod.
+- Próximo: tipos/lint finais das alterações de teste, commit/push, slotCPU para prova focada a frio (mesmaimagem, reiniciarSÓQAapp sepreciso) e nova full207 limpandoQA. Não repetirxUnit/Vitest semmudançaproduto/novofalha. Falta1PROGRESS da ENTREGA final, inventário externo horas-3.md e docspúblicos finais, imagemQA comSHAfinal/hashigual, revisõesPrumo+Lupa exatas; sóentão PRONTO, esperarPUBLICADO e C1–C6. Goal ativo, espera nãoé bloqueio.
+- Logs e helpers privados .runlogs/horas-3; leitura segura via show-safe-log.py BASENAME; nunca logbruto/env/authstate. Runner novo full deve usar label2 para preservaratentativa1. Não usar run-local/test-server-dev antigos destecheckout: apontamdev. Backup anteriorQA28,43MB600verificado. Skillfind-docs consultouPlaywrightoficial sobre timeoutpróprio de fixtures, sem segredo.
+
+## Histórico preservado
+
 # Continuidade — horas-3, escopo ampliado nominal (2026-10-16)
 
 - O Maestro autorizou nominalmente PreparedReports/TimeReport e o inventário de TODOS os somatórios B07 (FILA08:25BRT). Não aguardar nova autorização. A janela de silêncio foi cancelada no GOALS; continua obrigatório reservar CPU e QA e nunca usar prisma-dev/produção.

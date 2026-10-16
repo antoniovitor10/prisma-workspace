@@ -20,7 +20,7 @@ A decisão abaixo usa DR = `specs/dashboards-reports.md:101–124`, TT = `specs/
 | --- | --- |
 | Relatório organizacional de horas | Já restrito; passa a compartilhar a política e conferir projetos/negações antes de somar. `OrganizationHoursReportFeature.cs:57`. DR/UP. |
 | Construtor, todas as fontes e métricas | Restringir antes de linhas/métricas e horas embutidas. `ReportBuilderFeature.cs:319`. DR. |
-| Relatório salvo e CSV | Recorte do ator autenticado em RunSaved/Export; negação da definição prevalece. `ReportBuilderFeature.cs:214`. DR122–124. |
+| Relatório salvo e CSV | Recorte do ator autenticado em RunSaved/Export; negação da definição prevalece. `ReportBuilderFeature.cs:215`. DR122–124. |
 | Preparados | Restringir itens, solicitações e horas próprias na mesma tarefa antes de Build. `PreparedReportsAndDashboardsFeature.cs:67`. DR. |
 | Dashboard gerencial | Delega aos preparados com o mesmo ator. `PreparedReportsAndDashboardsFeature.cs:236`. DR. |
 | Dashboard de projeto | Mesmo recorte dos preparados e da segunda consulta de tarefas. `PreparedReportsAndDashboardsFeature.cs:248`. DR. |
@@ -61,11 +61,22 @@ A decisão abaixo usa DR = `specs/dashboards-reports.md:101–124`, TT = `specs/
 | `npm run lint` | 0 erros, 12 avisos anteriores | 1,56s |
 | Docker candidato918c626 | Passou; health200/login200 | 281,77s |
 | Matriz HTTP inicial desktop/mobile, sem retries | 39/39, nenhum skip; antes da divisão do caso lento | 590,95s nativo;593,77s runner |
-| Matriz HTTP após divisão | Pendente | Pendente |
-| UI do construtor, três repetições | Pendente no código ampliado | Pendente |
-| `npx tsc -b`, Vitest threads, build frontend local | Pendente repetição final | Pendente |
-| E2E completo com banco QA limpo | Pendente | Pendente |
+| Matriz HTTP após divisão/fixture de arranjo | Pendente na próxima full | Pendente |
+| UI do construtor, três repetições | 19/19,0skip/0falha/0retry; maior caso14,46s | 190,45s nativo;193,31s runner |
+| `npx tsc -b` | Passou | 97,11s |
+| Vitest threads,42arquivos | 155/155 | 286,65s |
+| `npm run build` local | Passou | 107,77s |
+| E2E completo com banco QA limpo, tentativa1 | Interrompido:24pass,1timeout novo,182não executados | 284,30s até interrupção |
 
 A primeira tentativa HTTP passou três casos funcionais e parou em preparação: o prefixo de uma fixture tinha espaço e gerou e-mail inválido. O prefixo foi corrigido; não se alterou produto para acomodar o teste. Comandos manuais iniciais de tipos usaram configuração de módulo incompatível ou omitiram `--types node`; o comando válido acima passou. Não foi usado `tsc --noEmit`.
 
 Somente prisma-qa app3110/SQL3111; xUnit usa Prisma_BoardColumns_Horas2. A imagem candidata contém exatamente918c626, com health/login200. Prisma-dev e produção intocados. Revisão e QA independente do SHA final ainda necessários. O N+1 de ProjectAccessService permanece reservado ao C6; não foi antecipado. Firefox/WebKit, provedor real de IA e produção não verificados.
+
+
+## Arranjo da matriz e consultas frias
+
+A primeira full foi interrompida após um timeout de30s no primeiro cenário HTTP de membro, na primeira leitura após criar três pessoas, duas equipes e seis intervalos. Nenhuma asserção de conteúdo falhou naquele caso; o tempo de preparação estava sendo somado às leituras frias. A próxima rodada medirá as etapas separadamente antes de fechar o diagnóstico de tempo.
+
+A fixture `hours`, exclusiva deste novo spec, agora tem seu próprio prazo de30s para o arranjo. O corpo continua com30s e a limpeza continua na fixture request com20s. Anotações `hours-setup-ms` e `hours-body-ms` expõem os custos separados. É o mecanismo documentado de [timeout de fixture do Playwright](https://playwright.dev/docs/test-fixtures#fixture-timeout), sem aumentar o timeout do cenário. A comparação AST confirmou as mesmas62expressões de asserção antes/depois. Tipos e lint passaram após a mudança; browser/full ainda pendentes nessa forma.
+
+O spec de UI do construtor cria seus intervalos em ontem de Brasília, para que continuem no período padrão de30dias quando o CI rodar em outro mês. As asserções continuam exigindo1h própria e2h do colega. Nenhum dado do seed é usado como precondição.
