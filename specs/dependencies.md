@@ -2,6 +2,9 @@
 
 **Status:** approved
 
+> **Atualização do PO em 2026-10-14 (D99):** dependências, pré-requisitos e bloqueios permanecem **visíveis** no detalhe da tarefa, com o comportamento atual. A ocultação descrita nesta spec e na D59 fica **substituída**; a D99 é o G-SCOPE de reativação. O comportamento as-built passa a ser o contrato e deve ser coberto por testes de ponta a ponta. Qualquer expansão do módulo exige nova decisão.
+
+
 **Revisão funcional:** aprovada explicitamente por PO em 2026-08-24
 
 **Homologação manual:** pendente

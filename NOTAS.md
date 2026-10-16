@@ -1,3 +1,14 @@
+# Continuidade — proposta de integração Git do método
+
+Atualizado em 2026-10-16, por Tear, tarefa 8. Registro histórico da branch docs/spec-metodo-git: a D100 e a D101 foram registradas depois, em outras branches.
+
+- Ajuste posterior solicitado pelo PO: tasks de topo (`ParentId` nulo), HU somente no campo **HU** e tag homônima; nome literal **ID do metodo** preservado. Spec corrigida em Context, Invariants e Data Impact. D100 ausente nesta branch, sem referência na spec. Ajuste exclusivamente documental, com `git diff --check`, sem tocar prisma-dev/banco.
+- Branch `docs/spec-metodo-git`, baseada em `origin/main` (`2c3816c`): entrega exclusivamente documental. Spec `specs/metodo-git-integration.md` em draft, com todas as seções do template, fases 2/3, 24 critérios e plano de testes; PROGRESS atualizado.
+- Fontes lidas: AGENTS, DECISIONS, ROADMAP, duas entradas mais recentes de PROGRESS, template e `prisma.md`/`fluxo.md`/`local.md` no handoff externo. Mapeamento do PO e caso Detran preservados; nenhuma dependência de documentos versionados para identificar PR.
+- Validação documental aprovada; não houve testes de produto, alterações de código/schema, containers ou banco. Nenhuma falha técnica nesta tarefa. Compatibilidade com D91, autorização/gate, múltiplos PRs, retenção e parâmetros operacionais permanecem perguntas para aprovação, não decisões tomadas por agente.
+- Restrição da demonstração: até 09:30 de Brasília em 2026-10-16, não reiniciar/recriar/limpar `prisma-dev` (3100) ou seu banco, nem executar E2E contra ele. Esta tarefa não tocou o ambiente. Fazer checkout de documentação não troca a imagem já em execução.
+- Próximo passo: Maestro/PO revisar a spec, cadastrar/vincular história e decidir pendências antes de G-SPEC e dos gates de schema/workflow/histórico aplicáveis. Fase 1 do MCP segue em branch separada do Maestro; não houve merge, deploy, push na main ou aprovação de gate.
+
 ## T7 - correção de horas (2026-10-15)
 
 - Branch fix/time-tracking-20261015 de main 2c3816c; commits funcionais c99d18e / 25654af, cobertura 9a4f448, identificador interno final d7758c1. Sem migration, main ou produção. Contagem sem duplicar, CRUD próprio auditado, busca de tarefas e dia de Brasília implementados; contrato em specs/time-tracking.md.
@@ -6,7 +17,7 @@
 - MCR Playwright 1.62.1 network none contorna ERR_NETWORK_CHANGED do host; transporte Unix/HTTP para 3100, réplica API 3115 e Unix/SQL somente durante suíte completa para fake IA 3103. Drivers em .runlogs/e2e-l08 e .runlogs/time-fixes, env da réplica ignorado 600. Exigir login 200 além do health: a primeira preparação perdeu o transporte SQL e a API precisou restart próprio. Temporários/proxies encerrados após concluir.
 - Artefatos da suíte antes do novo reset: .runlogs/e2e-l08/t7-full-verified.json e .runlogs/time-fixes/full-failures. Imagem final: t7-final-image.json. Relatório completo com tempos/limites e lista de arquivos em docs/time-tracking-fixes-validation.md. Próximo: Maestro revisar, Farol QA visual; PO decide rateio/limite/administração de horas. Não ampliar para criação manual, relatório B07 ou falhas antigas sem nova tarefa.
 
-# Continuidade — integração feat/main no servidor
+## Registro anterior — integração feat/main no servidor
 
 Atualizado em 2026-10-13, por Tear, tarefa 3.
 
