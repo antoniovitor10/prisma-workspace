@@ -115,6 +115,26 @@ test.describe('integração Git do método — fase 2a', () => {
       expect((await tokenHumano.get('/api/method/me')).status()).toBe(401);
     });
 
+    test('rotação por PrincipalId não emite para principal de outro papel ou de outro projeto (revisão git-1 MÉDIO)', async () => {
+      const outro = await createMethodProject(human, 'rotacao');
+      const tentativas = [
+        ['humano reaproveitando principal do agente', { name: 'x', role: 'humano', validDays: 1, principalId: p.agentPrincipalId }],
+        ['agente com principal de outro projeto', { name: 'x', role: 'agente', validDays: 1, principalId: outro.agentPrincipalId }],
+        ['sistema reaproveitando principal do agente', { name: 'x', role: 'sistema', validDays: 1, principalId: p.agentPrincipalId }],
+        ['agente com principal do sistema', { name: 'x', role: 'agente', validDays: 1, principalId: p.systemPrincipalId }],
+      ] as const;
+      for (const [nome, body] of tentativas) {
+        const r = await human.post(`/api/projects/${p.projectId}/method/tokens`, body);
+        expect([400, 403, 404, 409], `${nome}: veio ${r.status()}`).toContain(r.status());
+      }
+      // Rotação legítima: mesmo principal, mesmo papel, mesmo projeto, preserva a identidade.
+      const rot = await human.json<{ metadata: { principalId: string }; token: string }>(human.post(`/api/projects/${p.projectId}/method/tokens`,
+        { name: 'agente rotacionado', role: 'agente', validDays: 1, principalId: p.agentPrincipalId }));
+      expect(rot.metadata.principalId).toBe(p.agentPrincipalId);
+      const me = await (await tokenSession(rot.token)).json<{ userId: string }>((await tokenSession(rot.token)).get('/api/method/me'));
+      expect(me.userId).toBe(`method:${p.agentPrincipalId}`);
+    });
+
     test('token de método não acessa outro projeto nem rotas fora do escopo (CA-2A-02/23)', async () => {
       const outro = await createMethodProject(human, 'escopo');
       const r = await agent.get(`/api/projects/${outro.projectId}/method/tasks`);
