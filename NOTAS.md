@@ -1,3 +1,11 @@
+# Continuidade — F0 Método Git 2a (Forja)
+
+- Branch feat/metodo-git, worktree /home/agentes/projetos/prisma-wt/metodo-git. D102 fe254ab/AVISO Maestro libera2a provisoriamente; git-spec-2 7617fdd APROVADO COM RESSALVAS só baixas, todas incorporadas no F0. Spec approved somente2a, produção desligada, confirmação do PO antes de habilitar institucionalmente. Maingit8ec6699 integrada por merge052da4f; US-METODO-GIT-001 presente e catálogo preservado.
+- Interfaces/DTOs/enums F0 e rotas estão em docs/method-git/contracts-phase2a.md. Token pmt_+43base64url; /api/method/me descobre escopo, JWT recusado pelo MCP, identidade remota decide role/authenticationKind. Estado da task continua StageId; autorização/bloqueio/ciclo separados, sem principal humano emprestado. InstallationId opcional para webhook por repositório. IMethodMoveService da Forja aplica efeito/histórico/fato/entrega atomicamente; B não duplica história.
+- Donos: Forja F0/A/UI-C/F1/DI/DbContext/migration/handlers existentes/docs. Ponte B/GitHub/store/worker/controllersGit/testesB e TODO tools/prisma-mcp/src. Prova xUnit adversariais MetodoGit/**, E2E/fixtures da jornada, tools/test e README/DEMO. Não adicionar arquivo alheio ao commit. Prova já tem helpers/fixtures novos não rastreados na mesma worktree; preservar.
+- Build e xUnit320/320 (9 novosF0) passaram. API ainda é a base338918b (só interfaces novas; nenhum endpoint/serviço2a ligado). Nenhuma migration nova. Baseline E2E Prova119+6skips/zero falhas. Próximo: entrega/revisãoF0 antes de implementarA/B/C, depois F1 e QA final. Não declarar PRONTO-PROD só por este checkpoint.
+- Prisma-metodo ativo em3130/3132/bridge10.245.130.0/24; bancos PrismaMetodo_E2E e Prisma_BoardColumns_Metodo_Seeded. Config/segredos externos e runner em ~/projetos/prisma-handoff/goals/runtime/prisma-metodo (modos privados, nunca imprimir/copiar valores). Runner ajustado com TCP loopback3130→app8080 para Clipboard seguro; alias metodo-tests:3133 recebe fakeIA. Auth+chat2/2 após ajuste. Não usar scripts antigos fixos3100/3102. Nunca operar prisma-dev, prisma-qa ou produção nesta frente.
+
 # Continuidade — Forja, ambiente e correção git-spec-2
 
 Atualizado em 2026-10-16, goal METODO-GIT fase 2a.

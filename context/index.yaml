@@ -23,6 +23,33 @@ exclusions:
   - "**/*.pdb"
 
 domains:
+  method_git:
+    spec: "specs/metodo-git-integration.md"
+    stories:
+      - "stories/US-METODO-GIT-001.md"
+    code:
+      - "src/Prisma.Workspace.Domain/Enums/MethodEnums.cs"
+      - "src/Prisma.Workspace.Domain/Entities/MethodSecurity.cs"
+      - "src/Prisma.Workspace.Domain/Entities/MethodGit.cs"
+      - "src/Prisma.Workspace.Application/Features/MethodSecurity"
+      - "src/Prisma.Workspace.Application/Features/MethodGit"
+      - "src/Prisma.Workspace.Infrastructure/Identity/MethodTokens"
+      - "src/Prisma.Workspace.Infrastructure/Services/MethodGit"
+      - "src/Prisma.Workspace.Api/Authentication"
+      - "src/Prisma.Workspace.Web/src/features/method-git"
+      - "tools/prisma-mcp"
+    tests:
+      - "tests/Prisma.Workspace.Tests/MetodoGit"
+      - "src/Prisma.Workspace.Web/e2e/method-git-phase2a.spec.ts"
+      - "tools/prisma-mcp/test"
+    gates:
+      g_spec: "2a-only: GOALS/D102 delegated Maestro authorization, git-spec-2 reviewed-7617fdd; production disabled"
+      g_migration: "2a-only additive eleven tables and functional Down, GOALS/D102; no institutional operation"
+      g_completion: "PRONTO-PROD only after independent review and QA on final sha"
+      backend_build: "dotnet build Prisma.Workspace.sln"
+      backend_test: "dotnet test tests/Prisma.Workspace.Tests"
+      frontend_types: "npx tsc -b"
+      frontend_e2e: "prisma-metodo only; full suite before PRONTO-PROD"
   ai_conversation_experience:
     spec: "specs/ai-conversation-experience.md"
     stories:
