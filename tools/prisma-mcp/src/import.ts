@@ -5,7 +5,7 @@ import { PrismaApi, type WorkItemDto } from './api.js';
 import { FIELD_NAMES, isMetodoStatus, type MetodoStatus } from './mapping.js';
 import { readMetodo, type MetodoHu, type MetodoTask } from './metodo.js';
 import { ensureProjeto, type ProjetoSetup } from './setup.js';
-import { assertTransition } from './rules.js';
+import { assertCreationStatus, assertTransition } from './rules.js';
 
 export interface ImportOptions { dryRun?: boolean; sincronizarStatus?: boolean; }
 export interface ImportSummary {
@@ -53,9 +53,17 @@ export async function importMetodo(directory: string, options: ImportOptions = {
     }
   }
 
+  // Migrar frontmatter também respeita o papel: uma task nova não pode
+  // nascer autorizada por iniciativa do agente. Validar o lote inteiro
+  // antes de criar qualquer HU/task ou atualizar conteúdo existente.
+  for (const source of [...metodo.hus, ...metodo.tasks]) {
+    if (!byId.has(source.id)) {
+      assertCreationStatus(api.config.role, isMetodoStatus(source.status) ? source.status : 'backlog');
+    }
+  }
+
   // A opção de sincronização não pode contornar a autorização por papel.
-  // A importação inicial migra o estado legado; alterar um item existente
-  // continua sujeito à matriz, inclusive na execução do CLI.
+  // Alterar um item existente continua sujeito à matriz no CLI.
   if (options.sincronizarStatus) {
     for (const source of [...metodo.hus, ...metodo.tasks]) {
       const item = byId.get(source.id);
