@@ -232,7 +232,7 @@ public class RunSavedReportQueryHandler : IRequestHandler<RunSavedReportQuery, R
             request.ActorId, report.ProjectId, _permissions, _access, ct);
         return await _executor.RunAsync(
             report.ProjectId, report.Source, report.Visualization,
-            ReportDefinitionMapper.Definition(report), ct);
+            ReportDefinitionMapper.Definition(report), request.ActorId, ct);
     }
 }
 
@@ -260,7 +260,7 @@ public class RunAdHocReportQueryHandler : IRequestHandler<RunAdHocReportQuery, R
             request.ProjectId, request.Source, request.Visualization,
             "Prévia", request.Definition, _projects, ct);
         return await _executor.RunAsync(
-            request.ProjectId, request.Source, request.Visualization, request.Definition, ct);
+            request.ProjectId, request.Source, request.Visualization, request.Definition, request.ActorId, ct);
     }
 }
 
@@ -305,18 +305,72 @@ public class ReportExecutor
     private readonly IAnalyticsRepository _analytics;
     private readonly IUserDirectory _users;
     private readonly IProjectRepository _projects;
-    public ReportExecutor(
-        IAnalyticsRepository analytics, IUserDirectory users, IProjectRepository projects)
-        => (_analytics, _users, _projects) = (analytics, users, projects);
+    private readonly IOrganizationContext _organization;
+    private readonly IOrganizationRepository _organizations;
+    private readonly ITeamRepository _teams;
+    private readonly IPermissionService _permissions;
+    private readonly IProjectAccessService _access;
+    public ReportExecutor(IAnalyticsRepository analytics, IUserDirectory users, IProjectRepository projects,
+        IOrganizationContext organization, IOrganizationRepository organizations, ITeamRepository teams,
+        IPermissionService permissions, IProjectAccessService access)
+        => (_analytics, _users, _projects, _organization, _organizations, _teams, _permissions, _access)
+            = (analytics, users, projects, organization, organizations, teams, permissions, access);
+
+    private sealed record DataScope(string ActorId, bool OwnOnly, IReadOnlySet<Guid>? TeamIds, IReadOnlySet<string>? UserIds)
+    {
+        public bool IncludesTeam(WorkItem item) => TeamIds is null
+            || TeamIds.Contains(item.TeamId ?? item.Board.TeamId ?? Guid.Empty);
+        public bool Includes(TimeEntry entry) => IncludesTeam(entry.WorkItem)
+            && (!OwnOnly || entry.UserId == ActorId);
+        public bool Includes(WorkItem item) => IncludesTeam(item) && (!OwnOnly
+            || item.ResponsibleId == ActorId || item.Assignees.Any(a => a.UserId == ActorId)
+            || item.TimeEntries.Any(e => e.UserId == ActorId));
+    }
+
+    private async Task<DataScope> ResolveScopeAsync(string actorId, Guid? projectId, CancellationToken ct)
+    {
+        var organizationId = _organization.RequireOrganizationId();
+        var member = await _organizations.GetMemberAsync(organizationId, actorId, ct);
+        if (member is null || !member.IsActive || member.Role == OrganizationRole.ExternalRequester)
+            throw new AcessoNegadoException();
+        await ReportAuthorization.EnsureViewAsync(actorId, projectId, _permissions, _access, ct);
+        var grants = await _organizations.GetGrantsAsync(organizationId, ct);
+        if (grants.Any(g => g.UserId == actorId && !g.IsAllowed
+            && g.Permission == PlatformPermission.ViewReport
+            && (g.Scope is PermissionScope.Organization or PermissionScope.Report) && g.ScopeId is null))
+            throw new AcessoNegadoException();
+        var ownOnly = member.Role is not (OrganizationRole.Administrator or OrganizationRole.Manager);
+        if (ownOnly) return new(actorId, true, null, new HashSet<string> { actorId });
+        var denied = grants.Where(g => g.UserId == actorId && !g.IsAllowed
+            && g.Permission == PlatformPermission.ViewReport && g.Scope == PermissionScope.Team
+            && g.ScopeId.HasValue).Select(g => g.ScopeId!.Value).ToHashSet();
+        var visibleTeams = (await _teams.GetAllWithMembersAsync(ct))
+            .Where(t => (member.Role == OrganizationRole.Administrator || t.LeaderId == actorId)
+                && !denied.Contains(t.Id)).ToList();
+        var teams = visibleTeams.Select(t => t.Id).ToHashSet();
+        var administrator = member.Role == OrganizationRole.Administrator;
+        if (administrator) teams.Add(Guid.Empty);
+        return new(actorId, false, teams, administrator ? null
+            : visibleTeams.SelectMany(t => t.Members).Select(m => m.UserId).ToHashSet());
+    }
+
+    private async Task<IReadOnlyList<WorkItem>> VisibleItemsAsync(
+        IReadOnlyList<WorkItem> items, DataScope scope, CancellationToken ct)
+    {
+        var projects = await _access.GetAccessibleProjectIdsAsync(items.Select(i => i.Board.ProjectId), scope.ActorId, ct);
+        return items.Where(i => projects.Contains(i.Board.ProjectId) && scope.Includes(i)).ToList();
+    }
 
     public async Task<ReportExecutionDto> RunAsync(
         Guid? projectId,
         ReportDataSource source,
         ReportVisualization visualization,
         ReportDefinitionDto definition,
+        string actorId,
         CancellationToken ct)
     {
-        var rows = await SourceRowsAsync(source, projectId, definition, ct);
+        var scope = await ResolveScopeAsync(actorId, projectId, ct);
+        var rows = await SourceRowsAsync(source, projectId, definition, scope, ct);
         var sourceCount = rows.Count;
         rows = ApplyPeriod(source, rows, definition.From, definition.To);
         foreach (var filter in definition.Filters)
@@ -387,56 +441,89 @@ public class ReportExecutor
     }
 
     private async Task<List<Dictionary<string, object?>>> SourceRowsAsync(
-        ReportDataSource source, Guid? projectId, ReportDefinitionDto definition, CancellationToken ct)
+        ReportDataSource source, Guid? projectId, ReportDefinitionDto definition, DataScope scope, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
         var from = definition.From.HasValue ? TimeTrackingDay.Start(definition.From.Value) : DateTimeOffset.MinValue;
         var to = definition.To.HasValue ? TimeTrackingDay.Start(definition.To.Value.AddDays(1)) : DateTimeOffset.MaxValue;
-        decimal Hours(TimeEntry entry) => TimeTrackingDay.SecondsInRange(entry.StartedAt, entry.EndedAt ?? now, from, to) / 3600m;
+        // O mesmo recorte vale para linhas, métricas e horas embutidas em outras fontes.
+        decimal Hours(TimeEntry entry) => !scope.OwnOnly || entry.UserId == scope.ActorId
+            ? TimeTrackingDay.SecondsInRange(entry.StartedAt, entry.EndedAt ?? now, from, to) / 3600m : 0;
         var users = await _users.GetAllAsync(ct);
         var names = users.ToDictionary(x => x.Id, x => x.UserName ?? x.Email ?? x.Id);
-        return source switch
+        switch (source)
         {
-            ReportDataSource.WorkItems => (await _analytics.GetWorkItemsAsync(projectId, ct))
-                .Select(item => TaskRow(item, names, Hours)).ToList(),
-            ReportDataSource.ExternalRequests => (await _analytics.GetExternalRequestsAsync(projectId, ct))
-                .Select(request => RequestRow(request, Hours)).ToList(),
-            ReportDataSource.Projects => (await _analytics.GetProjectsAsync(ct))
-                .Where(x => !projectId.HasValue || x.Id == projectId).Select(ProjectRow).ToList(),
-            ReportDataSource.Teams => (await _analytics.GetTeamsAsync(ct))
-                .Where(x => !projectId.HasValue || x.Projects.Any(link => link.ProjectId == projectId.Value))
-                .Select(TeamRow).ToList(),
-            ReportDataSource.Users => await UserRowsAsync(projectId, users, names, Hours, ct),
-            ReportDataSource.Sprints => (await _analytics.GetSprintsAsync(projectId, ct))
-                .Select(SprintRow).ToList(),
-            ReportDataSource.TimeEntries => (await _analytics.GetTimeEntriesAsync(projectId, ct))
-                .Select(entry => TimeRow(entry, names, Hours)).ToList(),
-            _ => []
-        };
+            case ReportDataSource.WorkItems:
+                return (await VisibleItemsAsync(await _analytics.GetWorkItemsAsync(projectId, ct), scope, ct))
+                    .Select(item => TaskRow(item, names, Hours)).ToList();
+            case ReportDataSource.ExternalRequests:
+            {
+                var requests = await _analytics.GetExternalRequestsAsync(projectId, ct);
+                var items = (await VisibleItemsAsync(requests.Select(r => r.WorkItem).ToList(), scope, ct))
+                    .Select(i => i.Id).ToHashSet();
+                return requests.Where(r => items.Contains(r.WorkItem.Id)).Select(r => RequestRow(r, Hours)).ToList();
+            }
+            case ReportDataSource.Projects:
+            {
+                var projects = await _analytics.GetProjectsAsync(ct);
+                var ids = await _access.GetAccessibleProjectIdsAsync(projects.Select(p => p.Id), scope.ActorId, ct);
+                return projects.Where(p => ids.Contains(p.Id) && (!projectId.HasValue || p.Id == projectId))
+                    .Select(ProjectRow).ToList();
+            }
+            case ReportDataSource.Teams:
+            {
+                var teams = await _analytics.GetTeamsAsync(ct);
+                var ids = await _access.GetAccessibleProjectIdsAsync(teams.SelectMany(t => t.Projects)
+                    .Select(p => p.ProjectId), scope.ActorId, ct);
+                return teams.Where(t => (scope.TeamIds is null || scope.TeamIds.Contains(t.Id))
+                        && t.Projects.Any(p => ids.Contains(p.ProjectId) && (!projectId.HasValue || p.ProjectId == projectId)))
+                    .Select(t => TeamRow(t, ids, projectId)).ToList();
+            }
+            case ReportDataSource.Users:
+                return await UserRowsAsync(projectId, users, names, Hours, scope, ct);
+            case ReportDataSource.Sprints:
+            {
+                var sprints = await _analytics.GetSprintsAsync(projectId, ct);
+                var ids = await _access.GetAccessibleProjectIdsAsync(sprints.Select(s => s.ProjectId), scope.ActorId, ct);
+                return sprints.Where(s => ids.Contains(s.ProjectId)
+                        && (scope.TeamIds is null || scope.TeamIds.Contains(s.TeamId ?? Guid.Empty)))
+                    .Select(SprintRow).ToList();
+            }
+            case ReportDataSource.TimeEntries:
+            {
+                var entries = await _analytics.GetTimeEntriesAsync(projectId, ct);
+                var ids = await _access.GetAccessibleProjectIdsAsync(entries.Select(e => e.WorkItem.Board.ProjectId), scope.ActorId, ct);
+                return entries.Where(e => ids.Contains(e.WorkItem.Board.ProjectId) && scope.Includes(e))
+                    .Select(entry => TimeRow(entry, names, Hours)).ToList();
+            }
+            default: return [];
+        }
     }
 
     private async Task<List<Dictionary<string, object?>>> UserRowsAsync(
         Guid? projectId, IReadOnlyList<UserSummary> users,
-        IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours, CancellationToken ct)
+        IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours, DataScope scope, CancellationToken ct)
     {
-        var items = await _analytics.GetWorkItemsAsync(projectId, ct);
-        var visibleUsers = users.AsEnumerable();
-        if (projectId.HasValue)
+        var items = await VisibleItemsAsync(await _analytics.GetWorkItemsAsync(projectId, ct), scope, ct);
+        var allowed = items.SelectMany(i => i.Assignees.Select(a => a.UserId))
+            .Concat(items.SelectMany(i => i.TimeEntries.Where(e => !scope.OwnOnly || e.UserId == scope.ActorId).Select(e => e.UserId)))
+            .Concat(items.Select(i => i.ResponsibleId).OfType<string>()).ToHashSet();
+        if (scope.OwnOnly) allowed = [scope.ActorId];
+        else
         {
-            var project = await _projects.GetByIdWithMembersAsync(projectId.Value, ct);
-            var allowed = new HashSet<string>();
-            if (project is not null)
+            var candidates = scope.UserIds ?? users.Select(u => u.Id).ToHashSet();
+            if (projectId.HasValue)
             {
-                allowed.Add(project.OwnerId);
-                allowed.UnionWith(project.Members.Select(x => x.UserId));
+                var project = await _projects.GetByIdWithMembersAsync(projectId.Value, ct);
+                var members = project?.Members.Select(m => m.UserId).ToHashSet() ?? [];
+                if (project is not null) members.Add(project.OwnerId);
+                allowed.UnionWith(candidates.Where(members.Contains));
             }
-            allowed.UnionWith(items.SelectMany(x => x.Assignees.Select(a => a.UserId)));
-            allowed.UnionWith(items.SelectMany(x => x.TimeEntries.Select(entry => entry.UserId)));
-            allowed.UnionWith(items.Select(x => x.ResponsibleId ?? string.Empty)
-                .Where(x => !string.IsNullOrWhiteSpace(x)));
-            visibleUsers = visibleUsers.Where(x => allowed.Contains(x.Id));
+            else allowed.UnionWith(candidates);
         }
-        return visibleUsers.Select(user => new Dictionary<string, object?>
+        // Não usar o diretório inteiro como população: ausência de filtro de projeto
+        // não concede acesso aos demais usuários e às suas horas.
+        return users.Where(u => allowed.Contains(u.Id)).Select(user => new Dictionary<string, object?>
         {
             ["userId"] = user.Id, ["user"] = names.GetValueOrDefault(user.Id, user.Id),
             ["assignedTasks"] = items.Count(x => x.ResponsibleId == user.Id
@@ -508,10 +595,11 @@ public class ReportExecutor
         };
     }
 
-    private static Dictionary<string, object?> TeamRow(Team team) => new()
+    private static Dictionary<string, object?> TeamRow(Team team, IReadOnlySet<Guid> projects, Guid? projectId) => new()
     {
         ["teamId"] = team.Id, ["team"] = team.Name, ["isActive"] = team.IsActive,
-        ["memberCount"] = team.Members.Count, ["projectCount"] = team.Projects.Count,
+        ["memberCount"] = team.Members.Count, ["projectCount"] = team.Projects.Count(p => projects.Contains(p.ProjectId)
+            && (!projectId.HasValue || p.ProjectId == projectId)),
         ["capacityHours"] = team.DefaultWeeklyCapacityHours
     };
 

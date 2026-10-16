@@ -132,12 +132,20 @@ public class OrganizationHoursVisibilityTests
         Assert.Equal(2m,next.TotalHours);
         var both = await f.Handler.Handle(new(new(2026,1,12),new(2026,1,13),null,null,"actor"),default);
         Assert.Equal(4m,both.TotalHours);
-        var executor = new ReportExecutor(new AnalyticsRepository(f.Db), new Names(), new ProjectRepository(f.Db));
+        f.Db.PermissionGrants.Add(new PermissionGrant { Id=Guid.NewGuid(), OrganizationId=f.OrgId,
+            UserId="actor", Permission=PlatformPermission.ViewReport, Scope=PermissionScope.Report,
+            IsAllowed=true, GrantedBy="admin" });
+        await f.Db.SaveChangesAsync();
+        var tenant = new Tenant(f.OrgId);
+        var permissions = new PermissionService(f.Db, tenant);
+        var executor = new ReportExecutor(new AnalyticsRepository(f.Db), new Names(), new ProjectRepository(f.Db),
+            tenant, new OrganizationRepository(f.Db), new TeamRepository(f.Db), permissions,
+            new ProjectAccessService(f.Db, permissions));
         foreach (var date in new[] { new DateOnly(2026,1,12), new DateOnly(2026,1,13) })
         {
             var definition = new ReportDefinitionDto(["userId","hours"], [], [new("userId","eq","actor")],
                 null, null, false, date, date);
-            var report = await executor.RunAsync(null, ReportDataSource.TimeEntries, ReportVisualization.Table, definition, default);
+            var report = await executor.RunAsync(null, ReportDataSource.TimeEntries, ReportVisualization.Table, definition, "actor", default);
             Assert.Equal(2m, Assert.Single(report.Rows)["hours"]);
         }
     }
