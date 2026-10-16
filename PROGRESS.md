@@ -1,3 +1,10 @@
+## [2026-10-16] - Codex (Tear) - E2E stability-1: dados próprios e sincronização por HTTP
+
+- Entrega própria autorizada pelo GOALS: board-stage-sync cria quadro/tarefa próprios e aguarda PUT204; independent-board-columns divide o cenário longo em três contratos de cópia/ordem, transferência e exclusão com histórico, preservando todas as recusas e destinos. Catálogo de IA aguarda a resposta da configuração final antes da opção, sem mudar asserções ou produto.
+- Factories limpam recursos em ordem inversa no teardown de request, com contexto vivo e prazo próprio20s; corpo mantém30s. Limpeza falha reprova e registra duração/quantidade. Erros de transporte omitem cabeçalhos de autenticação. Não houve sleep, novo skip/test.fail, retry ou aumento global de timeout.
+- Tipos E2E aprovados7,37s, lint1,03s; smoke da limpeza5/5 em74,53s. Specs alterados desktop/mobile3x no mesmo banco:85/85 em990,56s,78limpezas semfalhas. Suíte inteira após bancoQA recriado:149aprovados/6skips anteriores/0falhas em1113,40s,34limpezas semfalhas. Falhas históricas de IA/quadro/descrição rica não reapareceram. Tentativas anteriores e gargalo de dados arquivados/C6 preservados no relatório, sem antecipar correção de produto.
+- Detalhes em `docs/e2e-stability-validation.md`, convenções em e2e/README. Executado só no prisma-qa; dev e produção preservados. Produto publicado na imagem é funcionalmente o mesmo testado nas horas-2; revisão e QA independente devem considerar o mesmo SHA final das duas entregas. Sem migration, publicação ou PRONTO-PROD pelo executor.
+
 ## [2026-10-16] - Codex (Tear) - Frente 1, horas-2: privacidade e rateio de Brasília
 
 - B07 corrigido antes da agregação: membro comum vê apenas suas horas; gestor e administrador seguem o recorte autorizado da organização/equipe, preservando negações explícitas. Diário, semana, relatórios e indicadores recortam intervalos pela meia-noite de Brasília, conservam segundos e mantêm um único lançamento persistido.

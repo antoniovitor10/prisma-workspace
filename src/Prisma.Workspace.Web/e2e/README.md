@@ -93,6 +93,14 @@ Com a API e o frontend rodando:
 
 ## Correção de horas (tarefa 7, 2026-10-15)
 
-`time-tracking-fixes.spec.ts` cobre timer após reload, edição com persistência e atualização diária/semanal, exclusão com confirmação/cancelamento e busca por título/número com teclado, ordem de atribuição e exclusão de arquivadas. Usa projeto, usuário, quadro, coluna e tarefas UUID próprios via `fixtures/time.ts` e `boards.ts`, copiados seletivamente de L08 sem integrar a branch. Limpeza em finally desativa o membro e arquiva o projeto. Nenhuma entidade de negócio do seed é usada.
+`time-tracking-fixes.spec.ts` cobre timer após reload, edição com persistência e atualização diária/semanal, exclusão com confirmação/cancelamento e busca por título/número com teclado, ordem de atribuição e exclusão de arquivadas. Usa projeto, usuário, quadro, coluna e tarefas UUID próprios via `fixtures/time.ts` e `boards.ts`, copiados seletivamente de L08 sem integrar a branch. A limpeza no finally da fixture encerra o timer, desativa o membro e arquiva o projeto. Nenhuma entidade de negócio do seed é usada.
 
-Executar `npm run e2e -- time-tracking-fixes.spec.ts` contra prisma-dev / DetranKanban_E2E. A fixture funcional usa CSS de fallback somente para a fonte externa indisponível no servidor; API, scripts, ativos e persistência são reais. Datas do editor são de Brasília. O teste aguarda tempo real por polling do timestamp, sem sleeps.
+Executar `npm run e2e -- time-tracking-fixes.spec.ts` contra o ambiente dedicado configurado em `.env.e2e.local`, respeitando as reservas da tarefa. Não usar a instância reservada para demonstração. A fixture funcional usa CSS de fallback somente para a fonte externa indisponível no servidor; API, scripts, ativos e persistência são reais. Datas do editor são de Brasília. O teste aguarda tempo real por polling do timestamp, sem sleeps.
+
+## Limpeza das factories
+
+Importe `test` de `fixtures/test.ts` ou `fixtures/functional.ts` e passe a fixture `request` para as factories. `cleanupFor` registra ações na pilha do teste; não passe `page.request`. A execução em ordem inversa encerra cronômetros e justificativas antes de remover membros e arquivar projetos.
+
+A limpeza roda no `finally` da fixture de requisição, com prazo próprio de 20 s e o contexto HTTP preservado; o corpo do cenário continua com o limite padrão de 30 s. Falhas de limpeza reprovam o teste e aparecem separadas do erro funcional. É o mecanismo de [teardown e timeout de fixture do Playwright](https://playwright.dev/docs/test-fixtures#fixture-timeout).
+
+Os erros de transporte omitem o call log que pode incluir cabeçalhos de autenticação. Não imprima tokens, cookies ou senhas de teste, nem versione estado autenticado ou traces com credenciais.
