@@ -47,7 +47,7 @@ export function assertTransition(
     throw new Error(`Transição recusada: ${from} -> ${to} exige autorização humana. O agente nunca autoriza uma task.`);
   }
   if (role === 'agente' && from === 'bloqueada' && to === 'em-desenvolvimento') {
-    throw new Error('Transição recusada: o agente só pode retomar um bloqueio que ele mesmo registrou pelo MCP.');
+    throw new Error('Transição recusada: o agente só pode retomar seu próprio bloqueio registrado pelo MCP a partir de em-desenvolvimento.');
   }
   throw new Error(`Transição recusada para o papel ${role}: ${from} -> ${to}.`);
 }
@@ -77,7 +77,7 @@ export function getProjectRules(role: PrismaRole = parseRole()) {
     condicoes: [
       'Agente nunca move backlog/pronta para em-desenvolvimento: isso exige autorização humana.',
       'Agente pode bloquear qualquer status exceto concluida.',
-      'Bloqueada -> em-desenvolvimento exige o último bloqueio registrado pelo MCP e de autoria do próprio agente.',
+      'Bloqueada -> em-desenvolvimento exige que o último bloqueio seja do próprio agente pelo MCP, originado em em-desenvolvimento.',
       'Humano pode realizar qualquer transição.',
       'Papel agente é aplicado pelo adaptador nesta fase; a proteção na API está pendente.',
     ],
