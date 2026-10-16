@@ -77,6 +77,8 @@ for (const differentTasks of [false, true]) {
 }
 
 test('H16: duas abas iniciando tarefas diferentes não deixam cronômetro oculto após recarga', async ({ page, request }) => {
+  const began = performance.now();
+  const phase = (name: string) => test.info().annotations.push({ type: 'timer-phase', description: `${name}: ${Math.round(performance.now() - began)} ms desde o início` });
   await withTimeFactory(page, request, async f => {
     const first = await f.task(); const second = await f.task();
     const other = await page.context().newPage();
@@ -86,7 +88,8 @@ test('H16: duas abas iniciando tarefas diferentes não deixam cronômetro oculto
     const bothRequested = new Promise<void>(resolve => { bothReached = resolve; });
     let requests = 0;
     try {
-      await board(page, f); await board(other, f);
+      await Promise.all([board(page, f), board(other, f)]);
+      phase("Duas abas prontas");
       for (const tab of [page, other]) await tab.route(startPath, async route => {
         requests++; if (requests === 2) bothReached(); await gate; await route.continue();
       });
@@ -102,15 +105,18 @@ test('H16: duas abas iniciando tarefas diferentes não deixam cronômetro oculto
       const running = await openEntries(f);
       expect(running).toHaveLength(1);
       expect([first.id, second.id]).toContain(running[0].workItemId);
-      await board(page, f, true); await board(other, f, true);
+      phase("Inícios paralelos confirmados");
+      await Promise.all([board(page, f, true), board(other, f, true)]);
       for (const tab of [page, other]) {
         await expect(tab.getByRole('button', { name: 'Parar cronômetro da tarefa' })).toHaveCount(1);
         await expect(tab.getByRole('button', { name: 'Iniciar cronômetro da tarefa' })).toHaveCount(1);
       }
+      phase("Duas recargas confirmadas");
       const stopped = responseTo(page, 'POST', '/api/TimeEntries/stop');
       await page.getByRole('button', { name: 'Parar cronômetro da tarefa' }).click();
       expect((await stopped).status()).toBe(200);
       expect(await openEntries(f)).toEqual([]);
+      phase("Parada confirmada");
     } finally {
       release(); await page.unroute(startPath); await other.close();
     }
