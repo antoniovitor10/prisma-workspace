@@ -1,3 +1,8 @@
+## [2026-10-16] - Codex (Tear) - proposta de integração Git do método
+
+- Tarefa 8, somente documentação, em `docs/spec-metodo-git` a partir de `origin/main` (`2c3816c`). Criada `specs/metodo-git-integration.md` como draft conforme o template e os contratos recebidos: fases 2/3, assinatura/idempotência, vínculo explícito > branch > título, matriz aplicada pela API, reconciliação, gate `prisma/autorizacao`, deploy, caso Detran e modelo de dados proposto.
+- Inclui 24 critérios de aceite, plano xUnit/E2E e perguntas de aprovação sobre operação, múltiplos PRs, homologação, GitLab e compatibilidade com D91. Nenhum código, migration, configuração operacional ou gate alterado. Validação documental: seções do template, critérios consecutivos e links locais conferidos; `git diff --check` aprovado. Testes de produto não executados por ser documentação. Prisma-dev e seu banco preservados integralmente para a demonstração, sem E2E; continuidade em `NOTAS.md`. Próximo passo: Maestro/PO revisar o draft e resolver as pendências antes de implementar.
+
 ## [2026-10-13] - Codex (Tear) - reconciliação da feat com main para integração
 
 - Tarefa 3 autorizada pelo Maestro/PO: criada `integration/ai-foundation-main` de `origin/feat/ai-assistant-foundation` (`457c6d2`), merge de `origin/main` (`6eecba8`), sem rebase/force push. Resolvidos 14 conflitos com comparação de ambos os pais e SPEC-AI-004 aprovada; base publicada preservada e correções posteriores aceitas da feat mantidas. Nenhuma correção exclusiva da main ausente no código final; produto/testes finais coincidem com a feat, sem refatoração ou correção adicional.
