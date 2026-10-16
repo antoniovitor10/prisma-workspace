@@ -8,6 +8,55 @@ namespace Prisma.Workspace.Tests;
 
 public sealed class MethodTransitionPolicyTests
 {
+    [Fact]
+    public async Task LegacyPortalAndAutomationWithoutMethodKeepTheirExistingRules()
+    {
+        var f = new Fixture("backlog");
+        var configured = f.Store.Project!;
+        f.Store.Project = null;
+        f.Permissions.Allowed = false;
+        var policy = new MethodTransitionPolicy(new MethodAccessContext(), f.Store, f.Permissions);
+        Assert.True((await policy.EvaluateAsync(f.Move("em-desenvolvimento"))).Allowed);
+        Assert.True((await f.Policy(MethodRole.Human, MethodAuthenticationKind.Unknown).EvaluateAsync(f.Move("em-desenvolvimento"))).Allowed);
+        f.Store.Project = configured with { Enabled = false };
+        Assert.True((await policy.EvaluateAsync(f.Move("em-desenvolvimento") with { IsCreation = true })).Allowed);
+    }
+
+    [Fact]
+    public async Task AnonymousMethodProjectMayCreateBacklogButNeverAuthorizeExecution()
+    {
+        var f = new Fixture("backlog");
+        var policy = new MethodTransitionPolicy(new MethodAccessContext(), f.Store, f.Permissions);
+        Assert.True((await policy.EvaluateAsync(f.Move("backlog") with { IsCreation = true, FromStageId = null })).Allowed);
+        Assert.False((await policy.EvaluateAsync(f.Move("em-desenvolvimento"))).Allowed);
+        Assert.False((await policy.EvaluateAsync(f.Move("em-desenvolvimento") with { IsCreation = true, FromStageId = null })).Allowed);
+    }
+
+    [Fact]
+    public async Task NewTaskIdentityUsesProjectCreatePermissionEvenWithPreallocatedWorkItemId()
+    {
+        var f = new Fixture("backlog");
+        var mutation = f.Move("backlog") with { IsCreation = true, ChangesMethodIdentity = true, FromStageId = null };
+        Assert.True((await f.Policy().EvaluateAsync(mutation)).Allowed);
+        Assert.Equal(PermissionScope.Project, f.Permissions.LastScope);
+        Assert.Equal(mutation.ProjectId, f.Permissions.LastScopeId);
+    }
+
+    [Fact]
+    public async Task HumanTokenTransferIntoDevelopmentCannotUseOtherBoardShortcut()
+    {
+        var f = new Fixture("backlog");
+        var methodBoard = f.Store.Task!.BoardId;
+        var otherBoard = Guid.NewGuid();
+        var otherStage = Guid.NewGuid();
+        f.Store.Task = f.Store.Task with { BoardId = otherBoard, StageId = otherStage, ActiveAuthorizationEventId = null };
+        var mutation = f.Move("em-desenvolvimento") with { BoardId = otherBoard, FromStageId = otherStage, DestinationBoardId = methodBoard };
+        Assert.False((await f.Policy(MethodRole.Human).EvaluateAsync(mutation)).Allowed);
+        Assert.False((await f.Policy(MethodRole.Human).EvaluateAsync(mutation with { IsCreation = true })).Allowed);
+        // Outras transferências não ganham a matriz do agente.
+        Assert.True((await f.Policy(MethodRole.Human).EvaluateAsync(mutation with { ToStageId = f.Store.Project!.StageMappings["pronta"] })).Allowed);
+    }
+
     [Theory]
     [InlineData("backlog")]
     [InlineData("pronta")]
@@ -245,8 +294,14 @@ public sealed class MethodTransitionPolicyTests
     private sealed class Permissions : IPermissionService
     {
         internal bool Allowed = true;
+        internal PermissionScope? LastScope;
+        internal Guid? LastScopeId;
         public Task<bool> HasAsync(string userId, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization,
-            Guid? scopeId = null, CancellationToken cancellationToken = default) => Task.FromResult(Allowed);
+            Guid? scopeId = null, CancellationToken cancellationToken = default)
+        {
+            LastScope = scope; LastScopeId = scopeId;
+            return Task.FromResult(Allowed);
+        }
         public Task EnsureAsync(string userId, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization,
             Guid? scopeId = null, CancellationToken cancellationToken = default) => Allowed ? Task.CompletedTask : throw new InvalidOperationException();
     }

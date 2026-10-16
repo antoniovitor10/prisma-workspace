@@ -19,6 +19,21 @@ public sealed class MethodTransitionPolicy(
         var actor = context.Current;
         // Permissões/validações existentes continuam nos handlers. A matriz não restringe a sessão humana.
         if (actor?.IsInteractiveHuman == true) return MethodTransitionDecision.Permit();
+        var legacyActor = actor is null || actor.AuthenticationKind == MethodAuthenticationKind.Unknown;
+        if (legacyActor)
+        {
+            var legacyProject = await store.GetProjectAsync(mutation.ProjectId, cancellationToken);
+            if (legacyProject is null || !legacyProject.Enabled) return MethodTransitionDecision.Permit();
+            if (actor?.PrincipalId is not null || actor?.TokenId is not null)
+                return Deny("untrusted_actor", "A operação exige identidade autenticada confiável.");
+            // Portal, seed e automações legadas conservam suas validações, mas não fabricam execução autorizada.
+            var entersDevelopment = StatusOf(legacyProject, mutation.ToStageId) == MethodStatusCodes.InDevelopment
+                && (mutation.IsCreation || mutation.FromStageId != mutation.ToStageId
+                    || mutation.DestinationBoardId is { } board && board != mutation.BoardId);
+            return entersDevelopment
+                ? Deny("interactive_authorization_required", "Conceder execução no método exige sessão humana da UI; origem legada não autoriza.")
+                : MethodTransitionDecision.Permit();
+        }
         if (actor is null || actor.AuthenticationKind is not (MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker)
             || !Enum.IsDefined(actor.Role))
             return Deny("untrusted_actor", "A operação exige identidade autenticada confiável.");
@@ -36,45 +51,42 @@ public sealed class MethodTransitionPolicy(
         var required = mutation.IsCreation ? PlatformPermission.Create : PlatformPermission.ChangeStatus;
         if (!actor.PermissionCeiling.Contains(required)
             || !await permissions.HasAsync(actor.ActorId, required,
-                mutation.WorkItemId is null ? PermissionScope.Project : PermissionScope.WorkItem,
-                mutation.WorkItemId ?? mutation.ProjectId, cancellationToken))
+                mutation.IsCreation || mutation.WorkItemId is null ? PermissionScope.Project : PermissionScope.WorkItem,
+                mutation.IsCreation ? mutation.ProjectId : mutation.WorkItemId ?? mutation.ProjectId, cancellationToken))
             return Deny("method_permission", "A credencial não possui permissão efetiva para esta operação.");
-        if (actor.Role != MethodRole.Human && mutation.ChangesMethodIdentity)
+        if (actor.Role != MethodRole.Human && mutation.ChangesMethodIdentity && !mutation.IsCreation)
             return Deny("method_identity", "O principal não pode remover ou alterar a identidade da task para contornar o método.");
-
-        // Tokens humanos seguem suas permissões, mas não fabricam autorização interativa.
-        if (actor.Role == MethodRole.Human && mutation.BoardId != project.BoardId)
-            return MethodTransitionDecision.Permit();
 
         var to = StatusOf(project, mutation.ToStageId);
         var from = StatusOf(project, mutation.FromStageId);
+        var task = !mutation.IsCreation && mutation.WorkItemId is { } id ? await store.GetTaskAsync(id, cancellationToken) : null;
+        if (task is not null && (task.ProjectId != mutation.ProjectId || task.BoardId != mutation.BoardId
+            || task.OrganizationId != project.OrganizationId || task.StageId != mutation.FromStageId))
+            return Deny("stale_task", "A tarefa mudou durante a operação. Atualize os dados antes de tentar novamente.");
+
+        // Avalia o destino real antes de permitir operações humanas fora do quadro do método.
+        // Transferir/criar de outro quadro para a coluna de desenvolvimento também seria início sem UI.
+        if (actor.Role == MethodRole.Human)
+        {
+            if (to != MethodStatusCodes.InDevelopment) return MethodTransitionDecision.Permit();
+            var sameMethodBoard = mutation.BoardId == project.BoardId
+                && (mutation.DestinationBoardId is null || mutation.DestinationBoardId == project.BoardId);
+            if (!mutation.IsCreation && sameMethodBoard && (from == to
+                || from == MethodStatusCodes.InReview && task?.ActiveAuthorizationEventId is not null))
+                return MethodTransitionDecision.Permit();
+            return Deny("interactive_authorization_required", "Conceder ou renovar execução exige sessão humana da UI; token humano não autoriza, inclusive por transferência.");
+        }
         if (to is null)
             return Deny("method_mapping", "A coluna de destino não possui mapeamento válido do método.");
         if (mutation.IsCreation)
         {
             if (actor.Role == MethodRole.System || actor.AuthenticationKind == MethodAuthenticationKind.IntegrationWorker)
                 return Deny("system_cannot_create", "O sistema de integração não cria tasks.");
-            if (actor.Role == MethodRole.Human)
-                return to == MethodStatusCodes.InDevelopment
-                    ? Deny("interactive_authorization_required", "Iniciar uma task exige autorização por sessão humana da UI.")
-                    : MethodTransitionDecision.Permit();
             return to is MethodStatusCodes.Backlog or MethodStatusCodes.Completed
                 ? MethodTransitionDecision.Permit()
                 : Deny("agent_creation", "O agente só cria tasks em backlog ou concluida, sem autorização implícita.");
         }
         if (from is null) return Deny("method_mapping", "A coluna de origem não possui mapeamento válido do método.");
-        var task = mutation.WorkItemId is { } id ? await store.GetTaskAsync(id, cancellationToken) : null;
-        if (task is not null && (task.ProjectId != mutation.ProjectId || task.BoardId != mutation.BoardId
-            || task.OrganizationId != project.OrganizationId || task.StageId != mutation.FromStageId))
-            return Deny("stale_task", "A tarefa mudou durante a operação. Atualize os dados antes de tentar novamente.");
-
-        if (actor.Role == MethodRole.Human)
-        {
-            if (to == MethodStatusCodes.InDevelopment && from != to
-                && (from != MethodStatusCodes.InReview || task?.ActiveAuthorizationEventId is null))
-                return Deny("interactive_authorization_required", "Conceder ou renovar execução exige sessão humana da UI; token humano não autoriza.");
-            return MethodTransitionDecision.Permit();
-        }
         if (task is null || !task.IsTopLevel || task.IsArchived)
             return Deny("method_task", "A tarefa não possui identidade válida de topo no método.");
 

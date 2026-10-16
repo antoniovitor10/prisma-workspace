@@ -1,3 +1,10 @@
+## [2026-10-16] - Codex (Forja) - correção da revisão git-3 e desvio entre quadros
+
+- Corrigidos o médio1 do Prumo e o alto da Prova75b4df0: origens legadas preservam validações existentes nos projetos sem método; em projeto com método não iniciam execução. Token humano agora valida o destino real antes de permitir operação fora do quadro, impedindo criação/transferência para desenvolvimento sem sessão UI. Retorno revisão/desenvolvimento exige mesmo quadro e autorização vigente.
+- Criação com GUID pré-alocado usa Create no projeto e admite a atribuição inicial da identidade, sem liberar alterações posteriores pelo agente. Acrescentado teste de paridade das permissões de delegação nos casos comuns e documentação das restrições adicionais deliberadas. OperationalError opcional publicado no descriptor interno solicitado pela Ponte, sem quebrar construtores existentes.
+- Validação focada isolada: binários recompilados após todas as fontes alteradas; 159/159 testes passaram em14s, sem falhas/pulos (inclui adversariais Prova); detalhes na ENTREGA git-3-2. Não é integração F1, SQL final ou suíte completa. UI C separada continua não rastreada e inclui aviso de que reemissão pode reduzir permissões dos tokens anteriores; só entrará na entrega git-5.
+- Próximo: nova revisão git-3-2 antes do F1; liberar checkpoint da Ponte B/git-4, terminar UI/git-5, integrar e executar regressão/QA no mesmo SHA. Sem migration, imagem ou operação em prisma-dev/prisma-qa/produção nesta correção.
+
 ## [2026-10-16] - Codex (Forja) - fatia A de identidade e política do método Git
 
 - Após git-spec-2 aprovada e D102, contratos F0 revisados em git-1 liberaram B/C com médio1 da rotação para A. Implementados em arquivos exclusivos: seis entidades/configurações novas de segurança, contexto scoped imutável, emissão/hash/revogação/expiração, teto real de delegação, política por tipo de autenticação, handler e controller de tokens. Ainda sem registro em Program/DbContext/handlers genéricos nem migration nova; runtime próprio continua na base.

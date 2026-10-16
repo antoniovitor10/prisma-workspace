@@ -215,6 +215,26 @@ public sealed class MethodTokenTests
         Assert.NotEmpty(await f.Service().ListAsync(f.ProjectId));
     }
 
+    [Fact]
+    public async Task DelegationMatchesExistingPermissionsForCommonProjectOperations()
+    {
+        await using var f = await Fixture.CreateAsync();
+        var issued = await f.Service().IssueAsync(f.ProjectId, new("Executor", "agente"));
+        var actor = (await f.Service().AuthenticateAsync(issued.Token, "parity"))!;
+        var org = new CurrentOrganizationContext(); org.Set(f.OrgId);
+        var existing = new PermissionService(f.Db, org);
+        foreach (var permission in new[] { PlatformPermission.View, PlatformPermission.Create, PlatformPermission.Edit,
+                     PlatformPermission.ChangeStatus, PlatformPermission.Comment })
+            Assert.Equal(await existing.HasAsync(Fixture.HumanA, permission, PermissionScope.Project, f.ProjectId),
+                await f.Evaluator.HasAsync(actor, permission, PermissionScope.Project, f.ProjectId));
+        f.Db.PermissionGrants.Add(new PermissionGrant { Id = Guid.NewGuid(), OrganizationId = f.OrgId,
+            UserId = Fixture.HumanA, Scope = PermissionScope.Project, ScopeId = f.ProjectId,
+            Permission = PlatformPermission.Edit, IsAllowed = false });
+        await f.Db.SaveChangesAsync();
+        Assert.False(await existing.HasAsync(Fixture.HumanA, PlatformPermission.Edit, PermissionScope.Project, f.ProjectId));
+        Assert.False(await f.Evaluator.HasAsync(actor, PlatformPermission.Edit, PermissionScope.Project, f.ProjectId));
+    }
+
     [Theory]
     [InlineData("eyJhbGciOiJIUzI1NiJ9.payload.signature")]
     [InlineData("pmt_not-a-valid-token")]

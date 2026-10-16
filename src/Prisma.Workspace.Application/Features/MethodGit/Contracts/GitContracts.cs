@@ -4,7 +4,8 @@ public sealed record GitRepositoryDescriptor(
     Guid Id, Guid OrganizationId, Guid ProjectId, string Provider, string Host,
     long RepositoryId, string RepositoryFullName, string DefaultBranch, long AppId, long InstallationId,
     string AppPrivateKeySecretRef, string WebhookSecretRef, string? PreviousWebhookSecretRef,
-    DateTimeOffset? PreviousSecretValidUntilUtc, Guid SystemPrincipalId, bool Enabled, byte[]? RowVersion = null);
+    DateTimeOffset? PreviousSecretValidUntilUtc, Guid SystemPrincipalId, bool Enabled, byte[]? RowVersion = null,
+    string? OperationalError = null);
 
 public sealed record RegisterGitRepositoryRequest(
     string Host, long RepositoryId, string RepositoryFullName, string DefaultBranch,

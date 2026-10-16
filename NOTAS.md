@@ -1,3 +1,10 @@
+## 2026-10-16 — Forja: complemento A/git-3-2
+
+- Alto Prova75b4df0 e médio Prumo git-3 corrigidos na política: destino de transferência/criação humano-token avaliado antes da exceção de outro quadro; legado sem método segue validações anteriores, legado com método não inicia desenvolvimento. Criação usa escopo Project mesmo com GUID pré-alocado. Testes novos e adversariais Prova entram no filtro focado A.
+- OperationalError string opcional ao final do GitRepositoryDescriptor atende solicitação Ponte; B pode preencher o DTO com mensagem operacional fixa, sem segredo. Paridade das permissões comuns documentada/testada; aviso de reemissão está na UI nova ainda fora deste commit.
+- Binários isolados em /tmp/prisma-metodo-forja-a-artifacts foram compilados08:46/08:47UTC, após fontes finais08:42/08:45. Comando --no-build de conferência usa exatamente esses artefatos. Resultado e limites na ENTREGA git-3-2; nada de alegar F1/SQL/suíte completa por essa rodada.
+- Após push, checkpoint B fica livre. Aguardar revisão deste complemento; seguir UI independente. Necessários F1/guards/DI/migration aditiva Down e F2/QA mesmoSHA. Trava CPU Tear e janela de silêncio continuam válidas.
+
 ## 2026-10-16 — Forja: A pronta para revisão, 2a ainda incompleta
 
 - Segurança A implementada só nos arquivos novos Domain/Entities/MethodSecurity.cs, Application/Features/MethodSecurity/**, Infrastructure/Identity/MethodTokens/**, MethodSecurityConfiguration.cs, Authentication/MethodTokenAuthenticationHandler.cs, Controllers/MethodTokensController.cs e três testes MethodToken/MethodTransitionPolicy/MethodTokenHttp. ContratosF0/doc atualizados para rotação própria/teto mínimo, validade1..90, canais, autorGit observado, LastManualChangeAtUtc.126/126 focados passaram em11s; não há integração de produto ainda.
