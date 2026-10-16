@@ -201,100 +201,11 @@ export class PrismaApi {
     return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-requests`), 'POST', { url, reason: 'Vínculo explícito do PR pelo MCP.' });
   }
 
-  async listProjects(): Promise<ProjectDto[]> { return this.request('/api/projects'); }
-  async createProject(name: string): Promise<string> {
-    return this.request('/api/projects', 'POST', { name, nature: 1, workType: 1, methodology: 1 });
-  }
-  async listBoards(): Promise<BoardDto[]> { return this.request('/api/Boards'); }
-  async createBoard(projectId: string, name: string): Promise<string> {
-    return this.request('/api/Boards', 'POST', { projectId, name });
-  }
-  async listStages(boardId: string): Promise<StageDto[]> {
-    return this.request(`/api/Stages/board/${encodeURIComponent(boardId)}`);
-  }
-  async createStage(boardId: string, name: string, category: StageCategory): Promise<string> {
-    const board = await this.request<BoardDto>(`/api/Boards/${encodeURIComponent(boardId)}`);
-    const stages = await this.listStages(boardId);
-    return this.request(`/api/Stages/board/${encodeURIComponent(boardId)}`, 'POST', {
-      projectId: board.projectId, name, category, position: Math.max(0, ...stages.map(x => x.position)) + 100,
-    });
-  }
-  async updateStage(id: string, name: string, category: StageCategory): Promise<void> {
-    return this.request(`/api/Stages/${encodeURIComponent(id)}`, 'PUT', { name, category });
-  }
-  async reorderStages(boardId: string, ids: string[]): Promise<void> {
-    return this.request(`/api/Stages/board/${encodeURIComponent(boardId)}/order`, 'PUT', ids);
-  }
-  async listWorkItemsByBoard(boardId: string): Promise<WorkItemDto[]> {
-    // O método usa somente cards de topo, exatamente os itens visíveis no Kanban.
-    return this.request(`/api/WorkItems/board/${encodeURIComponent(boardId)}`);
-  }
-  async listTags(): Promise<TagDto[]> { return this.request('/api/tags'); }
-  async createTag(name: string, color = '#4F46E5'): Promise<TagDto> {
-    return this.request('/api/tags', 'POST', { name, color });
-  }
-  async setWorkItemTags(id: string, tagIds: string[]): Promise<void> {
-    const item = await this.getWorkItem(id);
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/taxonomy`, 'PUT', {
-      taskTypeId: item.taskTypeId ?? null, points: item.points ?? null, tagIds: [...new Set(tagIds)],
-    });
-  }
-  async addWorkItemTag(id: string, tagId: string): Promise<boolean> {
-    const item = await this.getWorkItem(id);
-    if (item.tags.some(tag => tag.id === tagId)) return false;
-    await this.request(`/api/WorkItems/${encodeURIComponent(id)}/taxonomy`, 'PUT', {
-      taskTypeId: item.taskTypeId ?? null, points: item.points ?? null,
-      tagIds: [...item.tags.map(tag => tag.id), tagId],
-    });
-    return true;
-  }
+  // Somente dependências ainda usam as rotas legadas, sempre com escopo e permissão da API.
   async getWorkItem(id: string): Promise<WorkItemDetailsDto> {
     return this.request(`/api/WorkItems/${encodeURIComponent(id)}`);
   }
-  async createWorkItem(dto: CreateWorkItemDto): Promise<string> {
-    return this.request('/api/WorkItems', 'POST', {
-      parentId: null, description: null, priority: 1, position: 100, kind: 5, ...dto,
-    });
-  }
-  async updateWorkItem(id: string, dto: UpdateWorkItemDto): Promise<void> {
-    // PUT é substituição completa; preservar dados que não pertencem ao método.
-    const current = await this.getWorkItem(id);
-    const payload: UpdateWorkItemDto = {};
-    const keys: (keyof UpdateWorkItemDto)[] = ['title', 'description', 'kind', 'stageId', 'priority', 'responsibleId',
-      'teamId', 'origin', 'requesterId', 'requesterName', 'requesterEmail', 'startDate', 'dueDate',
-      'estimatedHours', 'remainingHours', 'points', 'acceptanceCriteria'];
-    for (const key of keys) Object.assign(payload, { [key]: current[key] ?? null });
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}`, 'PUT', { ...payload, ...dto });
-  }
-  async moveWorkItem(id: string, stageId: string): Promise<void> {
-    return this.request('/api/WorkItems/move', 'POST', { workItemId: id, destinationStageId: stageId, position: 100 });
-  }
-  async setCustomFields(id: string, values: Record<string, string | null>): Promise<void> {
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/custom-fields`, 'PUT', { values });
-  }
-  async listProjectCustomFields(projectId: string): Promise<ProjectCustomFieldDto[]> {
-    const project = await this.request<ProjectDto>(`/api/projects/${encodeURIComponent(projectId)}`);
-    return (project.customFields ?? []).filter(x => x.isActive !== false);
-  }
-  async createProjectCustomField(projectId: string, def: CustomFieldDefinition): Promise<string> {
-    return this.request(`/api/projects/${encodeURIComponent(projectId)}/custom-fields`, 'POST', {
-      type: 1, isRequired: false, optionsJson: null, position: 100, ...def,
-    });
-  }
   async addLink(id: string, targetId: string, type = 1): Promise<string> {
     return this.request(`/api/WorkItems/${encodeURIComponent(id)}/links`, 'POST', { targetWorkItemId: targetId, type });
-  }
-  async getCurrentUserId(): Promise<string> {
-    await this.initialize();
-    return this.userId;
-  }
-  async getStateGraph(id: string): Promise<TaskStateGraphDto> {
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/state-graph`);
-  }
-  async listComments(id: string): Promise<CommentDto[]> {
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/comments`);
-  }
-  async addComment(id: string, text: string): Promise<CommentDto> {
-    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/comments`, 'POST', { text });
   }
 }
