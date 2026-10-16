@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../services/api';
@@ -23,6 +23,47 @@ const dashboard = {
 };
 
 describe('Meu trabalho', () => {
+  it('bloqueia cliques repetidos enquanto iniciar ou parar o timer está pendente', async () => {
+    const active = { workItemId: 'task-1', startedAt: new Date().toISOString() };
+    vi.spyOn(api, 'getMyWork').mockResolvedValue(dashboard);
+    const getActive = vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);
+    vi.spyOn(api, 'getUserId').mockReturnValue('user-1');
+    let finishStart!: (value: Awaited<ReturnType<typeof api.startTimer>>) => void;
+    let finishStop!: (value: Awaited<ReturnType<typeof api.stopTimer>>) => void;
+    const start = vi.spyOn(api, 'startTimer').mockImplementation(() => new Promise(resolve => { finishStart = resolve; }));
+    const stop = vi.spyOn(api, 'stopTimer').mockImplementation(() => new Promise(resolve => { finishStop = resolve; }));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<MemoryRouter><QueryClientProvider client={client}><AppThemeProvider><MinhasTarefas /></AppThemeProvider></QueryClientProvider></MemoryRouter>);
+    const startButton = await screen.findByTitle('Iniciar timer');
+    fireEvent.click(startButton); fireEvent.click(startButton);
+    expect(startButton).toBeDisabled(); expect(start).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    getActive.mockResolvedValue(active);
+    await act(async () => { finishStart(active); });
+    const stopButton = await screen.findByTitle('Parar timer');
+    expect(stopButton).toBeEnabled();
+    fireEvent.click(stopButton); fireEvent.click(stopButton);
+    expect(stopButton).toBeDisabled(); expect(stop).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    getActive.mockResolvedValue(null);
+    await act(async () => { finishStop(active); });
+    expect(await screen.findByTitle('Iniciar timer')).toBeEnabled();
+  });
+
+  it('libera o timer depois de erro e permite tentar novamente', async () => {
+    vi.spyOn(api, 'getMyWork').mockResolvedValue(dashboard);
+    vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);
+    vi.spyOn(api, 'getUserId').mockReturnValue('user-1');
+    const start = vi.spyOn(api, 'startTimer').mockRejectedValue(new Error('Falha temporária do cronômetro.'));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<MemoryRouter><QueryClientProvider client={client}><AppThemeProvider><MinhasTarefas /></AppThemeProvider></QueryClientProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByTitle('Iniciar timer'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Falha temporária do cronômetro.');
+    const button = screen.getByTitle('Iniciar timer');
+    expect(button).toBeEnabled(); fireEvent.click(button);
+    await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
+  });
+
   it('abre o detalhe completo ao clicar na linha e volta sem perder a fila', async () => {
     vi.spyOn(api, 'getMyWork').mockResolvedValue(dashboard);
     vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);

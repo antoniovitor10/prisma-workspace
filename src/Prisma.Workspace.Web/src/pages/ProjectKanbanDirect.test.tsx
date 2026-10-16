@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -116,6 +116,43 @@ describe('confirmação D62 por quadro', () => {
 });
 
 describe('Kanban do projeto abre direto', () => {
+  it('bloqueia cliques repetidos enquanto iniciar ou parar o timer está pendente', async () => {
+    let finishStart!: (value: Awaited<ReturnType<typeof api.startTimer>>) => void;
+    let finishStop!: (value: Awaited<ReturnType<typeof api.stopTimer>>) => void;
+    const entry = { id: 'timer-pending', workItemId: 'item-1', startedAt: new Date().toISOString() };
+    const start = vi.mocked(api.startTimer).mockImplementation(() => new Promise(resolve => { finishStart = resolve; }));
+    const stop = vi.spyOn(api, 'stopTimer').mockImplementation(() => new Promise(resolve => { finishStop = resolve; }));
+    renderRota('/boards/board-1');
+    const startButton = await screen.findByRole('button', { name: 'Iniciar cronômetro da tarefa' });
+    fireEvent.click(startButton); fireEvent.click(startButton);
+    expect(startButton).toBeDisabled();
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    vi.mocked(api.getRunningTimeEntry).mockResolvedValue(entry);
+    await act(async () => { finishStart(entry); });
+    const stopButton = await screen.findByRole('button', { name: 'Parar cronômetro da tarefa' });
+    await waitFor(() => expect(stopButton).toBeEnabled());
+    fireEvent.click(stopButton); fireEvent.click(stopButton);
+    expect(stopButton).toBeDisabled();
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    vi.mocked(api.getRunningTimeEntry).mockResolvedValue(null);
+    await act(async () => { finishStop({ ...entry, endedAt: new Date().toISOString() }); });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Iniciar cronômetro da tarefa' })).toBeEnabled());
+  });
+
+  it('libera o controle do timer após uma requisição recusada', async () => {
+    vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    vi.mocked(api.startTimer).mockRejectedValue(new Error('Não foi possível atualizar o cronômetro agora.'));
+    renderRota('/boards/board-1');
+    const button = await screen.findByRole('button', { name: 'Iniciar cronômetro da tarefa' });
+    fireEvent.click(button);
+    await waitFor(() => expect(window.alert).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+    await waitFor(() => expect(api.startTimer).toHaveBeenCalledTimes(2));
+  });
+
   it('mantém a alternância Backlog ↔ Quadro, que vinha da tela removida', async () => {
     renderRota(`/projects/${PROJETO}/boards`);
 

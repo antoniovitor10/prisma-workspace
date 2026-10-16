@@ -453,6 +453,8 @@ export const Kanban: React.FC = () => {
   const [runningItemId, setRunningItemId] = useState<string | null>(null);
   const [runningStartedAt, setRunningStartedAt] = useState<string | null>(null);
   const [, setActiveTime] = useState<number>(0);
+  const timerPendingRef = useRef(false);
+  const [timerPending, setTimerPending] = useState(false);
 
   const fetchBoards = useCallback(async () => {
     setBoardsStatus('loading');
@@ -1001,6 +1003,9 @@ export const Kanban: React.FC = () => {
   };
 
   const toggleTimer = async (itemId: string) => {
+    if (timerPendingRef.current) return;
+    timerPendingRef.current = true;
+    setTimerPending(true);
     try {
       if (runningItemId === itemId) {
         await api.stopTimer(itemId);
@@ -1025,6 +1030,9 @@ export const Kanban: React.FC = () => {
       }
     } catch {
       alert('Erro ao atualizar timer');
+    } finally {
+      timerPendingRef.current = false;
+      setTimerPending(false);
     }
   };
 
@@ -1491,7 +1499,10 @@ export const Kanban: React.FC = () => {
                         $isDragging={draggedItemId === item.id}
                         $priority={item.priority}
                         $late={!!item.dueDate && item.dueDate < todayStr()}
-                        onClick={() => handleCardClick(item)}
+                        onClick={event => {
+                          if ((event.target as Element).closest('button')) return;
+                          handleCardClick(item);
+                        }}
                         onPointerDown={event => handleCardPointerDown(event, item)}
                         onPointerMove={handleCardPointerMove}
                         onPointerUp={handleCardPointerUp}
@@ -1636,6 +1647,8 @@ export const Kanban: React.FC = () => {
 
                           <ActionIcon
                             aria-label={runningItemId === item.id ? 'Parar cronômetro da tarefa' : 'Iniciar cronômetro da tarefa'}
+                            disabled={timerPending}
+                            aria-busy={timerPending}
                             title={runningItemId === item.id ? 'Parar cronômetro' : 'Iniciar cronômetro'}
                             $color={runningItemId === item.id ? '#EF4444' : '#10B981'}
                             onClick={event => {

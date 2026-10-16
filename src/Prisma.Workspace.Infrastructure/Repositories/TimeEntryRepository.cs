@@ -2,6 +2,10 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Prisma.Workspace.Domain.Exceptions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Prisma.Workspace.Infrastructure.Repositories;
 
@@ -33,7 +37,70 @@ public class TimeEntryRepository : ITimeEntryRepository
             .AsNoTracking()
             .Where(t => t.UserId == userId && t.EndedAt == null)
             .OrderByDescending(t => t.StartedAt)
+            .ThenBy(t => t.Id)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<TimeEntry> StartTimerAsync(Guid workItemId, string userId, string? note,
+        CancellationToken cancellationToken = default) => MutateTimerAsync(userId, async () =>
+    {
+        var running = await RunningTimersAsync(userId, cancellationToken);
+        // Preserva a idempotência da tarefa solicitada e torna legados duplicados encerráveis/editáveis.
+        var retained = running.FirstOrDefault(entry => entry.WorkItemId == workItemId);
+        foreach (var entry in running)
+            if (retained is null || entry.Id != retained.Id) entry.Encerrar();
+        if (retained is not null) return retained;
+        var created = TimeEntry.IniciarAgora(workItemId, userId, note);
+        await _context.TimeEntries.AddAsync(created, cancellationToken);
+        return created;
+    }, cancellationToken);
+
+    public Task<TimeEntry> StopTimerAsync(string userId, Guid? workItemId, string? note,
+        CancellationToken cancellationToken = default) => MutateTimerAsync(userId, async () =>
+    {
+        var running = await RunningTimersAsync(userId, cancellationToken);
+        var current = running.FirstOrDefault();
+        DomainException.Garantir(current is not null, "Não existe timer em andamento.");
+        DomainException.Garantir(!workItemId.HasValue || current!.WorkItemId == workItemId.Value,
+            "O timer em andamento pertence a outro card.");
+        foreach (var entry in running) entry.Encerrar(entry.Id == current!.Id ? note : null);
+        return current!;
+    }, cancellationToken);
+
+    private Task<List<TimeEntry>> RunningTimersAsync(string userId, CancellationToken ct) =>
+        // D58: manter os filtros do tenant, inclusive ao recuperar dados legados.
+        _context.TimeEntries.Where(entry => entry.UserId == userId && entry.EndedAt == null)
+            .OrderByDescending(entry => entry.StartedAt).ThenBy(entry => entry.Id).ToListAsync(ct);
+
+    private async Task<TimeEntry> MutateTimerAsync(string userId, Func<Task<TimeEntry>> mutate, CancellationToken ct)
+    {
+        if (!_context.Database.IsRelational())
+        {
+            _context.ChangeTracker.Clear();
+            var result = await mutate();
+            await _context.SaveChangesAsync(ct);
+            return result;
+        }
+        return await _context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            _context.ChangeTracker.Clear();
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            await using var command = _context.Database.GetDbConnection().CreateCommand();
+            command.Transaction = transaction.GetDbTransaction();
+            command.CommandText = "DECLARE @result int; EXEC @result = sys.sp_getapplock @Resource = @resource, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000; SELECT @result;";
+            var resource = command.CreateParameter();
+            resource.ParameterName = "@resource";
+            resource.Value = "PrismaTimeEntry:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(userId)));
+            command.Parameters.Add(resource);
+            var acquired = await command.ExecuteScalarAsync(ct);
+            DomainException.Garantir(acquired is int status && status >= 0,
+                "Não foi possível atualizar o cronômetro agora. Tente novamente.");
+            var result = await mutate();
+            // Encerramentos, inclusão e auditoria são gravados e confirmados juntos.
+            await _context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return result;
+        });
     }
 
     public async Task<IReadOnlyList<TimeEntry>> GetByWorkItemIdAsync(

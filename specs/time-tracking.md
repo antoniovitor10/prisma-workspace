@@ -69,6 +69,10 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 - Cada usuário pode ter somente um cronômetro aberto por vez.
 - Iniciar um cronômetro em outra tarefa encerra automaticamente o cronômetro anterior e inicia o novo.
 - Iniciar novamente na mesma tarefa não deve criar um segundo cronômetro aberto.
+- Correção H16 (revisão horas-4, 2026-10-16): início, troca e parada são serializados por usuário em transação SQL, com exclusão compartilhada entre instâncias. A consulta, o saneamento dos abertos, a inclusão e a auditoria são confirmados juntos. Os filtros da organização ativa continuam obrigatórios conforme D58.
+- Ao iniciar na mesma tarefa, preservar o lançamento aberto mais recente dessa tarefa e encerrar quaisquer outros abertos próprios do tenant. Ao iniciar em outra tarefa, encerrar todos os abertos próprios antes de criar o novo. Ao parar o timer atual, encerrar também os abertos duplicados próprios do tenant. Nenhum lançamento de terceiro ou de outro tenant é alterado.
+- A recuperação de duplicados preserva os horários iniciais e as observações e registra cada encerramento na auditoria existente; não apaga nem reescreve automaticamente os períodos anteriores. O dono pode corrigir os intervalos encerrados pelo fluxo de ajuste.
+- Kanban e Meu trabalho desabilitam os controles de timer enquanto a mutação estiver pendente e recusam cliques repetidos no mesmo intervalo. A garantia no servidor permanece necessária para requisições simultâneas e abas diferentes.
 
 ### Sobreposição e limite diário
 

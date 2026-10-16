@@ -1,7 +1,6 @@
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Features.TimeEntries.Dtos;
 using Prisma.Workspace.Application.Interfaces;
-using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Application.Features.WorkItems;
 using Prisma.Workspace.Domain.Authorization;
 using Prisma.Workspace.Domain.Enums;
@@ -41,21 +40,8 @@ public class StartTimerCommandHandler : IRequestHandler<StartTimerCommand, TimeE
             item, request.UserId, ProjectRole.Member, PlatformPermission.Edit,
             _projectAccess, _permissions, cancellationToken);
 
-        var running = await _timeEntries.GetRunningByUserAsync(request.UserId, cancellationToken);
-        if (running is not null)
-        {
-            if (running.WorkItemId == request.WorkItemId) return running.ToDto();
-
-            var tracked = await _timeEntries.GetByIdAsync(running.Id, cancellationToken);
-            if (tracked is not null)
-            {
-                tracked.Encerrar();
-                await _timeEntries.UpdateAsync(tracked, cancellationToken);
-            }
-        }
-
-        var entry = TimeEntry.IniciarAgora(request.WorkItemId, request.UserId, request.Note);
-        await _timeEntries.AddAsync(entry, cancellationToken);
+        var entry = await _timeEntries.StartTimerAsync(
+            request.WorkItemId, request.UserId, request.Note, cancellationToken);
         return entry.ToDto();
     }
 }

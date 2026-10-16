@@ -9,6 +9,10 @@ public interface ITimeEntryRepository
 {
     Task<TimeEntry?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TimeEntry?> GetRunningByUserAsync(string userId, CancellationToken cancellationToken = default);
+    /// <summary>Serializa início/troca por usuário e encerra abertos duplicados no tenant ativo.</summary>
+    Task<TimeEntry> StartTimerAsync(Guid workItemId, string userId, string? note, CancellationToken cancellationToken = default);
+    /// <summary>Usa a mesma exclusão do início e encerra todos os abertos próprios do tenant.</summary>
+    Task<TimeEntry> StopTimerAsync(string userId, Guid? workItemId, string? note, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TimeEntry>> GetByWorkItemIdAsync(Guid workItemId, CancellationToken cancellationToken = default);
     Task<TimeEntry> AddAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
     Task DeleteAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
