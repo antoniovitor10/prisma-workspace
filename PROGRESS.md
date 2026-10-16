@@ -1,3 +1,10 @@
+## [2026-10-16] - Codex (Forja) - prova SQL do token e contratos para correção B
+
+- Teste novo MethodTokenSqlTests consome a fixture pública SQL da Ponte sem editá-la: banco descartável próprio3132, igualdade parametrizada TokenHash executada no SQL, índice único da primeira coluna confirmado em sys.indexes, autenticação real com permissões/delegação, LastUsed sem regravar dentro de5min e revogação imediata.1/1 passou; fixture cria/apaga só seu banco protegido por host/prefixo. Restore inicial foi necessário no novo diretório de artifacts; nenhum pacote/lockfile modificado.
+- A pedido da Ponte para médios Prumo/git-4 e fork Prova, contratos acrescentam HeadRepositoryId opcional ao final do evento/snapshot, autor Git observado opcional no snapshot, lista do ciclo com default compatível e busca pontual de observação por projeto com defaultnull. Fakes existentes continuam compiláveis; defaults não fabricam origem/completude/vínculo. Implementação/correção B pertence à Ponte e precisa nova revisão.
+- Baixo2 da UI/git-5 corrigido: refs limitadas a128 e padrãoASCII conforme servidor; cadastro orienta os três eventos necessários do webhook. 15/15 Vitest passaram novamente após ajuste. Componente segue sem encaixe na aplicação atéF1. BuildVite ainda aguarda liberaçãoCPU; não é validação final da2a.
+- A/git-3-2 e UI/git-5 revisados somente baixos. SQL reduz risco do baixo3git-3, sem alegar migração Up/Down/Up, concorrência do movimento, DI/guard genérico ou QA final. Próximo: revisão deste complemento, Bgit-4-2 revista e integraçãoF1/F2. Ambientes protegidos preservados.
+
 ## [2026-10-16] - Codex (Forja) - componentes UI C do método Git
 
 - Entregues componentes novos em Web/src/features/method-git: configuração explícita do quadro, tokens, repositórios, PRs não vinculados e liberação de retomada. Cliente usa somente sessão humana existente; token emitido fica em estado local, fora de QueryCache/localStorage, e desaparece ao trocar projeto/aba. Token humano é pessoal, sem seletor de outra pessoa; reemissão avisa redução potencial do teto de tokens anteriores. Sem ícones e usando tokens visuais D68 existentes.

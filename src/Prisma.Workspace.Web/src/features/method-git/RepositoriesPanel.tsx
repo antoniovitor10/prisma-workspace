@@ -29,6 +29,7 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
   return <section aria-labelledby="method-repositories-title">
     <h3 id="method-repositories-title">Repositórios GitHub</h3>
     <Hint>Conecte a instalação da GitHub App ao repositório e ao sistema que registrará os movimentos.</Hint>
+    <Hint>No webhook do GitHub, selecione somente os eventos pull_request, pull_request_review e create.</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
     {action.success && <Feedback role="status">{action.success}</Feedback>}
     {tokens.isError && <Feedback role="alert">{tokens.error.message}</Feedback>}
@@ -44,9 +45,9 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
         <Field>GitHub App ID<input required type="number" min={1} step={1} {...field('appId')} /></Field>
         <Field>Installation ID<input required type="number" min={1} step={1} {...field('installationId')} /></Field>
         <Field>Servidor GitHub<input required maxLength={255} {...field('host')} /></Field>
-        <Field>Referência da chave privada<input required maxLength={512} placeholder="github-app-key" autoComplete="off" {...field('appPrivateKeySecretRef')} />
+        <Field>Referência da chave privada<input required maxLength={128} pattern="[A-Za-z0-9_-]{1,128}" placeholder="github-app-key" autoComplete="off" {...field('appPrivateKeySecretRef')} />
           <small>Nome da configuração já cadastrada no servidor.</small></Field>
-        <Field>Referência do segredo do webhook<input required maxLength={512} placeholder="github-webhook-secret" autoComplete="off" {...field('webhookSecretRef')} /></Field>
+        <Field>Referência do segredo do webhook<input required maxLength={128} pattern="[A-Za-z0-9_-]{1,128}" placeholder="github-webhook-secret" autoComplete="off" {...field('webhookSecretRef')} /></Field>
         <Actions><Button $primary type="submit">{action.pending === 'register' ? 'Conectando...' : 'Conectar repositório'}</Button></Actions>
       </fieldset>
     </Form>

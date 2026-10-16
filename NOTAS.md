@@ -1,3 +1,10 @@
+## 2026-10-16 — Forja: SQL token e contratos do complemento B
+
+- MethodTokenSqlTests.cs novo1/1 realSQL3132 passou com GitDeliverySqlFixture pública; provaigualdadeparametrizadaTokenHash+índiceúnico,auth/permissõesreais,LastUsed1minsemupdate,revogaçãoimediata. Usa PRISMA_METHOD_GIT_SQL externo e bancoPrisma_MethodGit_Ponte_GUID criado/apagadopelafixture; nunca envimplícito/protegidos. Comando artifacts/tmp/prisma-metodo-forja-sql-artifacts,nice10/CPU2/m1, filtroMethodTokenSqlTests. Primeirono-restorefaltouassets,restoreexplícito resolveu. SQLteste foi compiladoantesdasadiçõescontratuais,quenãoalteramauth.
+- Contratos solicitadosPonte disponíveis: HeadRepositoryId opcionalfinal NormalizedGitEvent/GitPullRequestSnapshot; IGitProvider.ListPullRequestsForCycleAsync(defaultlistaall,Completeremoto); IMethodGitStore.GetPullRequestObservationAsync(defaultnull). PullRequestAuthorId/Name opcionaisfinalSnapshot paraauditoriadovínculo(semautoridade). Bfazimplementaçãoreal/controlesfork/custo/recuo/rate; nãomexerarquivosB. UIbaixo2 maxLength128/pattern resolvido+orientaçãoeventosGitHub, semnovaautoridade.
+- A31e0b73 git-3-2 aprovado sóbaixos; UI9630163 git-5 aprovado sóbaixos; B75ba300 precisa resolver2médiosPrumo+forkProva antesF2. PontepedidosemESTADO06:11/13 atendidos,checkpointpublicaçãodependedeelasalvarseustrackednão tocarstashalheio.
+- CPU pesadaTear renovadaaté10:00UTC; buildVite pendente,esperarnãoassumirliberaçãoautomática. F1sódepoisfatias/correçõesrevistas, seguirleituraplanejamento/testesfocados. Modelonecessita BoardIdnullableeIDativonullablepreservandoUI; NÃOrelaxarFKhistóricoharddeleteTask, rotaDELETEarquiva. Goalcontinuaintegração+revisão+QAmesmoSHA+suitescompletas/PRONTO-PROD.
+
 ## 2026-10-16 — Forja: UI C entregue para revisão
 
 - Pasta exclusiva Web/src/features/method-git com painel principal/Tokens/Repositories/PullRequests/Resume, cliente/types/hook/styles e dois Vitest.15/15 verdes, tsc-b aprovado e lint0erros/14avisos foraC. Sem import noApp/ProjectSettings, ainda não há rota funcional. BuildVite pendente deCPUlivre, pedidoFILA; deve ser executado antes da validação final, não alegar build/QAvisual nesta entrega.

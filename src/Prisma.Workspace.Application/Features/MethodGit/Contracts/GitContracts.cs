@@ -31,7 +31,7 @@ public sealed record NormalizedGitEvent(
     string? BaseBranch, string? HeadSha, string? MergeSha, string? State,
     bool IsDraft = false, bool IsMerged = false,
     long? ReviewId = null, string? ReviewState = null, string? ReviewCommitSha = null,
-    string? ObservedGitActorId = null, string? ObservedGitActorName = null);
+    string? ObservedGitActorId = null, string? ObservedGitActorName = null, long? HeadRepositoryId = null);
 
 public sealed record GitWebhookInput(
     Guid IntegrationId, string DeliveryId, string EventName, string Signature,
@@ -47,7 +47,8 @@ public sealed record GitPullRequestSnapshot(
     string HeadSha, string? MergeSha, string State, bool IsDraft, bool IsMerged,
     DateTimeOffset UpdatedAtUtc, DateTimeOffset? OpenedAtUtc = null,
     DateTimeOffset? MergedAtUtc = null, DateTimeOffset? ReadyForReviewAtUtc = null,
-    DateTimeOffset? ClosedAtUtc = null);
+    DateTimeOffset? ClosedAtUtc = null, long? HeadRepositoryId = null,
+    string? PullRequestAuthorId = null, string? PullRequestAuthorName = null);
 public sealed record GitReviewSnapshot(long Id, string ReviewerId, string State, string CommitSha, DateTimeOffset SubmittedAtUtc);
 public sealed record GitPullRequestReadSet(IReadOnlyList<GitPullRequestSnapshot> PullRequests, bool Complete, string? IncompleteReason = null);
 public sealed record GitInstallationValidation(bool Allowed, string? ErrorCode, string? Message);

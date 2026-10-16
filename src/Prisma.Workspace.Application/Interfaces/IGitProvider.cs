@@ -11,6 +11,11 @@ public interface IGitProvider
     Task<GitPullRequestSnapshot> GetPullRequestAsync(GitRepositoryDescriptor repository, int number, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<GitReviewSnapshot>> GetReviewsAsync(GitRepositoryDescriptor repository, int number, CancellationToken cancellationToken = default);
     Task<GitPullRequestReadSet> ListPullRequestsAsync(GitRepositoryDescriptor repository, string state, CancellationToken cancellationToken = default);
+    // Implementações reais limitam o histórico ao ciclo, preservando a leitura completa de PRs abertos.
+    // O padrão mantém compatibilidade de fakes/provedores; Complete nunca presume paginação não lida.
+    Task<GitPullRequestReadSet> ListPullRequestsForCycleAsync(GitRepositoryDescriptor repository,
+        DateTimeOffset authorizedAtUtc, CancellationToken cancellationToken = default)
+        => ListPullRequestsAsync(repository, "all", cancellationToken);
 }
 
 /// <summary>Referências resolvidas apenas no namespace externo MethodGit:Secrets; valores nunca saem em DTO/log.</summary>
