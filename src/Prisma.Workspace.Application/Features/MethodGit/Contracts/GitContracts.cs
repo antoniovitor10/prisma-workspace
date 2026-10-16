@@ -29,7 +29,8 @@ public sealed record NormalizedGitEvent(
     int? PullRequestNumber, string? PullRequestUrl, string? Title, string? HeadBranch,
     string? BaseBranch, string? HeadSha, string? MergeSha, string? State,
     bool IsDraft = false, bool IsMerged = false,
-    long? ReviewId = null, string? ReviewState = null, string? ReviewCommitSha = null);
+    long? ReviewId = null, string? ReviewState = null, string? ReviewCommitSha = null,
+    string? ObservedGitActorId = null, string? ObservedGitActorName = null);
 
 public sealed record GitWebhookInput(
     Guid IntegrationId, string DeliveryId, string EventName, string Signature,
@@ -68,4 +69,5 @@ public sealed record VerifiedGitFact(
     DateTimeOffset OccurredAtUtc, string HeadSha, string? MergeSha,
     byte[] SemanticKey, int? PullRequestNumber = null, long? ReviewId = null,
     bool OpenPullRequestsReadComplete = false, bool HasOtherOpenPullRequests = false,
-    bool HasEffectiveChangesRequested = false);
+    bool HasEffectiveChangesRequested = false,
+    string? ObservedGitActorId = null, string? ObservedGitActorName = null);

@@ -4,6 +4,24 @@ public enum MethodRole : byte { Human = 1, Agent = 2, System = 3 }
 public enum MethodAuthenticationKind : byte { Unknown = 0, UiSession = 1, MethodToken = 2, IntegrationWorker = 3 }
 public enum MethodGitPhase : byte { NoGit = 0, Webhooks = 1, Reconciliation = 2, Deployment = 3 }
 
+public static class MethodChannels
+{
+    public const string Ui = "ui";
+    public const string Mcp = "mcp";
+    public const string Webhook = "webhook";
+    public const string Reconciliation = "reconciliacao";
+}
+
+public static class MethodGitFactCodes
+{
+    public const string PullRequestOpened = "pull_request_opened";
+    public const string PullRequestReadyForReview = "pull_request_ready_for_review";
+    public const string PullRequestReopened = "pull_request_reopened";
+    public const string PullRequestClosedWithoutMerge = "pull_request_closed_without_merge";
+    public const string ChangesRequested = "review_changes_requested";
+    public const string PullRequestMerged = "pull_request_merged";
+}
+
 public static class MethodStatusCodes
 {
     public const string Backlog = "backlog";

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Prisma.Workspace.Domain.Enums;
 
 namespace Prisma.Workspace.Application.Features.MethodGit.Contracts;
@@ -26,7 +27,7 @@ public sealed record MethodTaskSnapshot(
     Guid? ActiveAuthorizationEventId, DateTimeOffset? AuthorizedAtUtc,
     DateTimeOffset? LastInteractiveChangeAtUtc, Guid? BlockingEventId,
     Guid? BlockingPrincipalId, string? BlockingOriginStatusCode, Guid? ResumeApprovalEventId,
-    bool IsTopLevel, bool IsArchived, byte[] RowVersion);
+    bool IsTopLevel, bool IsArchived, byte[] RowVersion, DateTimeOffset? LastManualChangeAtUtc = null);
 
 public sealed record MethodMutation(
     Guid ProjectId, Guid BoardId, Guid? WorkItemId, Guid? FromStageId, Guid? ToStageId,
@@ -61,7 +62,8 @@ public sealed record MethodRulesDto(
     bool RequiresInteractiveResumeApproval = true);
 
 public sealed record IssueMethodTokenRequest(
-    string Name, string Role, int ValidDays = 30, Guid? PrincipalId = null,
+    string Name, string Role,
+    [Range(1, 90, ErrorMessage = "A validade deve estar entre 1 e 90 dias.")] int ValidDays = 30, Guid? PrincipalId = null,
     IReadOnlyList<PlatformPermission>? Permissions = null, string? PrincipalDisplayName = null);
 public sealed record MethodTokenDto(
     Guid Id, Guid PrincipalId, string Name, string PrincipalDisplayName, string Role,
