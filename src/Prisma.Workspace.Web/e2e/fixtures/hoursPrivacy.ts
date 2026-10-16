@@ -51,7 +51,19 @@ export async function withHoursPrivacy(page: Page, request: APIRequestContext, r
       { role, isActive: true })).status()).toBe(204);
     const fixture = { boards, actor, colleague, outsider, managed, otherTeam, board, stage, parent, task, child,
       other, personal, date, inCurrentWeek, role, ownNote, otherNote,
-      api: (path: string, method = 'GET', data?: unknown) => boards.api(path, method, data, actor),
+      async api(path: string, method = 'GET', data?: unknown) {
+        const started = Date.now();
+        const timing = { type: 'hours-http', description: JSON.stringify({ method, path, status: 'pending' }) };
+        test.info().annotations.push(timing);
+        try {
+          const response = await boards.api(path, method, data, actor);
+          timing.description = JSON.stringify({ method, path, status: response.status(), ms: Date.now() - started });
+          return response;
+        } catch (error) {
+          timing.description = JSON.stringify({ method, path, status: 'transport-error', ms: Date.now() - started });
+          throw error;
+        }
+      },
       async get<T>(path: string): Promise<T> {
         const response = await this.api(path); expect(response.status(), `GET ${path}`).toBe(200); return response.json();
       },
