@@ -40,7 +40,7 @@ test('colunas independentes: cópia, ordem e exclusão de coluna preservam a tar
     expect((await factory.api(`/api/Stages/${aStages[0].id}?destinationStageId=${aStages[1].id}`, 'DELETE')).status()).toBe(204);
     expect(await factory.get(`/api/WorkItems/${task.id}`)).toMatchObject({ stageId: aStages[1].id });
     await openBoard(page, a.id);
-    await expect(page.getByRole('heading', { name: task.title, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: new RegExp(`^#\\d+ · ${task.title}$`) })).toBeVisible();
   });
 });
 
@@ -67,7 +67,7 @@ test('colunas independentes: transferência pela gaveta persiste no quadro de de
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await openBoard(page, b.id);
-    await expect(page.getByRole('heading', { name: task.title, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: new RegExp(`^#\\d+ · ${task.title}$`) })).toBeVisible();
   });
 });
 
@@ -91,6 +91,6 @@ test('colunas independentes: excluir quadro ocupado preserva destino e históric
     const events = await factory.get<unknown[]>(`/api/WorkItems/${task.id}/events`);
     expect(events.length).toBeGreaterThanOrEqual(3);
     await openBoard(page, a.id);
-    await expect(page.getByRole('heading', { name: task.title, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: new RegExp(`^#\\d+ · ${task.title}$`) })).toBeVisible();
   });
 });
