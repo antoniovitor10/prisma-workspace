@@ -1,6 +1,6 @@
 import { PrismaApi, type WorkItemDto, type WorkItemDetailsDto } from './api.js';
 import { FIELD_NAMES } from './mapping.js';
-import { ensureProjeto, type ProjetoSetup } from './setup.js';
+import { ensureHuTag, ensureProjeto, type ProjetoSetup } from './setup.js';
 import {
   BLOCK_MARKER, STATUS_PREFIX, assertCreationStatus, assertTransition,
   getProjectRules, isTaskStatus, parseRole, type PrismaRole, type TaskStatus,
@@ -99,7 +99,7 @@ export class TaskService {
 
   private async items(setup: ProjetoSetup): Promise<WorkItemDto[]> {
     return (await this.api.listWorkItemsByBoard(setup.boardId))
-      .filter(item => item.boardId === setup.boardId && !item.isArchived);
+      .filter(item => item.boardId === setup.boardId && item.parentId === null && !item.isArchived);
   }
 
   private find(id: string, items: WorkItemDto[], setup: ProjetoSetup): WorkItemDto {
@@ -109,16 +109,15 @@ export class TaskService {
     return matches[0];
   }
 
-  private toTask(item: WorkItemDto, items: WorkItemDto[], setup: ProjetoSetup): MethodTask {
+  private toTask(item: WorkItemDto, setup: ProjetoSetup): MethodTask {
     const id = this.methodId(item, setup);
     if (!id || !/^T-\d{4,}$/.test(id)) throw new Error('O item não possui ID de task do método.');
-    const parent = items.find(candidate => candidate.id === item.parentId);
     const prefix = `${id} · `;
     return {
       id,
       titulo: item.title.startsWith(prefix) ? item.title.slice(prefix.length) : item.title,
       status: this.status(item, setup),
-      hu: parent ? this.methodId(parent, setup) : null,
+      hu: this.field(item, setup, FIELD_NAMES.hu),
       arquivo: this.field(item, setup, FIELD_NAMES.arquivo),
       cobre: (this.field(item, setup, FIELD_NAMES.cobre) ?? '').split(',').map(value => value.trim()).filter(Boolean),
       risco: this.field(item, setup, FIELD_NAMES.risco),
@@ -131,7 +130,7 @@ export class TaskService {
     requireTaskId(id);
     const setup = await this.setup();
     const items = await this.items(setup);
-    return this.toTask(this.find(id, items, setup), items, setup);
+    return this.toTask(this.find(id, items, setup), setup);
   }
 
   async listarTasks(status?: TaskStatus): Promise<MethodTask[]> {
@@ -141,7 +140,7 @@ export class TaskService {
     const seen = new Set<string>();
     return items.filter(item => /^T-\d{4,}$/.test(this.methodId(item, setup) ?? ''))
       .map(item => {
-        const task = this.toTask(item, items, setup);
+        const task = this.toTask(item, setup);
         if (seen.has(task.id)) throw new Error(`Chave ${task.id} duplicada no campo ${FIELD_NAMES.id}.`);
         seen.add(task.id);
         return task;
@@ -191,22 +190,25 @@ export class TaskService {
       const setup = await this.setup();
       const items = await this.items(setup);
       if (items.some(item => this.methodId(item, setup) === id)) throw new Error(`${id} já existe. Use obter_task.`);
-      const parent = this.find(input.hu, items, setup);
+      const huFieldId = this.fieldId(setup, FIELD_NAMES.hu);
+      const huTagId = await ensureHuTag(this.api, input.hu);
       const stageId = setup.stages.get(status);
       if (!stageId) throw new Error(`Coluna ausente para ${status}.`);
       const workItemId = await this.api.createWorkItem({
-        boardId: setup.boardId, stageId, parentId: parent.id, title: `${id} · ${title}`, kind: 5,
+        boardId: setup.boardId, stageId, parentId: null, title: `${id} · ${title}`, kind: 5,
       });
       const covers = typeof input.cobre === 'string' ? input.cobre : input.cobre.join(', ');
       try {
         await this.api.setCustomFields(workItemId, {
           [this.fieldId(setup, FIELD_NAMES.id)]: id,
+          [huFieldId]: input.hu,
           [this.fieldId(setup, FIELD_NAMES.arquivo)]: file,
           [this.fieldId(setup, FIELD_NAMES.cobre)]: covers,
           [this.fieldId(setup, FIELD_NAMES.risco)]: input.risco,
         });
+        await this.api.addWorkItemTag(workItemId, huTagId);
       } catch {
-        throw new Error(`O card ${workItemId} foi criado, mas seus campos não foram gravados. Pare e avise; confira esse card antes de repetir criar_task.`);
+        throw new Error(`O card ${workItemId} foi criado, mas a gravação dos campos ou da tag HU falhou. Pare e avise; confira esse card antes de repetir criar_task.`);
       }
       return this.obterTask(id);
     });
@@ -222,7 +224,7 @@ export class TaskService {
       const items = await this.items(setup);
       const item = this.find(id, items, setup);
       const from = this.status(item, setup);
-      if (from === newStatus) return this.toTask(item, items, setup);
+      if (from === newStatus) return this.toTask(item, setup);
       let ownBlock = false;
       if (this.role === 'agente' && from === 'bloqueada' && newStatus === 'em-desenvolvimento') {
         await this.api.login();

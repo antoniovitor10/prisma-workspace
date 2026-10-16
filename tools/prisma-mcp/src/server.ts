@@ -81,7 +81,7 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }));
 
   server.registerTool('criar_task', {
-    description: 'Cria uma task como subitem de uma HU existente. Agente pode criar em backlog (padrão) ou concluida (atalho/incidente).',
+    description: 'Cria uma task de topo no quadro, com HU em campo personalizado e tag de mesmo nome. Agente pode criar em backlog (padrão) ou concluida (atalho/incidente).',
     inputSchema: {
       id: taskId, titulo: text, hu: z.string().regex(/^HU-\d{4,}$/, 'Use HU-0001.'),
       arquivo: text, cobre: z.union([z.array(text), text]), risco: z.enum(['normal', 'alto']),
