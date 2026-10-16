@@ -2,6 +2,7 @@ import { readConfig, type PrismaConfig } from './config.js';
 import type { StageCategory } from './mapping.js';
 
 export interface ProjectDto { id: string; name: string; isArchived?: boolean; customFields?: ProjectCustomFieldDto[]; }
+export interface TagDto { id: string; name: string; color: string; }
 export interface BoardDto { id: string; name: string; projectId: string; }
 export interface StageDto { id: string; name: string; category: StageCategory; position: number; projectId: string; boardId: string | null; }
 export interface ProjectCustomFieldDto { id: string; name: string; type: number; isRequired: boolean; optionsJson: string | null; position: number; isActive?: boolean; }
@@ -10,7 +11,8 @@ export interface WorkItemLinkDto { id: string; type: number; isIncoming: boolean
 export interface WorkItemDto {
   id: string; title: string; boardId: string; stageId: string | null; parentId: string | null;
   kind: number; description: string | null; priority: number; origin: number;
-  customFields: CustomFieldValueDto[]; isArchived: boolean;
+  customFields: CustomFieldValueDto[]; isArchived: boolean; tags: TagDto[];
+  taskTypeId?: string | null;
   responsibleId?: string | null; teamId?: string | null; requesterId?: string | null;
   requesterName?: string | null; requesterEmail?: string | null; startDate?: string | null;
   dueDate?: string | null; estimatedHours?: number | null; remainingHours?: number | null;
@@ -181,23 +183,27 @@ export class PrismaApi {
     return this.request(`/api/Stages/board/${encodeURIComponent(boardId)}/order`, 'PUT', ids);
   }
   async listWorkItemsByBoard(boardId: string): Promise<WorkItemDto[]> {
-    const roots = await this.request<(WorkItemDto & { subItemsCount?: number })[]>(`/api/WorkItems/board/${encodeURIComponent(boardId)}`);
-    const result: WorkItemDto[] = [];
-    const seen = new Set<string>();
-    const visit = async (items: (WorkItemDto & { subItemsCount?: number })[]): Promise<void> => {
-      for (const item of items) {
-        if (seen.has(item.id)) continue;
-        seen.add(item.id);
-        // O DTO de subitems não projeta CustomFields; o detalhe é necessário
-        // para identificar a chave do método nas tasks filhas.
-        result.push(item.parentId ? { ...item, ...await this.getWorkItem(item.id) } : item);
-        if (item.subItemsCount !== 0) {
-          await visit(await this.request(`/api/WorkItems/${encodeURIComponent(item.id)}/subitems`));
-        }
-      }
-    };
-    await visit(roots);
-    return result;
+    // O método usa somente cards de topo, exatamente os itens visíveis no Kanban.
+    return this.request(`/api/WorkItems/board/${encodeURIComponent(boardId)}`);
+  }
+  async listTags(): Promise<TagDto[]> { return this.request('/api/tags'); }
+  async createTag(name: string, color = '#4F46E5'): Promise<TagDto> {
+    return this.request('/api/tags', 'POST', { name, color });
+  }
+  async setWorkItemTags(id: string, tagIds: string[]): Promise<void> {
+    const item = await this.getWorkItem(id);
+    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/taxonomy`, 'PUT', {
+      taskTypeId: item.taskTypeId ?? null, points: item.points ?? null, tagIds: [...new Set(tagIds)],
+    });
+  }
+  async addWorkItemTag(id: string, tagId: string): Promise<boolean> {
+    const item = await this.getWorkItem(id);
+    if (item.tags.some(tag => tag.id === tagId)) return false;
+    await this.request(`/api/WorkItems/${encodeURIComponent(id)}/taxonomy`, 'PUT', {
+      taskTypeId: item.taskTypeId ?? null, points: item.points ?? null,
+      tagIds: [...item.tags.map(tag => tag.id), tagId],
+    });
+    return true;
   }
   async getWorkItem(id: string): Promise<WorkItemDetailsDto> {
     return this.request(`/api/WorkItems/${encodeURIComponent(id)}`);

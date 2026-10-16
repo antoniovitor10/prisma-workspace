@@ -59,3 +59,11 @@ export async function ensureProjeto(api: PrismaApi = PrismaApi.fromEnv()): Promi
   }
   return { projectId, boardId, stages, fields };
 }
+
+/** As etiquetas são do catálogo da organização; o nome HU é reutilizado. */
+export async function ensureHuTag(api: PrismaApi, hu: string): Promise<string> {
+  if (!/^HU-\d{4,}$/.test(hu)) throw new Error('HU inválida. Use HU-0001.');
+  const matches = (await api.listTags()).filter(tag => tag.name === hu);
+  if (matches.length > 1) throw new Error(`Etiqueta ${hu} duplicada no Prisma. Resolva antes de continuar.`);
+  return matches[0]?.id ?? (await api.createTag(hu)).id;
+}

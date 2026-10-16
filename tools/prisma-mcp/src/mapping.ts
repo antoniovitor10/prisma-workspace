@@ -14,4 +14,4 @@ export const STATUSES = Object.keys(STATUS_MAP) as MetodoStatus[];
 export function isMetodoStatus(value: unknown): value is MetodoStatus {
   return typeof value === 'string' && Object.hasOwn(STATUS_MAP, value);
 }
-export const FIELD_NAMES = { id: 'ID do metodo', arquivo: 'Arquivo', cobre: 'Cobre', risco: 'Risco', pr: 'PR' } as const;
+export const FIELD_NAMES = { id: 'ID do metodo', hu: 'HU', arquivo: 'Arquivo', cobre: 'Cobre', risco: 'Risco', pr: 'PR' } as const;

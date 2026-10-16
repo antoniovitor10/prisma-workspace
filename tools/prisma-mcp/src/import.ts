@@ -3,8 +3,8 @@ import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { PrismaApi, type WorkItemDto } from './api.js';
 import { FIELD_NAMES, isMetodoStatus, type MetodoStatus } from './mapping.js';
-import { readMetodo, type MetodoHu, type MetodoTask } from './metodo.js';
-import { ensureProjeto, type ProjetoSetup } from './setup.js';
+import { readMetodo, type MetodoTask } from './metodo.js';
+import { ensureProjeto, ensureHuTag, type ProjetoSetup } from './setup.js';
 import { assertCreationStatus, assertTransition } from './rules.js';
 
 export interface ImportOptions { dryRun?: boolean; sincronizarStatus?: boolean; }
@@ -24,9 +24,9 @@ export async function importMetodo(directory: string, options: ImportOptions = {
   // Validar todos os documentos e dependências antes de qualquer escrita remota.
   const metodo = await readMetodo(directory);
   const summary: ImportSummary = { criados: 0, atualizados: 0, semMudanca: 0,
-    vinculosCriados: 0, planejados: metodo.hus.length + metodo.tasks.length, dryRun: options.dryRun ?? false };
+    vinculosCriados: 0, planejados: metodo.tasks.length, dryRun: options.dryRun ?? false };
   if (options.dryRun) return summary;
-  if (!summary.planejados) throw new Error('Nenhuma HU encontrada na pasta informada.');
+  if (!summary.planejados) throw new Error('Nenhuma task encontrada na pasta informada.');
   const api = suppliedApi ?? PrismaApi.fromEnv();
   const setup = await ensureProjeto(api);
   summary.projectId = setup.projectId;
@@ -42,21 +42,22 @@ export async function importMetodo(directory: string, options: ImportOptions = {
   for (const item of items) {
     const id = item.customFields.find(x => x.fieldId === fieldId(FIELD_NAMES.id))?.value;
     if (!id) continue;
+    if (/^HU-\d{4,}$/.test(id)) {
+      throw new Error('Este quadro usa o modelo antigo de HU com subitens. Escolha um projeto ou quadro novo para importar tasks de topo, sem duplicar nem alterar o histórico legado.');
+    }
     if (byId.has(id)) throw new Error(`Chave ${id} duplicada no Prisma. Corrija antes de importar.`);
     byId.set(id, item);
   }
-  // Uma task já existente não pode ser silenciosamente recriada ou reparentada.
   for (const task of metodo.tasks) {
-    const item = byId.get(task.id);
-    if (item && item.parentId !== byId.get(task.hu)?.id) {
-      throw new Error(`A task ${task.id} está vinculada a outra HU no Prisma. Corrija o vínculo antes de importar.`);
+    if (byId.get(task.id)?.parentId) {
+      throw new Error(`A task ${task.id} ainda é subitem no Prisma. Escolha um quadro novo para o modelo de topo.`);
     }
   }
 
   // Migrar frontmatter também respeita o papel: uma task nova não pode
   // nascer autorizada por iniciativa do agente. Validar o lote inteiro
-  // antes de criar qualquer HU/task ou atualizar conteúdo existente.
-  for (const source of [...metodo.hus, ...metodo.tasks]) {
+  // antes de criar qualquer task ou atualizar conteúdo existente.
+  for (const source of metodo.tasks) {
     if (!byId.has(source.id)) {
       assertCreationStatus(api.config.role, isMetodoStatus(source.status) ? source.status : 'backlog');
     }
@@ -65,7 +66,7 @@ export async function importMetodo(directory: string, options: ImportOptions = {
   // A opção de sincronização não pode contornar a autorização por papel.
   // Alterar um item existente continua sujeito à matriz no CLI.
   if (options.sincronizarStatus) {
-    for (const source of [...metodo.hus, ...metodo.tasks]) {
+    for (const source of metodo.tasks) {
       const item = byId.get(source.id);
       if (!item || !isMetodoStatus(source.status) || item.stageId === setup.stages.get(source.status)) continue;
       const from = statusForStage(setup, item.stageId);
@@ -76,26 +77,29 @@ export async function importMetodo(directory: string, options: ImportOptions = {
     }
   }
 
-  const upsert = async (source: MetodoHu | MetodoTask, parentId: string | null): Promise<void> => {
-    const isTask = 'hu' in source;
+  const tags = new Map<string, string>();
+  for (const hu of new Set(metodo.tasks.map(task => task.hu))) tags.set(hu, await ensureHuTag(api, hu));
+
+  const upsert = async (source: MetodoTask): Promise<void> => {
     const desiredStatus: MetodoStatus = isMetodoStatus(source.status) ? source.status : 'backlog';
     const title = `${source.id} · ${source.titulo}`;
     if (title.length > 500) throw new Error(`Título de ${source.id} ultrapassa 500 caracteres.`);
     const values: Record<string, string | null> = {
       [fieldId(FIELD_NAMES.id)]: source.id,
+      [fieldId(FIELD_NAMES.hu)]: source.hu,
       [fieldId(FIELD_NAMES.arquivo)]: source.arquivo,
+      [fieldId(FIELD_NAMES.cobre)]: source.cobre.join(', '),
+      [fieldId(FIELD_NAMES.risco)]: source.risco,
     };
-    if (isTask) {
-      values[fieldId(FIELD_NAMES.cobre)] = source.cobre.join(', ');
-      values[fieldId(FIELD_NAMES.risco)] = source.risco;
-    }
     let item = byId.get(source.id);
     if (!item) {
       const id = await api.createWorkItem({ boardId: setup.boardId, stageId: setup.stages.get(desiredStatus)!,
-        parentId, title, kind: isTask ? 5 : 3 });
-      try { await api.setCustomFields(id, values); }
-      catch {
-        throw new Error(`O card ${id} (${source.id}) foi criado, mas seus campos falharam. Pare e avise; confira esse card antes de repetir a importação.`);
+        parentId: null, title, kind: 5 });
+      try {
+        await api.setCustomFields(id, values);
+        await api.addWorkItemTag(id, tags.get(source.hu)!);
+      } catch {
+        throw new Error(`O card ${id} (${source.id}) foi criado, mas seus campos ou a etiqueta HU falharam. Pare e avise; confira esse card antes de repetir a importação.`);
       }
       item = await api.getWorkItem(id);
       byId.set(source.id, item);
@@ -103,6 +107,15 @@ export async function importMetodo(directory: string, options: ImportOptions = {
       return;
     }
     let changed = false;
+    const previousHu = item.customFields.find(x => x.fieldId === fieldId(FIELD_NAMES.hu))?.value;
+    const huTagId = tags.get(source.hu)!;
+    const obsoleteHuTag = previousHu && previousHu !== source.hu
+      ? item.tags.find(tag => tag.name === previousHu)?.id : undefined;
+    if (obsoleteHuTag) {
+      const tagIds = [...new Set([...item.tags.filter(tag => tag.id !== obsoleteHuTag).map(tag => tag.id), huTagId])];
+      await api.setWorkItemTags(item.id, tagIds);
+      changed = true;
+    } else if (await api.addWorkItemTag(item.id, huTagId)) changed = true;
     if (item.title !== title) {
       await api.updateWorkItem(item.id, { title });
       item.title = title;
@@ -127,8 +140,7 @@ export async function importMetodo(directory: string, options: ImportOptions = {
     }
     outcomes.set(source.id, changed ? 'updated' : 'unchanged');
   };
-  for (const hu of metodo.hus) await upsert(hu, null);
-  for (const task of metodo.tasks) await upsert(task, byId.get(task.hu)!.id);
+  for (const task of metodo.tasks) await upsert(task);
   for (const task of metodo.tasks) {
     const source = byId.get(task.id)!;
     const details = await api.getWorkItem(source.id);
