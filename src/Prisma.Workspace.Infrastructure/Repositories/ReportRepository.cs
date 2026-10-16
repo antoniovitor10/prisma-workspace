@@ -47,6 +47,7 @@ public class ReportRepository : IReportRepository
         DateTimeOffset toExclusive,
         string? userId,
         Guid? teamId,
+        IReadOnlyCollection<Guid>? allowedTeamIds,
         CancellationToken cancellationToken = default)
     {
         var query = _context.TimeEntries.AsNoTracking().AsSplitQuery()
@@ -60,6 +61,9 @@ public class ReportRepository : IReportRepository
             query = query.Where(entry => entry.UserId == userId);
         if (teamId.HasValue)
             query = query.Where(entry => (entry.WorkItem.TeamId ?? entry.WorkItem.Board.TeamId) == teamId.Value);
+        if (allowedTeamIds is not null)
+            query = query.Where(entry => allowedTeamIds.Contains(
+                entry.WorkItem.TeamId ?? entry.WorkItem.Board.TeamId ?? Guid.Empty));
 
         return await query.ToListAsync(cancellationToken);
     }

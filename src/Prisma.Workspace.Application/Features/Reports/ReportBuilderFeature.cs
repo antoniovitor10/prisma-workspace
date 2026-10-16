@@ -7,6 +7,7 @@ using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using MediatR;
+using Prisma.Workspace.Application.Features.TimeEntries;
 
 namespace Prisma.Workspace.Application.Features.Reports;
 
@@ -315,7 +316,7 @@ public class ReportExecutor
         ReportDefinitionDto definition,
         CancellationToken ct)
     {
-        var rows = await SourceRowsAsync(source, projectId, ct);
+        var rows = await SourceRowsAsync(source, projectId, definition, ct);
         var sourceCount = rows.Count;
         rows = ApplyPeriod(source, rows, definition.From, definition.To);
         foreach (var filter in definition.Filters)
@@ -386,33 +387,37 @@ public class ReportExecutor
     }
 
     private async Task<List<Dictionary<string, object?>>> SourceRowsAsync(
-        ReportDataSource source, Guid? projectId, CancellationToken ct)
+        ReportDataSource source, Guid? projectId, ReportDefinitionDto definition, CancellationToken ct)
     {
+        var now = DateTimeOffset.UtcNow;
+        var from = definition.From.HasValue ? TimeTrackingDay.Start(definition.From.Value) : DateTimeOffset.MinValue;
+        var to = definition.To.HasValue ? TimeTrackingDay.Start(definition.To.Value.AddDays(1)) : DateTimeOffset.MaxValue;
+        decimal Hours(TimeEntry entry) => TimeTrackingDay.SecondsInRange(entry.StartedAt, entry.EndedAt ?? now, from, to) / 3600m;
         var users = await _users.GetAllAsync(ct);
         var names = users.ToDictionary(x => x.Id, x => x.UserName ?? x.Email ?? x.Id);
         return source switch
         {
             ReportDataSource.WorkItems => (await _analytics.GetWorkItemsAsync(projectId, ct))
-                .Select(item => TaskRow(item, names)).ToList(),
+                .Select(item => TaskRow(item, names, Hours)).ToList(),
             ReportDataSource.ExternalRequests => (await _analytics.GetExternalRequestsAsync(projectId, ct))
-                .Select(RequestRow).ToList(),
+                .Select(request => RequestRow(request, Hours)).ToList(),
             ReportDataSource.Projects => (await _analytics.GetProjectsAsync(ct))
                 .Where(x => !projectId.HasValue || x.Id == projectId).Select(ProjectRow).ToList(),
             ReportDataSource.Teams => (await _analytics.GetTeamsAsync(ct))
                 .Where(x => !projectId.HasValue || x.Projects.Any(link => link.ProjectId == projectId.Value))
                 .Select(TeamRow).ToList(),
-            ReportDataSource.Users => await UserRowsAsync(projectId, users, names, ct),
+            ReportDataSource.Users => await UserRowsAsync(projectId, users, names, Hours, ct),
             ReportDataSource.Sprints => (await _analytics.GetSprintsAsync(projectId, ct))
                 .Select(SprintRow).ToList(),
             ReportDataSource.TimeEntries => (await _analytics.GetTimeEntriesAsync(projectId, ct))
-                .Select(entry => TimeRow(entry, names)).ToList(),
+                .Select(entry => TimeRow(entry, names, Hours)).ToList(),
             _ => []
         };
     }
 
     private async Task<List<Dictionary<string, object?>>> UserRowsAsync(
         Guid? projectId, IReadOnlyList<UserSummary> users,
-        IReadOnlyDictionary<string, string> names, CancellationToken ct)
+        IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours, CancellationToken ct)
     {
         var items = await _analytics.GetWorkItemsAsync(projectId, ct);
         var visibleUsers = users.AsEnumerable();
@@ -439,14 +444,14 @@ public class ReportExecutor
             ["openTasks"] = items.Count(x => x.CompletedAt == null && (x.ResponsibleId == user.Id
                 || x.Assignees.Any(a => a.UserId == user.Id))),
             ["realizedHours"] = Math.Round(items.SelectMany(x => x.TimeEntries)
-                .Where(x => x.UserId == user.Id).Sum(DurationHours), 2)
+                .Where(x => x.UserId == user.Id).Sum(hours), 2)
         }).ToList();
     }
 
     private static Dictionary<string, object?> TaskRow(
-        WorkItem item, IReadOnlyDictionary<string, string> names)
+        WorkItem item, IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours)
     {
-        var realized = Math.Round(item.TimeEntries.Sum(DurationHours), 2);
+        var realized = Math.Round(item.TimeEntries.Sum(hours), 2);
         var blocked = item.OutgoingLinks.Any(x => x.Type == WorkItemLinkType.DependsOn
                 && x.TargetWorkItem.CompletedAt == null)
             || item.IncomingLinks.Any(x => x.Type == WorkItemLinkType.Blocks
@@ -471,7 +476,7 @@ public class ReportExecutor
         return row;
     }
 
-    private static Dictionary<string, object?> RequestRow(ExternalRequest request)
+    private static Dictionary<string, object?> RequestRow(ExternalRequest request, Func<TimeEntry, decimal> hours)
     {
         var row = new Dictionary<string, object?>
         {
@@ -482,7 +487,7 @@ public class ReportExecutor
             ["triageStatus"] = request.TriageStatus.ToString(), ["priority"] = request.WorkItem.Priority.ToString(),
             ["createdAt"] = request.CreatedAt, ["completedAt"] = request.WorkItem.CompletedAt,
             ["plannedHours"] = request.WorkItem.EstimatedHours ?? 0,
-            ["realizedHours"] = Math.Round(request.WorkItem.TimeEntries.Sum(DurationHours), 2)
+            ["realizedHours"] = Math.Round(request.WorkItem.TimeEntries.Sum(hours), 2)
         };
         foreach (var value in request.WorkItem.CustomFieldValues)
             row[$"custom:{value.FieldDefinitionId}"] = value.Value;
@@ -534,13 +539,13 @@ public class ReportExecutor
     }
 
     private static Dictionary<string, object?> TimeRow(
-        TimeEntry entry, IReadOnlyDictionary<string, string> names) => new()
+        TimeEntry entry, IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours) => new()
     {
         ["project"] = entry.WorkItem.Board.Project?.Name, ["team"] = entry.WorkItem.Team?.Name ?? entry.WorkItem.Board.Team?.Name,
         ["user"] = names.GetValueOrDefault(entry.UserId, entry.UserId), ["userId"] = entry.UserId,
         ["task"] = entry.WorkItem.Title, ["taskNumber"] = entry.WorkItem.Number,
         ["startedAt"] = entry.StartedAt, ["endedAt"] = entry.EndedAt,
-        ["hours"] = Math.Round(DurationHours(entry), 2), ["realizedHours"] = Math.Round(DurationHours(entry), 2),
+        ["hours"] = hours(entry), ["realizedHours"] = hours(entry),
         ["plannedHours"] = entry.WorkItem.EstimatedHours ?? 0, ["note"] = entry.Note
     };
 
@@ -549,6 +554,14 @@ public class ReportExecutor
         DateOnly? from, DateOnly? to)
     {
         if (!from.HasValue && !to.HasValue) return rows;
+        if (source == ReportDataSource.TimeEntries)
+        {
+            var start = from.HasValue ? TimeTrackingDay.Start(from.Value) : DateTimeOffset.MinValue;
+            var end = to.HasValue ? TimeTrackingDay.Start(to.Value.AddDays(1)) : DateTimeOffset.MaxValue;
+            var now = DateTimeOffset.UtcNow;
+            return rows.Where(row => (DateTimeOffset)row["startedAt"]! < end
+                && (row["endedAt"] as DateTimeOffset? ?? now) > start).ToList();
+        }
         var field = ReportCatalog.DateField(source);
         if (string.IsNullOrWhiteSpace(field)) return rows;
         return rows.Where(row =>
@@ -647,8 +660,6 @@ public class ReportExecutor
             default: return DateOnly.TryParse(Display(value), out date);
         }
     }
-    private static decimal DurationHours(TimeEntry entry)
-        => (decimal)Math.Max(0, ((entry.EndedAt ?? DateTimeOffset.UtcNow) - entry.StartedAt).TotalHours);
 }
 
 internal static class ReportDefinitionValidator

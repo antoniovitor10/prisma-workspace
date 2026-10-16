@@ -3,6 +3,7 @@ using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using MediatR;
+using Prisma.Workspace.Application.Features.TimeEntries;
 
 namespace Prisma.Workspace.Application.Features.Reports;
 
@@ -205,9 +206,9 @@ public class GetPreparedReportsQueryHandler
     private static bool InPeriod(DateTimeOffset value, DateOnly from, DateOnly to)
     { var date=DateOnly.FromDateTime(value.UtcDateTime);return date>=from&&date<=to; }
     internal static bool EntryOverlaps(TimeEntry entry, DateOnly from, DateOnly to)
-    { var start=new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var end=new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);return entry.StartedAt<end&&(entry.EndedAt??DateTimeOffset.UtcNow)>start; }
+    { var start=TimeTrackingDay.Start(from);var end=TimeTrackingDay.Start(to.AddDays(1));return entry.StartedAt<end&&(entry.EndedAt??DateTimeOffset.UtcNow)>start; }
     private static decimal ClippedHours(TimeEntry entry,DateOnly from,DateOnly to)
-    { var start=new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var end=new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue),TimeSpan.Zero);var actualStart=entry.StartedAt<start?start:entry.StartedAt;var naturalEnd=entry.EndedAt??DateTimeOffset.UtcNow;var actualEnd=naturalEnd>end?end:naturalEnd;return (decimal)Math.Max(0,(actualEnd-actualStart).TotalHours); }
+    { return TimeTrackingDay.SecondsInRange(entry.StartedAt,entry.EndedAt??DateTimeOffset.UtcNow,TimeTrackingDay.Start(from),TimeTrackingDay.Start(to.AddDays(1)))/3600m; }
     private static string PriorityLabel(string value)=>value switch{"Low"=>"Baixa","Medium"=>"Média","High"=>"Alta","Critical"=>"Crítica",_=>value};
     private static string OriginLabel(string value)=>value switch{"Internal"=>"Interna","ExternalPortal"=>"Portal externo","Form"=>"Formulário","Integration"=>"Integração","Import"=>"Importação",_=>value};
 }

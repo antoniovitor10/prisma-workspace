@@ -4,6 +4,7 @@ using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using MediatR;
+using Prisma.Workspace.Application.Features.TimeEntries;
 
 namespace Prisma.Workspace.Application.Features.Reports;
 
@@ -71,7 +72,7 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
         await _access.EnsureAtLeastAsync(request.ProjectId, request.ActorId, ProjectRole.Viewer, ct);
         var project = await _projects.GetByIdWithMembersAsync(request.ProjectId, ct)
             ?? throw new NaoEncontradoException("Projeto");
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = TimeTrackingDay.Date(DateTimeOffset.UtcNow);
         var from = request.From ?? today.AddDays(-29);
         var to = request.To ?? today;
         DomainException.Garantir(to >= from, "A data final deve ser igual ou posterior à inicial.");
@@ -85,8 +86,8 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
             || project.Members.Any(x => x.UserId == request.UserId),
             "O usuário não pertence ao projeto.");
 
-        var fromUtc = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var toExclusive = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var fromUtc = TimeTrackingDay.Start(from);
+        var toExclusive = TimeTrackingDay.Start(to.AddDays(1));
         var items = await _reports.GetTimeReportItemsAsync(
             request.ProjectId, fromUtc, toExclusive, request.TeamId,
             string.IsNullOrWhiteSpace(request.UserId) ? null : request.UserId, ct);
@@ -166,10 +167,7 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
         DateTimeOffset from,
         DateTimeOffset to)
     {
-        var startedAt = entry.StartedAt < from ? from : entry.StartedAt;
-        var naturalEnd = entry.EndedAt ?? DateTimeOffset.UtcNow;
-        var endedAt = naturalEnd > to ? to : naturalEnd;
-        var seconds = Math.Max(0, (int)(endedAt - startedAt).TotalSeconds);
+        var seconds = TimeTrackingDay.SecondsInRange(entry.StartedAt, entry.EndedAt ?? DateTimeOffset.UtcNow, from, to);
         return new TimeReportEntryDto(
             entry.Id, item.Id, item.Number, $"{projectKey}-{item.Number}", item.Title,
             entry.UserId, names.GetValueOrDefault(entry.UserId, entry.UserId),

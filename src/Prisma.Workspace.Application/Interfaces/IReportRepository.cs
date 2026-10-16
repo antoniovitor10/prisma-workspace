@@ -25,5 +25,6 @@ public interface IReportRepository
         DateTimeOffset toExclusive,
         string? userId,
         Guid? teamId,
+        IReadOnlyCollection<Guid>? allowedTeamIds,
         CancellationToken cancellationToken = default);
 }
