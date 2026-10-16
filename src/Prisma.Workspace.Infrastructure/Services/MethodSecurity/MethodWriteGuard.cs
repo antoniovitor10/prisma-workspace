@@ -21,8 +21,52 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
     private MethodActorIdentity? Actor => access?.Current;
     private bool IsMethodActor => Actor?.AuthenticationKind is MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker;
 
+    internal async Task<bool> IsRelevantAsync(CancellationToken ct)
+    {
+        if (IsMethodActor) return true;
+        db.ChangeTracker.DetectChanges();
+        var pending = db.ChangeTracker.Entries().Where(Changed).ToArray();
+        if (pending.Any(x => x.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken
+            or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or GitWebhookDelivery
+            or GitRepositoryIntegration or GitPullRequestObservation or TaskGitLink)) return true;
+
+        var projects = new HashSet<Guid>();
+        var boards = new HashSet<Guid>();
+        var items = new HashSet<Guid>();
+        foreach (var entry in pending)
+        {
+            if (entry.Entity is Project project) projects.Add(project.Id);
+            if (entry.Entity is Board board) boards.Add(board.Id);
+            if (entry.Entity is WorkItem item) items.Add(item.Id);
+            foreach (var property in entry.Properties)
+            {
+                var ids = property.Metadata.Name switch
+                {
+                    "ProjectId" => projects, "BoardId" => boards, "WorkItemId" => items, _ => null
+                };
+                if (ids is null) continue;
+                if (property.CurrentValue is Guid current) ids.Add(current);
+                if (property.OriginalValue is Guid original) ids.Add(original);
+            }
+        }
+        var itemIds = items.ToArray();
+        if (itemIds.Length > 0)
+            projects.UnionWith(await db.WorkItems.IgnoreQueryFilters().AsNoTracking()
+                .Where(x => itemIds.Contains(x.Id)).Select(x => x.Board.ProjectId).Distinct().ToListAsync(ct));
+        foreach (var board in db.Boards.Local.Where(x => boards.Contains(x.Id))) projects.Add(board.ProjectId);
+        var boardIds = boards.ToArray();
+        if (boardIds.Length > 0)
+            projects.UnionWith(await db.Boards.IgnoreQueryFilters().AsNoTracking()
+                .Where(x => boardIds.Contains(x.Id)).Select(x => x.ProjectId).Distinct().ToListAsync(ct));
+        var projectIds = projects.ToArray();
+        // Projeto pausado ainda precisa aposentar provas após ação humana, antes de reativar.
+        return projectIds.Length > 0 && await db.Set<MethodProjectSettings>().IgnoreQueryFilters().AsNoTracking()
+            .AnyAsync(x => projectIds.Contains(x.ProjectId), ct);
+    }
+
     internal async Task<IReadOnlyList<MethodItemChange>> ValidateAsync(CancellationToken ct)
     {
+        _settings.Clear();
         db.ChangeTracker.DetectChanges();
         var pending = db.ChangeTracker.Entries().Where(Changed).ToArray();
         if (pending.Any(x => x.Entity is MethodAuthorizationEvent or GitAppliedFact
@@ -49,14 +93,6 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
             if (!created && stored is null) throw Conflict();
             var destination = await BoardAsync(item.BoardId, ct);
             var source = stored is null || stored.BoardId == destination.Id ? destination : await BoardAsync(stored.BoardId, ct);
-            EnsureTenant(source); EnsureTenant(destination);
-            if (item.StageId is { } stageId)
-            {
-                var stage = db.Stages.Local.SingleOrDefault(x => x.Id == stageId)
-                    ?? await db.Stages.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(x => x.Id == stageId, ct);
-                if (stage is null || stage.BoardId != destination.Id || stage.ProjectId != destination.ProjectId)
-                    throw Denied("method_stage_scope", "A coluna deve pertencer ao quadro e ao projeto de destino.");
-            }
             var sourceSettings = await SettingsAsync(source.ProjectId, ct);
             var destinationSettings = source.ProjectId == destination.ProjectId ? sourceSettings : await SettingsAsync(destination.ProjectId, ct);
             var settings = sourceSettings ?? destinationSettings;
@@ -64,6 +100,14 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
             {
                 if (IsMethodActor) throw Denied("method_scope", "A credencial exige um projeto configurado no método.");
                 continue;
+            }
+            EnsureTenant(source); EnsureTenant(destination);
+            if (item.StageId is { } stageId)
+            {
+                var stage = db.Stages.Local.SingleOrDefault(x => x.Id == stageId)
+                    ?? await db.Stages.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(x => x.Id == stageId, ct);
+                if (stage is null || stage.BoardId != destination.Id || stage.ProjectId != destination.ProjectId)
+                    throw Denied("method_stage_scope", "A coluna deve pertencer ao quadro e ao projeto de destino.");
             }
             var fields = pending.Where(x => x.Entity is WorkItemCustomFieldValue v && v.WorkItemId == item.Id).ToArray();
             var currentId = await CurrentFieldAsync(item.Id, settings.MethodIdFieldId, fields, ct);

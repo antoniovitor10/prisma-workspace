@@ -90,7 +90,9 @@ public sealed class WorkflowRepository : IWorkflowRepository
     public async Task SynchronizeStageWorkItemsAsync(
         Guid stageId, Guid? workflowStatusId, CancellationToken ct = default)
     {
-        if (_methodFeature?.Enabled == true)
+        if (_methodFeature?.Enabled == true && await _context.Stages
+            .Where(x => x.Id == stageId).AnyAsync(x => _context.Set<MethodProjectSettings>()
+                .Any(settings => settings.ProjectId == x.ProjectId), ct))
         {
             // A sincronização participa do Save/transação do handler e da barreira comum.
             foreach (var item in await _context.WorkItems.Where(x => x.StageId == stageId).ToListAsync(ct))

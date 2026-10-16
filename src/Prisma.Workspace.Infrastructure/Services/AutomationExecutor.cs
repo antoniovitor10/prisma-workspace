@@ -38,6 +38,8 @@ public sealed class AutomationExecutor : IAutomationExecutor
             .Include(x => x.StageHistories)
             .FirstOrDefaultAsync(x => x.Id == workItemId, ct);
         if (item is null) return;
+        var methodSteps = _methodFeature?.Enabled == true && await _context.Set<MethodProjectSettings>()
+            .AnyAsync(x => x.ProjectId == item.Board.ProjectId, ct);
 
         var currentStageId = stageId;
         var visitedRules = new HashSet<Guid>();
@@ -59,7 +61,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
             {
                 if (processed >= MaxActions) break;
                 processed++;
-                var outcome = await ApplyAsync(item, rule, visitedStages, ct);
+                var outcome = await ApplyAsync(item, rule, visitedStages, methodSteps, ct);
                 if (outcome.Changed)
                 {
                     hasChanges = true;
@@ -78,7 +80,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
                 }
 
                 // Cada passo passa pela mesma barreira e grava sua própria prova. Uma cadeia não esconde passos intermediários.
-                if (_methodFeature?.Enabled == true)
+                if (methodSteps)
                 {
                     if (outcome.Changed) item.UpdatedAt = DateTimeOffset.UtcNow;
                     await _context.SaveChangesAsync(ct);
@@ -104,6 +106,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         WorkItem item,
         AutomationRule rule,
         ISet<Guid> visitedStages,
+        bool methodSteps,
         CancellationToken ct)
     {
         switch (rule.ActionType)
@@ -143,7 +146,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
                 item.WorkItemTags.Add(new WorkItemTag { WorkItemId = item.Id, TagId = tagId });
                 return AutomationOutcome.Change();
             case AutomationActionType.MoveToStage:
-                return await MoveAsync(item, rule.ActionValue, visitedStages, ct);
+                return await MoveAsync(item, rule.ActionValue, visitedStages, methodSteps, ct);
             default:
                 return AutomationOutcome.Skip("unsupported_action");
         }
@@ -153,6 +156,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         WorkItem item,
         string value,
         ISet<Guid> visitedStages,
+        bool methodSteps,
         CancellationToken ct)
     {
         if (!Guid.TryParse(value, out var destinationId))
@@ -166,7 +170,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         try
         {
             await WorkflowMoveGuard.EnsureAllowedAsync(item, destination, _workflow, ct);
-            if (_methodFeature?.Enabled == true && _methodPolicy is not null)
+            if (methodSteps && _methodPolicy is not null)
             {
                 var decision = await _methodPolicy.EvaluateAsync(new MethodMutation(item.Board.ProjectId, item.BoardId,
                     item.Id, item.StageId, destination.Id, "Movimentação por automação de entrada em coluna."), ct);
@@ -179,7 +183,7 @@ public sealed class AutomationExecutor : IAutomationExecutor
         }
 
         var now = DateTimeOffset.UtcNow;
-        if (_methodFeature?.Enabled == true)
+        if (methodSteps)
             _context.TaskEvents.Add(TaskEvent.Registrar(item.Id, string.Empty, "stage_changed",
                 JsonSerializer.Serialize(new { reason = "Movimentação por automação de entrada em coluna." })));
         foreach (var history in item.StageHistories.Where(x => x.LeftAt is null))

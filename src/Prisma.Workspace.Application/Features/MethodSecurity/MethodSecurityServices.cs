@@ -9,6 +9,9 @@ public interface IMethodTokenService
     Task<IReadOnlyList<MethodTokenDto>> ListAsync(Guid projectId, CancellationToken cancellationToken = default);
     Task RevokeAsync(Guid projectId, Guid tokenId, CancellationToken cancellationToken = default);
     Task<MethodActorIdentity?> AuthenticateAsync(string token, string correlationId, CancellationToken cancellationToken = default);
+    // Só para conexão autenticada pelo handler do método; não é endpoint nem troca de credencial por ID.
+    Task<MethodActorIdentity?> RevalidateSessionAsync(Guid tokenId, string actorId, string correlationId,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Interseção de delegação e escopo, sem trocar o ator autenticado pelo emissor.</summary>

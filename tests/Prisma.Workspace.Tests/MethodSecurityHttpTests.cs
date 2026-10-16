@@ -1,5 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using Prisma.Workspace.Api.Realtime;
+using Prisma.Workspace.Domain.Entities;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -155,6 +160,8 @@ public sealed class MethodSecurityHttpTests
             ValidIssuer = "method-http-test", ValidAudience = "method-http-test", IssuerSigningKey = new SymmetricSecurityKey(key)
         }).AddMethodBearer(enabled);
         builder.Services.AddAuthorization();
+        builder.Services.AddSignalR();
+        builder.Services.AddSingleton<IMethodFeatureConfiguration, MethodFeatureConfiguration>();
         builder.Services.AddScoped<IMethodGitStore, EfMethodGitStore>();
         builder.Services.AddScoped<IMethodProjectProvisioner, MethodProjectProvisioner>();
         builder.Services.AddScoped<IMethodProjectOperations, MethodProjectOperations>();
@@ -173,6 +180,7 @@ public sealed class MethodSecurityHttpTests
         app.MapGet("/api/workitems", async (AppDbContext db) => await db.Projects.Select(x => x.Id).ToArrayAsync()).RequireAuthorization();
         app.MapGet("/api/organizations", () => Results.Ok()).RequireAuthorization();
         app.MapControllers();
+        app.MapHub<BoardHub>("/hubs/board");
         app.MapGet("/api/public/method-test-context", (IMethodAccessContext access) =>
             Results.Ok(access.Current?.IsInteractiveHuman == true)).AllowAnonymous();
         app.MapPost("/api/auth/refresh", () => Results.Ok("session-handler-reached")).AllowAnonymous();
@@ -212,6 +220,75 @@ public sealed class MethodSecurityHttpTests
         var human = await client.GetFromJsonAsync<MethodIdentityDto>($"/api/projects/{f.ProjectId:D}/method/me");
         Assert.NotNull(human); Assert.Equal("uiSession", human.AuthenticationKind); Assert.Equal("humano", human.Role);
         Assert.Null(human.TokenId); Assert.Null(human.PrincipalId); Assert.Contains("ManagePermissions", human.Capabilities);
+    }
+
+    [Fact]
+    public async Task HumanMethodWebSocketCannotBorrowMembershipOfOtherProjectsAndRevalidatesEachJoin()
+    {
+        await using var guard = await MethodGenericWriteGuardTests.GuardFixture.CreateAsync();
+        var f = guard.Seed;
+        var other = await f.AddProjectAsync();
+        var foreign = new Board { Id = Guid.NewGuid(), ProjectId = other, OrganizationId = f.OrgId,
+            OwnerId = MethodTokenTests.Fixture.HumanA, Name = "Outro projeto humano" };
+        f.Db.Add(foreign); await f.Db.SaveChangesAsync();
+        var own = (await guard.StoredAsync()).BoardId;
+        var issued = await f.Service().IssueAsync(f.ProjectId, new("Humano pessoal", "humano"));
+        var key = RandomNumberGenerator.GetBytes(32);
+        await using var app = Host(f, key); await app.StartAsync();
+        using var method = await ConnectHub(issued.Token);
+        Assert.True((await JoinHub(method, "foreign", f.OrgId, foreign.Id)).TryGetProperty("error", out _));
+        Assert.False((await JoinHub(method, "own", f.OrgId, own)).TryGetProperty("error", out _));
+        await f.Service().RevokeAsync(f.ProjectId, issued.Metadata.Id);
+        Assert.True((await JoinHub(method, "revoked", f.OrgId, own)).TryGetProperty("error", out _));
+        using var ui = await ConnectHub(HumanJwt(key));
+        Assert.False((await JoinHub(ui, "ui-other", f.OrgId, foreign.Id)).TryGetProperty("error", out _));
+    }
+
+    [Fact]
+    public async Task DisablingGlobalFeatureAfterStartupRejectsPreviouslyValidMethodCredentials()
+    {
+        await using var f = await MethodTokenTests.Fixture.CreateAsync();
+        var issued = await f.Service().IssueAsync(f.ProjectId, new("Executor", "agente"));
+        await using var app = Host(f, RandomNumberGenerator.GetBytes(32)); await app.StartAsync();
+        using var client = Client();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", issued.Token);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/workitems")).StatusCode);
+        app.Services.GetRequiredService<IConfiguration>()["MethodGit:Enabled"] = "false";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/workitems")).StatusCode);
+    }
+
+    private static async Task<ClientWebSocket> ConnectHub(string credential)
+    {
+        var socket = new ClientWebSocket();
+        socket.Options.SetRequestHeader("Authorization", "Bearer " + credential);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await socket.ConnectAsync(new Uri("ws://127.0.0.1:3137/hubs/board"), timeout.Token);
+        await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("{\"protocol\":\"json\",\"version\":1}\u001e")),
+            WebSocketMessageType.Text, true, timeout.Token);
+        var buffer = new byte[4096];
+        var handshake = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), timeout.Token);
+        Assert.StartsWith("{}", Encoding.UTF8.GetString(buffer, 0, handshake.Count));
+        return socket;
+    }
+
+    private static async Task<JsonElement> JoinHub(ClientWebSocket socket, string id, Guid organization, Guid board)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var request = JsonSerializer.Serialize(new { type = 1, invocationId = id, target = "JoinBoard", arguments = new[] { organization, board } });
+        await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(request + "\u001e")), WebSocketMessageType.Text, true, timeout.Token);
+        var buffer = new byte[8192]; var pending = "";
+        while (true)
+        {
+            var received = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), timeout.Token);
+            pending += Encoding.UTF8.GetString(buffer, 0, received.Count);
+            while (pending.IndexOf('\u001e') is var separator && separator >= 0)
+            {
+                var message = pending[..separator]; pending = pending[(separator + 1)..];
+                using var json = JsonDocument.Parse(message);
+                if (json.RootElement.TryGetProperty("invocationId", out var invocation) && invocation.GetString() == id)
+                    return json.RootElement.Clone();
+            }
+        }
     }
 
     private static HttpClient Client() => new() { BaseAddress = new Uri("http://127.0.0.1:3137"), Timeout = TimeSpan.FromSeconds(30) };

@@ -1,3 +1,10 @@
+## 2026-10-16 — Forja: git-8-2, correção do médio e de dois defeitos de integração
+
+-138/138 foco finalPASS100s (zero pulos/falhas), log /tmp/prisma-metodo-forja-f1-correction-focus.log. Dois vermelhos no F1 anterior preservados em /tmp/prisma-metodo-forja-f1-hub-red.log: Hub tokenhumano→outroprojeto e flag reloadfalse ainda200. Ambos agora verdes no host3137/WebSocket real.
+- Guard/TX recortados por lote/projetos configurados, inclusive pausados para retirar concessão após açãoUI. Regra coluna só depois de settings; testeSQL mede isolamento + colunaBoardIdnull em Save comum e misto; workflow/automação sem método mantêm persistência anterior. Novo arquivo próprio MethodProjectIsolationSqlTests.cs. Nenhuma migration alterada.
+- Ensaio de restauração própria no284c6cc PASS Up/Down/Up34cards/colunaslegadas; resultado privado runtime/prisma-metodo/restore-probe-result.json. A composição foi preparada para MethodGit enabled +envsecret externo, mas app ainda baseline338918b até construir imagem final. .env.xunit é dotenv: ler como dados por Python, NUNCA source (SQL possui ponto-e-vírgula). Não imprimir valores.
+- Próximo: commit/push nominal após pull--rebase, ENTREGA/revisão git-8-2; CPU Forja reservada até12:50UTC, rodar suites completas sequenciais e imagem após revisão. Prova QA próprio mesmoSHA obrigatório, Ponte MCP8 real depois da fixtureGitHub livre. Aguardar não é bloqueio. Todas as stashes anteriores já foram aplicadas: não restaurar de novo.
+
 ## 2026-10-16 - Forja: F1 integrado, aguardando revisão e F2
 
 - F1 contém Program/auth/tenant/audit/hub/permissões/filtros, guard EF Save síncrono+assíncrono, recorder de provas/história, movimento único serializável/CAS/rollback limpo e endpoints/fachadas de projeto/tasks. Ponte continua dona de todo MCP/B e do provisioner transferido; Prova dos testes independentes/README/E2E. Contratos aditivos: identityIssues e resumeApprovalEventId. Não alterar arquivo alheio para corrigir integração.

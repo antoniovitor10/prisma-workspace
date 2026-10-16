@@ -30,6 +30,7 @@ public sealed class MethodTokenAuthenticationHandler(
         {
             new Claim(ClaimTypes.NameIdentifier, actor.ActorId), new Claim(ClaimTypes.Name, actor.DisplayName),
             new Claim("method_principal", actor.PrincipalId!.Value.ToString("D")),
+            new Claim("method_token", actor.TokenId!.Value.ToString("D")),
             new Claim("method_project", actor.ProjectId!.Value.ToString("D")),
             new Claim("method_organization", actor.OrganizationId!.Value.ToString("D"))
         };

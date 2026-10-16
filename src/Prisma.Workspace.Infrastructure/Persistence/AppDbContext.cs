@@ -151,17 +151,19 @@ public class AppDbContext : IdentityDbContext
     private async Task<int> SaveWithAiPrivacyAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken)
     {
         IDbContextTransaction? methodTransaction = null;
+        var touchesMethod = false;
         if (_methodFeature?.Enabled == true)
         {
-            if (Database.IsRelational() && Database.CurrentTransaction is null)
+            _methodGuard ??= new MethodWriteGuard(this, _organizationContext, _methodContext, _methodClock);
+            touchesMethod = await _methodGuard.IsRelevantAsync(cancellationToken);
+            if (touchesMethod && Database.IsRelational() && Database.CurrentTransaction is null)
                 methodTransaction = await Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         }
         try
         {
-            if (_methodFeature?.Enabled == true)
+            if (touchesMethod)
             {
-                _methodGuard ??= new MethodWriteGuard(this, _organizationContext, _methodContext, _methodClock);
-                var changes = await _methodGuard.ValidateAsync(cancellationToken);
+                var changes = await _methodGuard!.ValidateAsync(cancellationToken);
                 await new MethodMovementRecorder(this, _methodContext, _auditContext, _methodClock).PrepareAsync(changes, cancellationToken);
             }
             var deactivated = ChangeTracker.Entries<OrganizationMember>()

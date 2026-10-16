@@ -14,7 +14,8 @@ using Prisma.Workspace.Infrastructure.Persistence;
 namespace Prisma.Workspace.Infrastructure.Identity.MethodTokens;
 
 public sealed class MethodTokenService(AppDbContext db, IMethodAccessContext context,
-    IPermissionService permissions, MethodPermissionEvaluator delegation, TimeProvider clock) : IMethodTokenService
+    IPermissionService permissions, MethodPermissionEvaluator delegation, TimeProvider clock,
+    IMethodFeatureConfiguration? feature = null) : IMethodTokenService
 {
     public async Task<IssuedMethodTokenDto> IssueAsync(Guid projectId, IssueMethodTokenRequest request, CancellationToken cancellationToken = default)
     {
@@ -115,14 +116,31 @@ public sealed class MethodTokenService(AppDbContext db, IMethodAccessContext con
 
     public async Task<MethodActorIdentity?> AuthenticateAsync(string token, string correlationId, CancellationToken cancellationToken = default)
     {
-        if (!MethodTokenFormat.IsWellFormed(token)) return null;
+        if (feature?.Enabled == false || !MethodTokenFormat.IsWellFormed(token)) return null;
         var hash = Hash(token);
         // Única descoberta não filtrada por tenant: hash aleatório. Escopo é validado antes de qualquer acesso de negócio.
         var row = await db.Set<MethodApiToken>().IgnoreQueryFilters().AsNoTracking().Include(x => x.Principal)
             .SingleOrDefaultAsync(x => x.TokenHash.SequenceEqual(hash), cancellationToken);
+        if (row is null || !CryptographicOperations.FixedTimeEquals(row.TokenHash, hash)) return null;
+        return await ValidateSessionAsync(row, correlationId, true, cancellationToken);
+    }
+
+    public async Task<MethodActorIdentity?> RevalidateSessionAsync(Guid tokenId, string actorId, string correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (feature?.Enabled == false) return null;
+        var row = await db.Set<MethodApiToken>().IgnoreQueryFilters().AsNoTracking().Include(x => x.Principal)
+            .SingleOrDefaultAsync(x => x.Id == tokenId, cancellationToken);
+        if (row is null) return null;
+        var expected = row.Principal.Role == MethodRole.Human ? row.Principal.HumanUserId : $"method:{row.PrincipalId:D}";
+        return expected == actorId ? await ValidateSessionAsync(row, correlationId, false, cancellationToken) : null;
+    }
+
+    private async Task<MethodActorIdentity?> ValidateSessionAsync(MethodApiToken row, string correlationId, bool recordUsage,
+        CancellationToken cancellationToken)
+    {
         var now = clock.GetUtcNow();
-        if (row is null || !CryptographicOperations.FixedTimeEquals(row.TokenHash, hash)
-            || row.RevokedAtUtc is not null || row.ExpiresAtUtc <= now || row.IssuedAtUtc > now
+        if (row.RevokedAtUtc is not null || row.ExpiresAtUtc <= now || row.IssuedAtUtc > now
             || !row.Principal.IsActive || row.Principal.ProjectId != row.ProjectId) return null;
         var principal = row.Principal;
         if (!Enum.IsDefined(principal.Role) || principal.Role == MethodRole.Human
@@ -140,7 +158,7 @@ public sealed class MethodTokenService(AppDbContext db, IMethodAccessContext con
             principal.Role == MethodRole.Human ? principal.HumanUserId! : $"method:{principal.Id:D}", principal.DisplayName,
             principal.OrganizationId, principal.ProjectId, row.Id, row.ExpiresAtUtc,
             ceiling.ToFrozenSet(), MethodChannels.Mcp, correlationId);
-        if (row.LastUsedAtUtc is null || now - row.LastUsedAtUtc >= TimeSpan.FromMinutes(5))
+        if (recordUsage && (row.LastUsedAtUtc is null || now - row.LastUsedAtUtc >= TimeSpan.FromMinutes(5)))
         {
             if (db.Database.IsRelational())
                 await db.Set<MethodApiToken>().IgnoreQueryFilters().Where(x => x.Id == row.Id && x.RevokedAtUtc == null
