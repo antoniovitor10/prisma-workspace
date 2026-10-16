@@ -31,6 +31,8 @@ export function TimeTaskSearch({value,onChange}:{value:string;onChange:(id:strin
     const top=bounds.top+list.clientTop;const bottom=top+list.clientHeight;
     if(target.top<top||target.height>list.clientHeight)list.scrollTop+=target.top-top;
     else if(target.bottom>bottom)list.scrollTop+=target.bottom-bottom;
+    // Revela também no modal e nos demais ancestrais, mantendo o foco no campo.
+    option.scrollIntoView?.({block:'nearest',inline:'nearest',behavior:'instant'});
   },[active,open,loading,tasks]);
   const choose=(task:TaskOption)=>{onChange(task.id);setQuery(`#${task.number}`);setOpen(false);};
   return <Container><label htmlFor="time-task-search">Buscar tarefa por título ou número</label>

@@ -17,13 +17,16 @@ it('mantém a opção ativa visível ao avançar e voltar sem tirar o foco do ca
   vi.spyOn(list,'getBoundingClientRect').mockImplementation(()=>new DOMRect(0,100,200,80));
   options.forEach((option,index)=>vi.spyOn(option,'getBoundingClientRect')
     .mockImplementation(()=>new DOMRect(0,100+index*40-list.scrollTop,200,40)));
+  const reveal=options.map(option=>{const scroll=vi.fn();Object.defineProperty(option,'scrollIntoView',{configurable:true,value:scroll});return scroll;});
   const field=screen.getByRole('combobox');act(()=>field.focus());
   for(let index=0;index<5;index++)fireEvent.keyDown(field,{key:'ArrowDown'});
   expect(field).toHaveAttribute('aria-activedescendant','time-task-task-5');
   expect(list.scrollTop).toBe(160);expect(field).toHaveFocus();
+  expect(reveal[5]).toHaveBeenLastCalledWith({block:'nearest',inline:'nearest',behavior:'instant'});
   for(let index=0;index<5;index++)fireEvent.keyDown(field,{key:'ArrowUp'});
   expect(field).toHaveAttribute('aria-activedescendant','time-task-task-0');
   expect(list.scrollTop).toBe(0);expect(field).toHaveFocus();
+  expect(reveal[0]).toHaveBeenLastCalledWith({block:'nearest',inline:'nearest',behavior:'instant'});
   fireEvent.keyDown(field,{key:'Enter'});
   expect(changed).toHaveBeenLastCalledWith('task-0');
 });
