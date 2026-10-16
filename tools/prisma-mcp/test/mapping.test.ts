@@ -60,7 +60,7 @@ test('mapping.ts e rules.ts usam a mesma lista de status', () => {
 });
 
 test('campos personalizados com os nomes do plano', () => {
-  assert.deepEqual(FIELD_NAMES, {
-    id: 'ID do metodo', arquivo: 'Arquivo', cobre: 'Cobre', risco: 'Risco', pr: 'PR',
-  });
+  const nomes = Object.values(FIELD_NAMES);
+  for (const n of ['ID do metodo', 'HU', 'Arquivo', 'Cobre', 'Risco', 'PR']) assert.ok(nomes.includes(n as never), n);
+  assert.equal(FIELD_NAMES.id, 'ID do metodo');
 });

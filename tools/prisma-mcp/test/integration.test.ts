@@ -76,6 +76,45 @@ async function conectar(papel: 'agente' | 'humano') {
   return { client, chamar, ok, recusa, stderr: () => stderr };
 }
 type Sessao = Awaited<ReturnType<typeof conectar>>;
+
+// GET /api/WorkItems/board/{id} direto, sem o PrismaApi: é o que o Kanban usa (só itens de topo).
+interface ItemQuadro { id: string; title: string; parentId: string | null; stageId: string;
+  customFields: { fieldId: string; value: string | null }[]; tags?: { name: string }[] }
+async function quadroCru(boardId: string): Promise<ItemQuadro[]> {
+  const url = process.env.PRISMA_URL!.replace(/\/+$/, '');
+  let token = process.env.PRISMA_TOKEN;
+  if (!token) {
+    const r = await fetch(`${url}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: process.env.PRISMA_EMAIL, password: process.env.PRISMA_PASSWORD }) });
+    token = (await r.json() as { accessToken: string }).accessToken;
+  }
+  const h: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
+  const orgs = await (await fetch(`${url}/api/organizations`, { headers: h })).json() as { id: string; isActive?: boolean }[];
+  const ativas = orgs.filter(o => o.isActive !== false);
+  if (ativas.length) h['X-Organization-Id'] = ativas[0].id;
+  const r = await fetch(`${url}/api/WorkItems/board/${boardId}`, { headers: h });
+  assert.equal(r.status, 200, 'GET do quadro');
+  return await r.json() as ItemQuadro[];
+}
+async function conferirQuadro(esperado: Record<string, string>) {
+  const setup = await ensureProjeto(api0());
+  const campoId = setup.fields.get(FIELD_NAMES.id)!;
+  const campoHu = setup.fields.get('HU');
+  assert.ok(campoHu, 'campo personalizado HU');
+  const itens = await quadroCru(setup.boardId);
+  const porChave = new Map(itens.map(i => [i.customFields.find(f => f.fieldId === campoId)?.value, i]));
+  assert.ok(!porChave.has('HU-9001'), 'a HU não vira work item');
+  assert.deepEqual([...porChave.keys()].filter(Boolean).sort(), Object.keys(esperado).sort());
+  for (const [chave, status] of Object.entries(esperado)) {
+    const i = porChave.get(chave)!;
+    assert.equal(i.parentId ?? null, null, `${chave} é item de topo`);
+    assert.equal(i.stageId, setup.stages.get(status as never), `${chave} na coluna ${status}`);
+    assert.equal(i.customFields.find(f => f.fieldId === campoHu)?.value, 'HU-9001', `${chave} campo HU`);
+    assert.ok((i.tags ?? []).some(t => t.name === 'HU-9001'), `${chave} com a tag HU-9001`);
+  }
+}
+let apiGlobal: PrismaApi | undefined;
+const api0 = () => apiGlobal ??= new PrismaApi(readConfig(envPara('humano')));
 const statusDe = async (s: Sessao, id: string) => (await s.ok('obter_task', { id })).dados.task.status as string;
 
 describe('integração com o Prisma', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver README)' }, () => {
@@ -95,23 +134,20 @@ describe('integração com o Prisma', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver
 
   test('import cria HU e tasks; segunda rodada não duplica nada', async () => {
     const um = await importar();
-    assert.equal(um.criados, 4, um.stdout);
+    assert.equal(um.criados, 3, um.stdout);
     assert.equal(um.vinculos, 2, um.stdout);
     const dois = await importar();
     assert.equal(dois.criados, 0, dois.stdout);
     assert.equal(dois.atualizados, 0, dois.stdout);
-    assert.equal(dois.semMudanca, 4, dois.stdout);
+    assert.equal(dois.semMudanca, 3, dois.stdout);
     assert.equal(dois.vinculos, 0, dois.stdout);
 
     const setup = await ensureProjeto(api);
     assert.equal(setup.stages.size, 7);
-    const campo = setup.fields.get(FIELD_NAMES.id);
-    assert.ok(campo, 'campo ID do metodo');
-    const itens = await api.listWorkItemsByBoard(setup.boardId);
-    const chaves = itens.map(i => i.customFields.find(f => f.fieldId === campo)?.value).filter(Boolean).sort();
-    assert.deepEqual(chaves, ['HU-9001', 'T-9001', 'T-9002', 'T-9003']);
-    const hu = itens.find(i => i.customFields.some(f => f.fieldId === campo && f.value === 'HU-9001'))!;
-    for (const i of itens.filter(i => i.id !== hu.id)) assert.equal(i.parentId, hu.id, `${i.title} é subitem da HU`);
+    await conferirQuadro({ 'T-9001': 'concluida', 'T-9002': 'em-desenvolvimento', 'T-9003': 'backlog' });
+    const t2 = (await api.listWorkItemsByBoard(setup.boardId)).find(i => i.title.startsWith('T-9002'))!;
+    const det = await api.getWorkItem(t2.id);
+    assert.equal(det.links.filter(l => !l.isIncoming && l.type === 1).length, 1, 'T-9002 depende de T-9001');
   });
 
   test('ensureProjeto é idempotente', async () => {
@@ -230,6 +266,9 @@ describe('integração com o Prisma', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver
     });
     const ids = (await agente.ok('listar_tasks')).dados.tasks.map((t: any) => t.id).sort();
     assert.deepEqual(ids, ['T-9001', 'T-9002', 'T-9003', 'T-9004']);
+    assert.equal((await agente.ok('obter_task', { id: 'T-9004' })).dados.task.hu, 'HU-9001');
+    // mover_status anteriores e a task criada aparecem no GET do quadro (o que o Kanban mostra).
+    await conferirQuadro({ 'T-9001': 'concluida', 'T-9002': 'em-revisao', 'T-9003': 'backlog', 'T-9004': 'backlog' });
   });
 
   test('comentar grava no card e recusa marcador reservado', async () => {

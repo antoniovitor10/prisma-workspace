@@ -19,7 +19,7 @@ Os dois só chamam a API REST que já existe no Prisma. Não há migration nem m
 | `obter_task` | `id` | status, título, arquivo e PR de uma task |
 | `listar_tasks` | `status?` | tasks do projeto, opcionalmente filtradas por status |
 | `proximas_tasks` | nenhum | tasks em `em-desenvolvimento` com todas as dependências concluídas |
-| `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task como subitem da HU |
+| `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task no quadro, marcada com a HU |
 | `mover_status` | `id, novo_status, motivo` | muda a coluna, conforme a matriz do papel |
 | `comentar` | `id, texto` | relatório de execução, bloqueio, handoff |
 | `vincular_pr` | `id, url` | grava o campo PR e comenta |
@@ -40,10 +40,12 @@ Papel `humano`: qualquer transição.
 Cada `mover_status` grava um comentário `[status] <de> -> <para> · <papel> · mcp · <motivo>`,
 para o histórico do card mostrar quem mudou, quando e por qual canal.
 
-No Prisma, a HU vira o item pai e as tasks são subitens dela; `depende_de` vira vínculo de
-dependência. A chave de cada item é o campo personalizado **ID do metodo** (`HU-0001`, `T-0001`);
-o título do card (`T-0001 · <título>`) é só para leitura. Os outros campos do projeto são
-**Arquivo**, **Cobre**, **Risco** e **PR**.
+No Prisma, cada task é um card de topo no quadro, e muda de coluna ao vivo com `mover_status`.
+A HU não vira card: ela fica no campo personalizado **HU** (por exemplo `HU-0001`) e numa tag com o
+mesmo nome em cada task; o status da HU continua no `hu.md`. `depende_de` vira vínculo de
+dependência entre as tasks. A chave de cada task é o campo personalizado **ID do metodo**
+(`T-0001`); o título do card (`T-0001 · <título>`) é só para leitura. Os outros campos do projeto
+são **Arquivo**, **Cobre**, **Risco** e **PR**.
 
 ## Variáveis de ambiente
 
@@ -80,7 +82,8 @@ node dist/import.js <pasta docs/trabalho> [--dry-run] [--sincronizar-status]
 ```
 
 - Cria o projeto, o quadro, as 7 colunas e os campos personalizados se faltarem.
-- Cria ou atualiza cada HU e cada task pela chave **ID do metodo**. Rodar duas vezes não duplica nada.
+- Cria ou atualiza cada task pela chave **ID do metodo**, com o campo **HU** e a tag da HU. A HU
+  não vira card. Rodar duas vezes não duplica nada.
 - O `status:` do frontmatter só é usado na criação do item; depois disso o Prisma é a verdade.
   Com `--sincronizar-status`, o status do frontmatter é reaplicado em todos os itens.
 - `--dry-run` mostra o que faria sem gravar.
@@ -94,11 +97,10 @@ O status da HU continua em `hu.md`.
 
 ### Onde ver no Prisma
 
-- **Itens** do projeto: lista a HU e as tasks, com a coluna **Etapa** mostrando o status de cada uma.
+- **Kanban** do projeto: cada task é um card na coluna do seu status; a tag mostra a HU.
+- **Itens** do projeto: lista as tasks com a coluna **Etapa**.
 - Detalhe do card: abas **Comentários** (relatórios, bloqueios e os comentários `[status]`) e
   **Histórico** (quem moveu, quando).
-- O **Kanban** mostra o card da HU com o número de subitens; as tasks, por serem subitens, não
-  aparecem como cards nas colunas.
 
 Exemplo no PowerShell, com o túnel aberto (ver abaixo):
 
