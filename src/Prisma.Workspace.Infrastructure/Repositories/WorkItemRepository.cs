@@ -64,8 +64,11 @@ public class WorkItemRepository : IWorkItemRepository
 
     public async Task<IReadOnlyList<WorkItem>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
+        // O cartão carrega várias coleções irmãs. Separá-las evita o plano de
+        // JOINs que excedia 30s na leitura de projetos, mantendo o mesmo grafo.
         return await _context.WorkItems
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(w => w.Board)
             .Include(w => w.Assignees)
             .Include(w => w.Attachments)

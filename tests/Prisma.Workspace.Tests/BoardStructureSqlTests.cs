@@ -12,6 +12,53 @@ namespace Prisma.Workspace.Tests;
 public class BoardStructureSqlTests
 {
     [Fact]
+    public async Task ProjectCards_PreserveCollectionsAndInheritedBoardScopeOnSqlServer()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var child = await fixture.AddChildAsync(fixture.Item.Id);
+        var team = new Team { Id = Guid.NewGuid(), OrganizationId = fixture.OrganizationId, Name = "Equipe do quadro" };
+        fixture.Context.Teams.Add(team);
+        fixture.Source.TeamId = team.Id;
+        fixture.Item.Assignees.Add(new WorkItemAssignee { WorkItemId = fixture.Item.Id, UserId = "hours-reader", AssignedAt = DateTimeOffset.UtcNow });
+        fixture.Item.Assignees.Add(new WorkItemAssignee { WorkItemId = fixture.Item.Id, UserId = "hours-colleague", AssignedAt = DateTimeOffset.UtcNow });
+        fixture.Item.ChecklistItems.Add(ChecklistItem.Criar(fixture.Item.Id, "Primeiro", 0));
+        var done = ChecklistItem.Criar(fixture.Item.Id, "Segundo", 100);
+        done.Marcar(true);
+        fixture.Item.ChecklistItems.Add(done);
+        var start = new DateTimeOffset(2026, 1, 12, 12, 0, 0, TimeSpan.Zero);
+        fixture.Item.TimeEntries.Add(TimeEntry.Manual(fixture.Item.Id, "hours-reader", start, start.AddHours(1), "Próprio"));
+        fixture.Item.TimeEntries.Add(TimeEntry.Manual(fixture.Item.Id, "hours-colleague", start, start.AddHours(2), "Colega"));
+        // As factories já geram GUIDs; registrar inclusão explicitamente evita
+        // que o rastreamento interprete a chave preenchida como linha existente.
+        fixture.Context.AddRange(fixture.Item.Assignees);
+        fixture.Context.AddRange(fixture.Item.ChecklistItems);
+        fixture.Context.AddRange(fixture.Item.TimeEntries);
+        var second = new WorkItem { Id = Guid.NewGuid(), BoardId = fixture.Target.Id, StageId = fixture.TargetStage.Id,
+            Title = "Segundo cartão", Position = fixture.Item.Position, CreatedAt = start, UpdatedAt = start };
+        fixture.Context.WorkItems.Add(second);
+        await fixture.Context.SaveChangesAsync();
+        fixture.Context.ChangeTracker.Clear();
+
+        var rows = await new WorkItemRepository(fixture.Context).GetByProjectIdAsync(fixture.Project.Id);
+        Assert.Equal(new[] { fixture.Item.Id, second.Id }.Order(), rows.Select(i => i.Id).Order());
+        var item = Assert.Single(rows, i => i.Id == fixture.Item.Id);
+        Assert.Equal(fixture.Project.Id, item.Board.ProjectId);
+        Assert.Equal(team.Id, item.Board.TeamId);
+        Assert.Equal(child.Id, Assert.Single(item.SubItems).Id);
+        Assert.Equal(2, item.Assignees.Count);
+        Assert.Equal(2, item.TimeEntries.Count);
+        Assert.Equal(2, item.ChecklistItems.Count);
+        Assert.Single(item.ChecklistItems, c => c.Done);
+        var mine = Assert.Single(Prisma.Workspace.Application.Features.WorkItems.Queries.WorkItemCardProjection.ToCards([item], "hours-reader"));
+        Assert.Equal(3600, mine.UserTimeSeconds);
+        Assert.Equal(3600, mine.TotalTimeSeconds);
+        var manager = new HoursReadScope("leader", false, new HashSet<Guid> { team.Id }, null);
+        var shared = Assert.Single(Prisma.Workspace.Application.Features.WorkItems.Queries.WorkItemCardProjection.ToCards([item], "leader", manager));
+        Assert.Equal(10800, shared.TotalTimeSeconds);
+        Assert.Equal(0, shared.UserTimeSeconds);
+    }
+
+    [Fact]
     public async Task DeleteBoard_FailureRollsBackTaskStageAndHistory()
     {
         await using var fixture = await Fixture.CreateAsync();
