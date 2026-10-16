@@ -123,6 +123,32 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         Assert.True((await c.Context.Set<MethodProjectSettings>().AsNoTracking().SingleAsync(x => x.ProjectId == c.ProjectId)).Enabled);
     }
     [MethodGitSqlFact]
+    public async Task Unknown_server_movement_protects_causality_without_becoming_interactive_proof()
+    {
+        await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
+        var state = await c.Context.Set<MethodTaskState>().SingleAsync(x => x.ProjectId == c.ProjectId && x.WorkItemId == c.ItemId);
+        var human = (await c.Context.Set<MethodAuthorizationEvent>().SingleAsync(x => x.Id == state.ActiveAuthorizationEventId)).ActorUserId!;
+        var lastManual = c.Now.AddMinutes(-5);
+        var kinds = new[] { "\"unknown\"", "0", "\"integrationWorker\"", "3" };
+        for (var i = 0; i < kinds.Length; i++)
+        {
+            var when = c.Now.AddSeconds(i);
+            var entry = new TaskEvent { Id = Guid.NewGuid(), WorkItemId = c.ItemId, ActorId = human, Kind = "stage_changed", CreatedAt = when,
+                Payload = $"{{\"authenticationKind\":{kinds[i]},\"fromStatus\":\"em-desenvolvimento\",\"toStatus\":\"em-revisao\"}}" };
+            // Mesmo uma referência indevida no índice não transforma evento unknown/worker em concessão UI.
+            var invalidGrant = new MethodAuthorizationEvent { Id = Guid.NewGuid(), OrganizationId = c.Repository.OrganizationId, ProjectId = c.ProjectId,
+                WorkItemId = c.ItemId, CycleId = state.CycleId, EventKind = "Granted", ActorUserId = human, ActorName = "Fixture SQL", TaskEventId = entry.Id,
+                Reason = "Prova de que tipo de credencial continua obrigatório.", CreatedAtUtc = when };
+            c.Context.AddRange(entry, invalidGrant); state.ActiveAuthorizationEventId = invalidGrant.Id;
+            await c.Context.SaveChangesAsync();
+            if (i < 2) lastManual = when;
+            var snapshot = await store.GetTaskAsync(c.ItemId);
+            Assert.Equal(lastManual, snapshot!.LastManualChangeAtUtc);
+            Assert.Equal(c.Now.AddMinutes(-5), snapshot.LastInteractiveChangeAtUtc);
+            Assert.Null(snapshot.ActiveAuthorizationEventId); Assert.Null(snapshot.AuthorizedAtUtc);
+        }
+    }
+    [MethodGitSqlFact]
     public async Task Human_user_id_with_method_token_is_manual_but_not_interactive_authorization()
     {
         await using var c = await _fixture.CaseAsync();

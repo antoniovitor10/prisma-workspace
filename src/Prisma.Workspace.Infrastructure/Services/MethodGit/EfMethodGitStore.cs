@@ -300,8 +300,8 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         {
             using var json = JsonDocument.Parse(payload);
             return json.RootElement.TryGetProperty("authenticationKind", out var kind)
-                && ((kind.ValueKind == JsonValueKind.String && kind.GetString() is "uiSession" or "methodToken")
-                    || (kind.ValueKind == JsonValueKind.Number && kind.TryGetInt32(out var value) && value is 1 or 2));
+                && ((kind.ValueKind == JsonValueKind.String && kind.GetString() is "uiSession" or "methodToken" or "unknown")
+                    || (kind.ValueKind == JsonValueKind.Number && kind.TryGetInt32(out var value) && value is 0 or 1 or 2));
         }
         catch (JsonException) { return false; }
     }
