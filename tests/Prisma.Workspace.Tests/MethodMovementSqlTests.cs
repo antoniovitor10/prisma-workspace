@@ -42,6 +42,8 @@ public sealed class MethodMovementSqlTests(GitDeliverySqlFixture fixture) : ICla
         using var payload = JsonDocument.Parse(taskEvent.Payload!);
         Assert.Equal("integrationWorker", payload.RootElement.GetProperty("authenticationKind").GetString());
         Assert.Equal("webhook", payload.RootElement.GetProperty("channel").GetString());
+        Assert.Equal(MethodStatusCodes.InDevelopment, payload.RootElement.GetProperty("fromStageName").GetString());
+        Assert.Equal(MethodStatusCodes.InReview, payload.RootElement.GetProperty("toStageName").GetString());
         Assert.Equal("forja-sql-worker", payload.RootElement.GetProperty("correlationId").GetString());
         Assert.Equal(history.Id, payload.RootElement.GetProperty("stageHistoryId").GetGuid());
         var audit = await check.AuditLogs.SingleAsync(x => x.EntityType == "WorkItem" && x.EntityId == c.ItemId.ToString()

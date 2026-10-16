@@ -1,3 +1,10 @@
+## 2026-10-16 — Forja: correção P2 do histórico e harness final
+
+- Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
+- Vermelho6/6 antes; verde85/85 depois, zero pulos, SQL3132 opt-in. Logs /tmp/prisma-metodo-forja-history-{red,green}.log. Runners privados em /tmp; ler .env.xunit como dados, nunca source nem imprimir valores. Full anterior715/715; novo esperado720. Frontend/MCP de produto não mudaram:160Vitest/53MCP/tipos/builds já verdes, sem necessidade de repetir sem nova mudança.
+- b50dd20 da Prova integrado; fake sort=updated DESC/created_at estável e regraJWT exp-agora corrigidos. Revisão desse harness segue na ENTREGA git-12 junto do P2. Runtime continua b2f2bbc (imagem sem P2); GitHub falso já usa b50. Ponte repetiu8tools/CLI+worker com sucesso, fixture3134 devolvidaProva às15:06UTC. Ainda não é QA final nem PRONTO-PROD.
+- Próximo: commit nominal após pull--rebase, ENTREGA/revisão, full720 e imagem com CPU liberada pela Tear (reserva até15:35UTC), depois Prova/Ponte reensaiam SHA exato e E2E inteiro. P3 de rótulos dos eventos permanece baixo. Não reaplicar nenhuma stash antiga: todas anteriores já restauradas/commitadas; eventual stash deste checkpoint deve ser registrada pelo SHA e aplicada uma única vez.
+
 ## 2026-10-16 — Forja: P1 de QA corrigido no guard, aguardando nova revisão/imagem
 
 - 955dd26 NÃO é mais candidata final: Prova reprova vincular_pr/worker por method_authority_write. Causa concreta: EfMethodGitStore.TouchTaskVersionAsync marcaMethodTaskIdIsModified semmudarvalor para CAS; guard bloqueava. StorePonte correto/inalterado. Guard agora só permite pulso idêntico ao banco em registro próprio, Edit efetivo, único campo marcado, snapshot de autoridade igual e versões atual/original iguais; stale409, resto403. Não liberar provas nem auditoria por contexto interno amplo.

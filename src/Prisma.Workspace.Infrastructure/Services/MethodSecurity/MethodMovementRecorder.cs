@@ -15,6 +15,7 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
 {
     private MethodActorIdentity? Actor => access?.Current;
     private readonly DateTimeOffset _now = clock.GetUtcNow();
+    private readonly Dictionary<Guid, string> _stageNames = [];
     private DateTimeOffset Now => _now;
 
     internal async Task PrepareAsync(IReadOnlyList<MethodItemChange> changes, CancellationToken ct)
@@ -27,6 +28,7 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
             settings.Enabled = false; settings.BoardId = null; settings.UpdatedAtUtc = Now;
         }
         await AdoptSettingsAsync(ct);
+        await LoadStageNamesAsync(changes, ct);
         foreach (var change in changes) await RecordAsync(change, ct);
         if (Actor is not null)
         {
@@ -40,6 +42,21 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
                 row.ActorId = Actor.ActorId; row.Payload = payload.ToJsonString();
             }
         }
+    }
+
+    private async Task LoadStageNamesAsync(IReadOnlyList<MethodItemChange> changes, CancellationToken ct)
+    {
+        _stageNames.Clear();
+        var ids = changes.Where(x => x.WritesStage)
+            .SelectMany(x => new[] { x.Stored?.StageId, x.Entry.Entity.StageId })
+            .OfType<Guid>().Distinct().ToArray();
+        if (ids.Length == 0) return;
+        var stages = await db.Stages.IgnoreQueryFilters().AsNoTracking().Where(x => ids.Contains(x.Id))
+            .Select(x => new { x.Id, x.Name }).ToListAsync(ct);
+        foreach (var stage in stages) _stageNames[stage.Id] = stage.Name;
+        // Inclui colunas novas ou renomeadas na mesma gravação, sem consultar por card.
+        foreach (var entry in db.ChangeTracker.Entries<Stage>().Where(x => x.State != EntityState.Deleted
+            && ids.Contains(x.Entity.Id))) _stageNames[entry.Entity.Id] = entry.Entity.Name;
     }
 
     private async Task AdoptSettingsAsync(CancellationToken ct)
@@ -256,6 +273,8 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
             .Select(x => x.Entity).FirstOrDefault() ?? NewEvent(item.Id, "stage_changed");
         Enrich(taskEvent, change, state, methodId);
         var payload = Payload(taskEvent);
+        payload["fromStageName"] = change.Stored?.StageId is { } fromId ? _stageNames.GetValueOrDefault(fromId) : null;
+        payload["toStageName"] = item.StageId is { } toId ? _stageNames.GetValueOrDefault(toId) : null;
         payload["stageHistoryId"] = history is null ? null : JsonValue.Create(history.Id);
         taskEvent.Payload = payload.ToJsonString();
         return taskEvent;
