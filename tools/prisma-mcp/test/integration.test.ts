@@ -7,6 +7,9 @@
 //                                autorizar, liberar retomada, revogar). O MCP e o import recebem
 //                                apenas o token opaco do agente.
 //   PRISMA_IT_PROJECT            opcional; padrão metodo-mcp-it-<data e hora>
+//   PRISMA_IT_GITHUB_FAKE        opcional; URL do GitHub falso da frente vista daqui (ex.: http://127.0.0.1:3134).
+//                                Com ela, o teste cadastra um repositório (App 424242, instalação 1) e exercita
+//                                vincular_pr; sem ela, vincular_pr só é chamado para conferir a recusa sem repositório.
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -177,6 +180,26 @@ describe('integração 2a com o Prisma (token opaco)', { skip: !ATIVO && 'defina
     assert.equal(r.dados.task.status, 'backlog');
     await recusa('criar_task', { id: 'T-9005', titulo: 'Autorizada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal', status: 'em-desenvolvimento' });
     await recusa('criar_task', { id: 'T-9004', titulo: 'Duplicada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal' });
+  });
+
+  test('vincular_pr: URL de repositório não cadastrado é recusada; com repositório cadastrado, vincula', async () => {
+    await recusa('vincular_pr', { id: 'T-9002', url: 'https://github.com/outro/repo/pull/1' });
+    const fakeUrl = process.env.PRISMA_IT_GITHUB_FAKE?.replace(/\/+$/, '');
+    if (!fakeUrl) return;
+    const repositoryId = 910000 + Math.floor(Math.random() * 80000);
+    const fullName = `qa/mcp-it-${Date.now().toString(36)}`;
+    const fx = (method: string, path: string, body: unknown) => fetch(`${fakeUrl}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.ok((await fx('PUT', '/__fixture/repository', { id: repositoryId, full_name: fullName, default_branch: 'main', installation_id: 1 })).ok);
+    assert.ok((await fx('PUT', '/__fixture/pulls/42', { title: 'Ajuste da T-9002', head: { ref: 'feature/livre' } })).ok);
+    const sistema = await uiOk('POST', `/api/projects/${projectId}/method/tokens`, { name: 'sistema it', role: 'sistema', validDays: 1 });
+    await uiOk('POST', `/api/projects/${projectId}/method/repositories`, { host: 'github.com', repositoryId, repositoryFullName: fullName,
+      defaultBranch: 'main', appId: 424242, installationId: 1, appPrivateKeySecretRef: 'test-app-key', webhookSecretRef: 'test-webhook-secret',
+      systemPrincipalId: sistema.metadata.principalId, enabled: true });
+    const url = `https://github.com/${fullName}/pull/42`;
+    await ok('vincular_pr', { id: 'T-9002', url });
+    assert.equal((await ok('obter_task', { id: 'T-9002' })).dados.task.pr, url);
+    await ok('vincular_pr', { id: 'T-9002', url }); // repetir é idempotente
+    await recusa('vincular_pr', { id: 'T-9003', url }); // o mesmo PR não vai para outra task pelo agente
   });
 
   test('revogação vale na chamada seguinte: MCP manda parar e avisar', async () => {
