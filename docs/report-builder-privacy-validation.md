@@ -1,6 +1,6 @@
 # Horas-3: privacidade B07 em todos os somatórios de horas
 
-Estado: código validado em xUnit e matriz HTTP inicial; verificações finais, revisão e QA independente pendentes. Não é declaração PRONTO-PROD.
+Estado: B07 ampliado passou na matriz HTTP inicial; correção de desempenho da leitura de projeto passou em xUnit384/384 e aguarda imagem/reprodução/full. Não é declaração PRONTO-PROD.
 
 Um leitor podia consultar apontamentos de colegas pelo construtor de relatórios, apesar da restrição correta no relatório organizacional. A prova também confirmou o problema nos relatórios preparados e de tempo por projeto: com 1h própria e 2h de colega, um Viewer recebia 3h e duas pessoas. O Maestro encaminhou nominalmente esses handlers e o inventário completo das leituras de horas em 2026-10-16.
 
@@ -80,3 +80,14 @@ A primeira full foi interrompida após um timeout de30s no primeiro cenário HTT
 A fixture `hours`, exclusiva deste novo spec, agora tem seu próprio prazo de30s para o arranjo. O corpo continua com30s e a limpeza continua na fixture request com20s. Anotações `hours-setup-ms` e `hours-body-ms` expõem os custos separados. É o mecanismo documentado de [timeout de fixture do Playwright](https://playwright.dev/docs/test-fixtures#fixture-timeout), sem aumentar o timeout do cenário. A comparação AST confirmou as mesmas62expressões de asserção antes/depois. Tipos e lint passaram após a mudança; browser/full ainda pendentes nessa forma.
 
 O spec de UI do construtor cria seus intervalos em ontem de Brasília, para que continuem no período padrão de30dias quando o CI rodar em outro mês. As asserções continuam exigindo1h própria e2h do colega. Nenhum dado do seed é usado como precondição.
+
+
+## Diagnóstico corrigido: leitura de cartões por projeto
+
+Separar o arranjo foi útil para medir e organizar os testes, mas não resolveu a falha. A Full2 repetiu o timeout com setup5,489s e corpo29,974s; foi interrompida com37pass/1falha/169não executados. A reprodução do prefixo anterior da suíte mais quatro papéis registrou23pass/2timeouts/1skip antigo: `GET /api/WorkItems/project/{id}` levou30,974s para membro e30,696s para leitor e retornou500 ao cancelar. As leituras por quadro desses casos levaram0,897s e0,102s e retornaram200. Gestor/admin passaram com1,205s e0,255s no projeto.
+
+A amostra da requisição no SQLQA estava executando SELECT de WorkItems por projeto, com17,536s decorridos/17,175s deCPU e nenhum bloqueio; o plano em cache contém105operadores. A consulta de projeto carregava várias coleções irmãs num único SELECT, estratégia que EF alerta como suscetível à [multiplicação por JOINs](https://learn.microsoft.com/ef/core/querying/single-split-queries). Não foi comprovado um defeito de fixture ou de ordenação dos specs como causa do custo SQL.
+
+A alteração ficou somente em `WorkItemRepository.GetByProjectIdAsync`: `AsSplitQuery`, preservando as mesmas coleções, predicados, ordenação e DTOs. É o padrão já usado no AnalyticsRepository e no repositório de detalhes. A consulta por quadro e o N+1 reservado ao C6 não foram alterados. As leituras adicionais são o custo da estratégia; os cartões continuam sendo uma visão atualizável da aplicação.
+
+O novo teste SQL `ProjectCards_PreserveCollectionsAndInheritedBoardScopeOnSqlServer` salva dois cartões com posição igual, subtarefa, dois responsáveis, dois apontamentos e dois itens de checklist; confere o grafo, Board.ProjectId/TeamId herdados e totais próprios versus equipe. A primeira preparação do teste precisou de AddRange explícito para as factories com GUID já preenchido; após corrigir só a fixture, o build passou e xUnit384/384 ficou verde. Imagem candidata, repetição do prefixo e Full3 ainda pendentes. Os resultados da imagem918c626 não validam essa nova estratégia de consulta.

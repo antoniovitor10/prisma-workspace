@@ -1,3 +1,13 @@
+# Continuidade — horas-3, consulta SQL de projeto (2026-10-16)
+
+- Full2 repetiu a falha: setup5,489s/corpo29,974s,37pass/1timeout/169não executados, SIGINTpróprio/exit130. Diagnóstico inicial de fixture ERA INSUFICIENTE; não manter como causa final. Prefixo26casos com instrumentação HTTP reproduziu23pass/2timeouts/1skip antigo. GETboard0,897/0,102s200; GETproject30,974/30,696s500 para membro/leitor. Gestor1,205s/admin0,255s200. SQLQA SELECTWorkItemsproject emCPU17,175s/0bloqueio; plano105operadores. Artefatos .runlogs/horas-3/order-diagnostic.*, sql-order-waits.log/xml privados.
+- Correção WIP SÓ GetByProjectIdAsync: AsSplitQuery preserva grafo/predicados/DTO/ordem; já é padrão Analytics/Management. NÃO alterar C6 ou consulta porquadro. Novo testeSQL preserva duasraízes/filho/2assignees/2logs/2checklists/equipeherdadadoquadro e totaisporpapel. Primeira fixture precisou AddRange explícito dos GUIDs; corrigida. Buildfinal38,17s(1avisoanteriorincremental)/xUnit384/38457,72stestes verde, temposrunner nosarquivos. Fonteprodutodiferentedo918, novoHTTP obrigatório.
+- ReservaCPU+QA Tear até15:35. ForjaP2 pediupróximajanela curta, respeita nossaCPU. Próximo: commit/push código/teste/diagnóstico, imagemQA candidataSHAexato, NOVObackup/reset somenteQA e repetiro prefixo26que reproduziu. Só apósverde Full3 (207) completaemQA limpo; ajustar reservaCPU se necessário ANTES prazo. Nenhum E2E atual ativo; unit384 terminouverde. ProdutoUI igual155Vitest/tsc/lint/build aprovados; não repetir sem mudança relevante.
+- ImagemQA ainda918c626, não temAsSplit. SQL3111DBPrismaWorkspace_QA, unidadePrisma_BoardColumns_Horas2 preservada. Nunca dev/prod. Runnersprivadosguardados, olhar logs somente show-safe-log.py BASENAME. Workerdiag26terminouexit1. NovosHTTPanotampath/status/ms, nuncaheader/token. Skillfind-docs consultoudocs oficiais EFsingle/split; não decisão de negócio nova/migration.
+- Falta nova imagem/repro/full, PROGRESS deENTREGAfinal, atualizarrelatório/inventário externo horas-3.md, finalSHA+hashes/health/login200 e REVISAO+QAexatos. NenhumPRONTO atéisso; sóapósPUBLICADO iniciarC1–C6. Espera não termina goal. Main8ec6699 última conferida.
+
+## Histórico preservado
+
 # Continuidade — horas-3 após primeiro full interrompido (2026-10-16)
 
 - Produto congelado/validado noSHA918c626; remoto atual80ddb56 contém só testes/docs posteriores. Build82,33sPASS/xUnit383/38364,46s; matrizHTTP inicial39/39PASS590,95s; UIbuilder3x19/19PASS190,45s. Tiposfixture11,54s/lint1,17s e coleta47casos12,13sPASS. GatesUI completos tsc-b97,11s/Vitest155/155286,65s/build107,77s verdes.
