@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../../services/api';
 
@@ -15,6 +15,7 @@ export function TimeTaskSearch({value,onChange}:{value:string;onChange:(id:strin
   const [active,setActive]=useState(0);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
+  const optionsRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     let current=true;setLoading(true);setError('');
     api.getTimeAdjustmentTasks(query).then(rows=>{if(current){setTasks(rows);setActive(0);}})
@@ -22,6 +23,15 @@ export function TimeTaskSearch({value,onChange}:{value:string;onChange:(id:strin
       .finally(()=>{if(current)setLoading(false);});
     return()=>{current=false;};
   },[query]);
+  useEffect(()=>{
+    const list=optionsRef.current;
+    const option=list?.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+    if(!open||loading||!list||!option)return;
+    const bounds=list.getBoundingClientRect();const target=option.getBoundingClientRect();
+    const top=bounds.top+list.clientTop;const bottom=top+list.clientHeight;
+    if(target.top<top||target.height>list.clientHeight)list.scrollTop+=target.top-top;
+    else if(target.bottom>bottom)list.scrollTop+=target.bottom-bottom;
+  },[active,open,loading,tasks]);
   const choose=(task:TaskOption)=>{onChange(task.id);setQuery(`#${task.number}`);setOpen(false);};
   return <Container><label htmlFor="time-task-search">Buscar tarefa por título ou número</label>
     <input id="time-task-search" role="combobox" autoComplete="off" aria-expanded={open} aria-controls="time-task-options" aria-autocomplete="list"
@@ -31,7 +41,7 @@ export function TimeTaskSearch({value,onChange}:{value:string;onChange:(id:strin
         else if(e.key==='ArrowUp'){e.preventDefault();setActive(i=>Math.max(0,i-1));}
         else if(e.key==='Enter'&&open){e.preventDefault();if(tasks[active]&&!loading)choose(tasks[active]);}
         else if(e.key==='Escape'){e.preventDefault();setOpen(false);}}}/>
-    {open&&<div id="time-task-options" role="listbox" aria-label="Tarefas para apontamento" aria-busy={loading}>
+    {open&&<div ref={optionsRef} id="time-task-options" role="listbox" aria-label="Tarefas para apontamento" aria-busy={loading}>
       {!loading&&tasks.map((task,index)=><button id={`time-task-${task.id}`} type="button" role="option" key={task.id} aria-selected={index===active} onClick={()=>choose(task)}>#{task.number} · {task.title} — {task.boardName}{task.assigned?' · Atribuída a você':''}</button>)}
     </div>}
     {loading&&<small role="status">Buscando tarefas…</small>}

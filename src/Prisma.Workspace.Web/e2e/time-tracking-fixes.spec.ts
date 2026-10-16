@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { test, expect, navigateWithApi } from './fixtures/functional';
 import { withTimeFactory, type TimeFactory, type TimeEntry, type WeeklyTime } from './fixtures/time';
 
@@ -135,7 +135,8 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
       tasks.push({id:await created.json() as string,title});
     }
     const modal=await day(page,f,today());
-    await modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'}).fill(prefix);
+    const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
+    await field.fill(prefix);
     const list=modal.getByRole('listbox',{name:'Tarefas para apontamento'});
     const options=list.getByRole('option');
     await expect(options).toHaveCount(tasks.length);
@@ -161,6 +162,27 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
     expect(await list.evaluate(element=>element.scrollHeight>element.clientHeight)).toBe(true);
     const selected=tasks[tasks.length-1];
     const last=options.filter({hasText:selected.title});
+    const inView=async(option:Locator)=>expect.poll(()=>option.evaluate(button=>{
+      const list=button.closest('[role="listbox"]');
+      if(!list)throw new Error('A opção ativa precisa pertencer à lista.');
+      const target=button.getBoundingClientRect();const bounds=list.getBoundingClientRect();
+      return target.top>=bounds.top-1&&target.bottom<=bounds.bottom+1
+        &&target.top>=0&&target.bottom<=window.innerHeight;
+    })).toBe(true);
+    for(let index=0;index<5;index++)await field.press('ArrowDown');
+    await expect(field).toHaveAttribute('aria-activedescendant',`time-task-${selected.id}`);
+    await inView(last);await expect(field).toBeFocused();
+    for(let index=0;index<5;index++)await field.press('ArrowUp');
+    await expect(field).toHaveAttribute('aria-activedescendant',`time-task-${tasks[0].id}`);
+    await inView(options.filter({hasText:tasks[0].title}));await expect(field).toBeFocused();
+    for(let index=0;index<5;index++)await field.press('ArrowDown');
+    await inView(last);await field.press('Enter');
+    const persisted=await f.get<{number:number}>(`/api/WorkItems/${selected.id}`);
+    await expect(field).toHaveValue(`#${persisted.number}`);
+    await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
+    await field.click();await field.fill(prefix);await expect(options).toHaveCount(tasks.length);
+    await field.press('Escape');await expect(list).toHaveCount(0);
+    await field.click();await expect(options).toHaveCount(tasks.length);
     await last.scrollIntoViewIfNeeded();
     expect(await list.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
     await last.click();
