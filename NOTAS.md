@@ -1,3 +1,13 @@
+# Continuidade — horas-4 e E2E stability-2 (2026-10-16)
+
+- Fonte funcional `48655dd`: somente CSS da busca de ajuste e novo E2E de seis títulos longos. Test-only `41d9822`: recarga de coluna espera os GET200 de etapas/itens, com asserções e timeout preservados. Main `8ec6699` incorporada e reconferida. Os dois relatórios públicos novos e duas entradas PROGRESS registram entregas separadas no SHA final comum.
+- Gates finais: .NET build58,92s; xUnit384/38432,72s (45,12s com preparação); tsc-b94,06s; lint0erros/12avisos anteriores; Vitest155/155270,63s; Web build77,53s. Horas5casos3x desktop/mobile31/31 e coluna3x7/7. FULL FINAL203pass/6pulos antigos/0falhas/0retries1.571,81s; TODOS80horas/B07pass;88limpezas/192ações/0falhas. Rich antiga passou sem alteração. Resultados negativos anteriores estão retidos e explicados, não descartados.
+- Imagem testada `41d9822`, health/login200, DLLs/ativos byte a byte iguais à CSS486. Antes da ENTREGA, finalizar commit documental, imagem SHA final e comparar runtime-tested/runtime-final; relatórios externos horas-4.md e e2e-stability-2.md devem conter SHA final, resultados e limites. App QA3110/SQL3111, unidade separada; nunca dev/prod. Locks CPU+QA Tear até19:45UTC, liberar explicitamente ao terminar.
+- Depois da ENTREGA: aguardar REVISAO Prumo para horas-4 E stability-2 e QA Lupa no MESMO SHA. H16 continua aberto para enquadramento expresso (dois timers concorrentes, baseline main/spec); não assumir aceite, não corrigir fora do achado sem coordenação. QA-H06 deve ser retestado com títulos longos nas duas larguras. Não há PRONTO-PROD/publicação ainda. C1–C6 só depois de PUBLICADO da horas pelo Maestro.
+- Privados `.runlogs/horas-4`: CURRENT.md, scripts com guards QA, JSONs de focal/full, três backups600/VERIFYONLY. Ler logs somente por `show-safe-log.py BASENAME`/`summarize-playwright.py`, nunca logs/env/auth brutos. Fonte/backend imutáveis desde os gates; não repetir suites sem novo motivo. Goal ativo; esperar revisão/QA/publicação não é bloqueio nem fim.
+
+## Histórico preservado
+
 # Continuidade — horas-3 pronta para finalizar entrega (2026-10-16)
 
 - Fonte deproduto testada27df845; Full3 CONCLUÍDA:200pass/6skips antigos/1falha conhecida permitida/0retries,1542,37srunner. Única falha rich-task-description.spec.ts:63mobile, teste idêntico àmain, não corrigir nesteescopo. TODOS78afetadospassed(46API+6builder+8fixes+18followup),86cleanups/188ações/0falhas; setupmáx8,711s/corpomáx15,026s. Não chamar fulltotalmenteverde. Demaisgates build/xUnit384/Vitest155/tipos/lint/build aprovados.
