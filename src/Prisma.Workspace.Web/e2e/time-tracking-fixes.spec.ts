@@ -136,8 +136,14 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
     }
     const modal=await day(page,f,today());
     const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
+    const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
+      &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
+      &&new URL(response.url()).searchParams.get('query')===prefix);
+    const loaded=filtered();
     await field.fill(prefix);
+    expect((await loaded).status()).toBe(200);
     const list=modal.getByRole('listbox',{name:'Tarefas para apontamento'});
+    await expect(list).toHaveAttribute('aria-busy','false');
     const options=list.getByRole('option');
     await expect(options).toHaveCount(tasks.length);
     const listBox=await list.evaluate(element=>element.getBoundingClientRect().toJSON());
@@ -180,7 +186,9 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
     const persisted=await f.get<{number:number}>(`/api/WorkItems/${selected.id}`);
     await expect(field).toHaveValue(`#${persisted.number}`);
     await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
-    await field.click();await field.fill(prefix);await expect(options).toHaveCount(tasks.length);
+    await field.click();const reloaded=filtered();await field.fill(prefix);
+    expect((await reloaded).status()).toBe(200);await expect(list).toHaveAttribute('aria-busy','false');
+    await expect(options).toHaveCount(tasks.length);
     await field.press('Escape');await expect(list).toHaveCount(0);
     await field.click();await expect(options).toHaveCount(tasks.length);
     await last.scrollIntoViewIfNeeded();
