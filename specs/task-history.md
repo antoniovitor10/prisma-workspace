@@ -8,6 +8,9 @@
 
 **Natureza:** contrato funcional desejado comparado ao estado atual do produto
 
+> **Atualização do PO em 2026-10-14 (D99):** a `Linha do tempo` é implementada conforme esta spec e é a aba principal de movimentações entre colunas, mas **não substitui** o `Grafo de estados`: o Grafo continua disponível como visão complementar. Onde o texto abaixo diz que a linha do tempo substitui o grafo, vale esta atualização.
+
+
 ## Propósito
 
 Separar conversas humanas, auditoria geral e movimentações entre colunas no detalhe da tarefa. O detalhe mantém
