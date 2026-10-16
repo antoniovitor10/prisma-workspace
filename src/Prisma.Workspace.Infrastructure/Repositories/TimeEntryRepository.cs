@@ -97,6 +97,17 @@ public class TimeEntryRepository : ITimeEntryRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TimeEntry>> GetVisibleEntriesAsync(HoursReadScope scope,
+        Guid? workItemId = null, Guid? boardId = null, string? userId = null, CancellationToken ct = default)
+    {
+        var query = _context.TimeEntries.AsNoTracking().Include(e=>e.WorkItem).ThenInclude(i=>i.Board)
+            .Where(scope.EntryPredicate());
+        if (workItemId.HasValue) query = query.Where(e=>e.WorkItemId==workItemId);
+        if (boardId.HasValue) query = query.Where(e=>e.WorkItem.BoardId==boardId);
+        if (!string.IsNullOrWhiteSpace(userId)) query = query.Where(e=>e.UserId==userId);
+        return await query.OrderByDescending(e=>e.StartedAt).ToListAsync(ct);
+    }
+
     public async Task<int> GetTotalSecondsByWorkItemIdAsync(
         Guid workItemId,
         CancellationToken cancellationToken = default)
@@ -168,6 +179,7 @@ public class TimeEntryRepository : ITimeEntryRepository
     {
         return await _context.TimeEntries
             .AsNoTracking()
+            .Include(t=>t.WorkItem).ThenInclude(i=>i.Board)
             .Where(t => userIds.Contains(t.UserId) && t.StartedAt < toExclusive
                 && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);

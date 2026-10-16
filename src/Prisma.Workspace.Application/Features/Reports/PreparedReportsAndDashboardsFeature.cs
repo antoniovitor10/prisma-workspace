@@ -1,3 +1,4 @@
+using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -52,33 +53,42 @@ public class GetPreparedReportsQueryHandler
     private readonly IUserDirectory _users;
     private readonly IPermissionService _permissions;
     private readonly IProjectAccessService _access;
+    private readonly IHoursReadAccessService _hours;
 
     public GetPreparedReportsQueryHandler(
         IAnalyticsRepository analytics, IUserDirectory users,
-        IPermissionService permissions, IProjectAccessService access)
-        => (_analytics, _users, _permissions, _access) = (analytics, users, permissions, access);
+        IPermissionService permissions, IProjectAccessService access, IHoursReadAccessService hours)
+        => (_analytics, _users, _permissions, _access, _hours) = (analytics, users, permissions, access, hours);
 
     public async Task<PreparedReportsDto> Handle(GetPreparedReportsQuery request, CancellationToken ct)
     {
         await ReportAuthorization.EnsureViewAsync(
             request.ActorId, request.Filters.ProjectId, _permissions, _access, ct);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        if (!scope.ReadEnabled || (request.Filters.ProjectId.HasValue
+            && scope.DeniedProjectIds.Contains(request.Filters.ProjectId.Value))) throw new AcessoNegadoException();
+        var today = TimeTrackingDay.Date(DateTimeOffset.UtcNow);
         var from = request.Filters.From ?? today.AddDays(-29);
         var to = request.Filters.To ?? today;
         DomainException.Garantir(to >= from && to.DayNumber - from.DayNumber <= 730,
             "O período deve ter entre 1 e 730 dias.");
-        var items = (await _analytics.GetWorkItemsAsync(request.Filters.ProjectId, ct))
+        var items = (await _hours.FilterItemsAsync(scope,
+            await _analytics.GetWorkItemsAsync(request.Filters.ProjectId,ct),ct))
             .Where(item => Matches(item, request.Filters)).ToList();
-        var requests = (await _analytics.GetExternalRequestsAsync(request.Filters.ProjectId, ct))
-            .Where(requestItem => Matches(requestItem.WorkItem, request.Filters))
-            .Where(x => InPeriod(x.CreatedAt, from, to)).ToList();
-        var sprints = (await _analytics.GetSprintsAsync(request.Filters.ProjectId, ct))
-            .Where(x => !request.Filters.TeamId.HasValue || x.TeamId == request.Filters.TeamId)
-            .ToList();
+        var requestRows = await _analytics.GetExternalRequestsAsync(request.Filters.ProjectId,ct);
+        var visibleRequestItems = (await _hours.FilterItemsAsync(scope,requestRows.Select(r=>r.WorkItem),ct))
+            .Select(i=>i.Id).ToHashSet();
+        var requests = requestRows.Where(r=>visibleRequestItems.Contains(r.WorkItemId))
+            .Where(r=>Matches(r.WorkItem,request.Filters) && InPeriod(r.CreatedAt,from,to)).ToList();
+        var sprintRows = await _analytics.GetSprintsAsync(request.Filters.ProjectId,ct);
+        var projects = await _access.GetAccessibleProjectIdsAsync(sprintRows.Select(s=>s.ProjectId),request.ActorId,ct);
+        var sprints = sprintRows.Where(s=>projects.Contains(s.ProjectId) && !scope.DeniedProjectIds.Contains(s.ProjectId)
+            && (scope.TeamIds is null || scope.TeamIds.Contains(s.TeamId ?? Guid.Empty)))
+            .Where(s=>!request.Filters.TeamId.HasValue || s.TeamId==request.Filters.TeamId).ToList();
         var userIds = items.Select(x => x.ResponsibleId).Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x!).Distinct();
         var names = await _users.GetDisplayNamesAsync(userIds, ct);
-        return Build(items, requests, sprints, names, from, to, request.Filters.UserId);
+        return Build(items, requests, sprints, names, from, to, scope.OwnOnly ? request.ActorId : request.Filters.UserId);
     }
 
     internal static PreparedReportsDto Build(
@@ -239,14 +249,16 @@ public class GetProjectDashboardQueryHandler : IRequestHandler<GetProjectDashboa
 {
     private readonly IMediator _mediator;
     private readonly IAnalyticsRepository _analytics;
-    public GetProjectDashboardQueryHandler(IMediator mediator, IAnalyticsRepository analytics)
-        => (_mediator, _analytics) = (mediator, analytics);
+    private readonly IHoursReadAccessService _hours;
+    public GetProjectDashboardQueryHandler(IMediator mediator, IAnalyticsRepository analytics, IHoursReadAccessService hours)
+        => (_mediator, _analytics, _hours) = (mediator, analytics, hours);
     public async Task<DashboardDto> Handle(GetProjectDashboardQuery request, CancellationToken ct)
     {
         var filters = request.Filters with { ProjectId = request.ProjectId };
         var report = await _mediator.Send(new GetPreparedReportsQuery(filters, request.ActorId), ct);
         var dashboard = DashboardMapper.FromPrepared("project", report);
-        var tasks = (await _analytics.GetWorkItemsAsync(request.ProjectId, ct))
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        var tasks = (await _hours.FilterItemsAsync(scope,await _analytics.GetWorkItemsAsync(request.ProjectId,ct),ct))
             .Where(x => !x.IsArchived && GetPreparedReportsQueryHandler.Matches(x, filters)).ToList();
         var completed = tasks.Count(x => x.CompletedAt.HasValue);
         var progress = tasks.Count == 0 ? 0 : Math.Round(completed * 100m / tasks.Count, 2);
@@ -276,21 +288,26 @@ public class GetCollaboratorDashboardQueryHandler : IRequestHandler<GetCollabora
 {
     private readonly IAnalyticsRepository _analytics;
     private readonly IUserDirectory _users;
-    public GetCollaboratorDashboardQueryHandler(IAnalyticsRepository analytics, IUserDirectory users)
-        => (_analytics, _users) = (analytics, users);
+    private readonly IProjectAccessService _access;
+    public GetCollaboratorDashboardQueryHandler(IAnalyticsRepository analytics, IUserDirectory users, IProjectAccessService access)
+        => (_analytics, _users, _access) = (analytics, users, access);
     public async Task<DashboardDto> Handle(GetCollaboratorDashboardQuery request, CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = TimeTrackingDay.Date(DateTimeOffset.UtcNow);
         var from = request.From ?? today.AddDays(-6);
         var to = request.To ?? today.AddDays(14);
         var all = await _analytics.GetWorkItemsAsync(null, ct);
         var tasks = all.Where(x => !x.IsArchived && (x.ResponsibleId == request.ActorId
             || x.Assignees.Any(a => a.UserId == request.ActorId)
             || x.CreatedBy == request.ActorId || x.Followers.Any(f => f.UserId == request.ActorId))).ToList();
+        var accessible = await _access.GetAccessibleProjectIdsAsync(tasks.Select(t=>t.Board.ProjectId),request.ActorId,ct);
+        tasks = tasks.Where(t=>accessible.Contains(t.Board.ProjectId)).ToList();
         var time = tasks.SelectMany(x => x.TimeEntries).Where(x => x.UserId == request.ActorId
             && GetPreparedReportsQueryHandler.EntryOverlaps(x, from, to)).ToList();
         var open = tasks.Where(x => x.CompletedAt == null).ToList();
-        var hours = Math.Round(time.Sum(x => (decimal)Math.Max(0, ((x.EndedAt ?? DateTimeOffset.UtcNow) - x.StartedAt).TotalHours)), 2);
+        var now = DateTimeOffset.UtcNow;
+        var hours = Math.Round(time.Sum(e=>TimeTrackingDay.SecondsInRange(e.StartedAt,e.EndedAt ?? now,
+            TimeTrackingDay.Start(from),TimeTrackingDay.Start(to.AddDays(1))) / 3600m),2);
         var kpis = new List<DashboardKpiDto>
         {
             new("mine","Minhas tarefas",open.Count),

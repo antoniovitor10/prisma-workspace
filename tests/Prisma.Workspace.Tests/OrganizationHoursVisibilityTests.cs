@@ -1,3 +1,4 @@
+using Prisma.Workspace.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Features.Reports;
@@ -51,8 +52,10 @@ public class OrganizationHoursVisibilityTests
             Db.SaveChanges();
             Db.ChangeTracker.Clear();
             tenant.OrganizationId = OrgId;
-            Handler = new(new ReportRepository(Db), new Names(), new OrganizationRepository(Db), tenant,
-                new TeamRepository(Db), new PermissionService(Db, tenant));
+            var permissions = new PermissionService(Db,tenant);
+            var visibility = new HoursReadAccessService(tenant,new OrganizationRepository(Db),new TeamRepository(Db),
+                new ProjectAccessService(Db,permissions));
+            Handler = new(new ReportRepository(Db),new Names(),permissions,visibility);
         }
 
         private void AddEntry(string user, Team? team, Guid orgId)
@@ -138,9 +141,10 @@ public class OrganizationHoursVisibilityTests
         await f.Db.SaveChangesAsync();
         var tenant = new Tenant(f.OrgId);
         var permissions = new PermissionService(f.Db, tenant);
-        var executor = new ReportExecutor(new AnalyticsRepository(f.Db), new Names(), new ProjectRepository(f.Db),
-            tenant, new OrganizationRepository(f.Db), new TeamRepository(f.Db), permissions,
-            new ProjectAccessService(f.Db, permissions));
+        var access = new ProjectAccessService(f.Db,permissions);
+        var visibility = new HoursReadAccessService(tenant,new OrganizationRepository(f.Db),new TeamRepository(f.Db),access);
+        var executor = new ReportExecutor(new AnalyticsRepository(f.Db),new Names(),new ProjectRepository(f.Db),
+            permissions,access,visibility);
         foreach (var date in new[] { new DateOnly(2026,1,12), new DateOnly(2026,1,13) })
         {
             var definition = new ReportDefinitionDto(["userId","hours"], [], [new("userId","eq","actor")],

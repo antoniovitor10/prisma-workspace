@@ -1,3 +1,4 @@
+using Prisma.Workspace.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Features.Reports;
@@ -39,6 +40,7 @@ public class ReportBuilderVisibilityTests
         public PermissionService Permissions { get; }
         public ProjectAccessService Access { get; }
         public ProjectRepository Projects { get; }
+        public HoursReadAccessService Visibility { get; }
         public Fixture(OrganizationRole role)
         {
             Db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
@@ -61,8 +63,8 @@ public class ReportBuilderVisibilityTests
             Entry(Item(Project("Outro tenant", "foreign"), null, "Sigilosa", "foreign"), "foreign", 0, 20);
             Db.SaveChanges(); Db.ChangeTracker.Clear(); _tenant.OrganizationId = organizationId;
             Analytics = new(Db); Projects = new(Db); Permissions = new(Db, _tenant); Access = new(Db, Permissions);
-            Executor = new(Analytics, new Names(), Projects, _tenant, new OrganizationRepository(Db),
-                new TeamRepository(Db), Permissions, Access);
+            Visibility = new(_tenant,new OrganizationRepository(Db),new TeamRepository(Db),Access);
+            Executor = new(Analytics,new Names(),Projects,Permissions,Access,Visibility);
         }
         private Project Project(string name, string owner)
         {
@@ -96,6 +98,123 @@ public class ReportBuilderVisibilityTests
             await Db.SaveChangesAsync(); Db.ChangeTracker.Clear();
         }
         public ValueTask DisposeAsync() => Db.DisposeAsync();
+    }
+
+    [Theory]
+    [InlineData(OrganizationRole.TeamMember, 5)]
+    [InlineData(OrganizationRole.Viewer, 5)]
+    [InlineData(OrganizationRole.Client, 5)]
+    [InlineData(OrganizationRole.Manager, 7)]
+    [InlineData(OrganizationRole.Administrator, 10)]
+    public async Task PersonalReadScopeAndQueryPredicateAgreeBeforeSerializing(OrganizationRole role, int hours)
+    {
+        await using var f = new Fixture(role);
+        var scope = await f.Visibility.GetScopeAsync("actor", false);
+        var all = await f.Db.TimeEntries.Include(e => e.WorkItem).ThenInclude(i => i.Board).ToListAsync();
+        var filtered = all.Where(scope.CanRead).OrderBy(e => e.Id).ToList();
+        var queried = await f.Db.TimeEntries.Where(scope.EntryPredicate()).OrderBy(e => e.Id).ToListAsync();
+        Assert.Equal(filtered.Select(e => e.Id), queried.Select(e => e.Id));
+        Assert.Equal(hours, filtered.Sum(e => (e.EndedAt!.Value - e.StartedAt).TotalHours));
+        if (role is not (OrganizationRole.Administrator or OrganizationRole.Manager))
+            Assert.All(filtered, e => Assert.Equal("actor", e.UserId));
+    }
+
+    [Theory]
+    [InlineData(OrganizationRole.Viewer,1,1)]
+    [InlineData(OrganizationRole.Client,1,1)]
+    [InlineData(OrganizationRole.ProductOwner,1,1)]
+    [InlineData(OrganizationRole.Manager,7,3)]
+    [InlineData(OrganizationRole.Administrator,10,6)]
+    public async Task PreparedAndProjectTimeUseSamePopulationAsBuilder(OrganizationRole role,int globalHours,int projectHours)
+    {
+        await using var f = new Fixture(role);
+        var filters = new AnalyticsFiltersDto(null,null,null,null,null,new(2026,1,12),new(2026,1,12));
+        var prepared = await new GetPreparedReportsQueryHandler(f.Analytics,new Names(),f.Permissions,f.Access,f.Visibility)
+            .Handle(new(filters,"actor"),default);
+        Assert.Equal(globalHours,prepared.Hours.Realized);
+        var project = await new GetTimeReportQueryHandler(new ReportRepository(f.Db),f.Projects,f.Access,new Names(),f.Visibility)
+            .Handle(new(f.Shared.Id,new(2026,1,12),new(2026,1,12),null,null,"actor"),default);
+        Assert.Equal(projectHours,project.Project.RealizedHours);
+        if(role is not (OrganizationRole.Administrator or OrganizationRole.Manager))
+        {
+            Assert.All(project.Entries,e=>Assert.Equal("actor",e.UserId));
+            var shared = await f.Db.Projects.Include(p=>p.Members).SingleAsync(p=>p.Id==f.Shared.Id);
+            shared.Members.Add(new ProjectMember { ProjectId=shared.Id,UserId="outsider",Role=ProjectRole.Member });
+            await f.Db.SaveChangesAsync();
+            var other = await new GetTimeReportQueryHandler(new ReportRepository(f.Db),f.Projects,f.Access,new Names(),f.Visibility)
+                .Handle(new(f.Shared.Id,new(2026,1,12),new(2026,1,12),null,"outsider","actor"),default);
+            Assert.Empty(other.Entries);
+        }
+    }
+
+    [Fact]
+    public async Task PersonalOwnerHoursRemainReadableOutsideManagedTeamButReportsDoNotIncludeThem()
+    {
+        await using var f = new Fixture(OrganizationRole.Manager);
+        var item = await f.Db.WorkItems.SingleAsync(i=>i.Board.ProjectId==f.Hidden.Id);
+        item.TeamId=null; item.Team=null; await f.Db.SaveChangesAsync(); f.Db.ChangeTracker.Clear();
+        var personal = await f.Visibility.GetScopeAsync("actor",false);
+        var report = await f.Visibility.GetScopeAsync("actor",true);
+        var repo = new TimeEntryRepository(f.Db);
+        Assert.Equal(5m,(await repo.GetVisibleEntriesAsync(personal,userId:"actor"))
+            .Sum(e=>(decimal)(e.EndedAt!.Value-e.StartedAt).TotalHours));
+        Assert.Equal(1m,(await repo.GetVisibleEntriesAsync(report,userId:"actor"))
+            .Sum(e=>(decimal)(e.EndedAt!.Value-e.StartedAt).TotalHours));
+    }
+
+    [Fact]
+    public async Task ExplicitReportDenialDoesNotGrantOthersThroughPersonalTotals()
+    {
+        await using var f = new Fixture(OrganizationRole.Administrator);
+        await f.Deny(PermissionScope.Report);
+        var repo = new TimeEntryRepository(f.Db);
+        var personal = await f.Visibility.GetScopeAsync("actor",false);
+        var report = await f.Visibility.GetScopeAsync("actor",true);
+        var own = await repo.GetVisibleEntriesAsync(personal);
+        Assert.NotEmpty(own); Assert.All(own,e=>Assert.Equal("actor",e.UserId));
+        Assert.Empty(await repo.GetVisibleEntriesAsync(report));
+    }
+
+    [Fact]
+    public async Task ItemReportDenialRemovesOtherHoursButPreservesPersonalHistory()
+    {
+        await using var f = new Fixture(OrganizationRole.Administrator);
+        var item = await f.Db.WorkItems.SingleAsync(i => i.Title == "Tarefa própria");
+        await f.Deny(PermissionScope.WorkItem, item.Id);
+        var personal = await f.Visibility.GetScopeAsync("actor", false);
+        var report = await f.Visibility.GetScopeAsync("actor", true);
+        var repository = new TimeEntryRepository(f.Db);
+        Assert.All(await repository.GetVisibleEntriesAsync(personal, workItemId: item.Id),
+            entry => Assert.Equal("actor", entry.UserId));
+        Assert.Empty(await repository.GetVisibleEntriesAsync(report, workItemId: item.Id));
+        Assert.Equal(7m, (await f.Run(ReportDataSource.TimeEntries)).Rows.Sum(r => (decimal)r["hours"]!));
+    }
+
+    [Theory]
+    [InlineData(PermissionScope.Project)]
+    [InlineData(PermissionScope.Report)]
+    public async Task ProjectReportDenialCannotBeBypassedByAnOrganizationQuery(PermissionScope deniedScope)
+    {
+        await using var f=new Fixture(OrganizationRole.Administrator);
+        f.Db.PermissionGrants.Add(new PermissionGrant { Id=Guid.NewGuid(),OrganizationId=f.OrganizationId,
+            UserId="actor",Permission=PlatformPermission.ViewReport,Scope=deniedScope,ScopeId=f.Shared.Id,
+            IsAllowed=false,GrantedBy="admin" });
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(4m,(await f.Run(ReportDataSource.TimeEntries)).Rows.Sum(r=>(decimal)r["hours"]!));
+        await Assert.ThrowsAsync<AcessoNegadoException>(()=>f.Run(ReportDataSource.TimeEntries,projectId:f.Shared.Id));
+    }
+
+    [Fact]
+    public async Task ASharedDefinitionDenialCannotBeBypassedThroughExecution()
+    {
+        await using var f=new Fixture(OrganizationRole.Administrator);
+        var report=SavedReport.Create(f.OrganizationId,null,"colleague","Negado",ReportDataSource.TimeEntries,
+            ReportVisualization.Table,System.Text.Json.JsonSerializer.Serialize(Fixture.Definition(ReportDataSource.TimeEntries),
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)),true);
+        f.Analytics.AddSavedReport(report);await f.Analytics.SaveAsync();
+        await f.Deny(PermissionScope.Report,report.Id);
+        await Assert.ThrowsAsync<AcessoNegadoException>(()=>new RunSavedReportQueryHandler(f.Analytics,f.Executor,
+            f.Permissions,f.Access,f.Visibility).Handle(new(report.Id,"actor"),default));
     }
 
     [Theory]
@@ -188,6 +307,7 @@ public class ReportBuilderVisibilityTests
     }
 
     [Theory]
+    [InlineData(OrganizationRole.Viewer, 0)]
     [InlineData(OrganizationRole.Manager, 0)]
     [InlineData(OrganizationRole.Administrator, 3)]
     public async Task ExplicitTeamDenialRemovesTimeRowsAndUserTotals(OrganizationRole role, int expectedHours)
@@ -211,7 +331,7 @@ public class ReportBuilderVisibilityTests
             ReportDataSource.TimeEntries,ReportVisualization.Table,
             System.Text.Json.JsonSerializer.Serialize(Fixture.Definition(ReportDataSource.TimeEntries),new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)),true);
         f.Analytics.AddSavedReport(report); await f.Analytics.SaveAsync();
-        var saved = await new RunSavedReportQueryHandler(f.Analytics,f.Executor,f.Permissions,f.Access)
+        var saved = await new RunSavedReportQueryHandler(f.Analytics,f.Executor,f.Permissions,f.Access,f.Visibility)
             .Handle(new(report.Id,"actor"),default);
         var preview = await new RunAdHocReportQueryHandler(f.Executor,f.Permissions,f.Access,f.Projects)
             .Handle(new(null,ReportDataSource.TimeEntries,ReportVisualization.Table,Fixture.Definition(ReportDataSource.TimeEntries),"actor"),default);

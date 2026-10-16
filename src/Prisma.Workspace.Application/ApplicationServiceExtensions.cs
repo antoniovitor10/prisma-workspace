@@ -19,6 +19,7 @@ public static class ApplicationServiceExtensions
         // Registra todos os validators FluentValidation do assembly Application.
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<Features.Reports.ReportExecutor>();
+        services.AddScoped<Interfaces.IHoursReadAccessService, Services.HoursReadAccessService>();
 
         // Executa os validators antes de cada handler (sem isso eles não rodam).
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Common.Behaviors.ValidationBehavior<,>));

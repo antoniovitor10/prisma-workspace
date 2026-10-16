@@ -17,6 +17,8 @@ public interface ITimeEntryRepository
     Task<IReadOnlyList<TimeEntry>> GetUserPeriodsForValidationAsync(string userId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto>> SearchAdjustmentTasksAsync(string userId, string query, CancellationToken cancellationToken = default);
     Task UpdateAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TimeEntry>> GetVisibleEntriesAsync(HoursReadScope scope,
+        Guid? workItemId = null, Guid? boardId = null, string? userId = null, CancellationToken ct = default);
     Task<int> GetTotalSecondsByWorkItemIdAsync(Guid workItemId, CancellationToken cancellationToken = default);
     Task<int> GetTotalSecondsByUserIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<int> GetTotalSecondsByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default);

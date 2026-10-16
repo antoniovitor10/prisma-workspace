@@ -42,6 +42,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             .Include(x => x.WorkItem).ThenInclude(x => x.Stage)
             .Include(x => x.WorkItem).ThenInclude(x => x.WorkflowStatus)
             .Include(x => x.WorkItem).ThenInclude(x => x.TimeEntries)
+            .Include(x => x.WorkItem).ThenInclude(x => x.Assignees)
             .Include(x => x.WorkItem).ThenInclude(x => x.CustomFieldValues)
             .Include(x => x.Messages)
             .AsQueryable();

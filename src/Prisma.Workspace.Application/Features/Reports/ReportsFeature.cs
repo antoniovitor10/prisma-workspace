@@ -59,13 +59,14 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
     private readonly IProjectRepository _projects;
     private readonly IProjectAccessService _access;
     private readonly IUserDirectory _users;
+    private readonly IHoursReadAccessService _hours;
 
     public GetTimeReportQueryHandler(
         IReportRepository reports,
         IProjectRepository projects,
         IProjectAccessService access,
-        IUserDirectory users)
-        => (_reports, _projects, _access, _users) = (reports, projects, access, users);
+        IUserDirectory users, IHoursReadAccessService hours)
+        => (_reports, _projects, _access, _users, _hours) = (reports, projects, access, users, hours);
 
     public async Task<TimeReportDto> Handle(GetTimeReportQuery request, CancellationToken ct)
     {
@@ -86,11 +87,16 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
             || project.Members.Any(x => x.UserId == request.UserId),
             "O usuário não pertence ao projeto.");
 
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        if (!scope.ReadEnabled || scope.DeniedProjectIds.Contains(request.ProjectId)) throw new AcessoNegadoException();
+        var timeUserId = scope.OwnOnly ? request.ActorId : request.UserId;
         var fromUtc = TimeTrackingDay.Start(from);
         var toExclusive = TimeTrackingDay.Start(to.AddDays(1));
-        var items = await _reports.GetTimeReportItemsAsync(
-            request.ProjectId, fromUtc, toExclusive, request.TeamId,
-            string.IsNullOrWhiteSpace(request.UserId) ? null : request.UserId, ct);
+        IReadOnlyList<WorkItem> candidates = scope.OwnOnly && !string.IsNullOrWhiteSpace(request.UserId)
+            && request.UserId != request.ActorId ? [] : await _reports.GetTimeReportItemsAsync(
+            request.ProjectId,fromUtc,toExclusive,request.TeamId,
+            string.IsNullOrWhiteSpace(timeUserId) ? null : timeUserId,ct);
+        var items = await _hours.FilterItemsAsync(scope,candidates,ct);
         var userIds = items.SelectMany(x => x.TimeEntries.Select(entry => entry.UserId))
             .Concat(items.Select(x => x.ResponsibleId ?? string.Empty))
             .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
@@ -98,7 +104,7 @@ public class GetTimeReportQueryHandler : IRequestHandler<GetTimeReportQuery, Tim
 
         var plannedItems = items.Where(item => IsPlannedInRange(item, from, to)).ToList();
         var entries = items.SelectMany(item => item.TimeEntries
-                .Where(entry => string.IsNullOrWhiteSpace(request.UserId) || entry.UserId == request.UserId)
+                .Where(entry => string.IsNullOrWhiteSpace(timeUserId) || entry.UserId == timeUserId)
                 .Select(entry => MapEntry(item, entry, project.Key, names, fromUtc, toExclusive)))
             .OrderByDescending(x => x.StartedAt).ToList();
 

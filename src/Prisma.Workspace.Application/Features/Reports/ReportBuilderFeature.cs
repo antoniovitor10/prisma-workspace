@@ -218,10 +218,11 @@ public class RunSavedReportQueryHandler : IRequestHandler<RunSavedReportQuery, R
     private readonly ReportExecutor _executor;
     private readonly IPermissionService _permissions;
     private readonly IProjectAccessService _access;
+    private readonly IHoursReadAccessService _hours;
     public RunSavedReportQueryHandler(
         IAnalyticsRepository analytics, ReportExecutor executor,
-        IPermissionService permissions, IProjectAccessService access)
-        => (_analytics, _executor, _permissions, _access) = (analytics, executor, permissions, access);
+        IPermissionService permissions, IProjectAccessService access, IHoursReadAccessService hours)
+        => (_analytics, _executor, _permissions, _access, _hours) = (analytics, executor, permissions, access, hours);
     public async Task<ReportExecutionDto> Handle(RunSavedReportQuery request, CancellationToken ct)
     {
         var report = await _analytics.GetSavedReportAsync(request.Id, ct)
@@ -230,6 +231,8 @@ public class RunSavedReportQueryHandler : IRequestHandler<RunSavedReportQuery, R
             "Relatório não compartilhado.");
         await ReportAuthorization.EnsureViewAsync(
             request.ActorId, report.ProjectId, _permissions, _access, ct);
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        if (!scope.ReadEnabled || scope.DeniedReportIds.Contains(report.Id)) throw new AcessoNegadoException();
         return await _executor.RunAsync(
             report.ProjectId, report.Source, report.Visualization,
             ReportDefinitionMapper.Definition(report), request.ActorId, ct);
@@ -305,62 +308,26 @@ public class ReportExecutor
     private readonly IAnalyticsRepository _analytics;
     private readonly IUserDirectory _users;
     private readonly IProjectRepository _projects;
-    private readonly IOrganizationContext _organization;
-    private readonly IOrganizationRepository _organizations;
-    private readonly ITeamRepository _teams;
     private readonly IPermissionService _permissions;
     private readonly IProjectAccessService _access;
+    private readonly IHoursReadAccessService _hours;
     public ReportExecutor(IAnalyticsRepository analytics, IUserDirectory users, IProjectRepository projects,
-        IOrganizationContext organization, IOrganizationRepository organizations, ITeamRepository teams,
-        IPermissionService permissions, IProjectAccessService access)
-        => (_analytics, _users, _projects, _organization, _organizations, _teams, _permissions, _access)
-            = (analytics, users, projects, organization, organizations, teams, permissions, access);
+        IPermissionService permissions, IProjectAccessService access, IHoursReadAccessService hours)
+        => (_analytics, _users, _projects, _permissions, _access, _hours)
+            = (analytics, users, projects, permissions, access, hours);
 
-    private sealed record DataScope(string ActorId, bool OwnOnly, IReadOnlySet<Guid>? TeamIds, IReadOnlySet<string>? UserIds)
+    private async Task<HoursReadScope> ResolveScopeAsync(string actorId, Guid? projectId, CancellationToken ct)
     {
-        public bool IncludesTeam(WorkItem item) => TeamIds is null
-            || TeamIds.Contains(item.TeamId ?? item.Board.TeamId ?? Guid.Empty);
-        public bool Includes(TimeEntry entry) => IncludesTeam(entry.WorkItem)
-            && (!OwnOnly || entry.UserId == ActorId);
-        public bool Includes(WorkItem item) => IncludesTeam(item) && (!OwnOnly
-            || item.ResponsibleId == ActorId || item.Assignees.Any(a => a.UserId == ActorId)
-            || item.TimeEntries.Any(e => e.UserId == ActorId));
-    }
-
-    private async Task<DataScope> ResolveScopeAsync(string actorId, Guid? projectId, CancellationToken ct)
-    {
-        var organizationId = _organization.RequireOrganizationId();
-        var member = await _organizations.GetMemberAsync(organizationId, actorId, ct);
-        if (member is null || !member.IsActive || member.Role == OrganizationRole.ExternalRequester)
-            throw new AcessoNegadoException();
         await ReportAuthorization.EnsureViewAsync(actorId, projectId, _permissions, _access, ct);
-        var grants = await _organizations.GetGrantsAsync(organizationId, ct);
-        if (grants.Any(g => g.UserId == actorId && !g.IsAllowed
-            && g.Permission == PlatformPermission.ViewReport
-            && (g.Scope is PermissionScope.Organization or PermissionScope.Report) && g.ScopeId is null))
+        var scope = await _hours.GetScopeAsync(actorId, true, ct);
+        if (!scope.ReadEnabled || (projectId.HasValue && scope.DeniedProjectIds.Contains(projectId.Value)))
             throw new AcessoNegadoException();
-        var ownOnly = member.Role is not (OrganizationRole.Administrator or OrganizationRole.Manager);
-        if (ownOnly) return new(actorId, true, null, new HashSet<string> { actorId });
-        var denied = grants.Where(g => g.UserId == actorId && !g.IsAllowed
-            && g.Permission == PlatformPermission.ViewReport && g.Scope == PermissionScope.Team
-            && g.ScopeId.HasValue).Select(g => g.ScopeId!.Value).ToHashSet();
-        var visibleTeams = (await _teams.GetAllWithMembersAsync(ct))
-            .Where(t => (member.Role == OrganizationRole.Administrator || t.LeaderId == actorId)
-                && !denied.Contains(t.Id)).ToList();
-        var teams = visibleTeams.Select(t => t.Id).ToHashSet();
-        var administrator = member.Role == OrganizationRole.Administrator;
-        if (administrator) teams.Add(Guid.Empty);
-        return new(actorId, false, teams, administrator ? null
-            : visibleTeams.SelectMany(t => t.Members).Select(m => m.UserId).ToHashSet());
+        return scope;
     }
 
-    private async Task<IReadOnlyList<WorkItem>> VisibleItemsAsync(
-        IReadOnlyList<WorkItem> items, DataScope scope, CancellationToken ct)
-    {
-        var candidates = items.Where(scope.Includes).ToList();
-        var projects = await _access.GetAccessibleProjectIdsAsync(candidates.Select(i => i.Board.ProjectId), scope.ActorId, ct);
-        return candidates.Where(i => projects.Contains(i.Board.ProjectId)).ToList();
-    }
+    private Task<IReadOnlyList<WorkItem>> VisibleItemsAsync(
+        IReadOnlyList<WorkItem> items, HoursReadScope scope, CancellationToken ct)
+        => _hours.FilterItemsAsync(scope,items,ct);
 
     public async Task<ReportExecutionDto> RunAsync(
         Guid? projectId,
@@ -442,7 +409,7 @@ public class ReportExecutor
     }
 
     private async Task<List<Dictionary<string, object?>>> SourceRowsAsync(
-        ReportDataSource source, Guid? projectId, ReportDefinitionDto definition, DataScope scope, CancellationToken ct)
+        ReportDataSource source, Guid? projectId, ReportDefinitionDto definition, HoursReadScope scope, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
         var from = definition.From.HasValue ? TimeTrackingDay.Start(definition.From.Value) : DateTimeOffset.MinValue;
@@ -468,14 +435,15 @@ public class ReportExecutor
             {
                 var projects = await _analytics.GetProjectsAsync(ct);
                 var ids = await _access.GetAccessibleProjectIdsAsync(projects.Select(p => p.Id), scope.ActorId, ct);
-                return projects.Where(p => ids.Contains(p.Id) && (!projectId.HasValue || p.Id == projectId))
+                return projects.Where(p => ids.Contains(p.Id) && !scope.DeniedProjectIds.Contains(p.Id) && (!projectId.HasValue || p.Id == projectId))
                     .Select(ProjectRow).ToList();
             }
             case ReportDataSource.Teams:
             {
                 var teams = await _analytics.GetTeamsAsync(ct);
-                var ids = await _access.GetAccessibleProjectIdsAsync(teams.SelectMany(t => t.Projects)
+                var accessible = await _access.GetAccessibleProjectIdsAsync(teams.SelectMany(t => t.Projects)
                     .Select(p => p.ProjectId), scope.ActorId, ct);
+                var ids = accessible.Where(id=>!scope.DeniedProjectIds.Contains(id)).ToHashSet();
                 return teams.Where(t => (scope.TeamIds is null || scope.TeamIds.Contains(t.Id))
                         && t.Projects.Any(p => ids.Contains(p.ProjectId) && (!projectId.HasValue || p.ProjectId == projectId)))
                     .Select(t => TeamRow(t, ids, projectId)).ToList();
@@ -486,13 +454,13 @@ public class ReportExecutor
             {
                 var sprints = await _analytics.GetSprintsAsync(projectId, ct);
                 var ids = await _access.GetAccessibleProjectIdsAsync(sprints.Select(s => s.ProjectId), scope.ActorId, ct);
-                return sprints.Where(s => ids.Contains(s.ProjectId)
+                return sprints.Where(s => ids.Contains(s.ProjectId) && !scope.DeniedProjectIds.Contains(s.ProjectId)
                         && (scope.TeamIds is null || scope.TeamIds.Contains(s.TeamId ?? Guid.Empty)))
                     .Select(SprintRow).ToList();
             }
             case ReportDataSource.TimeEntries:
             {
-                var entries = (await _analytics.GetTimeEntriesAsync(projectId, ct)).Where(scope.Includes).ToList();
+                var entries = (await _analytics.GetTimeEntriesAsync(projectId, ct)).Where(scope.CanRead).ToList();
                 var ids = await _access.GetAccessibleProjectIdsAsync(entries.Select(e => e.WorkItem.Board.ProjectId), scope.ActorId, ct);
                 return entries.Where(e => ids.Contains(e.WorkItem.Board.ProjectId))
                     .Select(entry => TimeRow(entry, names, Hours)).ToList();
@@ -503,7 +471,7 @@ public class ReportExecutor
 
     private async Task<List<Dictionary<string, object?>>> UserRowsAsync(
         Guid? projectId, IReadOnlyList<UserSummary> users,
-        IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours, DataScope scope, CancellationToken ct)
+        IReadOnlyDictionary<string, string> names, Func<TimeEntry, decimal> hours, HoursReadScope scope, CancellationToken ct)
     {
         var items = await VisibleItemsAsync(await _analytics.GetWorkItemsAsync(projectId, ct), scope, ct);
         var allowed = items.SelectMany(i => i.Assignees.Select(a => a.UserId))

@@ -44,48 +44,20 @@ public class GetOrganizationHoursReportQueryHandler
 {
     private readonly IReportRepository _reports;
     private readonly IUserDirectory _users;
-    private readonly IOrganizationRepository _organizations;
-    private readonly IOrganizationContext _organization;
-    private readonly ITeamRepository _teams;
     private readonly IPermissionService _permissions;
-
+    private readonly IHoursReadAccessService _hours;
     public GetOrganizationHoursReportQueryHandler(IReportRepository reports, IUserDirectory users,
-        IOrganizationRepository organizations, IOrganizationContext organization,
-        ITeamRepository teams, IPermissionService permissions)
-        => (_reports, _users, _organizations, _organization, _teams, _permissions) =
-            (reports, users, organizations, organization, teams, permissions);
+        IPermissionService permissions, IHoursReadAccessService hours)
+        => (_reports,_users,_permissions,_hours)=(reports,users,permissions,hours);
 
     public async Task<OrganizationHoursReportDto> Handle(
         GetOrganizationHoursReportQuery request, CancellationToken ct)
     {
-        var organizationId = _organization.RequireOrganizationId();
-        var member = await _organizations.GetMemberAsync(organizationId, request.ActorId, ct);
-        if (member is null || !member.IsActive || member.Role == OrganizationRole.ExternalRequester)
-            throw new AcessoNegadoException();
-        await _permissions.EnsureAsync(request.ActorId, PlatformPermission.View, PermissionScope.Report, null, ct);
-        var grants = await _organizations.GetGrantsAsync(organizationId, ct);
-        if (grants.Any(g => g.UserId == request.ActorId && !g.IsAllowed
-            && g.Permission == PlatformPermission.ViewReport
-            && (g.Scope is PermissionScope.Organization or PermissionScope.Report) && g.ScopeId is null))
-            throw new AcessoNegadoException();
-
-        var ownOnly = member.Role is not (OrganizationRole.Administrator or OrganizationRole.Manager);
-        IReadOnlyCollection<Guid>? allowedTeamIds = null;
-        if (!ownOnly)
-        {
-            // Admin e gestor já possuem ViewReport no catálogo; aplicar as negações carregadas
-            // evita repetir consultas de membro e grants para cada equipe da organização.
-            var deniedTeams = grants.Where(g => g.UserId == request.ActorId && !g.IsAllowed
-                && g.Permission == PlatformPermission.ViewReport && g.Scope == PermissionScope.Team
-                && g.ScopeId.HasValue).Select(g => g.ScopeId!.Value).ToHashSet();
-            var managedTeams = new List<Guid>();
-            if (member.Role == OrganizationRole.Administrator) managedTeams.Add(Guid.Empty); // Sem equipe.
-            foreach (var team in await _teams.GetAllWithMembersAsync(ct))
-                if ((member.Role == OrganizationRole.Administrator || team.LeaderId == request.ActorId)
-                    && !deniedTeams.Contains(team.Id))
-                    managedTeams.Add(team.Id);
-            allowedTeamIds = managedTeams;
-        }
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        await _permissions.EnsureAsync(request.ActorId,PlatformPermission.View,PermissionScope.Report,null,ct);
+        if (!scope.ReadEnabled) throw new AcessoNegadoException();
+        var ownOnly = scope.OwnOnly;
+        var allowedTeamIds = scope.TeamIds;
         var today = TimeTrackingDay.Date(DateTimeOffset.UtcNow);
         var from = request.From ?? today.AddDays(-29);
         var to = request.To ?? today;
@@ -95,12 +67,13 @@ public class GetOrganizationHoursReportQueryHandler
 
         var fromUtc = TimeTrackingDay.Start(from);
         var toExclusive = TimeTrackingDay.Start(to.AddDays(1));
-        var entries = ownOnly && !string.IsNullOrWhiteSpace(request.UserId) && request.UserId != request.ActorId
+        var candidates = ownOnly && !string.IsNullOrWhiteSpace(request.UserId) && request.UserId != request.ActorId
             ? [] : await _reports.GetOrganizationTimeEntriesAsync(
             fromUtc, toExclusive,
             ownOnly ? request.ActorId : string.IsNullOrWhiteSpace(request.UserId) ? null : request.UserId,
             request.TeamId, allowedTeamIds, ct);
 
+        var entries = await _hours.FilterEntriesAsync(scope,candidates,ct);
         var businessHours = BusinessDays(from, to) * 8m;
 
         var now = DateTimeOffset.UtcNow;
