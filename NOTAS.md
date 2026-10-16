@@ -1,3 +1,14 @@
+# Continuidade — horas-5 para revisão e QA (2026-10-16)
+
+- Branch `fix/time-tracking-20261015`; fonte de produto `62c3c57`, E2E final `44b9fae`, main `8ec6699` reconferida. H16 corrigido com lock SQL transacional e recuperação de abertos próprios; H08 com visibilidade por teclado/lista/modal. Relatório público novo `docs/time-tracking-concurrency-validation.md`; uma entrada PROGRESS desta entrega.
+- Gates: build .NET/tsc/lint/web aprovados; xUnit 391/391, Vitest 160/160, focal 67/67 (desktop/mobile 3x). FULL 214 aprovados/6 pulos anteriores/1 falha antiga permitida rich-task-description:63 mobile, 0 retries. Todos os 92 de horas/B07 passaram; 100 limpezas/216 ações/0 falhas. Não corrigir Rich nem chamar full totalmente verde. Arquivo Rich e Migrations/ModelSnapshot sem diferença da main.
+- Antes da ENTREGA: commit só de documentação, usar o manifesto preservado da candidata testada `44b9fae` em runtime-tested, reconstruir imagem do SHA documental e comparar DLLs/ativos. Push somente desta branch. Registrar o SHA final exato no handoff externo horas-5.md e na fila; liberar CPU/QA explicitamente. App deve ficar saudável em 3110/SQL 3111; login privado na raiz canônica `.env.qa.login` modo 600, senha fora dos relatórios.
+- Ambiente do navegador estabilizado sem mudar testes: container próprio `prisma-qa-browser-horas5`, projeto QA, imagem oficial 1.62.1, bridge, WS somente 127.0.0.1:3115; `PW_TEST_CONNECT_EXPOSE_NETWORK=<loopback>`. 2 CPUs/3 GB RAM/1 GB SHM/nice 10. Pode ficar disponível para Lupa após liberar QA; nenhum navegador/suíte Tear ativo então. Para remover, validar label projeto QA e atingir só esse container. Nunca dev/prod.
+- Depois da ENTREGA: aguardar REVISAO Prumo e QA Lupa aprovados no MESMO SHA. Não herdar aceite de 047/244; não PRONTO-PROD antecipado. PUBLICADO do Maestro precede qualquer implementação C1–C6. Preparação C1 foi somente leitura e está em `.runlogs/horas-5/C1-readonly-preparation.md`; specs aprovadas exigem escolha explícita do responsável na criação, sem inventar herança/default.
+- Privados `.runlogs/horas-5`: CURRENT.md, helpers com guards, relatórios JSON/tempos/capturas próprios, backups 600 verificados. Ler logs via show-safe-log.py/poll-e2e.py/summarize-playwright.py, nunca env/auth/logs brutos. Último driver parallel-tabs terminou 1 apenas pela falha conhecida Rich; focal 8 terminou 0. Esperar revisão/QA/publicação faz parte do goal ativo e não é bloqueio nem fim.
+
+## Histórico preservado
+
 # Continuidade — horas-4 e E2E stability-2 (2026-10-16)
 
 - Fonte funcional `48655dd`: somente CSS da busca de ajuste e novo E2E de seis títulos longos. Test-only `41d9822`: recarga de coluna espera os GET200 de etapas/itens, com asserções e timeout preservados. Main `8ec6699` incorporada e reconferida. Os dois relatórios públicos novos e duas entradas PROGRESS registram entregas separadas no SHA final comum.
