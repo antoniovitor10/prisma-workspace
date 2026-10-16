@@ -17,7 +17,7 @@ public sealed class MethodProjectSettingsConfiguration : IEntityTypeConfiguratio
         b.HasKey(x => x.ProjectId);
         b.Property(x => x.GitPhase).HasConversion<byte>();
         b.Property(x => x.RowVersion).IsRowVersion();
-        b.HasIndex(x => x.BoardId).IsUnique();
+        b.HasIndex(x => x.BoardId).IsUnique().HasFilter("[BoardId] IS NOT NULL");
         b.HasIndex(x => new { x.OrganizationId, x.Enabled });
         b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
@@ -52,6 +52,7 @@ public sealed class MethodPrincipalConfiguration : IEntityTypeConfiguration<Meth
             t.HasCheckConstraint("CK_MethodPrincipals_Human", "([Role] = 1 AND [HumanUserId] IS NOT NULL AND [HumanUserId] = [DelegatedByUserId]) OR ([Role] IN (2,3) AND [HumanUserId] IS NULL)");
         });
         b.HasKey(x => x.Id);
+        b.HasAlternateKey(x => new { x.ProjectId, x.Id });
         b.Property(x => x.Role).HasConversion<byte>();
         b.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
         b.Property(x => x.HumanUserId).HasMaxLength(450);
@@ -80,7 +81,8 @@ public sealed class MethodApiTokenConfiguration : IEntityTypeConfiguration<Metho
         b.Property(x => x.RowVersion).IsRowVersion();
         b.HasIndex(x => x.TokenHash).IsUnique();
         b.HasIndex(x => new { x.ProjectId, x.PrincipalId, x.RevokedAtUtc, x.ExpiresAtUtc });
-        b.HasOne(x => x.Principal).WithMany().HasForeignKey(x => x.PrincipalId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Principal).WithMany().HasForeignKey(x => new { x.ProjectId, x.PrincipalId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<IdentityUser>().WithMany().HasForeignKey(x => x.IssuedByUserId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<IdentityUser>().WithMany().HasForeignKey(x => x.RevokedByUserId).OnDelete(DeleteBehavior.Restrict);
@@ -97,7 +99,7 @@ public sealed class MethodAuthorizationEventConfiguration : IEntityTypeConfigura
             t.HasCheckConstraint("CK_MethodAuthorizationEvents_Actor", "[ActorPrincipalId] IS NOT NULL OR [ActorUserId] IS NOT NULL");
         });
         b.HasKey(x => x.Id);
-        b.HasAlternateKey(x => new { x.Id, x.WorkItemId, x.CycleId });
+        b.HasAlternateKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.Id });
         b.Property(x => x.EventKind).HasColumnType("varchar(24)").IsRequired();
         b.Property(x => x.ActorName).HasMaxLength(200).IsRequired();
         b.Property(x => x.ActorUserId).HasMaxLength(450);
@@ -107,10 +109,11 @@ public sealed class MethodAuthorizationEventConfiguration : IEntityTypeConfigura
         b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<WorkItem>().WithMany().HasForeignKey(x => x.WorkItemId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<TaskEvent>().WithMany().HasForeignKey(x => x.TaskEventId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodPrincipal>().WithMany().HasForeignKey(x => x.ActorPrincipalId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodPrincipal>().WithMany().HasForeignKey(x => new { x.ProjectId, x.ActorPrincipalId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<IdentityUser>().WithMany().HasForeignKey(x => x.ActorUserId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.RelatedEventId, x.WorkItemId, x.CycleId })
-            .HasPrincipalKey(x => new { x.Id, x.WorkItemId, x.CycleId }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.RelatedEventId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.Id }).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -119,19 +122,20 @@ public sealed class MethodTaskStateConfiguration : IEntityTypeConfiguration<Meth
     public void Configure(EntityTypeBuilder<MethodTaskState> b)
     {
         b.ToTable("MethodTaskStates");
-        b.HasKey(x => x.WorkItemId);
-        b.Property(x => x.MethodTaskId).HasColumnType("varchar(32)").IsRequired();
+        b.HasKey(x => new { x.ProjectId, x.WorkItemId });
+        b.Property(x => x.MethodTaskId).HasColumnType("varchar(32)").IsRequired(false);
         b.Property(x => x.RowVersion).IsRowVersion();
-        b.HasIndex(x => new { x.ProjectId, x.MethodTaskId }).IsUnique();
-        b.HasIndex(x => new { x.ProjectId, x.WorkItemId });
+        b.HasIndex(x => new { x.ProjectId, x.MethodTaskId }).IsUnique().HasFilter("[MethodTaskId] IS NOT NULL");
+        b.HasIndex(x => x.WorkItemId);
         b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<WorkItem>().WithMany().HasForeignKey(x => x.WorkItemId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodPrincipal>().WithMany().HasForeignKey(x => x.BlockingPrincipalId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ActiveAuthorizationEventId, x.WorkItemId, x.CycleId })
-            .HasPrincipalKey(x => new { x.Id, x.WorkItemId, x.CycleId }).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.BlockingEventId, x.WorkItemId, x.CycleId })
-            .HasPrincipalKey(x => new { x.Id, x.WorkItemId, x.CycleId }).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ResumeApprovalEventId, x.WorkItemId, x.CycleId })
-            .HasPrincipalKey(x => new { x.Id, x.WorkItemId, x.CycleId }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodPrincipal>().WithMany().HasForeignKey(x => new { x.ProjectId, x.BlockingPrincipalId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.ActiveAuthorizationEventId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.BlockingEventId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<MethodAuthorizationEvent>().WithMany().HasForeignKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.ResumeApprovalEventId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.WorkItemId, x.CycleId, x.Id }).OnDelete(DeleteBehavior.Restrict);
     }
 }

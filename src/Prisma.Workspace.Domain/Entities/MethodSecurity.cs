@@ -7,7 +7,7 @@ public sealed class MethodProjectSettings : IOrganizationOwned
 {
     public Guid ProjectId { get; set; }
     public Guid OrganizationId { get; set; }
-    public Guid BoardId { get; set; }
+    public Guid? BoardId { get; set; }
     public Guid MethodIdFieldId { get; set; }
     public Guid HuFieldId { get; set; }
     public Guid PrFieldId { get; set; }
@@ -69,7 +69,7 @@ public sealed class MethodTaskState : IOrganizationOwned
     public Guid WorkItemId { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid ProjectId { get; set; }
-    public string MethodTaskId { get; set; } = string.Empty;
+    public string? MethodTaskId { get; set; }
     public Guid CycleId { get; set; }
     public Guid? ActiveAuthorizationEventId { get; set; }
     public Guid? BlockingEventId { get; set; }
