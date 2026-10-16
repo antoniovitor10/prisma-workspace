@@ -1,15 +1,15 @@
-# Roteiro da demonstração (16/10/2026, equipe do DETRAN)
+# Roteiro da demonstração (fase 1)
 
-Ambiente: prisma-dev pelo túnel SSH (`http://127.0.0.1:13100`), projeto **Detran-mobile**, com as 4 tasks da HU-0001 do canais-mobile já importadas (todas em **Em revisão**, com campo HU e tag HU-0001, dependências T-0001 → T-0002 → T-0003/T-0004). O agente roda no repositório do canais-mobile com o MCP `prisma` em escopo local (`PRISMA_ROLE=agente`).
+Ambiente: prisma-dev pelo túnel SSH (`http://127.0.0.1:13100`), projeto **<projeto>**, com as 4 tasks da HU-0001 do repositório de exemplo já importadas (todas em **Em revisão**, com campo HU e tag HU-0001, dependências T-0001 → T-0002 → T-0003/T-0004). O agente roda no repositório do repositório de exemplo com o MCP `prisma` em escopo local (`PRISMA_ROLE=agente`).
 
 ## Antes de começar
 1. Túnel aberto (terminal Tunel no Batuta). Conferir `http://127.0.0.1:13100/health` = 200.
-2. Navegador logado no Prisma, no Kanban do projeto Detran-mobile.
-3. Claude Code aberto em `C:\Users\Vitor\canais-mobile`; `/mcp` mostra `prisma` conectado.
+2. Navegador logado no Prisma, no Kanban do projeto <projeto>.
+3. Claude Code aberto em `<pasta-do-projeto>`; `/mcp` mostra `prisma` conectado.
 4. Não reordenar nem criar colunas no quadro (o adaptador exige as 7 colunas do método).
 
 ## Passos
-1. **Importação** (opcional, ao vivo): `node tools\prisma-mcp\dist\import.js C:\Users\Vitor\canais-mobile\docs\trabalho` com `PRISMA_PROJECT=Detran-mobile` e `PRISMA_ROLE=humano`. Resposta: `Criados: 0; atualizados: 0; sem mudança: 4` (idempotente).
+1. **Importação** (opcional, ao vivo): `node tools\prisma-mcp\dist\import.js <pasta-do-projeto>\docs\trabalho` com `PRISMA_PROJECT=<projeto>` e `PRISMA_ROLE=humano`. Resposta: `Criados: 0; atualizados: 0; sem mudança: 4` (idempotente).
 2. **Agente lê as regras:** "chame regras_do_projeto e depois listar_tasks". Mostra as 4 tasks em em-revisao.
 3. **Agente tenta se autorizar:** "mova a T-0002 para em-desenvolvimento". O MCP recusa: autorizar é do humano.
 4. **Humano autoriza na tela:** arrastar o card T-0001 para **Em desenvolvimento** no Kanban.

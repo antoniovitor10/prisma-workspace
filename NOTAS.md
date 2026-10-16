@@ -21,7 +21,7 @@ Atualizado em 2026-10-16, por Tear, tarefa 9.
 
 ## Registro anterior — proposta de integração Git do método
 
-Atualizado em 2026-10-16, por Tear, tarefa 8.
+Atualizado em 2026-10-16, por Tear, tarefa 8. Registro histórico da branch docs/spec-metodo-git: a D100 e a D101 foram registradas depois, em outras branches.
 
 - Ajuste posterior solicitado pelo PO: tasks de topo (`ParentId` nulo), HU somente no campo **HU** e tag homônima; nome literal **ID do metodo** preservado. Spec corrigida em Context, Invariants e Data Impact. D100 ausente nesta branch, sem referência na spec. Ajuste exclusivamente documental, com `git diff --check`, sem tocar prisma-dev/banco.
 - Branch `docs/spec-metodo-git`, baseada em `origin/main` (`2c3816c`): entrega exclusivamente documental. Spec `specs/metodo-git-integration.md` em draft, com todas as seções do template, fases 2/3, 24 critérios e plano de testes; PROGRESS atualizado.
