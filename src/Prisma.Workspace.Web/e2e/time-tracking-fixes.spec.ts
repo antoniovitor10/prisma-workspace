@@ -121,3 +121,54 @@ test('buscar tarefa pelo título e número no ajuste funciona com teclado',async
     expect((await total(f,task.id)).totalSeconds).toBe(60);
   });
 });
+
+test('busca do ajuste mantém seis títulos longos legíveis e permite selecionar após rolar',async({page,request})=>{
+  await withTimeFactory(page,request,async f=>{
+    const prefix=f.boards.name('Busca legível');
+    const tasks:Array<{id:string;title:string}>=[];
+    for(let index=0;index<6;index++){
+      const title=`${prefix} tarefa ${index+1} com descrição longa para distinguir as opções e conferir leitura, toque e seleção no ajuste de horas, incluindo uma referência sem espaços ${'referencia'.repeat(10)}`;
+      const created=await f.boards.api('/api/WorkItems','POST',{
+        boardId:f.board.id,stageId:f.stage.id,title,responsibleId:f.person.id,priority:1,position:index,
+      });
+      expect(created.status()).toBe(201);
+      tasks.push({id:await created.json() as string,title});
+    }
+    const modal=await day(page,f,today());
+    await modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'}).fill(prefix);
+    const list=modal.getByRole('listbox',{name:'Tarefas para apontamento'});
+    const options=list.getByRole('option');
+    await expect(options).toHaveCount(tasks.length);
+    const listBox=await list.evaluate(element=>element.getBoundingClientRect().toJSON());
+    expect(listBox.left).toBeGreaterThanOrEqual(0);
+    expect(listBox.right).toBeLessThanOrEqual(await page.evaluate(()=>window.innerWidth));
+    for(const task of tasks){
+      const option=options.filter({hasText:task.title});
+      await expect(option).toContainText(task.title);
+      const geometry=await option.evaluate(button=>{
+        const box=button.getBoundingClientRect();
+        const range=document.createRange();range.selectNodeContents(button);
+        return {text:button.textContent,box:box.toJSON(),lines:Array.from(range.getClientRects(),line=>line.toJSON())};
+      });
+      expect(geometry.lines.length).toBeGreaterThan(1);
+      for(const line of geometry.lines){
+        expect(line.top,JSON.stringify(geometry)).toBeGreaterThanOrEqual(geometry.box.top-1);
+        expect(line.bottom,JSON.stringify(geometry)).toBeLessThanOrEqual(geometry.box.bottom+1);
+        expect(line.left,JSON.stringify(geometry)).toBeGreaterThanOrEqual(geometry.box.left-1);
+        expect(line.right,JSON.stringify(geometry)).toBeLessThanOrEqual(geometry.box.right+1);
+      }
+    }
+    expect(await list.evaluate(element=>element.scrollHeight>element.clientHeight)).toBe(true);
+    const selected=tasks[tasks.length-1];
+    const last=options.filter({hasText:selected.title});
+    await last.scrollIntoViewIfNeeded();
+    expect(await list.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+    await last.click();
+    await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
+    await modal.getByPlaceholder('Minutos a adicionar').fill('1');
+    const created=responseTo(page,'POST','/api/TimeEntries/manual');
+    await modal.getByRole('button',{name:'Adicionar',exact:true}).click();
+    expect((await created).status()).toBe(201);
+    expect((await total(f,selected.id)).totalSeconds).toBe(60);
+  });
+});
