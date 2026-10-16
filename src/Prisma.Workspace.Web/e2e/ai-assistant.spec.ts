@@ -120,8 +120,20 @@ test('tela administrativa cadastra, testa e ativa conexão sem devolver a creden
   const name = `IA UI ${testInfo.project.name}`;
   await form.getByLabel('Provedor', { exact: true }).selectOption('Custom');
   await form.getByLabel('URL base').fill(providerUrl);
-  await form.getByLabel('Chave de API', { exact: true }).fill('e2e-ui-fake-secret-WXYZ');
+  const secret = 'e2e-ui-fake-secret-WXYZ';
+  // O formulário consulta o catálogo após uma pausa na edição. Aguardar a
+  // resposta da configuração final evita consultar opções antes desse efeito.
+  const catalogLoaded = page.waitForResponse(response => {
+    if (response.request().method() !== 'POST' || new URL(response.url()).pathname !== '/api/admin/ai/models') return false;
+    const input = response.request().postDataJSON();
+    return input.provider === 'Custom' && input.type === 'OpenAiCompatible'
+      && input.baseUrl === providerUrl && input.secret === secret;
+  });
+  await form.getByLabel('Chave de API', { exact: true }).fill(secret);
   await form.getByLabel('Chave de API', { exact: true }).blur();
+  const catalog = await catalogLoaded;
+  expect(catalog.status()).toBe(200);
+  expect(await catalog.json()).toMatchObject({ state: 'ready', models: expect.arrayContaining([expect.objectContaining({ id: 'fake-e2e' })]) });
   await expect(form.getByRole('option', { name: 'Modelo E2E — fake-e2e' })).toBeAttached();
   await form.getByLabel('Modelo', { exact: true }).focus();
   await expect(form.getByLabel('Modelo', { exact: true })).toBeEnabled();
