@@ -18,12 +18,9 @@ async function openWeek(page: Page, f: TimeFactory) {
   const week: WeeklyTime = await (await response).json();
   return { week, modal: page.getByRole('heading', { name: 'Meu Tempo', exact: true }).locator('..') };
 }
-async function openDay(page: Page, f: TimeFactory) {
-  const { week, modal } = await openWeek(page, f);
-  const index = week.days.findIndex(d => d.date === today());
-  expect(index).toBeGreaterThanOrEqual(0);
+async function openDayFromWeek(page: Page, weekModal: Locator, index: number) {
   const loaded = responseTo(page, 'GET', '/api/me/time/entries');
-  await modal.getByRole('button', { name: 'Ajustar', exact: true }).nth(index).click();
+  await weekModal.getByRole('button', { name: 'Ajustar', exact: true }).nth(index).click();
   expect((await loaded).status()).toBe(200);
   return page.getByRole('heading', { name: /^Ajustar: / }).locator('..');
 }
@@ -123,21 +120,36 @@ test('criação manual recusa futuro e sobreposição sem alterar o total anteri
 test('dois ajustes pela UI escolhem períodos livres e permitem editar observação', async ({ page, request }) => {
   await withTimeFactory(page, request, async f => {
     const task = await f.task();
+    const { week, modal: weekModal } = await openWeek(page, f);
+    const indexOfToday = week.days.findIndex(day => day.date === today());
+    expect(indexOfToday).toBeGreaterThanOrEqual(0);
     for (let index = 0; index < 2; index++) {
-      const modal = await openDay(page, f);
+      // O painel semanal permanece aberto após adicionar. Evitar três recargas
+      // completas do quadro conserva a mesma jornada e deixa margem no limite.
+      const modal = await openDayFromWeek(page, weekModal, indexOfToday);
+      const searched = page.waitForResponse(r => r.request().method() === 'GET'
+        && new URL(r.url()).pathname === '/api/me/time/tasks'
+        && new URL(r.url()).searchParams.get('query') === task.title);
       await modal.getByRole('combobox', { name: 'Buscar tarefa por título ou número' }).fill(task.title);
+      const search = await searched;
+      expect(search.status()).toBe(200);
+      expect(await search.json()).toEqual(expect.arrayContaining([expect.objectContaining({ id: task.id })]));
       await modal.getByRole('option').filter({ hasText: task.title }).click();
       await modal.getByPlaceholder('Minutos a adicionar').fill('1');
       const created = responseTo(page, 'POST', '/api/TimeEntries/manual');
+      const updatedWeek = responseTo(page, 'GET', '/api/TimeEntries/my/weekly');
       await modal.getByRole('button', { name: 'Adicionar', exact: true }).click();
       expect((await created).status()).toBe(201);
+      const refreshedWeek = await updatedWeek;
+      expect(refreshedWeek.status()).toBe(200);
+      expect((await refreshedWeek.json() as WeeklyTime).days[indexOfToday].totalSeconds).toBe((index + 1) * 60);
       await expect(modal).toBeHidden();
     }
     const entries = await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`);
     expect(entries).toHaveLength(2);
     const ordered = entries.sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt));
     expect(Date.parse(ordered[0].endedAt!)).toBeLessThanOrEqual(Date.parse(ordered[1].startedAt));
-    const modal = await openDay(page, f);
+    const modal = await openDayFromWeek(page, weekModal, indexOfToday);
     const row = modal.getByRole('article', { name: `Lançamento ${task.title}`, exact: true }).first();
     await row.getByRole('button', { name: 'Editar lançamento', exact: true }).click();
     await row.getByRole('textbox', { name: 'Observação', exact: true }).fill('Observação corrigível');
@@ -149,14 +161,21 @@ test('dois ajustes pela UI escolhem períodos livres e permitem editar observaç
   });
 });
 
-test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ page, request }, testInfo) => {
+for (const { name, indexes } of [
+  { name: 'segunda a quarta', indexes: [0, 1, 2] },
+  { name: 'quinta e sexta', indexes: [3, 4] },
+  { name: 'sábado e domingo', indexes: [5, 6] },
+]) test(`Meu Tempo permite alcançar e ajustar ${name} por toque`, async ({ page, request }, testInfo) => {
   const mobile = testInfo.project.use.isMobile === true;
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
   await withTimeFactory(page, request, async f => {
     const { week, modal } = await openWeek(page, f);
     expect(week.days).toHaveLength(7);
     const grid = modal.getByRole('region', { name: 'Horas da semana' });
-    for (let index = 0; index < 7; index++) {
+    // A união dos três casos cobre todos os sete dias, sem acumular sete
+    // aberturas de modal e suas consultas dentro de um único prazo de 30s.
+    await expect(grid.getByRole('button', { name: 'Ajustar', exact: true }).first()).toBeInViewport({ ratio: 1 });
+    for (const index of indexes) {
       const button = grid.getByRole('button', { name: 'Ajustar', exact: true }).nth(index);
       await button.scrollIntoViewIfNeeded();
       await expect(button).toBeInViewport({ ratio: 1 });
@@ -170,6 +189,6 @@ test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ pa
     }
     await grid.evaluate(element => { element.scrollLeft = 0; });
     await expect(grid.getByRole('button', { name: 'Ajustar', exact: true }).first()).toBeInViewport({ ratio: 1 });
-    await page.screenshot({ path: testInfo.outputPath('sete-dias-acessiveis.png'), scale: 'css' });
+    await page.screenshot({ path: testInfo.outputPath('dias-acessiveis.png'), scale: 'css' });
   });
 });
