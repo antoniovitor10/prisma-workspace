@@ -1,16 +1,18 @@
-# Horas-3: privacidade B07 em todos os somatórios de horas
+# Horas-3: privacidade B07 em todas as leituras de horas
 
-Estado: B07 ampliado passou na matriz HTTP inicial; correção de desempenho da leitura de projeto passou em xUnit384/384 e aguarda imagem/reprodução/full. Não é declaração PRONTO-PROD.
+Resultado do executor: xUnit384/384; Vitest155/155; tipos, lint e builds aprovados; E2E completo200aprovados/6skips antigos/1falha antiga permitida, sem retries. Todos os78cenários de horas/B07 passaram. Revisão do Prumo e QA independente do SHA final continuam necessários antes de PRONTO-PROD.
 
-Um leitor podia consultar apontamentos de colegas pelo construtor de relatórios, apesar da restrição correta no relatório organizacional. A prova também confirmou o problema nos relatórios preparados e de tempo por projeto: com 1h própria e 2h de colega, um Viewer recebia 3h e duas pessoas. O Maestro encaminhou nominalmente esses handlers e o inventário completo das leituras de horas em 2026-10-16.
+Um leitor podia consultar horas de colegas pelo construtor, relatórios preparados e relatório por projeto. A prova anterior registrou1h própria e2h do colega, mas recebeu3h e duas pessoas. O Maestro encaminhou nominalmente esses handlers e o inventário de todos os somatórios em2026-10-16.
 
-## Contrato e implementação
+## Contrato e correção
 
-`IHoursReadAccessService` aplica o recorte de [dashboards-reports.md](../specs/dashboards-reports.md), linhas 101–124, antes de agregar ou serializar. Usuários comuns recebem apenas suas horas; gestores, as equipes que lideram; administradores, a organização ativa. A equipe vem do item ou, na ausência dela, do quadro. Projeto acessível e negações explícitas de organização, projeto, equipe, tarefa ou definição de relatório continuam obrigatórios. Acesso a um quadro ou compartilhamento de relatório não concede acesso às horas de terceiros.
+`HoursReadAccessService` aplica [dashboards-reports.md:101–124](../specs/dashboards-reports.md): comum só próprias horas; gestor somente equipes lideradas; administrador organização ativa. A equipe é a do item ou do quadro. Membro ativo, projeto acessível e negações explícitas precedem agregação e serialização. Compartilhar uma definição ou ter acesso ao quadro não concede as horas de terceiros.
 
-Nas superfícies pessoais, o dono preserva seu histórico, inclusive quando é gestor e trabalhou em tarefa sem equipe liderada. Horas adicionais de terceiros exigem papel/equipe autorizados. Relatórios gerenciais usam estritamente sua população autorizada. A regra está explicitada em [time-tracking.md](../specs/time-tracking.md). Os portões de acesso ao recurso continuam aplicados; filtrar horas não concede acesso a uma tarefa ou projeto.
+Consultas pessoais preservam o histórico do próprio dono; horas adicionais exigem papel/equipe autorizados. Relatórios gerenciais usam estritamente sua população. [time-tracking.md](../specs/time-tracking.md) explicita essa distinção. O ator é obrigatório no executor; fontes, métricas, definições compartilhadas e CSV usam o ator da execução. Usuários autorizados sem lançamento preservam zero. Os portões do recurso continuam obrigatórios.
 
-A política comum tem predicados traduzíveis para SQL e filtros para populações já carregadas. O ator da execução é obrigatório; uma definição compartilhada não herda as permissões do autor. A fonte Usuários preserva pessoas autorizadas sem lançamentos, com zero. Não há migration, alteração de ModelSnapshot, estrutura de auditoria, rota ou formato de DTO público.
+A consulta de cartões por projeto carregava várias coleções irmãs em um SELECT. A sequência completa revelou leituras de30,974s/500 para membro e30,696s/500 para leitor; quadro retornava200 em0,897s/0,102s. O SQL estava emCPU, sem bloqueio, e o plano continha105operadores. A correção63fb38b usa `AsSplitQuery` somente em `GetByProjectIdAsync`, preservando grafo/predicados/ordem/DTO. A mesma sequência, em banco recriado, passou com894ms/200 e208ms/200, e gestor/admin221ms/223ms. Não houve alteração no N+1 reservado ao C6 nem na consulta por quadro. A estratégia já é usada em Analytics e detalhes; [documentação EF](https://learn.microsoft.com/ef/core/querying/single-split-queries).
+
+Não há migration, mudança de ModelSnapshot ou estrutura de auditoria; rotas e formatos de DTO permanecem compatíveis. O frontend de produto não foi alterado nesta correção do B07.
 
 ## Inventário
 
@@ -47,47 +49,44 @@ A decisão abaixo usa DR = `specs/dashboards-reports.md:101–124`, TT = `specs/
 | Formulários externos | TotalHours em ExternalFormsFeature é duração do formulário, não tempo de trabalho. Não é TimeEntry. |
 | Totais antigos do repositório | GetTotalSecondsByWorkItemId/UserId/BoardId só têm declaração/implementação; nenhum chamador HTTP. Endpoints usam GetVisibleEntriesAsync com escopo obrigatório. |
 
-## Cobertura e verificações
+## Cobertura e resultados reais
 
-`ReportBuilderVisibilityTests` cobre papéis Viewer, Client, ProductOwner, ScrumMaster, ProjectManager, TeamMember, Manager e Administrator; outro tenant; projeto inacessível; negações; métricas e colegas na mesma tarefa; salvo compartilhado; fontes Projeto/Equipe/Sprint; usuário autorizado sem lançamento; preparados/relatório por projeto; política pessoal e predicado de consulta.
+`ReportBuilderVisibilityTests` tem43casos de papel, tenant, projeto, negações, métricas, relatório compartilhado, fontes Projeto/Equipe/Sprint, usuário sem lançamentos, preparados/tempo por projeto e política pessoal. O testeSQL novo de cartões preserva duas raízes com posição igual, filho, dois responsáveis, dois logs, checklist e equipe herdada do quadro, incluindo os totais por papel.
 
-`e2e/report-builder-privacy.spec.ts` cobre fontes Apontamentos/Usuários na UI sem projeto e definição compartilhada/CSV. `e2e/hours-access-privacy.spec.ts` usa quatro papéis, projeto, equipes, usuários e intervalos próprios para conferir os canais do inventário, projeto isolado e negações. As fixtures usam UUID e limpeza no teardown. Um caso que agrupava relatórios e métricas foi dividido após medir 31,68s com limpeza, preservando todas as asserções e o timeout padrão.
+O novo `hours-access-privacy.spec.ts` tem46casos desktop/mobile e todas as62expressões de asserção foram preservadas ao separar o arranjo. `report-builder-privacy.spec.ts` tem6casos de UI/CSV; suas datas usam ontem de Brasília, sem envelhecer para fora da janela padrão de30dias. Fixtures têm UUID e limpeza; sem sleeps, retries, novos skips ou test.fail.
 
 | Comando / rodada | Resultado | Tempo |
 | --- | --- | --- |
-| `dotnet build Prisma.Workspace.sln --no-restore` | Passou; 0 erros, 3 avisos anteriores | 82,33s |
-| `dotnet test tests/Prisma.Workspace.Tests --no-build --no-restore` via runner QA | 383/383, nenhum skip; SQL/banco de unidade próprios | 64,46s runner |
-| TypeScript explícito E2E com emissão, `--ignoreConfig --module ESNext --moduleResolution Bundler --types node` | Passou | 15,49s |
-| `npm run lint` | 0 erros, 12 avisos anteriores | 1,56s |
-| Docker candidato918c626 | Passou; health200/login200 | 281,77s |
-| Matriz HTTP inicial desktop/mobile, sem retries | 39/39, nenhum skip; antes da divisão do caso lento | 590,95s nativo;593,77s runner |
-| Matriz HTTP após divisão/fixture de arranjo | Pendente na próxima full | Pendente |
-| UI do construtor, três repetições | 19/19,0skip/0falha/0retry; maior caso14,46s | 190,45s nativo;193,31s runner |
+| `dotnet build Prisma.Workspace.sln --no-restore` | Passou; 0erros/3avisos anteriores no build integral; final incremental0erros/1aviso anterior | 119,12s;39,11s final |
+| `dotnet test tests/Prisma.Workspace.Tests --no-build --no-restore` via runner privado SQLQA | 384/384,0skips | 61,12s runner;57,72s testes |
 | `npx tsc -b` | Passou | 97,11s |
-| Vitest threads,42arquivos | 155/155 | 286,65s |
+| `npm run lint` | 0erros/12avisos anteriores | 1,17s última rodada |
+| `npm test -- --pool=threads --maxWorkers=1 --fileParallelism=false` | 155/155 em42arquivos | 286,65s |
 | `npm run build` local | Passou | 107,77s |
-| E2E completo com banco QA limpo, tentativa1 | Interrompido:24pass,1timeout novo,182não executados | 284,30s até interrupção |
+| Tipos E2E explícitos, com emissão fora doGit e `--ignoreConfig --module ESNext --moduleResolution Bundler --types node` | Passou | 11,54s |
+| Matriz HTTP inicial desktop/mobile | 39/39 antes de dividir o cenário amplo | 590,95s nativo;593,77s runner |
+| Prova a frio após reiniciar somenteQAapp | 9/9; setup máx10,078s/corpo6,953s; não reproduziu a sequência problemática | 101,66s nativo;103,74s runner |
+| UIbuilder com data dinâmica, `--repeat-each=3 --retries=0` | 19/19 com setup, pico10,07s | 140,11s nativo;142,12s runner |
+| Prefixo exato que reproduzia o SQL lento, após correção e novo banco | 25aprovados/1skip antigo/0falhas | 199,92s nativo;203,67s runner |
+| Docker da candidata27df845 | Passou; health200/login200 | 215,19s |
+| `npm run e2e -- --retries=0 --trace=off --reporter=line,json`, bancoQA recriado | 200aprovados/6skips antigos/1falha antiga,0retries | 1.540,09s nativo;1.542,37s runner |
 
-A primeira tentativa HTTP passou três casos funcionais e parou em preparação: o prefixo de uma fixture tinha espaço e gerou e-mail inválido. O prefixo foi corrigido; não se alterou produto para acomodar o teste. Comandos manuais iniciais de tipos usaram configuração de módulo incompatível ou omitiram `--types node`; o comando válido acima passou. Não foi usado `tsc --noEmit`.
+A full aprovou46casos da matrizHTTP,6do construtor/CSV,8de correções de horas e18do follow-up:78afetados. Houve86limpezas/188ações/0falhas de limpeza; maiorcleanup2,195s. Na matriz, setup máximo8,711s e corpo15,026s. A fixture tem prazo próprio30s de arranjo; o corpo continua30s e o request tem20s de teardown. Anotações de path/status/ms não registram autenticação; [documentação Playwright](https://playwright.dev/docs/test-fixtures#fixture-timeout).
 
-Somente prisma-qa app3110/SQL3111; xUnit usa Prisma_BoardColumns_Horas2. A imagem candidata contém exatamente918c626, com health/login200. Prisma-dev e produção intocados. Revisão e QA independente do SHA final ainda necessários. O N+1 de ProjectAccessService permanece reservado ao C6; não foi antecipado. Firefox/WebKit, provedor real de IA e produção não verificados.
+A única falha final foi a conhecida `rich-task-description.spec.ts:63` no mobile, timeout ao reabrir o detalhe; esse arquivo é idêntico à main. O GOALS permite expressamente essa falha antiga e ela não foi corrigida nesta entrega. Os seis skips são condicionais já existentes: instalação SQL(2), onboarding somente desktop(2), teste de overflow somente mobile e teste deNovaColuna somente mobile. Não houve novo skip nem retry para esconder falha.
 
+## Tentativas anteriores e correção do diagnóstico
 
-## Arranjo da matriz e consultas frias
+- A primeira matriz parou em e-mail inválido produzido por espaço no prefixo da fixture; o prefixo foi corrigido, mantendo as asserções.
+- Full1 interrompida:24pass/1timeout/182não executados. Separar o arranjo melhorou a medição, mas não resolveu a causa.
+- Full2 interrompida:37pass/1timeout/169não executados; setup5,489s/corpo29,974s provou que o orçamento de preparação não explicava o problema SQL.
+- Prefixo de diagnóstico:23pass/2timeouts/1skip antigo, com path e tempos que identificaram o endpoint por projeto. A amostra SQL confirmou CPU, sem bloqueio. ApósAsSplitQuery, o mesmo prefixo e a full foram concluídos; a full teve somente a falha antiga de descrição rica.
+- O novo teste SQL teve uma preparação inicial comGUIDs interpretados como entidades existentes. `AddRange` explícito corrigiu só a fixture; a execução posterior384/384 passou. Não se mudou produto para acomodar esse erro.
 
-A primeira full foi interrompida após um timeout de30s no primeiro cenário HTTP de membro, na primeira leitura após criar três pessoas, duas equipes e seis intervalos. Nenhuma asserção de conteúdo falhou naquele caso; o tempo de preparação estava sendo somado às leituras frias. A próxima rodada medirá as etapas separadamente antes de fechar o diagnóstico de tempo.
+Artefatos privados em `.runlogs/horas-3`: relatórios JSON nativos, tempos, logs redigidos, backups600 verificados, planoSQL e manifestos. Não foi usado `tsc --noEmit` nem foram impressos segredos.
 
-A fixture `hours`, exclusiva deste novo spec, agora tem seu próprio prazo de30s para o arranjo. O corpo continua com30s e a limpeza continua na fixture request com20s. Anotações `hours-setup-ms` e `hours-body-ms` expõem os custos separados. É o mecanismo documentado de [timeout de fixture do Playwright](https://playwright.dev/docs/test-fixtures#fixture-timeout), sem aumentar o timeout do cenário. A comparação AST confirmou as mesmas62expressões de asserção antes/depois. Tipos e lint passaram após a mudança; browser/full ainda pendentes nessa forma.
+## Ambiente e limites
 
-O spec de UI do construtor cria seus intervalos em ontem de Brasília, para que continuem no período padrão de30dias quando o CI rodar em outro mês. As asserções continuam exigindo1h própria e2h do colega. Nenhum dado do seed é usado como precondição.
+Somente prisma-qa app3110/SQL3111, bancoPrismaWorkspace_QA; xUnit usa Prisma_BoardColumns_Horas2. Cada rodada completa teve backup comRESTOREVERIFYONLY e reset exclusivamenteQA porSQL versionado/seedDevelopment oficial. O backup da full final tinha14.798.848bytes. Prisma-dev e produção não foram tocados.
 
-
-## Diagnóstico corrigido: leitura de cartões por projeto
-
-Separar o arranjo foi útil para medir e organizar os testes, mas não resolveu a falha. A Full2 repetiu o timeout com setup5,489s e corpo29,974s; foi interrompida com37pass/1falha/169não executados. A reprodução do prefixo anterior da suíte mais quatro papéis registrou23pass/2timeouts/1skip antigo: `GET /api/WorkItems/project/{id}` levou30,974s para membro e30,696s para leitor e retornou500 ao cancelar. As leituras por quadro desses casos levaram0,897s e0,102s e retornaram200. Gestor/admin passaram com1,205s e0,255s no projeto.
-
-A amostra da requisição no SQLQA estava executando SELECT de WorkItems por projeto, com17,536s decorridos/17,175s deCPU e nenhum bloqueio; o plano em cache contém105operadores. A consulta de projeto carregava várias coleções irmãs num único SELECT, estratégia que EF alerta como suscetível à [multiplicação por JOINs](https://learn.microsoft.com/ef/core/querying/single-split-queries). Não foi comprovado um defeito de fixture ou de ordenação dos specs como causa do custo SQL.
-
-A alteração ficou somente em `WorkItemRepository.GetByProjectIdAsync`: `AsSplitQuery`, preservando as mesmas coleções, predicados, ordenação e DTOs. É o padrão já usado no AnalyticsRepository e no repositório de detalhes. A consulta por quadro e o N+1 reservado ao C6 não foram alterados. As leituras adicionais são o custo da estratégia; os cartões continuam sendo uma visão atualizável da aplicação.
-
-O novo teste SQL `ProjectCards_PreserveCollectionsAndInheritedBoardScopeOnSqlServer` salva dois cartões com posição igual, subtarefa, dois responsáveis, dois apontamentos e dois itens de checklist; confere o grafo, Board.ProjectId/TeamId herdados e totais próprios versus equipe. A primeira preparação do teste precisou de AddRange explícito para as factories com GUID já preenchido; após corrigir só a fixture, o build passou e xUnit384/384 ficou verde. Imagem candidata, repetição do prefixo e Full3 ainda pendentes. Os resultados da imagem918c626 não validam essa nova estratégia de consulta.
+O N+1 de ProjectAccessService continua paraC6. Relógio do navegador, início do timer fora da validação de criação/edição, concorrência de lançamentos e editor noturno sem data explícita são ressalvas já registradas. Limite para cronômetro esquecido continua pendente doPO. Firefox/WebKit, provedor real deIA e produção não foram verificados. Revisão e QA independente do SHA final permanecem obrigatórios; só depois de PUBLICADO começaC1–C6.

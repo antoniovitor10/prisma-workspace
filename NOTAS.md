@@ -1,3 +1,31 @@
+# Continuidade — horas-3 pronta para finalizar entrega (2026-10-16)
+
+- Fonte deproduto testada27df845; Full3 CONCLUÍDA:200pass/6skips antigos/1falha conhecida permitida/0retries,1542,37srunner. Única falha rich-task-description.spec.ts:63mobile, teste idêntico àmain, não corrigir nesteescopo. TODOS78afetadospassed(46API+6builder+8fixes+18followup),86cleanups/188ações/0falhas; setupmáx8,711s/corpomáx15,026s. Não chamar fulltotalmenteverde. Demaisgates build/xUnit384/Vitest155/tipos/lint/build aprovados.
+- Runtime27healthy/login200/Docker215,19s. Manifesto runtime-candidate.sha256 jácopiado para runtime-tested.sha256 APÓSresultado final. Agora APENASdocs/PROGRESS/NOTAS sujos; nenhumCódigo modificadoapóstestes. Próximo: commit/push desses3docs, build-qa-image.sh final(guardlimpo/comparaDLL+assets+SHAhealthlogin), terminar entregas/horas-3.md comSHAfinal eFILAENTREGA, liberarCPU/QA. ReservaTearaté16:30; Prova tem próximaCPU paraE2EFrente2, liberarantesao terminar.
+- Atualizarrelatório públicojáreescrito em docs/report-builder-privacy-validation.md e inventário externo completo. Main8ec6699 ainda incorporada, reconferirfetch antesdepusheconfirmarzeroMigrations/ModelSnapshotvsorigin/main. Commitfinalsódocumentação; não repetirbuild/testes semfontefuncional nova. Nova fonte SQL63fb38b corrigiu cenário reproduzido:GETproject31s500→894/208ms200(membro/leitor),25pass1skip0falhasprefixoexato. DatasetSQLnovo384unitpreservagrafo/BoardTeam/totais.
+- DepoisENTREGA: PrumoREVISAO eLupaQA mesmosSHAfinal aprovados antesPRONTO; aguardarPUBLICADOantesC1–C6. Esperanãoébloqueio nemfimgoal. Nunca tocarprisma-dev/prod. Logs privados .runlogs/horas-3 devemserlidosviashow-safe-log.py BASENAME/summarize-playwright.py, jamaisbrutos/env/auth. Novo backupfullQA14.798.848bytes600verificado; banco unidadepreservado. Ao finalizarfase, manter appQA3110 noSHAfinal.
+
+## Histórico preservado
+
+# Estado em execução — Full3 (2026-10-16, 16:02UTC)
+
+- Full3 ATIVA207casos, desktop concluído semfalhas e mobile iniciado(110/207). App/runtime/fonte27df845; produto congelado. Novo backupQA14.798.848bytes verificado e reset exclusivoPrismaWorkspace_QA concluído. Banco de unidade preservado, dev/prod intocados.
+- CPU+QA reservadosTearaté16:30 apósliberaçãoForja15:47. DriverDETACHED PIDem .runlogs/horas-3/e2e-full-3-driver.pid (49265), exitmarker e2e-full-3-driver.exit; resultado nativo será e2e-full-expanded-3.json e.time. NÃO interromper porfaltadesaída/não iniciaroutrojob. Lerlog via show-safe-log.py, sóredigido. Prova pede próximoCPU paraE2Efrente2; liberarantes sefinish.
+- Depoisverde: runtime-candidate.sha256→runtime-tested.sha256, finalizar1PROGRESS+NOTAS+doc/inventáriohoras3, commit/push e build-qa-image.sh final (guardGitlimpo/compara mesmoshashes+SHA/health/login). FonteUI155Vitest/tsc/lint/build jávalidados; backend384xUnit e prefixo25/1skipsemfalhas. Revisão+QAexatosantesPRONTO; PUBLICADOantesC1–C6. Goalativo.
+
+## Histórico preservado
+
+# Continuidade — horas-3, prefixo corrigido aprovado (2026-10-16)
+
+- Branch/remoto27df845, appQA27df845exato healthy/login200 (Docker215,19s). Produto inclui63fb38b AsSplit SÓGetByProjectIdAsync;20e4360tracesHTTPsemsegredos;27df845docs. Build119,12s/final39,11sPASS, xUnit384/38461,12srunnerPASS, novotesteSQLgrafo/equipeherdada/totais. FonteUI deproduto intocada desde155Vitest/tsc/lint/buildverdes.
+- ProvaDECISIVA apósbancoQA NOVAMENTE resetado: mesmo prefixo26 que tinha23pass/2timeouts/1skip agora25pass/1skipantigo/0falha/0retry199,92snativo/203,67srunner. GETproject membro30,974s500→894ms200; leitor30,696s500→208ms200; gestor221ms/admin223ms200. Mantidas62expressõesdeasserts. Hipótesedefixture insuficiente, causa observada era a leituraSQLcomplexa deprojeto (105operadores;17sCPUsem bloqueio); não mudarmais produto semnovoachado.
+- CPU+QA LIBERADOS15:29. Forja pediu15min full720/imagemP2 e pode reservar agora; Tear tem próxima janela~35min para NOVObackup/resetSÓQA e FULL207. NÃO repetirprefixo/gates semnovo motivo. Não iniciarheavyantesliberação explícitaForja. App3110/SQL3111bancoPrismaWorkspace_QA, unidadePrisma_BoardColumns_Horas2 preservada. Nunca usarprisma-dev/prod.
+- Próximo runner deve apenasresetQA guarded+run-safe-playwright.sh e2e-full-expanded-3 --retries=0; processoDETACHED comexitmarker paraevitarSIGTERM20min. Salvarlabelsnovossem sobrescrever tentativas1/2. Full1 e2 INTERROMPIDASnão sãogateverde; foco frio9/9/UIbuilderdata dinâmica3x19/19verdes anteriores aoAsSplit; full3 validarátodosnafontefinal. Main8ec6699últimaconferida.
+- Depois fullverde: copiar runtime-candidate.sha256 para runtime-tested.sha256, 1PROGRESShoras3+NOTAS+doc/inventário final, commit/push, imagemFINAL SHAexato ecompararhashes/health/login200. Completar entregas/horas-3.md (inventáriotodoscanais/spec/linhas já preparado), ENTREGA naFILA, liberarCPU/QA; PrumoREVISAO+LupaQA aprovados exatos antesPRONTO. AguardarPUBLICADO; sódepoisC1–C6. Goalativo,esperanãoébloqueio.
+- Nunca lerlogbruto: .runlogs/horas-3/show-safe-log.py BASENAME e summarize-playwright.py JSON. Credenciaisignoradas600; JWT incidenteanterior contido. Runnersantigos run-local/test-server-dev apontamdev:NÃOusar. .runlogsprivado contémhelperscomguardQA, backups600/verifyonly, DMVs/planospróprios; semsegredoversionado. Context7/find-docs verificouPlaywrightfixture eEFsplit emdocs oficiais.
+
+## Histórico preservado
+
 # Continuidade — horas-3, consulta SQL de projeto (2026-10-16)
 
 - Full2 repetiu a falha: setup5,489s/corpo29,974s,37pass/1timeout/169não executados, SIGINTpróprio/exit130. Diagnóstico inicial de fixture ERA INSUFICIENTE; não manter como causa final. Prefixo26casos com instrumentação HTTP reproduziu23pass/2timeouts/1skip antigo. GETboard0,897/0,102s200; GETproject30,974/30,696s500 para membro/leitor. Gestor1,205s/admin0,255s200. SQLQA SELECTWorkItemsproject emCPU17,175s/0bloqueio; plano105operadores. Artefatos .runlogs/horas-3/order-diagnostic.*, sql-order-waits.log/xml privados.
