@@ -1,3 +1,14 @@
+# Continuidade — horas-3, escopo ampliado nominal (2026-10-16)
+
+- O Maestro autorizou nominalmente PreparedReports/TimeReport e o inventário de TODOS os somatórios B07 (FILA08:25BRT). Não aguardar nova autorização. A janela de silêncio foi cancelada no GOALS; continua obrigatório reservar CPU e QA e nunca usar prisma-dev/produção.
+- Política compartilhada IHoursReadAccessService/HoursReadScope em implementação: comum só próprio; gestor equipe do item/quadro liderada; administrador tenant. Projeto acessível e negações antes de linhas/somas. Contadores pessoais preservam próprio histórico; relatórios gerenciais usam estritamente sua população. Aplicada a preparados/dashboards/projeto/builder/OrgHours/métricas/Empresa/Equipes/totais/listas/cartões/subtarefas/detalhe/Minhas tarefas.
+- Código novo compilou: dotnet build Prisma.Workspace.sln --no-restore PASS82,33s, 3avisos anteriores. xUnit completo ampliado PASS383/383 em64,46s (runner), banco unit Prisma_BoardColumns_Horas2 SQL3111, sem alterar o banco QA. Os antigos366 testes NÃO validam essa ampliação; resultado novo real registrado.
+- E2E novo hours-access-privacy.spec.ts: matriz HTTP com4papéis, dadosUUID próprios, projetos/equipes exclusivos, fontes/salvo/CSV/totais/metadados/negações. Ainda NÃO executado. report-builder-privacy.spec.ts anterior passou7/7 desktop/mobile110,62s no runtime parciald63944d. AppQA permanece nesse SHA até próxima imagem, não no código ampliado.
+- Reserva TearCPU+QA até13:40UTC após liberação Forja13:13; próximo: xUnit, tiposE2E/lint, checkpointcommit/push, imagemQA do SHA exato e smokeHTTP. Liberar CPU para imagemForja antes da full. Depois todososgates completos, repetir afetados, backup/reset SOMENTEQA e full. Entrega/inventário externo horas-3.md ainda EMIMPLEMENTAÇÃO.
+- Segredos: nunca imprimir logs brutos de erroHTTP. Usar .runlogs/horas-3/show-safe-log.py com basename, run-safe-playwright.sh e redatores. Credenciais600/ignoradas. Não usar run-local/test-server-dev antigos deste checkout: apontam para dev. Revisão/QA/publicação pendentes não encerram goal. C1–C6 só após PUBLICADO horas.
+
+## Histórico preservado
+
 # Continuidade — horas-3 em validação (2026-10-16)
 
 - Prumo reprovou horas-2@d67326b por ALTO: o construtor ainda permitia horas de terceiros. A estabilização dos E2E foi aprovada só com um baixo. Ainda não há PRONTO-PROD nem QA aprovado do SHA final.

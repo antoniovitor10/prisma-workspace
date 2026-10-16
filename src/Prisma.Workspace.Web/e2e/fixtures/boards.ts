@@ -6,7 +6,7 @@ export type BoardStage = { id: string; name: string; category: number };
 export type BoardItem = { id: string; boardId: string; stageId: string; completedAt: string | null; version: string };
 export type BoardSession = { accessToken: string; organizationId: string };
 export type ItemOptions = { parentId?: string; kind?: number; description?: string; priority?: number;
-  startDate?: string; dueDate?: string; estimatedHours?: number; responsibleId?: string };
+  startDate?: string; dueDate?: string; estimatedHours?: number; responsibleId?: string; teamId?: string };
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const userId = (token: string): string => {
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
@@ -91,7 +91,7 @@ export class BoardFactory {
     const id = userId(session.accessToken);
     this.members.push({ id, role });
     expect((await this.api(`/api/projects/${this.projectId}/members/${id}`, 'PUT', { role: projectRole })).status()).toBe(204);
-    return { ...session, id, name };
+    return { ...session, id, name, email };
   }
 
   async cleanup() {
