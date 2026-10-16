@@ -172,9 +172,9 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
       const list=button.closest('[role="listbox"]');
       if(!list)throw new Error('A opção ativa precisa pertencer à lista.');
       const target=button.getBoundingClientRect();const bounds=list.getBoundingClientRect();
-      return target.top>=bounds.top-1&&target.bottom<=bounds.bottom+1
-        &&target.top>=0&&target.bottom<=window.innerHeight;
-    })).toBe(true);
+      const visible=target.top>=bounds.top-1&&target.bottom<=bounds.bottom+1&&target.top>=0&&target.bottom<=window.innerHeight;
+      return visible?'visível':JSON.stringify({target:target.toJSON(),list:bounds.toJSON(),clientHeight:list.clientHeight,scrollTop:list.scrollTop});
+    })).toBe('visível');
     for(let index=0;index<5;index++)await field.press('ArrowDown');
     await expect(field).toHaveAttribute('aria-activedescendant',`time-task-${selected.id}`);
     await inView(last);await expect(field).toBeFocused();
