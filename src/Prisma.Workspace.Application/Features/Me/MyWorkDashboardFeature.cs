@@ -2,6 +2,7 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using MediatR;
+using Prisma.Workspace.Application.Features.TimeEntries;
 
 namespace Prisma.Workspace.Application.Features.Me;
 
@@ -123,7 +124,7 @@ public sealed class GetMyWorkDashboardQueryHandler
             BuildNotifications(mappedTasks, mentions, mappedApprovals, tasks),
             BuildProjects(projetos, sprints, mappedTasks, today),
             BuildSprints(sprints, request.UserId, today),
-            BuildHours(tasks, request.UserId, today));
+            BuildHours(tasks, request.UserId, TimeTrackingDay.Date(DateTimeOffset.UtcNow)));
     }
 
     /// <summary>
@@ -193,22 +194,24 @@ public sealed class GetMyWorkDashboardQueryHandler
         IReadOnlyList<WorkItem> tarefas, string userId, DateOnly hoje)
     {
         var inicioSemana = hoje.AddDays(-(int)hoje.DayOfWeek);
+        var from = TimeTrackingDay.Start(inicioSemana);
+        var to = TimeTrackingDay.Start(hoje.AddDays(1));
         var lancamentos = tarefas
             .SelectMany(x => x.TimeEntries)
             .Where(x => x.UserId == userId && x.EndedAt.HasValue)
-            .Where(x => DateOnly.FromDateTime(x.StartedAt.UtcDateTime) >= inicioSemana
-                && DateOnly.FromDateTime(x.StartedAt.UtcDateTime) <= hoje)
+            .Where(x => x.StartedAt < to && x.EndedAt > from)
             .ToList();
 
-        var horas = lancamentos.Sum(x => (decimal)(x.EndedAt!.Value - x.StartedAt).TotalHours);
+        var horas = lancamentos.Sum(x => TimeTrackingDay.SecondsInRange(x.StartedAt, x.EndedAt!.Value, from, to)) / 3600m;
         var previstas = tarefas
             .Where(x => x.CompletedAt is null
                 && (x.ResponsibleId == userId || x.Assignees.Any(a => a.UserId == userId)))
             .Sum(x => x.EstimatedHours ?? 0);
 
-        var diasComLancamento = lancamentos
-            .Select(x => DateOnly.FromDateTime(x.StartedAt.UtcDateTime))
-            .Distinct().Count();
+        var diasComLancamento = Enumerable.Range(0, hoje.DayNumber - inicioSemana.DayNumber + 1)
+            .Select(inicioSemana.AddDays)
+            .Count(date => lancamentos.Any(x => TimeTrackingDay.SecondsInRange(x.StartedAt, x.EndedAt!.Value,
+                TimeTrackingDay.Start(date), TimeTrackingDay.Start(date.AddDays(1))) > 0));
         var diasDecorridos = hoje.DayNumber - inicioSemana.DayNumber + 1;
 
         return new MyWorkHoursDto(

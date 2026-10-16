@@ -13,6 +13,8 @@ public interface ITimeEntryRepository
     Task<TimeEntry> AddAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
     Task DeleteAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
     Task<bool> HasOverlapAsync(string userId, Guid exceptId, DateTimeOffset start, DateTimeOffset end, CancellationToken cancellationToken = default);
+    /// <summary>Períodos da própria pessoa em todos os tenants, somente para validação temporal interna.</summary>
+    Task<IReadOnlyList<TimeEntry>> GetUserPeriodsForValidationAsync(string userId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto>> SearchAdjustmentTasksAsync(string userId, string query, CancellationToken cancellationToken = default);
     Task UpdateAsync(TimeEntry timeEntry, CancellationToken cancellationToken = default);
     Task<int> GetTotalSecondsByWorkItemIdAsync(Guid workItemId, CancellationToken cancellationToken = default);

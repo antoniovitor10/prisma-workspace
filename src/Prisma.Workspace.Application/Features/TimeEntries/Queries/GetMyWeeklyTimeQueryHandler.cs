@@ -35,12 +35,11 @@ public class GetMyWeeklyTimeQueryHandler : IRequestHandler<GetMyWeeklyTimeQuery,
         var buckets = new Dictionary<DateTime, int>();
         for (var i = 0; i < 7; i++) buckets[startDate.AddDays(i)] = 0;
 
-        foreach (var entry in entries)
+        foreach (var day in buckets.Keys.ToArray())
         {
-            var dayKey = TimeTrackingDay.Date(entry.StartedAt).ToDateTime(TimeOnly.MinValue);
-            var endedAt = entry.EndedAt ?? now;
-            var secs = Math.Max(0, (int)(endedAt - entry.StartedAt).TotalSeconds);
-            if (buckets.ContainsKey(dayKey)) buckets[dayKey] += secs;
+            var date = DateOnly.FromDateTime(day);
+            buckets[day] = entries.Sum(entry => TimeTrackingDay.SecondsInRange(
+                entry.StartedAt, entry.EndedAt ?? now, TimeTrackingDay.Start(date), TimeTrackingDay.Start(date.AddDays(1))));
         }
 
         return new WeeklyTimeDto

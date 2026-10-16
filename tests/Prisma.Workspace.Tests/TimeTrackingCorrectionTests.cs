@@ -4,6 +4,7 @@ using Prisma.Workspace.Application.Common.Exceptions;
 using Prisma.Workspace.Application.Features.MeTime.Queries;
 using Prisma.Workspace.Application.Features.TimeEntries.Commands;
 using Prisma.Workspace.Application.Features.TimeEntries.Queries;
+using Prisma.Workspace.Application.Features.TimeEntries;
 using Prisma.Workspace.Application.Features.WorkItems.Queries;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
@@ -163,19 +164,84 @@ public class TimeTrackingCorrectionTests
     }
 
     [Fact]
-    public async Task DailyAndWeeklyAssignWholeEntryToItsSaoPauloStartDay()
+    public async Task DailyAndWeeklySplitAtSaoPauloMidnightWithoutSplittingStoredEntry()
     {
         await using var f = new Fixture();
         var date = new DateOnly(2026,1,12);
-        var before = new DateTimeOffset(2026,1,13,2,59,30,TimeSpan.Zero); // 12/01 23:59:30 Brasília
-        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",before,before.AddSeconds(60),null));
-        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",before.AddSeconds(30),before.AddSeconds(90),null));
+        var before = new DateTimeOffset(2026,1,12,22,0,0,TimeSpan.FromHours(-3));
+        var entry = TimeEntry.Manual(f.Item.Id,"owner",before,before.AddHours(4),null);
+        await f.Repo.AddAsync(entry);
         f.Db.ChangeTracker.Clear();
         var daily = new GetMyDailyByTaskQueryHandler(f.Repo);
-        Assert.Equal(60,Assert.Single(await daily.Handle(new("owner",date),default)).Seconds);
-        Assert.Equal(60,Assert.Single(await daily.Handle(new("owner",date.AddDays(1)),default)).Seconds);
+        Assert.Equal(7200,Assert.Single(await daily.Handle(new("owner",date),default)).Seconds);
+        Assert.Equal(7200,Assert.Single(await daily.Handle(new("owner",date.AddDays(1)),default)).Seconds);
         var weekly = await new GetMyWeeklyTimeQueryHandler(f.Repo).Handle(new("owner",date),default);
-        Assert.Equal(60,weekly.Days[0].TotalSeconds);Assert.Equal(60,weekly.Days[1].TotalSeconds);
+        Assert.Equal(7200,weekly.Days[0].TotalSeconds);Assert.Equal(7200,weekly.Days[1].TotalSeconds);
+        Assert.Equal(14400, weekly.Days.Sum(d => d.TotalSeconds));
+        var rows = new GetMyDailyEntriesQueryHandler(f.Repo);
+        Assert.Equal(entry.Id, Assert.Single(await rows.Handle(new("owner", date), default)).Entry.Id);
+        Assert.Equal(entry.Id, Assert.Single(await rows.Handle(new("owner", date.AddDays(1)), default)).Entry.Id);
+        Assert.Single(await f.Db.TimeEntries.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(600)]
+    public void DayClippingConservesSecondsIncludingFractionalBoundary(int milliseconds)
+    {
+        var date = new DateOnly(2026,1,12);
+        var start = TimeTrackingDay.Start(date.AddDays(1)).AddMilliseconds(-1600 + milliseconds);
+        var end = start.AddMilliseconds(2600);
+        var first = TimeTrackingDay.SecondsInRange(start, end, TimeTrackingDay.Start(date), TimeTrackingDay.Start(date.AddDays(1)));
+        var second = TimeTrackingDay.SecondsInRange(start, end, TimeTrackingDay.Start(date.AddDays(1)), TimeTrackingDay.Start(date.AddDays(2)));
+        Assert.Equal((int)(end - start).TotalSeconds, first + second);
+    }
+
+    [Fact]
+    public async Task AWeekIncludesOnlyItsShareOfEntryStartedInPreviousWeek()
+    {
+        await using var f = new Fixture();
+        var monday = new DateOnly(2026,1,12);
+        var start = TimeTrackingDay.Start(monday).AddHours(-2);
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",start,start.AddHours(4),null));
+        var week = await new GetMyWeeklyTimeQueryHandler(f.Repo).Handle(new("owner",monday),default);
+        Assert.Equal(7200,week.Days[0].TotalSeconds);
+        Assert.Equal(7200,week.Days.Sum(d=>d.TotalSeconds));
+    }
+
+    [Fact]
+    public async Task CreationAndEditingUseSamePeriodRulesAndLegacyOverlapCanShrink()
+    {
+        await using var f = new Fixture();
+        var first = await f.Entry();
+        await Assert.ThrowsAsync<DomainException>(() => TimeEntryPeriod.ValidateAsync(f.Repo,"owner",f.Start.AddMinutes(30),f.Start.AddMinutes(90),null));
+        await Assert.ThrowsAsync<DomainException>(() => TimeEntryPeriod.ValidateAsync(f.Repo,"owner",DateTimeOffset.UtcNow,DateTimeOffset.UtcNow.AddHours(1),null));
+        await TimeEntryPeriod.ValidateAsync(f.Repo,"owner",f.Start.AddHours(1),f.Start.AddHours(2),null);
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",f.Start.AddHours(1),f.Start.AddHours(2),null));
+        Assert.Equal(1800,(await f.Update(first)).DurationSeconds);
+        await f.Update(first,end:f.Start.AddHours(1));
+        // Dados legados podem conter sobreposição; manter horários/editar nota e reduzir continua possível.
+        var legacy = TimeEntry.Manual(f.Item.Id,"owner",f.Start,f.Start.AddHours(1),null);
+        await f.Repo.AddAsync(legacy);f.Db.ChangeTracker.Clear();
+        Assert.Equal(3600,(await f.Update(first,end:f.Start.AddHours(1))).DurationSeconds);
+        Assert.Equal(1800,(await f.Update(first,end:f.Start.AddMinutes(30))).DurationSeconds);
+        await Assert.ThrowsAsync<DomainException>(() => f.Update(first,end:f.Start.AddHours(2)));
+    }
+
+    [Fact]
+    public async Task DailyLimitUsesOnlyTwoHoursFromPreviousNightAndAllowsAdjacentTwentyTwoHours()
+    {
+        await using var f = new Fixture();
+        var start = new DateTimeOffset(2026,1,12,22,0,0,TimeSpan.FromHours(-3));
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",start,start.AddHours(4),null));
+        await TimeEntryPeriod.ValidateAsync(f.Repo,"owner",start.AddHours(4),start.AddHours(26),null);
+        // Legado que já supera 24h não pode receber tempo adicional, mesmo numa lacuna livre.
+        var day = TimeTrackingDay.Start(new(2026,1,15));
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",day.AddHours(1),day.AddHours(24),null));
+        await f.Repo.AddAsync(TimeEntry.Manual(f.Item.Id,"owner",day.AddHours(1),day.AddHours(24),null));
+        var error = await Assert.ThrowsAsync<DomainException>(() =>
+            TimeEntryPeriod.ValidateAsync(f.Repo,"owner",day,day.AddHours(1),null));
+        Assert.Contains("24 horas",error.Message);
     }
 
     [Fact]

@@ -64,6 +64,12 @@ public class TimeEntryRepository : ITimeEntryRepository
         => _context.TimeEntries.IgnoreQueryFilters().AnyAsync(t => t.UserId == userId && t.Id != exceptId
             && t.StartedAt < end && (t.EndedAt == null || t.EndedAt > start), cancellationToken);
 
+    public async Task<IReadOnlyList<TimeEntry>> GetUserPeriodsForValidationAsync(string userId,
+        DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+        => await _context.TimeEntries.IgnoreQueryFilters().AsNoTracking()
+            .Where(t => t.UserId == userId && t.StartedAt < to && (t.EndedAt == null || t.EndedAt > from))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Prisma.Workspace.Application.Features.MeTime.Queries.TimeAdjustmentTaskDto>> SearchAdjustmentTasksAsync(
         string userId, string query, CancellationToken cancellationToken = default)
     {
@@ -135,7 +141,8 @@ public class TimeEntryRepository : ITimeEntryRepository
     {
         return await _context.TimeEntries
             .AsNoTracking()
-            .Where(t => t.UserId == userId && t.StartedAt >= fromInclusive && t.StartedAt < toExclusive)
+            .Where(t => t.UserId == userId && t.StartedAt < toExclusive
+                && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);
     }
 
@@ -148,7 +155,8 @@ public class TimeEntryRepository : ITimeEntryRepository
         return await _context.TimeEntries
             .AsNoTracking()
             .Include(t => t.WorkItem)
-            .Where(t => t.UserId == userId && t.StartedAt >= fromInclusive && t.StartedAt < toExclusive)
+            .Where(t => t.UserId == userId && t.StartedAt < toExclusive
+                && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);
     }
 
@@ -160,7 +168,8 @@ public class TimeEntryRepository : ITimeEntryRepository
     {
         return await _context.TimeEntries
             .AsNoTracking()
-            .Where(t => userIds.Contains(t.UserId) && t.StartedAt >= fromInclusive && t.StartedAt < toExclusive)
+            .Where(t => userIds.Contains(t.UserId) && t.StartedAt < toExclusive
+                && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);
     }
 

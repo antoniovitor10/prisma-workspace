@@ -31,7 +31,8 @@ public class GetMyDailyByTaskQueryHandler
             {
                 WorkItemId = g.Key.WorkItemId,
                 Title = g.Key.Title,
-                Seconds = g.Sum(e => Math.Max(0, (int)((e.EndedAt ?? now) - e.StartedAt).TotalSeconds))
+                Seconds = g.Sum(e => Prisma.Workspace.Application.Features.TimeEntries.TimeTrackingDay.SecondsInRange(
+                    e.StartedAt, e.EndedAt ?? now, start, end))
             })
             .OrderByDescending(x => x.Seconds)
             .ToList();

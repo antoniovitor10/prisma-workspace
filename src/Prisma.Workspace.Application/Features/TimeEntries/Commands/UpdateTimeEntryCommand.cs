@@ -21,11 +21,8 @@ public sealed class UpdateTimeEntryCommandHandler(ITimeEntryRepository entries, 
             throw new AcessoNegadoException("Você só pode alterar seus próprios lançamentos.");
         await access.EnsureAsync(entry.WorkItemId, request.UserId, PlatformPermission.Edit, ProjectRole.Member, ct);
         DomainException.Garantir(!entry.EstaAberto, "Pare o cronômetro antes de alterar o lançamento.");
-        DomainException.Garantir(request.EndedAt > request.StartedAt, "O fim deve ser maior que o início.");
-        DomainException.Garantir(request.EndedAt <= DateTimeOffset.UtcNow, "O lançamento não pode estar no futuro.");
-        DomainException.Garantir(request.Note?.Length <= 2000 || request.Note is null, "A observação deve ter até 2000 caracteres.");
-        DomainException.Garantir(!await entries.HasOverlapAsync(request.UserId, entry.Id, request.StartedAt, request.EndedAt, ct),
-            "O período se sobrepõe a outro lançamento seu.");
+        await TimeEntryPeriod.ValidateAsync(entries, request.UserId,
+            request.StartedAt, request.EndedAt, request.Note, entry, ct);
         entry.Correct(request.StartedAt, request.EndedAt, request.Note);
         await entries.UpdateAsync(entry, ct);
         return entry.ToDto();

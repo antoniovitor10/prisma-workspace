@@ -5,6 +5,7 @@ using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using FluentValidation;
 using MediatR;
+using Prisma.Workspace.Application.Features.TimeEntries;
 
 namespace Prisma.Workspace.Application.Features.Teams;
 
@@ -55,16 +56,17 @@ public class GetTeamsQueryHandler : IRequestHandler<GetTeamsQuery, IReadOnlyList
 
         var userIds = visible.SelectMany(t => t.Members.Select(m => m.UserId)).Distinct().ToList();
         var names = await _users.GetDisplayNamesAsync(userIds, ct);
-        var today = DateTimeOffset.UtcNow.Date;
+        var today = TimeTrackingDay.Date(DateTimeOffset.UtcNow).ToDateTime(TimeOnly.MinValue);
         var dayOffset = ((int)today.DayOfWeek + 6) % 7;
-        var weekStart = new DateTimeOffset(today.AddDays(-dayOffset), TimeSpan.Zero);
+        var weekStart = TimeTrackingDay.Start(DateOnly.FromDateTime(today.AddDays(-dayOffset)));
+        var weekEnd = TimeTrackingDay.Start(DateOnly.FromDateTime(today.AddDays(-dayOffset)).AddDays(7));
         var entries = await _timeEntries.GetByUsersInRangeAsync(
-            userIds, weekStart, weekStart.AddDays(7), ct);
+            userIds, weekStart, weekEnd, ct);
         var now = DateTimeOffset.UtcNow;
 
         double WeekSeconds(string userId) => entries
             .Where(e => e.UserId == userId)
-            .Sum(e => Math.Max(0, ((e.EndedAt ?? now) - e.StartedAt).TotalSeconds));
+            .Sum(e => TimeTrackingDay.SecondsInRange(e.StartedAt, e.EndedAt ?? now, weekStart, weekEnd));
 
         return visible.Select(team => new TeamDto
         {

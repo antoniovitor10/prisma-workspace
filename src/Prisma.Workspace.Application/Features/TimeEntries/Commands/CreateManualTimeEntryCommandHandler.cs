@@ -37,6 +37,9 @@ public class CreateManualTimeEntryCommandHandler
             item, request.UserId, ProjectRole.Member, PlatformPermission.Edit,
             _projectAccess, _permissions, cancellationToken);
 
+        await TimeEntryPeriod.ValidateAsync(_timeEntries, request.UserId,
+            request.StartedAt, request.EndedAt, request.Note, ct: cancellationToken);
+
         var entry = TimeEntry.Manual(
             request.WorkItemId, request.UserId, request.StartedAt, request.EndedAt, request.Note);
         await _timeEntries.AddAsync(entry, cancellationToken);
