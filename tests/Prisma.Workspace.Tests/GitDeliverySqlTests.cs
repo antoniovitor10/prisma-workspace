@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Prisma.Workspace.Application.Features.MethodGit.Contracts;
+using Prisma.Workspace.Application.Features.MethodGit.Webhooks;
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -30,6 +31,34 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
 {
     private readonly GitDeliverySqlFixture _fixture;
     public GitDeliverySqlTests(GitDeliverySqlFixture fixture) => _fixture = fixture;
+    [MethodGitSqlFact]
+    public Task Duplicate_real_ID_on_another_board_invalidates_every_candidate() => DuplicateRealIdAsync(false);
+    [MethodGitSqlFact]
+    public Task Duplicate_real_ID_on_archived_item_invalidates_every_candidate() => DuplicateRealIdAsync(true);
+    private async Task DuplicateRealIdAsync(bool archived)
+    {
+        await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
+        var project = (await store.GetProjectAsync(c.ProjectId))!;
+        var owner = (await c.Context.Boards.SingleAsync(x => x.Id == project.BoardId)).OwnerId!;
+        var pr = new GitPullRequestSnapshot(7, "https://github.com/qa/metodo/pull/7", "Vínculo anterior", "feature/livre", "main", new string('a', 40), null, "open", false, false, c.Now);
+        var observation = await store.UpsertObservationAsync(c.Repository.Id, pr, null);
+        await store.LinkExplicitAsync(c.Repository.Id, c.ItemId, observation.Id, "Confirmação antes da duplicidade humana.");
+        var board = new Board { Id = Guid.NewGuid(), ProjectId = c.ProjectId, OrganizationId = c.Repository.OrganizationId, OwnerId = owner,
+            Name = "Outro quadro SQL próprio", CreatedAt = c.Now };
+        var duplicate = new WorkItem { Id = Guid.NewGuid(), BoardId = board.Id, Title = "Candidato vindo da UI", CreatedAt = c.Now, UpdatedAt = c.Now,
+            IsArchived = archived, ArchivedAt = archived ? c.Now : null };
+        c.Context.AddRange(board, duplicate, new WorkItemCustomFieldValue { WorkItemId = duplicate.Id, FieldDefinitionId = project.MethodIdFieldId,
+            Value = "T-0001", UpdatedAt = c.Now, UpdatedBy = owner });
+        await c.Context.SaveChangesAsync();
+        Assert.Single(await c.Context.Set<MethodTaskState>().Where(x => x.ProjectId == c.ProjectId && x.MethodTaskId == "T-0001").ToListAsync());
+        Assert.Null(await store.GetTaskAsync(c.ItemId));
+        Assert.Equal(2, (await store.FindTasksAsync(c.ProjectId, "T-0001")).Count);
+        var resolver = new GitTaskResolver(store);
+        var branch = await resolver.ResolveAsync(c.Repository, null, "task/T-0001-x", null);
+        Assert.True(branch.Conflict); Assert.Null(branch.Task);
+        var explicitLink = await resolver.ResolveAsync(c.Repository, 7, "feature/livre", null);
+        Assert.Null(explicitLink.Task); Assert.Equal("explicit_task_unavailable", explicitLink.Reason);
+    }
     [MethodGitSqlFact]
     public async Task Concurrent_delivery_is_unique_and_conflicting_hash_does_not_overwrite()
     {
@@ -68,14 +97,15 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         c.Failure.Enabled = true;
         await Assert.ThrowsAsync<InvalidOperationException>(() => c.Store(c.Context).LinkExplicitAsync(c.Repository.Id, c.ItemId, observation.Id, "Confirmação humana."));
         c.Context.ChangeTracker.Clear();
-        Assert.Empty(await c.Context.Set<TaskGitLink>().ToListAsync());
+        Assert.Empty(await c.Context.Set<TaskGitLink>().Where(x => x.ProjectId == c.ProjectId && x.WorkItemId == c.ItemId).ToListAsync());
         Assert.Empty(await c.Context.Comments.Where(x => x.WorkItemId == c.ItemId).ToListAsync());
         Assert.Empty(await c.Context.Set<GitWebhookDelivery>().IgnoreQueryFilters().Where(x => x.IntegrationId == c.Repository.Id).ToListAsync());
         Assert.Equal("original preservado", await c.Context.Set<WorkItemCustomFieldValue>().Where(x => x.WorkItemId == c.ItemId && x.FieldDefinitionId == c.PrFieldId).Select(x => x.Value).SingleAsync());
         var link = await c.Store(c.Context).LinkExplicitAsync(c.Repository.Id, c.ItemId, observation.Id, "Confirmação humana.");
         await c.Store(c.Context).LinkExplicitAsync(c.Repository.Id, c.ItemId, observation.Id, "Repetição.");
         Assert.Equal(c.ItemId, link.WorkItemId);
-        Assert.Single(await c.Context.Set<TaskGitLink>().ToListAsync()); Assert.Single(await c.Context.Comments.Where(x => x.WorkItemId == c.ItemId).ToListAsync());
+        Assert.Single(await c.Context.Set<TaskGitLink>().Where(x => x.ProjectId == c.ProjectId && x.WorkItemId == c.ItemId).ToListAsync());
+        Assert.Single(await c.Context.Comments.Where(x => x.WorkItemId == c.ItemId).ToListAsync());
         var queue = Assert.Single(await c.Context.Set<GitWebhookDelivery>().IgnoreQueryFilters().Where(x => x.IntegrationId == c.Repository.Id).ToListAsync());
         Assert.StartsWith("link:", queue.DeliveryId); Assert.Equal(GitDeliveryProcessor.LinkEvaluationEvent, queue.EventName);
         Assert.Single(await c.Context.Set<MethodAuthorizationEvent>().Where(x => x.WorkItemId == c.ItemId).ToListAsync());
@@ -102,6 +132,51 @@ public class GitDeliverySqlTests : IClassFixture<GitDeliverySqlFixture>
         await c.Context.SaveChangesAsync();
         var task = await c.Store(c.Context).GetTaskAsync(c.ItemId); Assert.NotNull(task);
         Assert.Equal(c.Now.AddMinutes(-5), task!.LastInteractiveChangeAtUtc); Assert.Equal(c.Now, task.LastManualChangeAtUtc);
+    }
+    [MethodGitSqlFact]
+    public async Task Human_transfer_keeps_old_project_state_but_never_reuses_its_links_or_authorization()
+    {
+        await using var c = await _fixture.CaseAsync(); var store = c.Store(c.Context);
+        var alpha = (await store.GetProjectAsync(c.ProjectId))!;
+        var originalState = await c.Context.Set<MethodTaskState>().SingleAsync(x => x.ProjectId == c.ProjectId && x.WorkItemId == c.ItemId);
+        var oldGrantId = originalState.ActiveAuthorizationEventId;
+        await store.LinkInferredAsync(c.Repository.Id, c.ItemId, null, "task/T-0001-alpha", "branch");
+        var owner = (await c.Context.Boards.SingleAsync(x => x.Id == alpha.BoardId)).OwnerId
+            ?? throw new InvalidOperationException("A fixture SQL exige dono humano próprio para o quadro.");
+        var beta = Project.Criar("B" + Guid.NewGuid().ToString("N")[..8], "Beta SQL próprio", owner, WorkNature.Project, WorkType.Development);
+        beta.OrganizationId = c.Repository.OrganizationId;
+        var board = new Board { Id = Guid.NewGuid(), ProjectId = beta.Id, OrganizationId = beta.OrganizationId, OwnerId = owner, Name = "Método Beta", CreatedAt = c.Now };
+        var stages = MethodStatusCodes.All.ToDictionary(code => code, code => new Stage { Id = Guid.NewGuid(), ProjectId = beta.Id, BoardId = board.Id,
+            Name = code, Category = code == MethodStatusCodes.Completed ? StageCategory.Done : StageCategory.Backlog, CreatedAt = c.Now });
+        var idField = ProjectCustomFieldDefinition.Create(beta.Id, "ID do metodo", CustomFieldType.Text, false, null, 100);
+        var huField = ProjectCustomFieldDefinition.Create(beta.Id, "HU", CustomFieldType.Text, false, null, 200);
+        var prField = ProjectCustomFieldDefinition.Create(beta.Id, "PR", CustomFieldType.Text, false, null, 300);
+        var settings = new MethodProjectSettings { ProjectId = beta.Id, OrganizationId = beta.OrganizationId, BoardId = board.Id,
+            MethodIdFieldId = idField.Id, HuFieldId = huField.Id, PrFieldId = prField.Id, Enabled = true, GitPhase = MethodGitPhase.Webhooks };
+        foreach (var pair in stages) settings.StageMappings.Add(new MethodStageMapping { ProjectId = beta.Id, StageId = pair.Value.Id, StatusCode = pair.Key });
+        originalState.MethodTaskId = null; // Estado histórico Alpha preservado; o estado ativo agora é Beta.
+        var item = await c.Context.WorkItems.SingleAsync(x => x.Id == c.ItemId);
+        item.BoardId = board.Id; item.StageId = stages[MethodStatusCodes.InDevelopment].Id;
+        var newState = new MethodTaskState { ProjectId = beta.Id, WorkItemId = item.Id, OrganizationId = beta.OrganizationId,
+            MethodTaskId = "T-0001", CycleId = originalState.CycleId }; // Mesmo ciclo adversarial: a FK precisa conferir também ProjectId.
+        c.Context.AddRange(beta, board, idField, huField, prField, settings, newState);
+        c.Context.AddRange(stages.Values);
+        c.Context.Add(new WorkItemCustomFieldValue { WorkItemId = item.Id, FieldDefinitionId = idField.Id, Value = "T-0001", UpdatedAt = c.Now, UpdatedBy = owner });
+        await c.Context.SaveChangesAsync();
+        var snapshot = await store.GetTaskAsync(item.Id);
+        Assert.Equal(beta.Id, snapshot!.ProjectId); Assert.Null(snapshot.ActiveAuthorizationEventId);
+        Assert.Empty(await store.GetTaskLinksAsync(item.Id));
+        c.UseMethodCredential(c.ProjectId);
+        Assert.Null(await store.GetTaskAsync(item.Id)); Assert.Empty(await store.GetTaskLinksAsync(item.Id));
+        c.UseMethodCredential(beta.Id);
+        Assert.Equal(beta.Id, (await store.GetTaskAsync(item.Id))!.ProjectId);
+        Assert.Empty(await store.GetTaskLinksAsync(item.Id));
+        Assert.Equal(2, await c.Context.Set<MethodTaskState>().CountAsync(x => x.WorkItemId == item.Id));
+        Assert.Single(await c.Context.Set<TaskGitLink>().Where(x => x.ProjectId == c.ProjectId && x.WorkItemId == item.Id).ToListAsync());
+        newState.ActiveAuthorizationEventId = oldGrantId;
+        await Assert.ThrowsAsync<DbUpdateException>(() => c.Context.SaveChangesAsync());
+        c.Context.ChangeTracker.Clear();
+        Assert.Null((await c.Context.Set<MethodTaskState>().SingleAsync(x => x.ProjectId == beta.Id && x.WorkItemId == item.Id)).ActiveAuthorizationEventId);
     }
     [MethodGitSqlFact]
     public async Task Direct_observation_lookup_is_project_scoped_and_link_records_Git_author_separately()
@@ -224,6 +299,12 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
         }
         public AppDbContext NewContext() => new(_options(null), new SqlTenant(_organization), _audit);
         public EfMethodGitStore Store(AppDbContext context, GitWebhookIngressLimiter? limiter = null) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock, limiter);
+        public void UseMethodCredential(Guid projectId)
+        {
+            var principal = Guid.NewGuid();
+            _actor.Current = _actor.Current! with { AuthenticationKind = MethodAuthenticationKind.MethodToken, Role = MethodRole.Agent,
+                PrincipalId = principal, ActorId = $"method:{principal:D}", ProjectId = projectId };
+        }
         public async Task SeedAsync()
         {
             var org = new Organization { Id = _organization, Name = "Método SQL próprio", Slug = "method-" + _organization.ToString("N"), CreatedAt = Now, UpdatedAt = Now };

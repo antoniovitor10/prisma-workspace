@@ -107,7 +107,12 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     }
     public async Task<MethodTaskSnapshot?> GetTaskAsync(Guid workItemId, CancellationToken ct = default)
     {
-        var state = await db.Set<MethodTaskState>().AsNoTracking().SingleOrDefaultAsync(x => x.WorkItemId == workItemId && x.OrganizationId == Tenant, ct);
+        var states = db.Set<MethodTaskState>().AsNoTracking().Where(x => x.WorkItemId == workItemId && x.OrganizationId == Tenant
+            && x.MethodTaskId != null && db.WorkItems.Any(item => item.Id == x.WorkItemId
+                && item.Board.ProjectId == x.ProjectId && item.Board.OrganizationId == Tenant));
+        if (access.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+            states = states.Where(x => x.ProjectId == actor.ProjectId);
+        var state = await states.SingleOrDefaultAsync(ct);
         if (state is null || string.IsNullOrWhiteSpace(state.MethodTaskId) || state.MethodTaskId.Length is < 6 or > 32
             || !state.MethodTaskId.StartsWith("T-", StringComparison.Ordinal) || !state.MethodTaskId[2..].All(char.IsAsciiDigit)) return null;
         Scope(state.ProjectId);
@@ -117,6 +122,13 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         if (item is null || item.Board.ProjectId != state.ProjectId || item.BoardId != project.BoardId) return null;
         var idValues = await db.Set<WorkItemCustomFieldValue>().AsNoTracking().Where(x => x.WorkItemId == workItemId && x.FieldDefinitionId == project.MethodIdFieldId).Select(x => x.Value).ToListAsync(ct);
         if (idValues.Count != 1 || idValues[0] != state.MethodTaskId) return null;
+        // O campo real prevalece sobre o índice ativo. Inclui outros quadros e arquivados:
+        // transferência humana pode trazer de volta um ID já reutilizado no projeto.
+        var candidates = await db.Set<WorkItemCustomFieldValue>().IgnoreQueryFilters().AsNoTracking()
+            .Where(x => x.FieldDefinitionId == project.MethodIdFieldId && x.Value == state.MethodTaskId
+                && x.WorkItem.Board.ProjectId == state.ProjectId && x.WorkItem.Board.OrganizationId == Tenant)
+            .Select(x => x.WorkItemId).Distinct().Take(2).CountAsync(ct);
+        if (candidates != 1) return null;
         var events = db.Set<MethodAuthorizationEvent>().AsNoTracking().Where(x => x.ProjectId == state.ProjectId && x.WorkItemId == workItemId && x.CycleId == state.CycleId);
         var grant = state.ActiveAuthorizationEventId.HasValue ? await events.SingleOrDefaultAsync(x => x.Id == state.ActiveAuthorizationEventId && x.EventKind == "Granted", ct) : null;
         var block = state.BlockingEventId.HasValue ? await events.SingleOrDefaultAsync(x => x.Id == state.BlockingEventId && x.EventKind == "Blocked", ct) : null;
@@ -161,8 +173,8 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     public async Task<IReadOnlyList<MethodTaskSnapshot>> FindTasksAsync(Guid projectId, string methodTaskId, CancellationToken ct = default)
     {
         Scope(projectId); var project = await GetProjectAsync(projectId, ct); if (project is null) return [];
-        var ids = await db.Set<WorkItemCustomFieldValue>().AsNoTracking().Where(x => x.FieldDefinitionId == project.MethodIdFieldId
-            && x.Value == methodTaskId && x.WorkItem.Board.ProjectId == projectId && x.WorkItem.Board.OrganizationId == Tenant && !x.WorkItem.IsArchived)
+        var ids = await db.Set<WorkItemCustomFieldValue>().IgnoreQueryFilters().AsNoTracking().Where(x => x.FieldDefinitionId == project.MethodIdFieldId
+            && x.Value == methodTaskId && x.WorkItem.Board.ProjectId == projectId && x.WorkItem.Board.OrganizationId == Tenant)
             .Select(x => x.WorkItemId).Distinct().ToListAsync(ct);
         var result = new List<MethodTaskSnapshot>();
         foreach (var id in ids)
