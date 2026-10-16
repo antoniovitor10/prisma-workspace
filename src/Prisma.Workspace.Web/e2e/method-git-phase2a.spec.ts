@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures/test';
 import {
   methodGitEnabled, humanSession, tokenSession, createMethodProject, createTask, getTask, moveTask,
-  expectStatus, expectStays, pullRequestEvent, reviewEvent, sendWebhook, setPullRequest, fake,
+  expectStatus, expectStays, pullRequestEvent, reviewEvent, sendWebhook, setPullRequest,
   type Api, type MethodProject,
 } from './fixtures/method-git';
 
@@ -21,7 +21,8 @@ test.describe('integração Git do método — fase 2a', () => {
   test.beforeAll(async () => {
     test.setTimeout(120_000);
     human = (await humanSession()).api;
-    await fake('POST', '/__fixture/reset');
+    // Sem reset: se um teste falhar, o Playwright recria o worker e roda o beforeAll de novo; resetar apagaria
+    // os repositórios de entregas ainda em processamento. Cada projeto usa um repositório próprio no falso.
     p = await createMethodProject(human, 'jornada');
     agent = await tokenSession(p.agentToken);
   });

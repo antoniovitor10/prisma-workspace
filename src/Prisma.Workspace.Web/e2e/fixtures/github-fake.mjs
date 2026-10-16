@@ -53,7 +53,8 @@ function verifyAppJwt(auth) {
   if (appId && String(claims.iss) !== appId) return 'iss diferente do AppId';
   if (typeof claims.exp !== 'number' || claims.exp <= now) return 'JWT expirado';
   if (typeof claims.iat !== 'number' || claims.iat > now + 60) return 'iat no futuro';
-  if (claims.exp - claims.iat > 660) return 'validade do JWT acima de 11 minutos';
+  // Regra do GitHub: exp no máximo 10 minutos no futuro (iat pode vir atrasado para tolerar relógio).
+  if (claims.exp - now > 600) return 'exp mais de 10 minutos no futuro';
   return null;
 }
 
@@ -75,7 +76,7 @@ function fullPull(repo, n) {
   return {
     id: 7_000_000 + n, number: n, html_url: `https://github.com/${repo.full_name}/pull/${n}`,
     title: `PR ${n}`, state: 'open', draft: false, merged: false, merged_at: null, merge_commit_sha: null,
-    created_at: new Date().toISOString(), updated_at: new Date().toISOString(), closed_at: null,
+    closed_at: null,
     ...p,
     head: { ref: 'feature/x', sha: 'b'.repeat(40), repo: self, ...(p.head ?? {}) },
     base: { ref: repo.default_branch, ...(p.base ?? {}), repo: self },
@@ -104,7 +105,9 @@ createServer(async (req, res) => {
         const repo = fixtureRepo(url); if (!repo) return json(res, 404, { message: 'repositório desconhecido na fixture' });
         const n = Number(m[1]); const atual = repo.pulls.get(n) ?? {}; const novo = await body(req);
         repo.pulls.set(n, { ...atual, ...novo, head: { ...(atual.head ?? {}), ...(novo.head ?? {}) },
-          base: { ...(atual.base ?? {}), ...(novo.base ?? {}) }, updated_at: novo.updated_at ?? new Date().toISOString() });
+          base: { ...(atual.base ?? {}), ...(novo.base ?? {}) },
+          created_at: atual.created_at ?? novo.created_at ?? new Date().toISOString(),
+          updated_at: novo.updated_at ?? new Date().toISOString() });
         return json(res, 200, fullPull(repo, n));
       }
       m = /^\/__fixture\/pulls\/(\d+)\/reviews$/.exec(path);
@@ -158,8 +161,13 @@ createServer(async (req, res) => {
     if (!m || !repo || !tok.repoIds.has(repo.id)) return json(res, 404, { message: 'Not Found' });
     if (req.method === 'GET' && !m[2]) {
       const st = url.searchParams.get('state') ?? 'open';
-      const list = [...repo.pulls.keys()].sort((a, b) => a - b).map(n => fullPull(repo, n))
+      // Ordenação como a API real: sort=created (padrão)|updated; direction padrão desc para created, asc nos demais.
+      const sort = url.searchParams.get('sort') ?? 'created';
+      const direction = url.searchParams.get('direction') ?? (sort === 'created' ? 'desc' : 'asc');
+      const key = sort === 'updated' ? 'updated_at' : 'created_at';
+      const list = [...repo.pulls.keys()].map(n => fullPull(repo, n))
         .filter(p => st === 'all' || p.state === st)
+        .sort((a, b) => (a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : a.number - b.number) * (direction === 'desc' ? -1 : 1))
         .map(({ merged: _merged, ...resumo }) => resumo);
       return json(res, 200, page(list, url));
     }
