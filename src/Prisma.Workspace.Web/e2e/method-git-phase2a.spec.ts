@@ -73,13 +73,18 @@ test.describe('integração Git do método — fase 2a', () => {
       expect((await moveTask(agent, p, 'T-0102', 'bloqueada', 'aguardando credencial')).ok()).toBeTruthy();
       const semLiberacao = await moveTask(agent, p, 'T-0102', 'em-desenvolvimento', 'retomando sozinho');
       expect(semLiberacao.status(), 'sem liberação humana a retomada é recusada').toBe(403);
-      // Liberação pela sessão humana: a API informa o bloqueio/ciclo vigentes nas regras/estado da task.
-      const estado = await human.json<{ blockingEventId: string; cycleId: string }>(
-        human.get(`/api/projects/${p.projectId}/method/tasks/T-0102/resume-approval`)).catch(() => null);
-      test.skip(!estado, 'Contrato de consulta do bloqueio vigente ainda não publicado; caso coberto no QA manual.');
+      // Liberação pela sessão humana interativa, para o bloqueio e o ciclo vigentes lidos da task.
       const t = await getTask(human, p, 'T-0102');
+      expect(t.blockingEventId, 'a task bloqueada expõe o bloqueio vigente').toBeTruthy();
+      expect(t.blockingPrincipalId).toBe(p.agentPrincipalId);
+      expect(t.blockingOriginStatus).toBe('em-desenvolvimento');
+      // Token de qualquer papel não libera: só a sessão UI.
+      const pelaCredencial = await agent.post(`/api/projects/${p.projectId}/method/tasks/${t.workItemId}/resume-approval`, {
+        blockingEventId: t.blockingEventId, cycleId: t.cycleId, reason: 'auto liberação' });
+      expect(pelaCredencial.status()).toBe(403);
       await human.json(human.post(`/api/projects/${p.projectId}/method/tasks/${t.workItemId}/resume-approval`, {
-        blockingEventId: estado!.blockingEventId, cycleId: estado!.cycleId, reason: 'credencial entregue' }));
+        blockingEventId: t.blockingEventId, cycleId: t.cycleId, reason: 'credencial entregue' }));
+      expect((await getTask(human, p, 'T-0102')).status, 'liberar não move').toBe('bloqueada');
       expect((await moveTask(agent, p, 'T-0102', 'em-desenvolvimento', 'credencial recebida')).ok()).toBeTruthy();
     });
 

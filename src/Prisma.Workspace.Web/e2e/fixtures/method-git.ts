@@ -27,6 +27,7 @@ export interface MethodTask {
   workItemId: string; id: string; title: string; status: Status; hu: string | null;
   filePath: string | null; covers: string[]; risk: string | null; pr: string | null;
   dependsOn: string[]; authorized: boolean; canResume: boolean;
+  cycleId?: string | null; blockingEventId?: string | null; blockingPrincipalId?: string | null; blockingOriginStatus?: string | null;
 }
 
 /** Cliente HTTP com uma credencial: sessão humana (JWT de login + organização) ou token de método. */
