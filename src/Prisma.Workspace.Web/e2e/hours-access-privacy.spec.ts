@@ -40,7 +40,7 @@ for (const { name, role } of privacyRoles) {
     });
   });
 
-  test(`B07 HTTP ${name}: relatórios, dashboards, métricas, empresa e equipes aplicam o mesmo recorte`, async ({ page, request }) => {
+  test(`B07 HTTP ${name}: relatórios e dashboards aplicam o mesmo recorte`, async ({ page, request }) => {
     await withHoursPrivacy(page, request, role, async f => {
       const hours = reportHours(role); const period = query(f);
       const project = await f.get<{ project: { realizedHours: number }; entries: Entry[] }>(`/api/reports/projects/${f.boards.projectId}/time?${period}`);
@@ -68,6 +68,16 @@ for (const { name, role } of privacyRoles) {
       const org = await f.get<{ totalHours: number }>(`/api/reports/hours?teamId=${f.managed}&${period}`);
       expect(org.totalHours).toBe(role === 1 || role === 2 ? 3 : 1);
       expect(await f.get(`/api/reports/hours?teamId=${f.otherTeam}&${period}`)).toMatchObject({ totalHours: role === 1 ? 3 : 0 });
+      const preview = await f.api('/api/reports/preview', 'POST', { projectId: f.boards.projectId,
+        source: 7, visualization: 1, definition: definition(f) });
+      expect(preview.status()).toBe(role === 7 ? 403 : 200);
+      if (role !== 7) expect((await preview.json() as Execution).rows.reduce((sum, r) => sum + r.hours, 0)).toBe(hours);
+    });
+  });
+
+  test(`B07 HTTP ${name}: métricas, empresa e equipes restringem horas antes de somar`, async ({ page, request }) => {
+    await withHoursPrivacy(page, request, role, async f => {
+      const hours = reportHours(role);
       const metrics = await f.get<{ hoursByUser: Array<{ hours: number }> }>(`/api/Boards/${f.board.id}/metrics`);
       expect(metrics.hoursByUser.reduce((sum, user) => sum + user.hours, 0)).toBe(hours);
       const company = await f.get<Array<{ id: string; totalHours: number }>>('/api/company/projects');
@@ -76,10 +86,6 @@ for (const { name, role } of privacyRoles) {
       const managed = teams.find(t => t.id === f.managed); expect(managed).toBeDefined();
       expect(managed!.members.find(m => m.userId === f.colleague.id)?.weekHours).toBe(f.inCurrentWeek && (role === 1 || role === 2) ? 2 : 0);
       expect(managed!.members.find(m => m.userId === f.actor.id)?.weekHours).toBe(f.inCurrentWeek ? role === 2 ? 1 : 1.5 : 0);
-      const preview = await f.api('/api/reports/preview', 'POST', { projectId: f.boards.projectId,
-        source: 7, visualization: 1, definition: definition(f) });
-      expect(preview.status()).toBe(role === 7 ? 403 : 200);
-      if (role !== 7) expect((await preview.json() as Execution).rows.reduce((sum, r) => sum + r.hours, 0)).toBe(hours);
     });
   });
 
@@ -121,7 +127,7 @@ for (const { name, role } of privacyRoles) {
           definition: { ...definition(f), filters: [{ field: 'userId', operator: 'eq', value: person.id }] } });
         expect(preview.status()).toBe(role === 7 ? 403 : 200);
         if (role !== 7) expect((await preview.json() as Execution).rows).toEqual(role === 1 ? [{ userId: person.id, hours: 1 }] : []);
-      }, 'H03 isolado');
+      }, 'H03isolado');
     });
   });
 }
