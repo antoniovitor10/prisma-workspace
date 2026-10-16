@@ -1,5 +1,6 @@
 import { liveTimeSeconds } from '../utils/liveTime';
 import { DayTimeEntries, TimeTaskSearch, type DayEntry } from '../features/time/TimeAdjustment';
+import { adjustmentSlot } from '../features/time/adjustmentSlot';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
@@ -633,12 +634,11 @@ export const Kanban: React.FC = () => {
     event.preventDefault();
     if (!adjustDay || !adjustTaskId || !adjustMinutes) return;
     try {
-      const start = new Date(`${adjustDay}T09:00:00-03:00`);
-      const end = new Date(start.getTime() + adjustMinutes * 60000);
+      const current: DayEntry[] = await api.getMyDailyEntries(adjustDay);
+      const period = adjustmentSlot(adjustDay, adjustMinutes, current.map(row => row.entry));
       await api.createManualTimeEntry({
         workItemId: adjustTaskId,
-        startedAt: start.toISOString(),
-        endedAt: end.toISOString(),
+        ...period,
         note: 'Ajuste manual'
       });
       setAdjustMinutes(undefined);
@@ -2099,7 +2099,7 @@ export const Kanban: React.FC = () => {
               <DetailText>Carregando...</DetailText>
             ) : (
               <>
-                <TempoGrid>
+                <TempoGrid role="region" aria-label="Horas da semana">
                   {weeklyTime?.days.map(day => {
                     const goalSecs = 8 * 3600;
                     const pctRaw = (day.totalSeconds / goalSecs) * 100;

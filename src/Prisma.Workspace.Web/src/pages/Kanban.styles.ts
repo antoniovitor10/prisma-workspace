@@ -692,11 +692,14 @@ export const LeadTimeTd = styled.td`
 export const TempoGrid = styled.div`
   display: flex;
   gap: ${p => p.theme.space[3]};
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-end;
   padding: ${p => p.theme.space[8]} ${p => p.theme.space[2]} ${p => p.theme.space[2]};
   flex-wrap: nowrap;
   overflow-x: auto;
+  /* Centraliza somente quando há espaço: overflow fica alcançável à direita. */
+  > :first-child { margin-inline-start: auto; }
+  > :last-child { margin-inline-end: auto; }
 `;
 
 export const TempoDay = styled.div`
