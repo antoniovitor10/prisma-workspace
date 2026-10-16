@@ -1,3 +1,9 @@
+## [2026-10-16] - Codex (Forja) - preparação isolada da frente Git e correção git-spec-2
+
+- Goal METODO-GIT iniciado na worktree `metodo-git`/`feat/metodo-git`, sem alterar produto antes da spec/revisão. Instância própria `prisma-metodo` em bridge `10.245.130.0/24`, app3130/SQL3132, bancos `PrismaMetodo_E2E` e `Prisma_BoardColumns_Metodo_Seeded`; segredos externos gerados e protegidos. Build base338918b, health/login200, 28 migrations existentes, xUnit311/311 e Playwright2/2 de autenticação/chat passaram. Pool Docker esgotado contornado apenas por sub-rede livre da rede nova, sem alterar redes/infra existentes. Ambientes prisma-dev, prisma-qa e produção preservados.
+- Após revisão git-spec reprovada em cb67792 e atribuição do Maestro na FILA, corrigida a spec: humanos UI sem matriz nova, token humano próprio sem personificação/autorização interativa, principal não humano/teto, tenant e auditoria no worker, Down funcional/JSON aditivo, inventário de escritas e dono do movimento transacional, duas executoras+QA. Spec em review; nenhuma autoaprovação.
+- Pendente de registro humano: PD-01/PD-05(2a)/PD-06 e gates aplicáveis (médio7 do Prumo); nova revisão git-spec-2 ainda necessária. Sem implementação 2a, migration nova ou validação funcional final. Continuidade em NOTAS; próximo passo é liberar F0 somente após corrigir/rever e registrar as decisões.
+
 ## [2026-10-16] - Codex (Tear) - revisão da integração Git conforme D101
 
 - Tarefa 9, somente documentação em `feat/metodo-git` (base `338918b`): spec draft reorganizada em 2a/2b/3 com 26 critérios separados, PD-02/03/08 resolvidas, recomendações concretas para PD-01/04/05/06/07 aguardando PO, onze tabelas/índices e migration aditiva prevista para G-MIGRATION. Incluídos plano para três executores com arquivos exclusivos/integrador sequencial e migração MCP de email/senha para token opaco emitido pela API, com papel local redundante.

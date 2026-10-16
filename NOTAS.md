@@ -1,3 +1,14 @@
+# Continuidade — Forja, ambiente e correção git-spec-2
+
+Atualizado em 2026-10-16, goal METODO-GIT fase 2a.
+
+- Goal/GOALS/D101 lidos; worktree `/home/agentes/projetos/prisma-wt/metodo-git` na `feat/metodo-git`. Spec final `cb67792` lida inteira e revisão git-spec REPROVADO (2 altos, 5 médios). Maestro atribuiu a correção documental à Forja na FILA. A revisão corrigida preserva humanos UI, separa sessão interativa de token opaco (humano só para si, sem autorização interativa por token), define principal/teto para serviços existentes, tenant/auditoria do worker, Down funcional, serviço transacional único e inventário nominal de caminhos de escrita. Ownership final: Forja F0+A+UI C+F1; Ponte B+MCP C; Prova testes independentes/E2E/QA. Nenhum agente adicional iniciado.
+- Estado da spec: `review`, sem autoaprovação. Ainda falta fonte humana para adoção de PD-01/PD-05 da 2a/PD-06 e gates aplicáveis; o médio 7 do Prumo não é resolvido por inferência da autorização genérica. Registrar com Maestro/PO e obter nova REVISAO git-spec-2 aprovada antes de produto/migration. História US-METODO-GIT-001 está registrada no PR #23 e deve ser integrada sem duplicação.
+- Instância própria `prisma-metodo`: bridge exclusiva `prisma-metodo_default`, sub-rede livre `10.245.130.0/24`, app `127.0.0.1:3130`, SQL `127.0.0.1:3132`, banco `PrismaMetodo_E2E`. Credenciais geradas localmente, modo 0600, fora do Git. Configuração/roteiro privados em `/home/agentes/projetos/prisma-handoff/goals/runtime/prisma-metodo/`; não copiar valores para handoff, logs ou Git. Build da base `338918b` passou, app/SQL saudáveis, health/login200, 28 migrations existentes. Banco separado `Prisma_BoardColumns_Metodo_Seeded` preparado para xUnit; serviço inicializador parado após seed.
+- Falhou a criação inicial de rede por esgotamento dos pools automáticos do Docker. Resolvido selecionando sub-rede livre após inspecionar IPAM/rotas e configurando somente a rede nova, sem prune, firewall ou Docker global. Nenhuma operação em prisma-dev, prisma-qa ou produção.
+- Verificações de preparação: 311/311 xUnit na conexão explícita SQL3132; runner Playwright oficial em bridge própria listou125 casos e passou2/2 (setup de autenticação e chat desktop), comprovando API → provedor simulado sem rede host. Isso é baseline/ambiente, não QA final da 2a. npm ci web/MCP concluídos; nenhum pacote/lockfile alterado.
+- Próximo passo: submeter git-spec-2, corrigir o que voltar, obter registro humano e revisão aprovada; só então F0 de contratos, fatias revisadas, QA no sha final e PRONTO-PROD. Não houve produto, migration nova, merge, deploy ou push na main.
+
 # Continuidade — revisão da integração Git conforme D101
 
 Atualizado em 2026-10-16, por Tear, tarefa 9.
