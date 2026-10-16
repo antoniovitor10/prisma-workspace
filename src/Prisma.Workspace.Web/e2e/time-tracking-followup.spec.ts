@@ -154,6 +154,7 @@ test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ pa
     for (let index = 0; index < 7; index++) {
       const button = grid.getByRole('button', { name: 'Ajustar', exact: true }).nth(index);
       await button.scrollIntoViewIfNeeded();
+      await expect(button).toBeInViewport({ ratio: 1 });
       const loaded = responseTo(page, 'GET', '/api/me/time/entries');
       if (mobile) await button.tap();
       else await button.click();
@@ -163,7 +164,7 @@ test('Meu Tempo permite alcançar e ajustar os sete dias por toque', async ({ pa
       await adjust.getByRole('button', { name: 'Fechar', exact: true }).click();
     }
     await grid.evaluate(element => { element.scrollLeft = 0; });
-    await expect(grid.getByRole('button', { name: 'Ajustar', exact: true }).first()).toBeInViewport();
+    await expect(grid.getByRole('button', { name: 'Ajustar', exact: true }).first()).toBeInViewport({ ratio: 1 });
     await page.screenshot({ path: testInfo.outputPath('sete-dias-acessiveis.png'), scale: 'css' });
   });
 });
