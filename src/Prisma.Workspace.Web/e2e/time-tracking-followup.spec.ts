@@ -43,7 +43,12 @@ for (const surface of ['card', 'Meu trabalho'] as const) {
       const task = await f.task();
       await f.manual(task.id, '2026-10-12T00:00:00-03:00', '2026-10-12T00:02:00-03:00');
       await f.start(task.id);
-      await expect.poll(async () => (await total(f, task.id)).totalSeconds).toBeGreaterThanOrEqual(124);
+      // A recarga precisa receber quatro segundos já contabilizados pelo servidor.
+      // O polling padrão chega a intervalos de 1s: com HTTP, pode observar 123 e
+      // esgotar seus 5s antes da próxima consulta. Manter a condição e consultar
+      // a cada 250ms, com margem para o transporte, sem sleep ou relógio simulado.
+      await expect.poll(async () => (await total(f, task.id)).totalSeconds,
+        { intervals: [100, 250], timeout: 8_000 }).toBeGreaterThanOrEqual(124);
       if (surface === 'card') {
         await openBoard(page, f);
         await openBoard(page, f, true);
