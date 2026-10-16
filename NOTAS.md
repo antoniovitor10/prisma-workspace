@@ -1,3 +1,13 @@
+# Continuidade — Frente 1, horas-2 (2026-10-16)
+
+- Branch `fix/time-tracking-20261015`, worktree `/home/agentes/projetos/prisma-wt/horas`; main8ec6699 integrada por merge. B07, rateio por Brasília, validação compartilhada/legado, ajustes livres e grade semanal mobile implementados. Sem migration ou alteração estrutural do histórico. Não antecipar C1–C6 antes do PUBLICADO das horas pelo Maestro.
+- Checks: xUnit340/340 SQL, Vitest155/155, build.NET/tsc-b/lint/buildfrontend verdes. Repetição E2E85/85,990,56s; full149aprovados/6skips anteriores/0falhas em1113,40s. Dados próprios, cleanupfixture semfalhas. Registros completos e limites em docs/time-tracking-followup-validation.md e docs/e2e-stability-validation.md. Tentativas anteriores e falhas de preparação não são aprovação.
+- Somente prisma-qa app3110 SQL3111, E2EPrismaWorkspace_QA, unitPrisma_BoardColumns_Horas2; credenciais locais600/ignoradas. Backup SQL verificado antes de resetQA porSQLversionado/seedoficial. Prisma-dev3100/SQL3102 e produção intocados. Não usar run-local/test-server-dev deste checkout: versões antigas apontam para dev. Compose/runner exclusivos guardados em .runlogs/horas-2, sem copiar configurações privadas.
+- Houve exposição local de cabeçalhos de sessão QA em erro de transporte: sessão revogada, access/refresh antigos401, chaveJWT somenteQA rotacionada e envcanônico sincronizado; novo login200. Logs filtrados, trace autenticado removido; QA deve entrar novamente. Nenhum segredo de produção/dev consultado. Não imprimir logs brutos/env/authstate.
+- Próximo passo: imagem QA com SHA final e comparação dos hashes do runtime, registrar ENTREGA horas-2 e e2e-stability-1 na FILA, liberarCPU/QA e aguardar Prumo+Lupa aprovarem o mesmo SHA. Só então PRONTO-PROD e esperaPUBLICADO. Uma operação pesada por vez mediante fila; silêncio11:30–13UTC. Revisão/QA/publicação pendentes não encerram o goal.
+
+## Histórico preservado
+
 # Continuidade — proposta de integração Git do método
 
 Atualizado em 2026-10-16, por Tear, tarefa 8. Registro histórico da branch docs/spec-metodo-git: a D100 e a D101 foram registradas depois, em outras branches.
