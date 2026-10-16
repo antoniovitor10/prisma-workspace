@@ -1,3 +1,15 @@
+# Continuidade — horas-3 em validação (2026-10-16)
+
+- Prumo reprovou horas-2@d67326b por ALTO: o construtor ainda permitia horas de terceiros. A estabilização dos E2E foi aprovada só com um baixo. Ainda não há PRONTO-PROD nem QA aprovado do SHA final.
+- Correção do ReportExecutor em a7677c5: ator obrigatório para ad-hoc/salvo/export; membro ativo, recorte por papel/equipe e projeto acessível antes das linhas/métricas; horas embutidas também restritas; usuários autorizados sem lançamentos preservam zero. Testes cobrem Viewer, Client, PO, SM, PM, Manager e Admin, tenant, projeto e negações. Novo e2e/report-builder-privacy.spec.ts (f5f4b6a) cobre duas fontes na UI e CSV compartilhado; AINDA NÃO EXECUTADO no browser.
+- xUnit completo 366/366 em72,21s (runner96,14s); foco35/35 em61,60s incluindo compilação; solução build incremental21,93s/0erros/0avisos. Lint3,15s e tipos explícitos E2E14,35s aprovados. Uma tentativa de build encontrou Guid? na sprint e foi corrigida antes dessas aprovações. Tsc-b/Vitest155/buildfrontend anteriores continuam referentes à mesma fonte de UI, que não mudou nesta correção.
+- Prisma-qa3110 continua na imagem d67326b, NÃO no novo código; SQL/bancoQA intactos. Prisma-dev/demonstração/produção intocados. CPU liberada antes da janela obrigatória11:30–13UTC; não reconstruir imagem, não rodar solução/fullE2E nesse intervalo.
+- Depois de13UTC: conferir fila e reservarCPU+QA, fetch/merge main se avançou; construir imagemQA do novo SHA, health/login; rodar novo spec desktop/mobile3x, backup/reset apenasPrismaWorkspace_QA comSQLversionado/seedoficial, e suiteE2Einteira. Documentar resultados, PROGRESS da ENTREGAhoras-3, SHAfinal e imagemQAexata; nova revisão+QAmesmoSHA antes dePRONTO-PROD. SóapósPUBLICADO iniciarC1–C6.
+- Achado relacionado por leitura em GetPreparedReportsQueryHandler: mesmo padrão de horas semActor quando filtros nulos, fora dohandler nominal doALTO. Sem alteração silenciosa; comunicado aoMaestro/Prumo em entregas/horas-3-escopo.md e FILA. Aguardar confirmação de recorte/achado; não declarar B07 globalmente fechado enquanto isso não estiver esclarecido.
+- Artefatos novos privados em .runlogs/horas-3; runners históricos em horas-2. Nenhum segredo em relatório/log bruto: usar redator. ConfiguraçãoQA é .env.horas-qa e composeprivado; scripts antigos run-local/test-server-dev desta branch apontam para dev e NÃO devem ser usados.
+
+## Histórico preservado
+
 # Continuidade — Frente 1, horas-2 (2026-10-16)
 
 - Branch `fix/time-tracking-20261015`, worktree `/home/agentes/projetos/prisma-wt/horas`; main8ec6699 integrada por merge. B07, rateio por Brasília, validação compartilhada/legado, ajustes livres e grade semanal mobile implementados. Sem migration ou alteração estrutural do histórico. Não antecipar C1–C6 antes do PUBLICADO das horas pelo Maestro.

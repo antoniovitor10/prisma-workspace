@@ -189,6 +189,12 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
 - Não bloquear um lançamento somente porque a tarefa está concluída.
 - Erros não devem expor dados de apontamentos de outros usuários.
 
+## Evidência operacional complementar — revisão de 2026-10-16
+
+- O recorte atual de equipes nas horas usa a equipe do item (`WorkItem.TeamId`) ou, na ausência dela, a do quadro (`Board.TeamId`). Não usa a equipe cadastral de quem apontou: o gestor pode ver horas de outra pessoa em item da equipe gerenciada, mas não recebe horas dessa pessoa em item de outra equipe.
+- A validação compartilhada de períodos cobre criação manual e edição. Iniciar o cronômetro representa o instante atual e ainda não passa por essa validação: pode iniciar sobre um ajuste manual preexistente. É uma limitação atual; a edição do legado apenas mantém/reduz conflitos. Não representa autorização para novos apontamentos manuais sobrepostos nem resolução das corridas concorrentes.
+- A proteção B07 inclui o construtor: prévia, execução de definição compartilhada e exportação usam o papel de quem executa, nunca o de quem criou a definição. Linhas de apontamento e de usuário, métricas e horas embutidas nas outras fontes seguem o mesmo recorte; ausência de filtro de projeto não concede acesso a outros projetos.
+
 ## Segurança
 
 - A identidade do proprietário deve vir do contexto autenticado, não de um `UserId` arbitrário enviado pelo cliente.
