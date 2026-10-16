@@ -3,6 +3,16 @@
 **Status:** approved
 **Baseline:** contrato aprovado em 2026-08-24, com revisão expressamente autorizada pelo PO na tarefa 7 de 2026-10-15. A revisão abaixo prevalece nos pontos indicados.
 
+## Revisão aprovada em 2026-10-16 — Frente 1, HORAS-B07
+
+- Decisão do PO em `GOALS.md`, Frente 1/1b: ratear todos os intervalos nas fronteiras de dia de **America/Sao_Paulo**, tanto encerrados quanto abertos até o instante de cálculo. Semana, diário por tarefa, consultas de lançamentos do dia, relatórios e somas para validações usam somente a interseção do período com o dia/recorte solicitado. Um período de 22:00 a 02:00 contribui 2h para cada dia; não criar dois registros físicos nem duplicar a duração total.
+- Consultas por período incluem lançamentos iniciados antes do recorte e ainda não encerrados ou encerrados dentro dele. Precisão em segundos inteiros; a soma das parcelas conserva os segundos do intervalo, inclusive nas fronteiras com frações de segundo.
+- Somente o dono altera/exclui seus lançamentos. Usuário comum vê apenas suas horas no relatório organizacional, inclusive quando pede usuário/equipe de terceiro; administrador vê o tenant ativo e gestor somente as equipes que lidera, respeitando negações explícitas. Autorização ocorre antes da agregação.
+- Criação manual e edição compartilham validação de início/fim, futuro, tamanho da observação e sobreposição. Legados já sobrepostos continuam corrigíveis ao manter horários ou reduzir o intervalo, sem acrescentar sobreposição. Novos períodos/expansões conflitantes são recusados.
+- O ajuste rápido escolhe intervalo livre, preferencialmente após 09:00 e, se necessário, em outra lacuna passada do mesmo dia; nunca fixa todos os ajustes às 09:00 nem cria período futuro. Sem espaço suficiente, informa erro e não grava.
+- As validações diárias consideram até 24h por dia de Brasília, somando parcelas, não a duração integral de um período iniciado na véspera. Não acrescentar horas a um dia legado acima desse limite; uma correção que mantém ou reduz o intervalo legado continua possível. O painel Meu Tempo deve permitir acessar os sete dias por toque no mobile, inclusive a primeira e a última coluna.
+- Limite/encerramento automático de cronômetro esquecido permanece para decisão futura do PO; esta revisão não corta a duração real. Nenhuma mudança de schema ou de estrutura de auditoria prevista.
+
 ## Revisão aprovada em 2026-10-15 — correção de horas (tarefa 7)
 
 - Totais de cartões incluem o timer aberto até `timeCalculatedAt`, calculado uma única vez por resposta. O navegador soma somente o decorrido após esse instante (ou após o início, quando posterior). `GET /api/me/work` continua retornando somente horas encerradas em `userTimeSeconds`; Meu trabalho soma o intervalo ativo uma vez. Painel/drawer usam intervalos individuais sem acrescentar a duração aberta duas vezes.
@@ -10,10 +20,10 @@
 - Somente o dono, autenticado e com acesso de edição à tarefa na organização corrente, pode corrigir/excluir. Não existe permissão administrativa específica implementada para horas de terceiros: permanece lacuna, sem usar permissões administrativas genéricas como autorização implícita.
 - Timer aberto não pode ser editado ou excluído: deve ser parado primeiro. Edição exige fim maior que início, nenhum instante futuro e ausência de sobreposição com outro lançamento do mesmo usuário; o próprio registro é desconsiderado. Erros temporais/de regra retornam 400, terceiro 403, recurso inexistente/inacessível no tenant 404. Não há minutos negativos.
 - Alteração/exclusão reutilizam a auditoria imutável de `AppDbContext` (D34), na mesma gravação: ator autenticado, valores anteriores/novos alterados, origem e correlação. Exclusão mantém snapshot anterior e novo nulo. Sem mudança de estrutura de auditoria.
-- `GET /api/me/time/entries?date=yyyy-MM-dd` lista somente os lançamentos próprios iniciados no dia de Brasília, com tarefa, horários, duração, observação e `isManual`. Diário por tarefa e semana usam a mesma política `America/Sao_Paulo`.
+- `GET /api/me/time/entries?date=yyyy-MM-dd` lista somente os lançamentos próprios que interceptam o dia de Brasília, com tarefa, horários originais, duração, observação e `isManual`. Um lançamento atravessando meia-noite aparece nos dois dias, com o mesmo ID; diário por tarefa e semana rateiam sua contribuição sem duplicar o total.
 - No modal Ajustar tarefas: listar intervalos, editar início/fim/observação e excluir com confirmação na própria UI; atualizar total diário, semana e cartões após mutações. Horários do editor são explicitamente de Brasília, independentemente do fuso do navegador.
 - `GET /api/me/time/tasks?query=` busca título ou número, somente tarefas e projetos não arquivados em projetos acessíveis; atribuídas ao usuário primeiro, até 50 resultados. Campo operável por teclado e mobile; sem requisição por quadro.
-- **Decisões pendentes do PO:** não dividir intervalos que atravessam meia-noite e não limitar cronômetro esquecido nesta entrega. O intervalo inteiro continua no dia em que começou, tanto no diário quanto na semana. As regras anteriores de rateio e limite diário ficam pendentes, não são implementadas por esta correção. Exemplo: 14/10 12:44 até 15/10 07:12 pertence integralmente a 14/10; o intervalo entre esses horários é 18h28.
+- **Atualização de 2026-10-16:** a decisão de rateio acima substitui a atribuição integral ao dia de início da tarefa 7. Exemplo: 14/10 12:44 até 15/10 07:12 soma 11h16 em 14/10 e 7h12 em 15/10, preservando 18h28 no total. Limite para cronômetro esquecido permanece pendente.
 - A precisão continua em segundos inteiros, sem arredondamento de negócio. Nenhuma migration necessária nesta implementação.
 
 ## Propósito
@@ -61,7 +71,7 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 ### Sobreposição e limite diário
 
 - O mesmo usuário não pode possuir períodos de trabalho sobrepostos, independentemente de terem sido criados manualmente ou pelo cronômetro.
-- Rateio à meia-noite, limite diário e limite para timer esquecido dependem de nova decisão do PO (2026-10-15). Nesta entrega o intervalo inteiro pertence ao dia de início.
+- Rateio à meia-noite é obrigatório conforme decisão de 2026-10-16. Qualquer cálculo de limite diário deve usar a parcela do período no dia de Brasília, sem impor limite à duração total de um cronômetro esquecido.
 - Dias, relatórios e agrupamentos usam o horário de Brasília.
 
 ### Alteração, exclusão e aprovação
@@ -70,13 +80,13 @@ O sistema possui cronômetro, lançamento manual, consultas e totalizações de 
 - A autorização administrativa específica para horas de terceiros permanece lacuna; nesta entrega somente o proprietário pode alterar/excluir.
 - Usuários comuns não podem alterar ou excluir apontamentos de terceiros.
 - Apontamentos não exigem aprovação para serem contabilizados.
-- Alterar um apontamento deve reaplicar as mesmas validações de intervalo, futuro, sobreposição, usuário, tarefa e autorização. O limite diário permanece pendente.
+- Alterar um apontamento reaplica as validações compartilhadas de intervalo, futuro, sobreposição, limite diário, usuário, tarefa e autorização, preservando a possibilidade de reduzir um intervalo legado já inconsistente.
 
 ### Precisão e timezone
 
 - A fonte de verdade é o intervalo `StartedAt`/`EndedAt`.
 - A duração deve ser calculada a partir desses timestamps, sem arredondamento de negócio.
-- Persistência e transporte podem continuar usando `DateTimeOffset`; a apresentação e os agrupamentos pelo início dos períodos devem converter os instantes para o horário de Brasília.
+- Persistência e transporte continuam usando `DateTimeOffset`; apresentação e recortes diários usam Brasília, repartindo os períodos na meia-noite local.
 
 ## Atores e permissões
 
@@ -163,7 +173,7 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
   recolhido por padrão para não competir com o resumo operacional.
 - Deve permitir que o proprietário altere e exclua seus apontamentos. Administração de horas de terceiros permanece pendente.
 - Deve permitir apontamentos em tarefas concluídas.
-- Deve comunicar claramente conflitos de sobreposição. Limite diário depende de decisão futura.
+- Deve comunicar claramente conflitos de sobreposição e limite diário, sem expor registros de terceiros.
 - Deve exibir tempos sem arredondamento para blocos de minutos.
 - Datas e agrupamentos diários devem seguir o horário de Brasília.
 - Não deve apresentar aprovação de horas como etapa obrigatória.
@@ -172,7 +182,7 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
 
 - Rejeitar fim menor ou igual ao início.
 - Rejeitar período que sobreponha qualquer apontamento existente do mesmo usuário.
-- Não aplicar limite diário nem rateio nesta entrega (decisão pendente do PO).
+- Aplicar rateio por dia de Brasília nos cálculos; não impor corte automático a cronômetro esquecido.
 - Ao alterar, desconsiderar o próprio registro na busca por conflito e revalidar o intervalo completo.
 - Rejeitar usuário ou tarefa inexistente/inacessível.
 - Rejeitar alteração ou exclusão de terceiro sem permissão administrativa adequada.
@@ -192,7 +202,7 @@ Contratos de PUT/DELETE e consultas para ajuste definidos na revisão de 2026-10
 - **Dado** um cronômetro ativo em outra tarefa, **quando** o usuário iniciar um novo, **então** o anterior é encerrado e o novo é iniciado.
 - **Dado** um período manual válido e sem conflito, **quando** o usuário lançá-lo, **então** a duração exata é contabilizada sem arredondamento por blocos.
 - **Dado** qualquer apontamento sobreposto do mesmo usuário, **quando** houver criação ou alteração conflitante, **então** a operação é rejeitada sem persistência parcial.
-- **Pendente do PO (2026-10-15):** limite diário e rateio dos períodos à meia-noite. Não bloquear nem dividir nesta entrega.
+- **Dado** um período 22:00–02:00 em Brasília, **quando** consultar cada dia ou o relatório/semana correspondente, **então** cada dia contém 2h e o conjunto conserva 4h, sem dividir o registro persistido.
 - **Dado** um apontamento próprio, **quando** o proprietário o alterar ou excluir, **então** a operação é permitida e os totais são atualizados.
 - **Pendente:** autorização administrativa específica para alterar/excluir horas de terceiros.
 - **Dado** um usuário comum, **quando** tentar alterar ou excluir apontamento de terceiro, **então** a operação é negada sem vazamento de dados.
@@ -243,7 +253,7 @@ Os cenários ligados aos gaps devem permanecer como não homologáveis até a re
 - Política de fechamento mensal ou bloqueio retroativo, caso o produto venha a exigir.
 - Regras específicas de conteúdo e unicidade das justificativas diárias.
 - Permissão administrativa específica para horas de terceiros.
-- Rateio à meia-noite e limite para cronômetro esquecido (PO, tarefa 7).
+- Limite para cronômetro esquecido; rateio à meia-noite foi decidido em 2026-10-16.
 
 ## Rollback
 
