@@ -357,8 +357,9 @@ public class ReportExecutor
     private async Task<IReadOnlyList<WorkItem>> VisibleItemsAsync(
         IReadOnlyList<WorkItem> items, DataScope scope, CancellationToken ct)
     {
-        var projects = await _access.GetAccessibleProjectIdsAsync(items.Select(i => i.Board.ProjectId), scope.ActorId, ct);
-        return items.Where(i => projects.Contains(i.Board.ProjectId) && scope.Includes(i)).ToList();
+        var candidates = items.Where(scope.Includes).ToList();
+        var projects = await _access.GetAccessibleProjectIdsAsync(candidates.Select(i => i.Board.ProjectId), scope.ActorId, ct);
+        return candidates.Where(i => projects.Contains(i.Board.ProjectId)).ToList();
     }
 
     public async Task<ReportExecutionDto> RunAsync(
@@ -491,9 +492,9 @@ public class ReportExecutor
             }
             case ReportDataSource.TimeEntries:
             {
-                var entries = await _analytics.GetTimeEntriesAsync(projectId, ct);
+                var entries = (await _analytics.GetTimeEntriesAsync(projectId, ct)).Where(scope.Includes).ToList();
                 var ids = await _access.GetAccessibleProjectIdsAsync(entries.Select(e => e.WorkItem.Board.ProjectId), scope.ActorId, ct);
-                return entries.Where(e => ids.Contains(e.WorkItem.Board.ProjectId) && scope.Includes(e))
+                return entries.Where(e => ids.Contains(e.WorkItem.Board.ProjectId))
                     .Select(entry => TimeRow(entry, names, Hours)).ToList();
             }
             default: return [];
@@ -521,8 +522,8 @@ public class ReportExecutor
             }
             else allowed.UnionWith(candidates);
         }
-        // Não usar o diretório inteiro como população: ausência de filtro de projeto
-        // não concede acesso aos demais usuários e às suas horas.
+        // O usuário comum não herda a população do diretório: ausência de filtro
+        // de projeto não concede acesso aos demais usuários e às suas horas.
         return users.Where(u => allowed.Contains(u.Id)).Select(user => new Dictionary<string, object?>
         {
             ["userId"] = user.Id, ["user"] = names.GetValueOrDefault(user.Id, user.Id),
