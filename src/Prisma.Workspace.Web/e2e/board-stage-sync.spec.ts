@@ -32,7 +32,7 @@ test('concluir pela gaveta move o card no quadro e a mudança sobrevive ao recar
       const saved = page.waitForResponse(response => response.request().method() === 'PUT'
         && new URL(response.url()).pathname.toLowerCase() === `/api/workitems/${alvo.id}`);
       await gaveta.getByRole('combobox', { name: 'Status' }).selectOption(concluido.id);
-      expect((await saved).status()).toBe(200);
+      expect((await saved).status()).toBe(204);
       const detail = await factory.get<{ stageId: string; completedAt: string | null }>(`/api/WorkItems/${alvo.id}`);
       expect(detail.stageId).toBe(concluido.id);
       expect(detail.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
