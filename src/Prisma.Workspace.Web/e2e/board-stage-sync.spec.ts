@@ -14,7 +14,7 @@ test('concluir pela gaveta move o card no quadro e a mudança sobrevive ao recar
       const board = await factory.board();
       // D89: colunas próprias do quadro, sem depender do seed ou de outro spec.
       const aberta = await factory.stage(board.id, 3);
-      const concluido = await factory.stage(board.id, 4);
+      const concluido = await factory.stage(board.id, 5); // StageCategory.Done no domínio.
       const alvo = await factory.item(board.id, aberta.id);
       const openBoard = () => navigateWithApi(page, [`/api/WorkItems/board/${board.id}`],
         () => page.goto(`/boards/${board.id}`, { waitUntil: 'domcontentloaded' }));
