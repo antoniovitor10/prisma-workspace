@@ -12,13 +12,15 @@ public class GetSubItemsQueryHandler : IRequestHandler<GetSubItemsQuery, IReadOn
 {
     private readonly IWorkItemRepository _workItemRepository;
     private readonly IWorkItemAccessService _access;
+    private readonly IHoursReadAccessService _hours;
 
     public GetSubItemsQueryHandler(
         IWorkItemRepository workItemRepository,
-        IWorkItemAccessService access)
+        IWorkItemAccessService access, IHoursReadAccessService hours)
     {
         _workItemRepository = workItemRepository;
         _access = access;
+        _hours = hours;
     }
 
     public async Task<IReadOnlyList<WorkItemDto>> Handle(GetSubItemsQuery request, CancellationToken cancellationToken)
@@ -27,6 +29,7 @@ public class GetSubItemsQueryHandler : IRequestHandler<GetSubItemsQuery, IReadOn
             PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
         var items = await _workItemRepository.GetSubItemsAsync(request.ParentId, cancellationToken);
 
+        var scope = await _hours.GetScopeAsync(request.CurrentUserId ?? string.Empty,false,cancellationToken);
         var now = DateTimeOffset.UtcNow;
         return items.Select(w => new WorkItemDto
         {
@@ -67,7 +70,7 @@ public class GetSubItemsQueryHandler : IRequestHandler<GetSubItemsQuery, IReadOn
             SubItemsCount = w.SubItems.Count,
             AttachmentsCount = w.Attachments.Count,
             TimeCalculatedAt = now,
-            TotalTimeSeconds = w.TimeEntries.Sum(entry =>
+            TotalTimeSeconds = w.TimeEntries.Where(entry=>scope.CanRead(w,entry)).Sum(entry =>
             {
                 var ended = entry.EndedAt ?? now;
                 return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);

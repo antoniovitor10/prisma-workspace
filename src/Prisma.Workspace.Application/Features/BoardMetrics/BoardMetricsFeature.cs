@@ -36,6 +36,6 @@ public class GetBoardMetricsQueryHandler : IRequestHandler<GetBoardMetricsQuery,
     {
         await _access.EnsureAsync(request.BoardId, request.ActorId,
             PlatformPermission.View, ProjectRole.Viewer, ct);
-        return await _queries.GetAsync(request.BoardId, ct);
+        return await _queries.GetAsync(request.BoardId, request.ActorId, ct);
     }
 }

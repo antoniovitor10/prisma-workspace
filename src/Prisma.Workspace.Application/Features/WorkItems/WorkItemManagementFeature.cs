@@ -102,14 +102,15 @@ public class GetWorkItemDetailsQueryHandler : IRequestHandler<GetWorkItemDetails
     private readonly IProjectAccessService _projectAccess;
     private readonly IPermissionService _permissions;
     private readonly IUserDirectory _users;
+    private readonly IHoursReadAccessService _hours;
 
     public GetWorkItemDetailsQueryHandler(
         IWorkItemManagementRepository management,
         IProjectAccessService projectAccess,
         IPermissionService permissions,
-        IUserDirectory users)
-        => (_management, _projectAccess, _permissions, _users)
-            = (management, projectAccess, permissions, users);
+        IUserDirectory users, IHoursReadAccessService hours)
+        => (_management, _projectAccess, _permissions, _users, _hours)
+            = (management, projectAccess, permissions, users, hours);
 
     public async Task<WorkItemDetailsDto> Handle(GetWorkItemDetailsQuery request, CancellationToken ct)
     {
@@ -119,6 +120,7 @@ public class GetWorkItemDetailsQueryHandler : IRequestHandler<GetWorkItemDetails
             item, request.UserId, ProjectRole.Viewer, PlatformPermission.View,
             _projectAccess, _permissions, ct);
 
+        var hoursScope = await _hours.GetScopeAsync(request.UserId,false,ct);
         var ids = item.Assignees.Select(x => x.UserId)
             .Concat(item.Followers.Select(x => x.UserId))
             .Append(item.ResponsibleId ?? string.Empty)
@@ -158,7 +160,7 @@ public class GetWorkItemDetailsQueryHandler : IRequestHandler<GetWorkItemDetails
             item.RequesterId, item.RequesterName, item.RequesterEmail,
             item.StartDate, item.DueDate, item.CreatedAt, item.UpdatedAt, item.CompletedAt,
             item.EstimatedHours, item.RemainingHours,
-            Math.Round(item.TimeEntries.Sum(x =>
+            Math.Round(item.TimeEntries.Where(e=>hoursScope.CanRead(item,e)).Sum(x =>
                 (decimal)((x.EndedAt ?? DateTimeOffset.UtcNow) - x.StartedAt).TotalHours), 2),
             item.Points, item.TaskTypeId, item.TaskType?.Name,
             item.WorkItemTags.Where(x => x.Tag is not null)

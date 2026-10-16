@@ -13,15 +13,18 @@ public class BoardMetricsQueries : IBoardMetricsQueries
 {
     private readonly AppDbContext _context;
 
-    public BoardMetricsQueries(AppDbContext context) => _context = context;
+    private readonly IHoursReadAccessService _hours;
+    public BoardMetricsQueries(AppDbContext context, IHoursReadAccessService hours)
+        => (_context,_hours)=(context,hours);
 
-    public async Task<BoardMetricsDto> GetAsync(Guid boardId, CancellationToken ct = default)
+    public async Task<BoardMetricsDto> GetAsync(Guid boardId, string actorId, CancellationToken ct = default)
     {
         var board = await _context.Boards.AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == boardId, ct);
         if (board is null)
             return new BoardMetricsDto();
 
+        var scope = await _hours.GetScopeAsync(actorId,true,ct);
         var stages = await _context.Stages.AsNoTracking()
             .Where(s => s.ProjectId == board.ProjectId)
             .OrderBy(s => s.Position)
@@ -32,10 +35,11 @@ public class BoardMetricsQueries : IBoardMetricsQueries
         var items = await _context.WorkItems.AsNoTracking()
             .Include(w => w.TaskType)
             .Include(w => w.StageHistories)
+            .Where(scope.ItemPredicate())
             .Where(w => w.BoardId == boardId && w.ParentId == null)
             .ToListAsync(ct);
 
-        var entries = await _context.TimeEntries.AsNoTracking()
+        var entries = await _context.TimeEntries.AsNoTracking().Where(scope.EntryPredicate())
             .Where(e => e.WorkItem.BoardId == boardId)
             .ToListAsync(ct);
 

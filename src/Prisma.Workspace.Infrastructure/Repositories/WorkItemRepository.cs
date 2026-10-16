@@ -44,6 +44,7 @@ public class WorkItemRepository : IWorkItemRepository
     {
         return await _context.WorkItems
             .AsNoTracking()
+            .Include(w => w.Board)
             .Include(w => w.Assignees)
             .Include(w => w.Attachments)
             .Include(w => w.SubItems)
@@ -65,6 +66,7 @@ public class WorkItemRepository : IWorkItemRepository
     {
         return await _context.WorkItems
             .AsNoTracking()
+            .Include(w => w.Board)
             .Include(w => w.Assignees)
             .Include(w => w.Attachments)
             .Include(w => w.SubItems)
@@ -90,6 +92,7 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.Attachments)
             .Include(w => w.SubItems)
             .Include(w => w.TimeEntries)
+            .Include(w => w.Board)
             .Where(w => w.ParentId == parentId && !w.IsArchived)
             .OrderBy(w => w.Position)
             .ToListAsync(cancellationToken);

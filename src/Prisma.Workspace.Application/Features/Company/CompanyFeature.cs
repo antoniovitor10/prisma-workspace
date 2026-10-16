@@ -27,23 +27,18 @@ public class GetCompanyProjectsQueryHandler
     : IRequestHandler<GetCompanyProjectsQuery, IReadOnlyList<ProjectSummaryDto>>
 {
     private readonly ICompanyQueries _queries;
-    private readonly IProjectAccessService _projectAccess;
     private readonly IPermissionService _permissions;
 
     public GetCompanyProjectsQueryHandler(
         ICompanyQueries queries,
-        IProjectAccessService projectAccess,
         IPermissionService permissions)
-        => (_queries, _projectAccess, _permissions) = (queries, projectAccess, permissions);
+        => (_queries, _permissions) = (queries, permissions);
 
     public async Task<IReadOnlyList<ProjectSummaryDto>> Handle(GetCompanyProjectsQuery request, CancellationToken ct)
     {
         await _permissions.EnsureAsync(request.ActorId, PlatformPermission.View,
             PermissionScope.Organization, cancellationToken: ct);
-        var items = await _queries.GetProjectsAsync(ct);
-        var accessible = await _projectAccess.GetAccessibleProjectIdsAsync(
-            items.Select(x => x.ProjectId), request.ActorId, ct);
-        return items.Where(x => accessible.Contains(x.ProjectId)).ToList();
+        return await _queries.GetProjectsAsync(request.ActorId,ct);
     }
 }
 

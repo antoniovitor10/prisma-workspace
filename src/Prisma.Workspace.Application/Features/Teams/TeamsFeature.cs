@@ -39,11 +39,12 @@ public class GetTeamsQueryHandler : IRequestHandler<GetTeamsQuery, IReadOnlyList
     private readonly ITimeEntryRepository _timeEntries;
     private readonly IUserDirectory _users;
     private readonly IPermissionService _permissions;
+    private readonly IHoursReadAccessService _hours;
 
     public GetTeamsQueryHandler(
         ITeamRepository teams, ITimeEntryRepository timeEntries,
-        IUserDirectory users, IPermissionService permissions)
-        => (_teams, _timeEntries, _users, _permissions) = (teams, timeEntries, users, permissions);
+        IUserDirectory users, IPermissionService permissions, IHoursReadAccessService hours)
+        => (_teams, _timeEntries, _users, _permissions, _hours) = (teams, timeEntries, users, permissions, hours);
 
     public async Task<IReadOnlyList<TeamDto>> Handle(GetTeamsQuery request, CancellationToken ct)
     {
@@ -60,8 +61,9 @@ public class GetTeamsQueryHandler : IRequestHandler<GetTeamsQuery, IReadOnlyList
         var dayOffset = ((int)today.DayOfWeek + 6) % 7;
         var weekStart = TimeTrackingDay.Start(DateOnly.FromDateTime(today.AddDays(-dayOffset)));
         var weekEnd = TimeTrackingDay.Start(DateOnly.FromDateTime(today.AddDays(-dayOffset)).AddDays(7));
-        var entries = await _timeEntries.GetByUsersInRangeAsync(
-            userIds, weekStart, weekEnd, ct);
+        var scope = await _hours.GetScopeAsync(request.ActorId,true,ct);
+        var entries = await _hours.FilterEntriesAsync(scope,await _timeEntries.GetByUsersInRangeAsync(
+            userIds, weekStart, weekEnd, ct),ct);
         var now = DateTimeOffset.UtcNow;
 
         double WeekSeconds(string userId) => entries

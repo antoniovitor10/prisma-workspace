@@ -13,12 +13,15 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
     private readonly IWorkItemRepository _workItemRepository;
     private readonly IBoardAccessService _access;
 
+    private readonly IHoursReadAccessService _hours;
+
     public GetWorkItemsByBoardIdQueryHandler(
         IWorkItemRepository workItemRepository,
-        IBoardAccessService access)
+        IBoardAccessService access, IHoursReadAccessService hours)
     {
         _workItemRepository = workItemRepository;
         _access = access;
+        _hours = hours;
     }
 
     public async Task<IReadOnlyList<WorkItemDto>> Handle(
@@ -29,6 +32,7 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
             PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
         var items = await _workItemRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
 
-        return WorkItemCardProjection.ToCards(items, request.CurrentUserId);
+        var scope = await _hours.GetScopeAsync(request.CurrentUserId ?? string.Empty,false,cancellationToken);
+        return WorkItemCardProjection.ToCards(items, request.CurrentUserId,scope);
     }
 }

@@ -1,3 +1,4 @@
+using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Application.Features.WorkItems.Dtos;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
@@ -19,8 +20,9 @@ public static class WorkItemCardProjection
     /// </param>
     public static IReadOnlyList<WorkItemDto> ToCards(
         IEnumerable<WorkItem> items,
-        string? currentUserId)
+        string? currentUserId, HoursReadScope? hoursScope = null)
     {
+        var scope = hoursScope ?? HoursReadScope.Own(currentUserId ?? string.Empty);
         var now = DateTimeOffset.UtcNow;
         return items.Select(w =>
         {
@@ -69,7 +71,7 @@ public static class WorkItemCardProjection
             SubItemsCount = w.SubItems.Count,
             AttachmentsCount = w.Attachments.Count,
             TimeCalculatedAt = now,
-            TotalTimeSeconds = w.TimeEntries.Sum(entry =>
+            TotalTimeSeconds = w.TimeEntries.Where(entry=>scope.CanRead(w,entry)).Sum(entry =>
             {
                 var ended = entry.EndedAt ?? now;
                 return Math.Max(0, (int)(ended - entry.StartedAt).TotalSeconds);

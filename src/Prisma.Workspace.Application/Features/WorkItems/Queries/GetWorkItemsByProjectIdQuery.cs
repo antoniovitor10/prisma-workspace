@@ -20,12 +20,15 @@ public class GetWorkItemsByProjectIdQueryHandler
     private readonly IWorkItemRepository _workItems;
     private readonly IProjectAccessService _access;
 
+    private readonly IHoursReadAccessService _hours;
+
     public GetWorkItemsByProjectIdQueryHandler(
         IWorkItemRepository workItems,
-        IProjectAccessService access)
+        IProjectAccessService access, IHoursReadAccessService hours)
     {
         _workItems = workItems;
         _access = access;
+        _hours = hours;
     }
 
     public async Task<IReadOnlyList<WorkItemDto>> Handle(
@@ -39,6 +42,7 @@ public class GetWorkItemsByProjectIdQueryHandler
             ProjectRole.Viewer, cancellationToken);
 
         var items = await _workItems.GetByProjectIdAsync(request.ProjectId, cancellationToken);
-        return WorkItemCardProjection.ToCards(items, request.CurrentUserId);
+        var scope = await _hours.GetScopeAsync(request.CurrentUserId ?? string.Empty,false,cancellationToken);
+        return WorkItemCardProjection.ToCards(items, request.CurrentUserId,scope);
     }
 }

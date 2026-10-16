@@ -16,19 +16,21 @@ public class GetTimeEntriesByWorkItemQueryHandler
     private readonly IProjectAccessService _projectAccess;
     private readonly IPermissionService _permissions;
     private readonly IUserDirectory _users;
+    private readonly IHoursReadAccessService _hours;
 
     public GetTimeEntriesByWorkItemQueryHandler(
         ITimeEntryRepository timeEntries,
         IWorkItemRepository workItems,
         IProjectAccessService projectAccess,
         IPermissionService permissions,
-        IUserDirectory users)
+        IUserDirectory users, IHoursReadAccessService hours)
     {
         _timeEntries = timeEntries;
         _workItems = workItems;
         _projectAccess = projectAccess;
         _permissions = permissions;
         _users = users;
+        _hours = hours;
     }
 
     public async Task<IReadOnlyList<TimeEntryDto>> Handle(
@@ -40,7 +42,8 @@ public class GetTimeEntriesByWorkItemQueryHandler
         await WorkItemAccessGuard.EnsureAsync(
             item, request.ActorId, ProjectRole.Viewer, PlatformPermission.View,
             _projectAccess, _permissions, cancellationToken);
-        var entries = await _timeEntries.GetByWorkItemIdAsync(request.WorkItemId, cancellationToken);
+        var scope = await _hours.GetScopeAsync(request.ActorId,false,cancellationToken);
+        var entries = await _timeEntries.GetVisibleEntriesAsync(scope,workItemId:request.WorkItemId,ct:cancellationToken);
         var names = (await _users.GetByIdsAsync(
             entries.Select(entry => entry.UserId), includeInactive: true, cancellationToken))
             .ToDictionary(user => user.Id, user => user.DisplayName);

@@ -9,11 +9,11 @@ namespace Prisma.Workspace.Application.Interfaces;
 /// </summary>
 public interface ICompanyQueries
 {
-    Task<IReadOnlyList<ProjectSummaryDto>> GetProjectsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ProjectSummaryDto>> GetProjectsAsync(string actorId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Lado de leitura do dashboard do quadro (6 métricas fixas).</summary>
 public interface IBoardMetricsQueries
 {
-    Task<BoardMetricsDto> GetAsync(Guid boardId, CancellationToken cancellationToken = default);
+    Task<BoardMetricsDto> GetAsync(Guid boardId, string actorId, CancellationToken cancellationToken = default);
 }

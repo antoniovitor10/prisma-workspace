@@ -9,10 +9,12 @@ public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, IReadOnly
     private readonly IWorkItemRepository _workItems;
     private readonly IProjectAccessService _projectAccess;
 
-    public GetMyTasksQueryHandler(IWorkItemRepository workItems, IProjectAccessService projectAccess)
+    private readonly IHoursReadAccessService _hours;
+    public GetMyTasksQueryHandler(IWorkItemRepository workItems, IProjectAccessService projectAccess, IHoursReadAccessService hours)
     {
         _workItems = workItems;
         _projectAccess = projectAccess;
+        _hours = hours;
     }
 
     public async Task<IReadOnlyList<MeTaskDto>> Handle(GetMyTasksQuery request, CancellationToken cancellationToken)
@@ -23,6 +25,7 @@ public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, IReadOnly
             request.UserId, cancellationToken);
         items = items.Where(x => x.Board is not null
             && accessibleProjectIds.Contains(x.Board.ProjectId)).ToList();
+        var scope = await _hours.GetScopeAsync(request.UserId,false,cancellationToken);
         var now = DateTimeOffset.UtcNow;
 
         return items
@@ -44,7 +47,7 @@ public class GetMyTasksQueryHandler : IRequestHandler<GetMyTasksQuery, IReadOnly
                     PersonalPriority = mine.PersonalPriority,
                     AssignedAt = mine.AssignedAt,
                     TimeCalculatedAt = now,
-                    TotalTimeSeconds = w.TimeEntries.Sum(e =>
+                    TotalTimeSeconds = w.TimeEntries.Where(e=>scope.CanRead(w,e)).Sum(e =>
                         Math.Max(0, (int)((e.EndedAt ?? now) - e.StartedAt).TotalSeconds)),
                     UserTimeSeconds = w.TimeEntries
                         .Where(e => e.UserId == request.UserId)

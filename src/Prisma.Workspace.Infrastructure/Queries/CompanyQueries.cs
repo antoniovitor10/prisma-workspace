@@ -12,11 +12,18 @@ public class CompanyQueries : ICompanyQueries
 {
     private readonly AppDbContext _context;
 
-    public CompanyQueries(AppDbContext context) => _context = context;
+    private readonly IHoursReadAccessService _hours;
+    private readonly IProjectAccessService _access;
+    public CompanyQueries(AppDbContext context, IHoursReadAccessService hours, IProjectAccessService access)
+        => (_context,_hours,_access)=(context,hours,access);
 
-    public async Task<IReadOnlyList<ProjectSummaryDto>> GetProjectsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ProjectSummaryDto>> GetProjectsAsync(string actorId, CancellationToken cancellationToken = default)
     {
-        var boards = await _context.Boards.AsNoTracking()
+        var scope = await _hours.GetScopeAsync(actorId,true,cancellationToken);
+        var projectIds = await _context.Boards.Select(b=>b.ProjectId).Distinct().ToListAsync(cancellationToken);
+        var accessible = await _access.GetAccessibleProjectIdsAsync(projectIds,actorId,cancellationToken);
+        var visibleEntries = _context.TimeEntries.Where(scope.EntryPredicate());
+        var boards = await _context.Boards.AsNoTracking().Where(b=>accessible.Contains(b.ProjectId))
             .Select(b => new
             {
                 b.Id,
@@ -28,8 +35,7 @@ public class CompanyQueries : ICompanyQueries
                 Stages = b.Project.Stages.OrderBy(s => s.Position).Select(s => s.Id).ToList(),
                 Items = b.WorkItems.Where(w => w.ParentId == null)
                     .Select(w => new { w.StageId }).ToList(),
-                TotalSeconds = b.WorkItems
-                    .SelectMany(w => w.TimeEntries)
+                TotalSeconds = visibleEntries.Where(e=>e.WorkItem.BoardId==b.Id)
                     .Sum(e => (double?)EF.Functions.DateDiffSecond(e.StartedAt, e.EndedAt ?? DateTimeOffset.UtcNow)) ?? 0
             })
             .ToListAsync(cancellationToken);
