@@ -74,7 +74,7 @@ function fullPull(n) {
     title: `PR ${n}`, state: 'open', draft: false, merged: false, merged_at: null, merge_commit_sha: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), closed_at: null,
     ...p,
-    head: { ref: 'feature/x', sha: 'b'.repeat(40), ...(p.head ?? {}) },
+    head: { ref: 'feature/x', sha: 'b'.repeat(40), repo: { id: repo.id, full_name: repo.full_name }, ...(p.head ?? {}) },
     base: { ref: repo.default_branch, ...(p.base ?? {}), repo: { id: repo.id, full_name: repo.full_name } },
   };
 }

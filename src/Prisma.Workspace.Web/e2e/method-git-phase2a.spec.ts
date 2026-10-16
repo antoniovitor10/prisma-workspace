@@ -225,6 +225,14 @@ test.describe('integração Git do método — fase 2a', () => {
       await expectStays(human, p, 'T-0115', 'em-revisao');
     });
 
+    test('webhook: PR de fork com branch no padrão não identifica a task (RF-02.4)', async () => {
+      await createTask(human, p, 'T-0117');
+      await moveTask(human, p, 'T-0117', 'em-desenvolvimento', 'humano autoriza');
+      const r = await pullRequestEvent(p, 'opened', { number: 117, branch: 'task/T-0117-de-fora', headRepositoryId: 777777 });
+      expect(r.status).toBe(202);
+      await expectStays(human, p, 'T-0117', 'em-desenvolvimento');
+    });
+
     test('webhook: PR não autoriza task em backlog ou bloqueada (CA-2A-10)', async () => {
       await createTask(human, p, 'T-0116');
       await pullRequestEvent(p, 'opened', { number: 116, branch: 'task/T-0116-x' });

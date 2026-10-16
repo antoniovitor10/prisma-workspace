@@ -142,7 +142,7 @@ export async function fake(method: 'GET' | 'PUT' | 'POST', path: string, data?: 
 
 export interface PrSpec {
   number: number; branch: string; title?: string; draft?: boolean; state?: 'open' | 'closed';
-  merged?: boolean; base?: string; headSha?: string;
+  merged?: boolean; base?: string; headSha?: string; headRepositoryId?: number;
 }
 
 /** Atualiza o PR no GitHub falso (a verdade que o provedor consulta) e devolve o payload do webhook. */
@@ -152,7 +152,9 @@ export async function setPullRequest(p: MethodProject, pr: PrSpec) {
   await fake('PUT', `/__fixture/pulls/${pr.number}`, {
     title: pr.title ?? `PR ${pr.number}`, state: pr.state ?? 'open', draft: !!pr.draft, merged,
     merged_at: merged ? now : null, merge_commit_sha: merged ? 'a'.repeat(40) : null, closed_at: pr.state === 'closed' ? now : null,
-    head: { ref: pr.branch, sha: pr.headSha ?? 'b'.repeat(40) }, base: { ref: pr.base ?? 'main' },
+    head: { ref: pr.branch, sha: pr.headSha ?? 'b'.repeat(40),
+      ...(pr.headRepositoryId ? { repo: { id: pr.headRepositoryId, full_name: 'terceiro/fork' } } : {}) },
+    base: { ref: pr.base ?? 'main' },
   });
   const repository = { id: p.repositoryId, full_name: p.repositoryFullName, name: p.repositoryFullName.split('/')[1], default_branch: 'main', html_url: `https://github.com/${p.repositoryFullName}` };
   return {
@@ -161,7 +163,8 @@ export async function setPullRequest(p: MethodProject, pr: PrSpec) {
       id: 7_000_000 + pr.number, number: pr.number, html_url: `https://github.com/${p.repositoryFullName}/pull/${pr.number}`,
       title: pr.title ?? `PR ${pr.number}`, state: pr.state ?? 'open', draft: !!pr.draft, merged,
       merged_at: merged ? now : null, merge_commit_sha: merged ? 'a'.repeat(40) : null, updated_at: now, created_at: now,
-      head: { ref: pr.branch, sha: pr.headSha ?? 'b'.repeat(40), repo: repository }, base: { ref: pr.base ?? 'main', sha: 'c'.repeat(40), repo: repository },
+      head: { ref: pr.branch, sha: pr.headSha ?? 'b'.repeat(40),
+        repo: pr.headRepositoryId ? { id: pr.headRepositoryId, full_name: 'terceiro/fork', name: 'fork' } : repository }, base: { ref: pr.base ?? 'main', sha: 'c'.repeat(40), repo: repository },
     },
   };
 }
