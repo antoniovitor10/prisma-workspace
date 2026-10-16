@@ -86,8 +86,19 @@ node dist/import.js <pasta docs/trabalho> [--dry-run] [--sincronizar-status]
 - `--dry-run` mostra o que faria sem gravar.
 - No fim imprime um resumo: criados, atualizados, sem mudança.
 
+A importação é uma ferramenta do desenvolvedor: rode com `PRISMA_ROLE=humano`. Com papel `agente`
+ela segue a mesma matriz do MCP.
+
 Depois da importação, tire o `status:` do frontmatter das tasks: em modo prisma ele não existe.
 O status da HU continua em `hu.md`.
+
+### Onde ver no Prisma
+
+- **Itens** do projeto: lista a HU e as tasks, com a coluna **Etapa** mostrando o status de cada uma.
+- Detalhe do card: abas **Comentários** (relatórios, bloqueios e os comentários `[status]`) e
+  **Histórico** (quem moveu, quando).
+- O **Kanban** mostra o card da HU com o número de subitens; as tasks, por serem subitens, não
+  aparecem como cards nas colunas.
 
 Exemplo no PowerShell, com o túnel aberto (ver abaixo):
 
@@ -200,6 +211,9 @@ npm test
 
 Roda os unitários (mapa de status, matriz de papéis, configuração e leitura dos arquivos do método
 com os dados reais de `canais-mobile`).
+
+`test/ensaio-demo.mjs` repete o roteiro da demonstração (importa duas vezes e usa o MCP como agente e
+como humano) num projeto que você informa: `node test/ensaio-demo.mjs <projeto> <pasta docs/trabalho>`.
 
 O teste de integração (`test/integration.test.ts`) fala com um Prisma de verdade, num projeto
 próprio criado para o teste (nunca um projeto real). Ele importa duas vezes e confere que nada
