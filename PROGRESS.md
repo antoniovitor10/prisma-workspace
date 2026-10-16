@@ -1,3 +1,8 @@
+## [2026-10-16] - Codex (Tear) - revisão da integração Git conforme D101
+
+- Tarefa 9, somente documentação em `feat/metodo-git` (base `338918b`): spec draft reorganizada em 2a/2b/3 com 26 critérios separados, PD-02/03/08 resolvidas, recomendações concretas para PD-01/04/05/06/07 aguardando PO, onze tabelas/índices e migration aditiva prevista para G-MIGRATION. Incluídos plano para três executores com arquivos exclusivos/integrador sequencial e migração MCP de email/senha para token opaco emitido pela API, com papel local redundante.
+- Conferidos template, critérios por corte, links locais, decisões/pendências e `git diff --check`; testes de produto não executados por ser documentação. Worktree isolada `metodo-git-docs` porque a branch está ocupada em `maestro-int`; envio somente para `feat/metodo-git`, sem alterar aquela worktree. Nenhum código, migration, container ou banco tocado; prisma-dev preservado para a demonstração. Próximo passo: PO aprovar recomendações/G-SPEC/G-MIGRATION antes da execução 2a.
+
 ## [2026-10-16] - Claude Code (Maestro) - fase 1 do Prisma como rastreador do método (MCP)
 
 - Pedido do PO para a apresentação ao DETRAN às 9h: adaptador fino em `tools/prisma-mcp` (TypeScript, MCP stdio, D100) que só chama a API REST existente, com as 8 operações do contrato (`regras_do_projeto`, `obter_task`, `listar_tasks`, `proximas_tasks`, `criar_task`, `mover_status`, `comentar`, `vincular_pr`) e importação idempotente de `docs/trabalho`. Sem migration e sem mudança em Domain, Infrastructure ou Api.

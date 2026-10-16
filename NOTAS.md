@@ -1,4 +1,14 @@
-# Continuidade — proposta de integração Git do método
+# Continuidade — revisão da integração Git conforme D101
+
+Atualizado em 2026-10-16, por Tear, tarefa 9.
+
+- D101 lida integralmente; spec draft atualizada para GitHub/GitHub App, 2a (papéis na API e webhook), 2b (reconciliação) e 3 (gate/deploy). MCP do método escreve conforme papel; D91 do assistente interno permanece com sugestões/aprovação. PD-02/03/08 resolvidas; cinco recomendações abertas explicitamente aguardam aprovação do PO.
+- Detalhados onze registros físicos com colunas/índices/constraints, proposta `Add_MethodGit_Phase2a` para G-MIGRATION, plano A/B/C com propriedade exclusiva de arquivos e integração sequencial, e migração do MCP para token opaco sem email/senha. Tasks permanecem de topo; HU somente campo/tag; literal **ID do metodo** preservado.
+- Trabalho em `/home/agentes/projetos/prisma-wt/metodo-git-docs`, a partir de `338918b`, com HEAD destacado para não mexer na branch já em checkout em `maestro-int`. Push direcionado exclusivamente a `feat/metodo-git`; Maestro deve atualizar sua worktree após conferir que está limpa, sem reset destrutivo. Raiz do clone preservada na branch de documentação anterior.
+- Validação documental passou: template, 26 critérios por corte, links, pendências e diff sem erros. Nenhum teste de produto executado; nenhum código, migration, container ou banco alterado. Mantida a proibição de tocar prisma-dev/3100 e seu banco até 09:30 de Brasília em 2026-10-16, sem E2E.
+- Próximo passo: PO decidir PD-01/04/05/06/07 e aprovar gates aplicáveis antes do código; Maestro cadastra história e despacha somente 2a após F0. Esta tarefa não iniciou agentes, PR, merge ou deploy.
+
+## Registro anterior — proposta de integração Git do método
 
 Atualizado em 2026-10-16, por Tear, tarefa 8.
 
