@@ -123,6 +123,7 @@ test('buscar tarefa pelo título e número no ajuste funciona com teclado',async
 });
 
 async function longTaskSearch(page:Page,f:TimeFactory){
+  const began=performance.now();
   const prefix=f.boards.name('Busca legível');
   const tasks:Array<{id:string;title:string}>=[];
   for(let index=0;index<6;index++){
@@ -133,6 +134,7 @@ async function longTaskSearch(page:Page,f:TimeFactory){
     expect(created.status()).toBe(201);
     tasks.push({id:await created.json() as string,title});
   }
+  test.info().annotations.push({type:'fixture-phase',description:`Seis tarefas: ${Math.round(performance.now()-began)} ms`});
   const modal=await day(page,f,today());
   const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
   const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
@@ -151,6 +153,7 @@ async function longTaskSearch(page:Page,f:TimeFactory){
 test('busca do ajuste mantém seis títulos longos legíveis e permite selecionar após rolar',async({page,request})=>{
   const began=performance.now();
   await withTimeFactory(page,request,async f=>{
+    test.info().annotations.push({type:'fixture-phase',description:`Usuário/projeto/quadro: ${Math.round(performance.now()-began)} ms`});
     const {tasks,modal,list,options}=await longTaskSearch(page,f);
     test.info().annotations.push({type:'fixture-phase',description:`Arranjo/API/UI: ${Math.round(performance.now()-began)} ms`});
     const listBox=await list.evaluate(element=>element.getBoundingClientRect().toJSON());
@@ -190,6 +193,7 @@ test('busca do ajuste mantém seis títulos longos legíveis e permite seleciona
 test('busca do ajuste mantém a opção ativa visível no teclado e grava o destino do Enter',async({page,request})=>{
   const began=performance.now();
   await withTimeFactory(page,request,async f=>{
+    test.info().annotations.push({type:'fixture-phase',description:`Usuário/projeto/quadro: ${Math.round(performance.now()-began)} ms`});
     const {prefix,tasks,modal,field,list,options}=await longTaskSearch(page,f);
     test.info().annotations.push({type:'fixture-phase',description:`Arranjo/API/UI: ${Math.round(performance.now()-began)} ms`});
     const selected=tasks[tasks.length-1];
@@ -212,11 +216,6 @@ test('busca do ajuste mantém a opção ativa visível no teclado e grava o dest
     const persisted=await f.get<{number:number}>(`/api/WorkItems/${selected.id}`);
     await expect(field).toHaveValue(`#${persisted.number}`);
     await expect(modal.getByText('Tarefa selecionada.',{exact:true})).toBeVisible();
-    await modal.getByPlaceholder('Minutos a adicionar').fill('1');
-    const created=responseTo(page,'POST','/api/TimeEntries/manual');
-    await modal.getByRole('button',{name:'Adicionar',exact:true}).click();
-    expect((await created).status()).toBe(201);
-    expect((await total(f,selected.id)).totalSeconds).toBe(60);
     const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
       &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
       &&new URL(response.url()).searchParams.get('query')===prefix);
@@ -225,5 +224,13 @@ test('busca do ajuste mantém a opção ativa visível no teclado e grava o dest
     await expect(options).toHaveCount(tasks.length);
     await field.press('Escape');await expect(list).toHaveCount(0);
     await field.click();await expect(options).toHaveCount(tasks.length);
+    for(let index=0;index<5;index++)await field.press('ArrowDown');
+    await inView(last);await field.press('Enter');
+    await expect(field).toHaveValue(`#${persisted.number}`);
+    await modal.getByPlaceholder('Minutos a adicionar').fill('1');
+    const created=responseTo(page,'POST','/api/TimeEntries/manual');
+    await modal.getByRole('button',{name:'Adicionar',exact:true}).click();
+    expect((await created).status()).toBe(201);
+    expect((await total(f,selected.id)).totalSeconds).toBe(60);
   });
 });
