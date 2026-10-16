@@ -1,4 +1,15 @@
-# Continuidade — integração feat/main no servidor
+# Continuidade — proposta de integração Git do método
+
+Atualizado em 2026-10-16, por Tear, tarefa 8. Registro histórico da branch docs/spec-metodo-git: a D100 e a D101 foram registradas depois, em outras branches.
+
+- Ajuste posterior solicitado pelo PO: tasks de topo (`ParentId` nulo), HU somente no campo **HU** e tag homônima; nome literal **ID do metodo** preservado. Spec corrigida em Context, Invariants e Data Impact. D100 ausente nesta branch, sem referência na spec. Ajuste exclusivamente documental, com `git diff --check`, sem tocar prisma-dev/banco.
+- Branch `docs/spec-metodo-git`, baseada em `origin/main` (`2c3816c`): entrega exclusivamente documental. Spec `specs/metodo-git-integration.md` em draft, com todas as seções do template, fases 2/3, 24 critérios e plano de testes; PROGRESS atualizado.
+- Fontes lidas: AGENTS, DECISIONS, ROADMAP, duas entradas mais recentes de PROGRESS, template e `prisma.md`/`fluxo.md`/`local.md` no handoff externo. Mapeamento do PO e caso Detran preservados; nenhuma dependência de documentos versionados para identificar PR.
+- Validação documental aprovada; não houve testes de produto, alterações de código/schema, containers ou banco. Nenhuma falha técnica nesta tarefa. Compatibilidade com D91, autorização/gate, múltiplos PRs, retenção e parâmetros operacionais permanecem perguntas para aprovação, não decisões tomadas por agente.
+- Restrição da demonstração: até 09:30 de Brasília em 2026-10-16, não reiniciar/recriar/limpar `prisma-dev` (3100) ou seu banco, nem executar E2E contra ele. Esta tarefa não tocou o ambiente. Fazer checkout de documentação não troca a imagem já em execução.
+- Próximo passo: Maestro/PO revisar a spec, cadastrar/vincular história e decidir pendências antes de G-SPEC e dos gates de schema/workflow/histórico aplicáveis. Fase 1 do MCP segue em branch separada do Maestro; não houve merge, deploy, push na main ou aprovação de gate.
+
+## Registro anterior — integração feat/main no servidor
 
 Atualizado em 2026-10-13, por Tear, tarefa 3.
 

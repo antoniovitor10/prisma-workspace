@@ -4,6 +4,9 @@
 **Baseline:** as-built com decisão funcional posterior de ocultação
 **Decisão humana:** PO, 2026-08-24
 
+> **Atualização do PO em 2026-10-14 (D99):** Gantt e calendário permanecem **visíveis** no seletor de visualização do Kanban. O contrato de ocultação abaixo ("Contrato funcional vigente" e critérios de aceite de ocultação) fica **substituído**: o contrato vigente passa a ser o comportamento as-built descrito em "Estado atual comprovado", que deve ser coberto por testes de ponta a ponta. Recursos avançados de planejamento continuam fora do contrato (item 7).
+
+
 ## Objetivo
 
 Documentar o que já existe internamente para Gantt e calendário e estabelecer o contrato visível atual: **todas as entradas e visualizações de Gantt e planejamento temporal ficam ocultas na interface por enquanto**.

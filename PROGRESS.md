@@ -1,3 +1,29 @@
+## [2026-10-16] - Claude Code (Maestro) - fase 1 do Prisma como rastreador do método (MCP)
+
+- Pedido do PO para a apresentação ao DETRAN às 9h: adaptador fino em `tools/prisma-mcp` (TypeScript, MCP stdio, D100) que só chama a API REST existente, com as 8 operações do contrato (`regras_do_projeto`, `obter_task`, `listar_tasks`, `proximas_tasks`, `criar_task`, `mover_status`, `comentar`, `vincular_pr`) e importação idempotente de `docs/trabalho`. Sem migration e sem mudança em Domain, Infrastructure ou Api.
+- Feito em paralelo no servidor por Ponte (API, setup e importação), Forja (servidor MCP e matriz por papel) e Prova (testes, README e ensaio), com revisão do Prumo; Tear escreveu a spec das fases 2 e 3 (`specs/metodo-git-integration.md`), incorporada aqui. Mudança de modelo decidida durante a noite: o Kanban só lista itens sem pai, então as tasks são itens de topo e a HU fica no campo "HU" e numa tag.
+- Testes: 40 unitários + 18 de integração contra o prisma-dev (58/58), em projetos de teste próprios. A revisão do Prumo achou um bloqueador (o import como agente criava task já autorizada), corrigido em `352e274`. Importação real do canais-mobile (só leitura) no projeto **Detran-mobile** do prisma-dev: 4 criadas e 3 vínculos; segunda rodada sem mudança. Roteiro em `tools/prisma-mcp/DEMO.md`; configuração no Claude Code e no Codex em `tools/prisma-mcp/README.md`.
+- Pendências: levar a matriz por papel e a recusa de autorização para a API (D100); `TaskService.setup()` também cria ou ajusta projeto e colunas ao ler (achado médio do Prumo); mensagens de erro sem o "pare e avise" do contrato; decisões em aberto da spec. O canais-mobile continua em `rastreador: local`.
+
+## [2026-10-16] - Codex (Tear) - ajuste do modelo de HU do método
+
+- Por decisão atualizada do PO, a spec de integração Git passa a representar tasks como work items de topo, sem `ParentId`, e HU pelo campo personalizado **HU** e tag homônima, sem work item próprio. Mantido o nome literal **ID do metodo**, sem acento. Não há D100 nesta branch nem referência a ela na spec. Conferidas as referências e `git diff --check`; somente documentação, sem testes de produto ou alteração do prisma-dev/banco. Próximo passo: revisão do Maestro/PO.
+
+## [2026-10-16] - Codex (Tear) - proposta de integração Git do método
+
+- Tarefa 8, somente documentação, em `docs/spec-metodo-git` a partir de `origin/main` (`2c3816c`). Criada `specs/metodo-git-integration.md` como draft conforme o template e os contratos recebidos: fases 2/3, assinatura/idempotência, vínculo explícito > branch > título, matriz aplicada pela API, reconciliação, gate `prisma/autorizacao`, deploy, caso Detran e modelo de dados proposto.
+- Inclui 24 critérios de aceite, plano xUnit/E2E e perguntas de aprovação sobre operação, múltiplos PRs, homologação, GitLab e compatibilidade com D91. Nenhum código, migration, configuração operacional ou gate alterado. Validação documental: seções do template, critérios consecutivos e links locais conferidos; `git diff --check` aprovado. Testes de produto não executados por ser documentação. Prisma-dev e seu banco preservados integralmente para a demonstração, sem E2E; continuidade em `NOTAS.md`. Próximo passo: Maestro/PO revisar o draft e resolver as pendências antes de implementar.
+
+## [2026-10-14] - Claude Code (Maestro) - integração na main e deploy pelo Contabo
+
+- Com as respostas do PO em 2026-10-13: três falhas de teste corrigidas pelo Tear em `fix/server-test-failures` (Context Explorer 42/42, Vitest em threads 145/145, `project-assignment-access.spec.ts` com fixture própria), sem código de produto; feat reconciliada com a `main` em `integration/ai-foundation-main` (merge `91b8d07`, código igual ao da feat, sem migration); revisão do Prumo aprovada com ressalvas, sem achado bloqueante. O endereço do servidor de desenvolvimento foi retirado de `docs/server-dev.md` antes do merge, por ser repositório público.
+- PR #20 integrado na `main` (`8235841`) com CI verde. O deploy falhou no primeiro `ssh` (`Permission denied`): os secrets ainda apontavam para o servidor anterior e o `ci.yml` não usava a porta SSH do Contabo. Produção não foi alterada nessa tentativa.
+- Conserto autorizado pelo PO: `ci.yml` passa a usar o secret `DEPLOY_PORT` (padrão 22) em `ssh -p` e `scp -P`; secrets `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS` e `DEPLOY_PORT` atualizados, com a chave de host conferida contra o próprio servidor. PR #21 integrado (`2c3816c`); run 38505622466 concluiu todos os jobs, incluindo `Deploy produção`. `prisma.nordevs.com.br` e `/health` respondem 200.
+- Não verificado: a revisão do container em produção não foi lida diretamente, porque o SSH do PC para o servidor passou a dar timeout logo após o deploy (HTTPS segue normal; provável bloqueio temporário do fail2ban após várias conexões seguidas do Maestro). Não houve QA visual da versão publicada.
+- Worktrees antigas do PC removidas com `git worktree remove`; terminal Antigravity trocado por Claude Code (Reserva).
+- Esta entrada está na branch `docs/progress-deploy-20261014`, sem push na `main`, para não disparar novo deploy só por documentação.
+- Próximo passo: confirmar a revisão publicada quando o SSH voltar; tarefa separada para xUnit no CI; plano de ampliação dos testes de ponta a ponta.
+
 ## [2026-10-13] - Codex (Tear) - reconciliação da feat com main para integração
 
 - Tarefa 3 autorizada pelo Maestro/PO: criada `integration/ai-foundation-main` de `origin/feat/ai-assistant-foundation` (`457c6d2`), merge de `origin/main` (`6eecba8`), sem rebase/force push. Resolvidos 14 conflitos com comparação de ambos os pais e SPEC-AI-004 aprovada; base publicada preservada e correções posteriores aceitas da feat mantidas. Nenhuma correção exclusiva da main ausente no código final; produto/testes finais coincidem com a feat, sem refatoração ou correção adicional.
