@@ -1,6 +1,8 @@
 import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 import { cleanupFor, expect } from './test';
 import { withBoardFactory, type BoardFactory } from './boards';
+import { test as base } from './functional';
+export { expect } from './functional';
 
 export const privacyRoles = [{ name: 'Membro', role: 7 }, { name: 'Visualizador', role: 10 },
   { name: 'Gestor', role: 2 }, { name: 'Administrador', role: 1 }] as const;
@@ -64,4 +66,21 @@ export type HoursPrivacy = { boards: BoardFactory; actor: Person; colleague: Per
   stage: Awaited<ReturnType<BoardFactory['stage']>>; parent: Item; task: Item; child: Item; other: Item; personal: Item;
   date: string; inCurrentWeek: boolean; role: number; ownNote: string; otherNote: string;
   api(path: string, method?: string, data?: unknown): Promise<APIResponse>; get<T>(path: string): Promise<T> };
+
+// Três pessoas, duas equipes e seis intervalos pertencem ao arranjo, não ao
+// prazo das asserções. O corpo mantém os 30s padrão; a limpeza tem seus 20s
+// na fixture request. Medir o arranjo permite identificar consultas frias.
+export const test = base.extend<{ hours: HoursPrivacy; hoursRole: number }>({
+  hoursRole: [7, { option: true }],
+  hours: [async ({ page, request, hoursRole }, use, info) => {
+    const started = Date.now();
+    await withHoursPrivacy(page, request, hoursRole, async fixture => {
+      info.annotations.push({ type: 'hours-setup-ms', description: String(Date.now() - started) });
+      const assertionsStarted = Date.now();
+      try { await use(fixture); } finally {
+        info.annotations.push({ type: 'hours-body-ms', description: String(Date.now() - assertionsStarted) });
+      }
+    });
+  }, { timeout: 30_000 }],
+});
 

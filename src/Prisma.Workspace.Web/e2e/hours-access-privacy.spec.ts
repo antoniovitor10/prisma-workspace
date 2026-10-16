@@ -1,7 +1,6 @@
-import { test, expect } from './fixtures/functional';
 import { cleanupFor } from './fixtures/test';
 import { withBoardFactory } from './fixtures/boards';
-import { withHoursPrivacy, privacyRoles, type HoursPrivacy } from './fixtures/hoursPrivacy';
+import { test, expect, privacyRoles, type HoursPrivacy } from './fixtures/hoursPrivacy';
 
 type Card = { id: string; totalTimeSeconds: number; userTimeSeconds: number };
 type Total = { totalSeconds: number; totalHours: number };
@@ -14,8 +13,9 @@ const definition = (f: HoursPrivacy) => ({ columns: ['userId', 'hours'], metrics
   descending: false, from: f.date, to: f.date });
 
 for (const { name, role } of privacyRoles) {
-  test(`B07 HTTP ${name}: cards, detalhe, subtarefas e totais não contornam a população de horas`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+  test.describe(`papel ${name}`, () => {
+    test.use({ hoursRole: role });
+    test(`B07 HTTP ${name}: cards, detalhe, subtarefas e totais não contornam a população de horas`, async ({ hours: f }) => {
       const taskSeconds = role === 1 || role === 2 ? 7200 : 1800;
       for (const path of [`/api/WorkItems/board/${f.board.id}`, `/api/WorkItems/project/${f.boards.projectId}`, '/api/me/tasks']) {
         const cards = await f.get<Card[]>(path);
@@ -38,10 +38,8 @@ for (const { name, role } of privacyRoles) {
       if (role === 1 || role === 2) expect(await other.json()).toMatchObject({ totalHours: 2 });
       expect(await f.get<Total>(`/api/TimeEntries/work-item/${f.other.id}/total`)).toMatchObject({ totalHours: role === 1 ? 3 : 0 });
     });
-  });
 
-  test(`B07 HTTP ${name}: relatórios e dashboards aplicam o mesmo recorte`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+    test(`B07 HTTP ${name}: relatórios e dashboards aplicam o mesmo recorte`, async ({ hours: f }) => {
       const hours = reportHours(role); const period = query(f);
       const project = await f.get<{ project: { realizedHours: number }; entries: Entry[] }>(`/api/reports/projects/${f.boards.projectId}/time?${period}`);
       expect(project.project.realizedHours).toBe(hours);
@@ -73,10 +71,8 @@ for (const { name, role } of privacyRoles) {
       expect(preview.status()).toBe(role === 7 ? 403 : 200);
       if (role !== 7) expect((await preview.json() as Execution).rows.reduce((sum, r) => sum + r.hours, 0)).toBe(hours);
     });
-  });
 
-  test(`B07 HTTP ${name}: métricas, empresa e equipes restringem horas antes de somar`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+    test(`B07 HTTP ${name}: métricas, empresa e equipes restringem horas antes de somar`, async ({ hours: f }) => {
       const hours = reportHours(role);
       const metrics = await f.get<{ hoursByUser: Array<{ hours: number }> }>(`/api/Boards/${f.board.id}/metrics`);
       expect(metrics.hoursByUser.reduce((sum, user) => sum + user.hours, 0)).toBe(hours);
@@ -87,10 +83,8 @@ for (const { name, role } of privacyRoles) {
       expect(managed!.members.find(m => m.userId === f.colleague.id)?.weekHours).toBe(f.inCurrentWeek && (role === 1 || role === 2) ? 2 : 0);
       expect(managed!.members.find(m => m.userId === f.actor.id)?.weekHours).toBe(f.inCurrentWeek ? role === 2 ? 1 : 1.5 : 0);
     });
-  });
 
-  test(`B07 HTTP ${name}: relatório salvo e CSV usam o ator, nunca as permissões do autor`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+    test(`B07 HTTP ${name}: relatório salvo e CSV usam o ator, nunca as permissões do autor`, async ({ hours: f, request }) => {
       const created = await f.boards.api('/api/reports/definitions', 'POST', { projectId: f.boards.projectId,
         name: f.boards.name('compartilhado'), source: 7, visualization: 1, definition: definition(f), isShared: true });
       expect(created.status()).toBe(201); const { id } = await created.json();
@@ -107,10 +101,8 @@ for (const { name, role } of privacyRoles) {
         if (role === 1) { expect(content).toContain(f.colleague.id); expect(content).toContain(f.outsider.id); }
       }
     });
-  });
 
-  test(`B07 HTTP ${name}: outro projeto não amplia o escopo de horas por consulta global`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+    test(`B07 HTTP ${name}: outro projeto não amplia o escopo de horas por consulta global`, async ({ hours: f, page, request }) => {
       await withBoardFactory(page, request, async isolated => {
         const person = await isolated.member(); const board = await isolated.board(); const stage = await isolated.stage(board.id);
         const task = await isolated.item(board.id, stage.id, { responsibleId: person.id });
@@ -132,8 +124,9 @@ for (const { name, role } of privacyRoles) {
   });
 }
 
-test('B07 HTTP: negação de relatório por projeto prevalece inclusive para administrador', async ({ page, request }) => {
-  await withHoursPrivacy(page, request, 1, async f => {
+test.describe('negação de projeto', () => {
+  test.use({ hoursRole: 1 });
+  test('B07 HTTP: negação de relatório por projeto prevalece inclusive para administrador', async ({ hours: f, request }) => {
     const grants = new Set<string>();
     cleanupFor(request)(async () => {
       for (const id of grants) expect((await f.boards.api(`/api/organizations/current/permissions/${id}`, 'DELETE')).status()).toBe(204);
@@ -155,8 +148,9 @@ test('B07 HTTP: negação de relatório por projeto prevalece inclusive para adm
 });
 
 for (const role of [10, 1]) {
-  test(`B07 HTTP papel ${role}: negações de tarefa e equipe também restringem consultas globais`, async ({ page, request }) => {
-    await withHoursPrivacy(page, request, role, async f => {
+  test.describe(`negações do papel ${role}`, () => {
+    test.use({ hoursRole: role });
+    test(`B07 HTTP papel ${role}: negações de tarefa e equipe também restringem consultas globais`, async ({ hours: f, request }) => {
       const grants = new Set<string>();
       cleanupFor(request)(async () => {
         for (const id of grants) expect((await f.boards.api(`/api/organizations/current/permissions/${id}`, 'DELETE')).status()).toBe(204);

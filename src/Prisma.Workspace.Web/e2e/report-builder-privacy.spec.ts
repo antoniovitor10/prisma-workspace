@@ -3,7 +3,9 @@ import { cleanupFor } from './fixtures/test';
 import { withTimeFactory, type TimeFactory } from './fixtures/time';
 
 type Execution = { sourceRowCount: number; rows: Array<{ userId: string; hours?: number; realizedHours?: number }> };
-const date = '2026-10-12';
+// Os três apontamentos precisam ficar no período padrão de 30 dias da UI,
+// inclusive quando o CI executar em outro mês; ontem também evita horários futuros.
+const date = new Date(Date.now() - 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
 const definition = (source: number) => ({ columns: source === 7 ? ['userId', 'hours', 'note'] : ['userId', 'realizedHours'],
   metrics: [], filters: [], descending: false, from: date, to: date });
 async function arrange(f: TimeFactory) {
