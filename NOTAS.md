@@ -1,3 +1,9 @@
+## 2026-10-16 — Forja: gate Vitest e estabilização isolada
+
+- xUnit completo696/696PASS, zero pulos; solutionbuildPASS3avisos antigos em6aa037f. UI completa158PASS/2FAIL,41arquivos450s. Falhas iniciais findByRole/EditColuna e opçãoTarefas antes de dados, sem alteração desses componentes vs main. Log /tmp/prisma-metodo-forja-git8-2-vitest.log preservado; não chamar de gate verde.
+- Mesmos14casos sem patch passaram35s/38s; harness corrigido agora14/14PASS43,61s (/tmp/prisma-metodo-forja-vitest-fixed-focus.log). Só dois arquivos de teste frontend alterados: asyncact inicial + scheduler microtask/act do notifyManager, resetpadrões no afterEach. Asserções idênticas, sem timeout/retry/skips novos, sem produto. docs primários https://github.com/tanstack/query/blob/main/docs/framework/angular/reference/variables/notifyManager.md (núcleo compartilhado).
+- Próximo: commit nominal/ENTREGA git-9, repetir fullVitest e gates lint/tsc/build/MCP, imagem final própria e QA Prova mesmoSHA. CPU Forja até13:10UTC; nenhuma suíte extra paralela. O script de gates anterior parou corretamente no Vitest; resultados /tmp/prisma-metodo-forja-git8-2-gates.json preservam falha. Não reaplicar stash alguma já restaurada.
+
 ## 2026-10-16 — Forja: git-8-2, correção do médio e de dois defeitos de integração
 
 -138/138 foco finalPASS100s (zero pulos/falhas), log /tmp/prisma-metodo-forja-f1-correction-focus.log. Dois vermelhos no F1 anterior preservados em /tmp/prisma-metodo-forja-f1-hub-red.log: Hub tokenhumano→outroprojeto e flag reloadfalse ainda200. Ambos agora verdes no host3137/WebSocket real.

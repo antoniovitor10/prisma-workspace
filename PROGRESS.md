@@ -1,3 +1,10 @@
+## [2026-10-16] - Codex (Forja) - estabilização do Vitest no gate completo
+
+- Gate xUnit completo696/696 sem pulos/falhas e build da solução passaram no6aa037f (três avisos antigos). Vitest completo:158passaram e2falharam antes das asserções de negócio, na espera inicial por Editar coluna/Tarefas, com DOM sem dados. Testes/componentes e API de runtime correspondentes são idênticos à main; mesmos14casos isolados passaram sem alteração em35s e38s.
+- Ajustados somente ProjectKanbanDirect.test.tsx e ReportBuilder.test.tsx: render inicial assíncrono dentro de act; notifyManager do React Query entrega por microtask e envolve notificações em act; padrões restaurados no cleanup. Não se mudou produto, fixture/resposta, asserção, timeout, retry nem skip. A opção é suportada pela documentação primária de notifyManager.
+- Foco corrigido14/14PASS43,61s, incluindo consentimento separado, fotografia do impacto, rejeição de impacto obsoleto/reconfirmação, controles e remoção dentro do grupo de filtro. Diffcheck e igualdade das linhas de asserção passaram. Suíte Vitest completa será repetida após o checkpoint e gate de tipos/lint/build continua obrigatório.
+- ENTREGA separada git-9 para revisão da estabilização. F1/gits anteriores seguem aprovados só baixos. Imagem, MCP real, E2E completo e QA independente no SHA final permanecem pendentes; nenhum outro ambiente ou produção tocado.
+
 ## [2026-10-16] - Codex (Forja) - correção F1 após revisão git-8
 
 - Corrigido o médio do Prumo: a flag global só descobre o escopo; guard/Serializable entram para principal do Método ou lote que alcance projeto provisionado. Projetos pausados conservam aposentadoria das provas. Validação de coluna ocorre depois da seleção do projeto, inclusive em Save misto. Outros projetos preservam coluna legada sem BoardId, edição/movimento, ExecuteUpdate de workflow e um Save no final da automação.
