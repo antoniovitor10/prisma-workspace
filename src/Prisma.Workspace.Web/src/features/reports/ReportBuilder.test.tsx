@@ -1,20 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../services/api';
 import { theme } from '../../styles/theme';
 import { ReportBuilder } from './ReportBuilder';
 
-function renderBuilder() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <ThemeProvider theme={theme}>
-        <ReportBuilder />
-      </ThemeProvider>
-    </QueryClientProvider>,
-  );
+let client: QueryClient | undefined;
+async function renderBuilder() {
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // Aguarda a consulta mockada e suas notificações antes da busca custosa por role.
+  await act(async () => {
+    render(
+      <QueryClientProvider client={client!}>
+        <ThemeProvider theme={theme}>
+          <ReportBuilder />
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+  });
 }
 
 beforeEach(() => {
@@ -36,12 +40,13 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  client?.clear();
   vi.restoreAllMocks();
 });
 
 describe('editor de filtros e métricas do relatório', () => {
   it('mantém todos os controles e a remoção dentro do grupo do filtro', async () => {
-    renderBuilder();
+    await renderBuilder();
     await screen.findByRole('option', { name: 'Tarefas' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Adicionar' })[0]);
@@ -62,7 +67,7 @@ describe('editor de filtros e métricas do relatório', () => {
   });
 
   it('agrupa a lixeira com a métrica correspondente', async () => {
-    renderBuilder();
+    await renderBuilder();
     await screen.findByRole('option', { name: 'Tarefas' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Adicionar' })[1]);
