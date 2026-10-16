@@ -98,8 +98,11 @@ test('editar só a observação preserva períodos contíguos com frações de s
     expect(await response.json()).toMatchObject({id:entry.id,startedAt:entry.startedAt,endedAt:entry.endedAt,durationSeconds:60,note:updatedNote});
     expect(await (await daily).json()).toEqual([expect.objectContaining({workItemId:task.id,seconds:120})]);
     const week:WeeklyTime=await (await weekly).json();expect(week.days.find(d=>d.date===date)?.totalSeconds).toBe(120);
-    expect(await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`)).toEqual(expect.arrayContaining([
-      expect.objectContaining(previous),expect.objectContaining({id:entry.id,startedAt:entry.startedAt,endedAt:entry.endedAt,note:updatedNote}),
+    const persisted=await f.get<TimeEntry[]>(`/api/TimeEntries/work-item/${task.id}`);
+    expect(persisted).toHaveLength(2);
+    expect(persisted).toEqual(expect.arrayContaining([
+      expect.objectContaining({id:previous.id,userId:previous.userId,workItemId:task.id,startedAt:previous.startedAt,endedAt:previous.endedAt,durationSeconds:60,note:previous.note}),
+      expect.objectContaining({id:entry.id,userId:entry.userId,workItemId:task.id,startedAt:entry.startedAt,endedAt:entry.endedAt,durationSeconds:60,note:updatedNote}),
     ]));
     expect((await total(f,task.id)).totalSeconds).toBe(120);
     const reopened=await day(page,f,date,true);
