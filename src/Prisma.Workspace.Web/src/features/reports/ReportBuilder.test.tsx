@@ -1,23 +1,28 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { notifyManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../services/api';
 import { theme } from '../../styles/theme';
 import { ReportBuilder } from './ReportBuilder';
 
-function renderBuilder() {
+async function renderBuilder() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <ThemeProvider theme={theme}>
-        <ReportBuilder />
-      </ThemeProvider>
-    </QueryClientProvider>,
-  );
+  await act(async () => {
+    render(
+      <QueryClientProvider client={client}>
+        <ThemeProvider theme={theme}>
+          <ReportBuilder />
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+  });
 }
 
 beforeEach(() => {
+  // Entrega as notificações dos mocks dentro do act inicial, antes de consultar os controles carregados.
+  notifyManager.setScheduler(queueMicrotask);
+  notifyManager.setNotifyFunction(callback => act(callback));
   vi.spyOn(api, 'getReportCatalog').mockResolvedValue({
     sources: [{
       source: 1,
@@ -37,11 +42,13 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  notifyManager.setScheduler(callback => setTimeout(callback, 0));
+  notifyManager.setNotifyFunction(callback => callback());
 });
 
 describe('editor de filtros e métricas do relatório', () => {
   it('mantém todos os controles e a remoção dentro do grupo do filtro', async () => {
-    renderBuilder();
+    await renderBuilder();
     await screen.findByRole('option', { name: 'Tarefas' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Adicionar' })[0]);
@@ -62,7 +69,7 @@ describe('editor de filtros e métricas do relatório', () => {
   });
 
   it('agrupa a lixeira com a métrica correspondente', async () => {
-    renderBuilder();
+    await renderBuilder();
     await screen.findByRole('option', { name: 'Tarefas' });
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Adicionar' })[1]);

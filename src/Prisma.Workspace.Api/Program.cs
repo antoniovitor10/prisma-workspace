@@ -13,6 +13,8 @@ using System.Text;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
 using Prisma.Workspace.Api.OpenApi;
+using Prisma.Workspace.Api.Authentication;
+using Prisma.Workspace.Infrastructure.Identity.MethodTokens;
 
 // ─── Bootstrap do Serilog (antes do host, para capturar erros de inicialização) ───
 Log.Logger = new LoggerConfiguration()
@@ -34,6 +36,7 @@ try
     // ─── Application & Infrastructure ─────────────────────────────────────────
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddMethodIntegration();
 
     // Storage físico dos anexos (raiz definida aqui porque depende do ContentRoot).
     builder.Services.AddSingleton<Prisma.Workspace.Application.Interfaces.IFileStorage>(
@@ -71,8 +74,8 @@ try
 
     builder.Services.AddAuthentication(options =>
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = MethodAuthentication.SchemeName;
+        options.DefaultChallengeScheme    = MethodAuthentication.SchemeName;
     })
     .AddJwtBearer(options =>
     {
@@ -98,7 +101,7 @@ try
                 return Task.CompletedTask;
             }
         };
-    });
+    }).AddMethodBearer(builder.Configuration.GetValue<bool>("MethodGit:Enabled"));
 
     builder.Services.AddAuthorization(options =>
     {
@@ -110,7 +113,9 @@ try
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-            RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Request.Path.StartsWithSegments("/api/integrations/git", StringComparison.OrdinalIgnoreCase)
+            ? RateLimitPartition.GetNoLimiter("method-webhook")
+            : RateLimitPartition.GetFixedWindowLimiter(
                 httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
                     ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                 _ => new FixedWindowRateLimiterOptions
@@ -291,10 +296,12 @@ try
     if (!app.Environment.IsDevelopment()) app.UseHsts();
     app.UseHttpsRedirection();
     app.UseCors("AllowFrontend");
+    app.UseMiddleware<Prisma.Workspace.Api.Middleware.MethodBoundaryMiddleware>();
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseMiddleware<Prisma.Workspace.Api.Middleware.AuditContextMiddleware>();
     app.UseMiddleware<Prisma.Workspace.Api.Middleware.OrganizationContextMiddleware>();
+    app.UseMiddleware<Prisma.Workspace.Api.Middleware.MethodIdentityMiddleware>();
     app.UseAuthorization();
 
     app.UseDefaultFiles();

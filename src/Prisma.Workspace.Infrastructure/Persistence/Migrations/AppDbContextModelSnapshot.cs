@@ -1207,6 +1207,344 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.ToTable("ExternalRequestTriageEvents", (string)null);
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitAppliedFact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("AppliedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CycleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DeliveryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FactType")
+                        .IsRequired()
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<Guid>("FromStageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IntegrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProviderEntityId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ProviderRevision")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<byte[]>("SemanticKey")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<Guid>("TaskEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ToStageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromStageId");
+
+                    b.HasIndex("TaskEventId")
+                        .IsUnique();
+
+                    b.HasIndex("ToStageId");
+
+                    b.HasIndex("IntegrationId", "ProviderEntityId");
+
+                    b.HasIndex("ProjectId", "IntegrationId");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "SemanticKey")
+                        .IsUnique();
+
+                    b.ToTable("GitAppliedFacts", (string)null);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitPullRequestObservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BaseBranch")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("HeadBranch")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long?>("HeadRepositoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("HeadSha")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("IntegrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDraft")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MergeSha")
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTimeOffset>("ObservedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ProviderUpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PullRequestAuthorId")
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("PullRequestAuthorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("PullRequestNumber")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("UnlinkedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IntegrationId", "PullRequestNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "State", "ProviderUpdatedAtUtc");
+
+                    b.ToTable("GitPullRequestObservations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_GitPullRequestObservations_Number", "[PullRequestNumber] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AppId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("AppPrivateKeySecretRef")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DefaultBranch")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("InstallationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("PreviousSecretValidUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PreviousWebhookSecretRef")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("RepositoryFullName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<long>("RepositoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("SystemPrincipalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("WebhookSecretRef")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ProjectId", "Enabled");
+
+                    b.HasIndex("ProjectId", "SystemPrincipalId");
+
+                    b.HasIndex("Provider", "Host", "RepositoryId")
+                        .IsUnique();
+
+                    b.ToTable("GitRepositoryIntegrations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Ids", "[RepositoryId] > 0 AND [AppId] > 0 AND [InstallationId] > 0");
+
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Provider", "[Provider] = 'github'");
+
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Rotation", "([PreviousWebhookSecretRef] IS NULL AND [PreviousSecretValidUntilUtc] IS NULL) OR ([PreviousWebhookSecretRef] IS NOT NULL AND [PreviousSecretValidUntilUtc] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitWebhookDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("BodyHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("DeliveryId")
+                        .IsRequired()
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("EventAction")
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("IntegrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LastErrorCode")
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTimeOffset?>("LeaseUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEventJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("ProcessedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<DateTimeOffset>("ReceivedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedAtUtc");
+
+                    b.HasIndex("ProjectId", "IntegrationId");
+
+                    b.HasIndex("IntegrationId", "Provider", "DeliveryId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "NextAttemptAtUtc", "LeaseUntilUtc");
+
+                    b.ToTable("GitWebhookDeliveries", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_GitWebhookDeliveries_Attempts", "[Attempts] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.InstallationState", b =>
                 {
                     b.Property<int>("Id")
@@ -1230,6 +1568,360 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_InstallationStates_Singleton", "[Id] = 1");
                         });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodApiToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("IssuedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("IssuedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTimeOffset?>("LastUsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<Guid>("PrincipalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RevokedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<string>("TokenPrefix")
+                        .IsRequired()
+                        .HasColumnType("varchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssuedByUserId");
+
+                    b.HasIndex("RevokedByUserId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "PrincipalId", "RevokedAtUtc", "ExpiresAtUtc");
+
+                    b.ToTable("MethodApiTokens", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodApiTokens_Expiry", "[ExpiresAtUtc] > [IssuedAtUtc]");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("ActorPrincipalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActorUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CycleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EventKind")
+                        .IsRequired()
+                        .HasColumnType("varchar(24)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("RelatedEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TaskEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("TaskEventId")
+                        .IsUnique();
+
+                    b.HasIndex("WorkItemId");
+
+                    b.HasIndex("ProjectId", "ActorPrincipalId");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CreatedAtUtc", "Id");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CycleId", "RelatedEventId");
+
+                    b.ToTable("MethodAuthorizationEvents", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodAuthorizationEvents_Actor", "[ActorPrincipalId] IS NOT NULL OR [ActorUserId] IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_MethodAuthorizationEvents_Kind", "[EventKind] IN ('Granted','Revoked','Blocked','ResumeAllowed','Resumed')");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodPrincipal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DelegatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("HumanUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PermissionCeilingJson")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte>("Role")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DelegatedByUserId");
+
+                    b.HasIndex("HumanUserId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ProjectId", "Role", "IsActive");
+
+                    b.ToTable("MethodPrincipals", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodPrincipals_Human", "([Role] = 1 AND [HumanUserId] IS NOT NULL AND [HumanUserId] = [DelegatedByUserId]) OR ([Role] IN (2,3) AND [HumanUserId] IS NULL)");
+
+                            t.HasCheckConstraint("CK_MethodPrincipals_Role", "[Role] IN (1,2,3)");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodProjectSettings", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AutonomyLevel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("BoardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<byte>("GitPhase")
+                        .HasColumnType("tinyint");
+
+                    b.Property<Guid>("HuFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MethodIdFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PolicyVersion")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PrFieldId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("ProjectId");
+
+                    b.HasIndex("BoardId")
+                        .IsUnique()
+                        .HasFilter("[BoardId] IS NOT NULL");
+
+                    b.HasIndex("HuFieldId");
+
+                    b.HasIndex("MethodIdFieldId");
+
+                    b.HasIndex("PrFieldId");
+
+                    b.HasIndex("OrganizationId", "Enabled");
+
+                    b.ToTable("MethodProjectSettings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodProjectSettings_Autonomy", "[AutonomyLevel] BETWEEN 0 AND 2");
+
+                            t.HasCheckConstraint("CK_MethodProjectSettings_Phase", "[GitPhase] BETWEEN 0 AND 3");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodStageMapping", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("StatusCode")
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("StageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ProjectId", "StatusCode");
+
+                    b.HasIndex("StageId");
+
+                    b.HasIndex("ProjectId", "StageId")
+                        .IsUnique();
+
+                    b.ToTable("MethodStageMappings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodStageMappings_Status", "[StatusCode] IN ('backlog','pronta','em-desenvolvimento','em-revisao','em-teste','concluida','bloqueada')");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodTaskState", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ActiveAuthorizationEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BlockingEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BlockingPrincipalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CycleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("LastObservedFactId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MethodTaskId")
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ResumeApprovalEventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("ProjectId", "WorkItemId");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.HasIndex("ProjectId", "BlockingPrincipalId");
+
+                    b.HasIndex("ProjectId", "MethodTaskId")
+                        .IsUnique()
+                        .HasFilter("[MethodTaskId] IS NOT NULL");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CycleId", "ActiveAuthorizationEventId");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CycleId", "BlockingEventId");
+
+                    b.HasIndex("ProjectId", "WorkItemId", "CycleId", "ResumeApprovalEventId");
+
+                    b.ToTable("MethodTaskStates", (string)null);
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.Notification", b =>
@@ -2320,6 +3012,72 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.ToTable("TaskEvents", (string)null);
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.TaskGitLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BranchName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CreatedByPrincipalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("IntegrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PullRequestObservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PullRequestObservationId")
+                        .IsUnique()
+                        .HasFilter("[PullRequestObservationId] IS NOT NULL");
+
+                    b.HasIndex("IntegrationId", "BranchName")
+                        .IsUnique()
+                        .HasFilter("[PullRequestObservationId] IS NULL AND [BranchName] IS NOT NULL");
+
+                    b.HasIndex("ProjectId", "CreatedByPrincipalId");
+
+                    b.HasIndex("ProjectId", "WorkItemId");
+
+                    b.HasIndex("ProjectId", "IntegrationId", "PullRequestObservationId");
+
+                    b.ToTable("TaskGitLinks", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TaskGitLinks_Source", "[Source] IN ('explicit','branch','title')");
+
+                            t.HasCheckConstraint("CK_TaskGitLinks_Target", "[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL");
+                        });
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.TaskType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3258,6 +4016,279 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("ExternalRequest");
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitAppliedFact", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Stage", null)
+                        .WithMany()
+                        .HasForeignKey("FromStageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.TaskEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TaskEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Stage", null)
+                        .WithMany()
+                        .HasForeignKey("ToStageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", "Integration")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "IntegrationId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodTaskState", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Integration");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitPullRequestObservation", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", "Integration")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "IntegrationId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Integration");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodProjectSettings", "Settings")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", "SystemPrincipal")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "SystemPrincipalId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Settings");
+
+                    b.Navigation("SystemPrincipal");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitWebhookDelivery", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", "Integration")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "IntegrationId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Integration");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodApiToken", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("IssuedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("RevokedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", "Principal")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "PrincipalId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Principal");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.TaskEvent", null)
+                        .WithMany()
+                        .HasForeignKey("TaskEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "ActorPrincipalId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId", "CycleId", "RelatedEventId")
+                        .HasPrincipalKey("ProjectId", "WorkItemId", "CycleId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodPrincipal", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("DelegatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("HumanUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodProjectSettings", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Board", null)
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.ProjectCustomFieldDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("HuFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.ProjectCustomFieldDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("MethodIdFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.ProjectCustomFieldDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("PrFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodStageMapping", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodProjectSettings", "Settings")
+                        .WithMany("StageMappings")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Stage", null)
+                        .WithMany()
+                        .HasForeignKey("StageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Settings");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodTaskState", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "BlockingPrincipalId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId", "CycleId", "ActiveAuthorizationEventId")
+                        .HasPrincipalKey("ProjectId", "WorkItemId", "CycleId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId", "CycleId", "BlockingEventId")
+                        .HasPrincipalKey("ProjectId", "WorkItemId", "CycleId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodAuthorizationEvent", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId", "CycleId", "ResumeApprovalEventId")
+                        .HasPrincipalKey("ProjectId", "WorkItemId", "CycleId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.OrganizationAiSettings", b =>
                 {
                     b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
@@ -3579,6 +4610,38 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("WorkItem");
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.TaskGitLink", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "CreatedByPrincipalId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", "Integration")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "IntegrationId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodTaskState", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitPullRequestObservation", "Observation")
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "IntegrationId", "PullRequestObservationId")
+                        .HasPrincipalKey("ProjectId", "IntegrationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Integration");
+
+                    b.Navigation("Observation");
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.TaskType", b =>
                 {
                     b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
@@ -3884,6 +4947,11 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("Messages");
 
                     b.Navigation("TriageEvents");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodProjectSettings", b =>
+                {
+                    b.Navigation("StageMappings");
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.Organization", b =>

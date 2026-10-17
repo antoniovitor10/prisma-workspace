@@ -1,5 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { notifyManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -37,26 +37,31 @@ function ContextoDoProjeto() {
   return <Outlet context={{ project: { id: PROJETO, key: 'DEMO', name: 'Produto Demo', boards: [], teams: [] } }} />;
 }
 
-function renderRota(rota: string) {
+async function renderRota(rota: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={[rota]}>
-          <Routes>
-            {/* A rota real passa pelo invólucro que injeta a alternância Backlog/Quadro. */}
-            <Route path="/projects/:projectId" element={<ContextoDoProjeto />}>
-              <Route path="boards" element={<ProjectBoardView />} />
-            </Route>
-            <Route path="/boards/:boardId" element={<Kanban />} />
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>
-    </QueryClientProvider>,
-  );
+  await act(async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <MemoryRouter initialEntries={[rota]}>
+            <Routes>
+              {/* A rota real passa pelo invólucro que injeta a alternância Backlog/Quadro. */}
+              <Route path="/projects/:projectId" element={<ContextoDoProjeto />}>
+                <Route path="boards" element={<ProjectBoardView />} />
+              </Route>
+              <Route path="/boards/:boardId" element={<Kanban />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+  });
 }
 
 beforeEach(() => {
+  // Entrega as notificações dos mocks dentro do act inicial, antes de consultar os controles carregados.
+  notifyManager.setScheduler(queueMicrotask);
+  notifyManager.setNotifyFunction(callback => act(callback));
   vi.spyOn(api, 'getBoards').mockResolvedValue(quadros);
   vi.spyOn(api, 'getBoardStages').mockResolvedValue(etapas);
   vi.spyOn(api, 'getWorkItemsByProject').mockResolvedValue(cartoes);
@@ -77,6 +82,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  notifyManager.setScheduler(callback => setTimeout(callback, 0));
+  notifyManager.setNotifyFunction(callback => callback());
 });
 
 describe('confirmação D62 por quadro', () => {
@@ -85,7 +92,7 @@ describe('confirmação D62 por quadro', () => {
       stageId:'stage-1', name:'A fazer', totalItems:1, changedItems:1, openDescendants:2, snapshotToken:'snapshot-1'
     });
     const update = vi.spyOn(api, 'updateStage').mockResolvedValue(undefined);
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
     fireEvent.click(await screen.findByRole('button', {name:'Editar coluna A fazer'}));
     fireEvent.change(screen.getByLabelText('Classificação da coluna'), {target:{value:'4'}});
     expect(await screen.findByText(/1 tarefa\(s\) na coluna; 1 terão o estado alterado; 2 descendente/)).toBeInTheDocument();
@@ -104,7 +111,7 @@ describe('confirmação D62 por quadro', () => {
       .mockResolvedValueOnce({stageId:'stage-1',name:'A fazer',totalItems:1,changedItems:1,openDescendants:0,snapshotToken:'old'})
       .mockResolvedValue({stageId:'stage-1',name:'A fazer',totalItems:2,changedItems:2,openDescendants:0,snapshotToken:'new'});
     vi.spyOn(api, 'updateStage').mockRejectedValue(new Error('O impacto da classificação mudou.'));
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
     fireEvent.click(await screen.findByRole('button', {name:'Editar coluna A fazer'}));
     fireEvent.change(screen.getByLabelText('Classificação da coluna'), {target:{value:'4'}});
     fireEvent.click(await screen.findByLabelText('Confirmo alterar o estado das tarefas desta coluna'));
@@ -117,7 +124,7 @@ describe('confirmação D62 por quadro', () => {
 
 describe('Kanban do projeto abre direto', () => {
   it('mantém a alternância Backlog ↔ Quadro, que vinha da tela removida', async () => {
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     const alternar = await screen.findByRole('navigation', { name: 'Alternar visão do projeto' });
     expect(alternar).toBeInTheDocument();
@@ -127,7 +134,7 @@ describe('Kanban do projeto abre direto', () => {
   });
 
   it('carrega o fluxo e os cartões do projeto sem ninguém escolher quadro', async () => {
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     // Era isto que a tela intermediária exigia: escolher um quadro antes de ver qualquer coisa.
     await waitFor(() => expect(api.getBoardStages).toHaveBeenCalledWith('board-1'));
@@ -139,7 +146,7 @@ describe('Kanban do projeto abre direto', () => {
     const getBoards = vi.mocked(api.getBoards);
     getBoards.mockReset();
     getBoards.mockRejectedValueOnce(new Error('Falha temporária ao carregar quadros')).mockResolvedValueOnce(quadros);
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Não foi possível carregar os quadros disponíveis');
@@ -150,7 +157,7 @@ describe('Kanban do projeto abre direto', () => {
   });
 
   it('mostra somente cartões do quadro selecionado do projeto', async () => {
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     // O título do cartão é renderizado em dois nós ("#1 · " e o título), então a âncora
     // estável é o rótulo acessível da caixa de seleção do cartão.
@@ -161,7 +168,7 @@ describe('Kanban do projeto abre direto', () => {
   });
 
   it('no modo quadro segue buscando por quadro, sem alargar o escopo', async () => {
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
 
     await waitFor(() => expect(api.getWorkItems).toHaveBeenCalledWith('board-1'));
     expect(api.getWorkItemsByProject).not.toHaveBeenCalled();
@@ -169,7 +176,7 @@ describe('Kanban do projeto abre direto', () => {
 
   it('permite criar quadro com equipe, capacidade que vinha da tela removida', async () => {
     const createBoard = vi.spyOn(api, 'createBoard').mockResolvedValue('board-novo');
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     await screen.findByText('A fazer');
     fireEvent.click(await screen.findByRole('button', { name: /Novo quadro/i }));
@@ -186,7 +193,7 @@ describe('Kanban do projeto abre direto', () => {
 
   it('cria coluna sem seletor ambíguo e usa a classificação operacional padrão', async () => {
     const createStage = vi.spyOn(api, 'createStage').mockResolvedValue(undefined);
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Nova Coluna' }));
 
@@ -207,7 +214,7 @@ describe('Kanban do projeto abre direto', () => {
 
   it('permite editar o nome e classificação da coluna pelo botão de editar no cabeçalho', async () => {
     const updateStage = vi.spyOn(api, 'updateStage').mockResolvedValue(undefined);
-    renderRota(`/projects/${PROJETO}/boards`);
+    await renderRota(`/projects/${PROJETO}/boards`);
 
     await screen.findByText('A fazer');
     const columnSort = screen.getByRole('combobox', { name: 'Ordenar cartões da coluna A fazer' });
@@ -235,7 +242,7 @@ describe('Kanban do projeto abre direto', () => {
   it('explica o impacto e exige confirmação antes de excluir uma coluna', async () => {
     const removeStage = vi.spyOn(api, 'deleteStage').mockResolvedValue(undefined);
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Excluir coluna A fazer' }));
     expect(screen.getByRole('heading', { name: 'Editar Coluna' })).toBeInTheDocument();
@@ -263,7 +270,7 @@ describe('Kanban do projeto abre direto', () => {
       id: 'timer-2', workItemId: 'item-1', startedAt: '2026-09-22T10:05:00Z',
     } as never);
 
-    renderRota('/boards/board-1');
+    await renderRota('/boards/board-1');
 
     await screen.findByRole('checkbox', { name: /Selecionar #1 Cart/i });
     const start = await screen.findByRole('button', { name: /Iniciar cron/i });

@@ -3,6 +3,8 @@ using Prisma.Workspace.Infrastructure.Persistence;
 using Prisma.Workspace.Infrastructure.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Prisma.Workspace.Api.OpenApi;
+using Prisma.Workspace.Application.Interfaces;
+using Prisma.Workspace.Domain.Enums;
 
 namespace Prisma.Workspace.Api.Middleware;
 
@@ -20,8 +22,23 @@ public class OrganizationContextMiddleware
     public async Task InvokeAsync(
         HttpContext httpContext,
         AppDbContext dbContext,
-        CurrentOrganizationContext organizationContext)
+        CurrentOrganizationContext organizationContext,
+        IMethodAccessContext? method = null)
     {
+        if (method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+        {
+            var requested = httpContext.Request.Headers[HeaderName];
+            if (actor.OrganizationId is not { } tenant || requested.Count > 1
+                || requested.Count == 1 && (!Guid.TryParse(requested[0], out var headerTenant) || headerTenant != tenant))
+            {
+                await WriteAsync(httpContext, ApiErrors.Problem(403, "method_tenant_scope", "Acesso negado",
+                    "A organização não corresponde à credencial do método. Pare e avise.", httpContext.TraceIdentifier));
+                return;
+            }
+            organizationContext.Set(tenant);
+            await _next(httpContext);
+            return;
+        }
         if (!RequiresOrganization(httpContext))
         {
             await _next(httpContext);

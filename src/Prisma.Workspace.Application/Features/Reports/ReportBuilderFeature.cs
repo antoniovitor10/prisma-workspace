@@ -404,10 +404,19 @@ public class ReportExecutor
             ReportDataSource.Users => await UserRowsAsync(projectId, users, names, ct),
             ReportDataSource.Sprints => (await _analytics.GetSprintsAsync(projectId, ct))
                 .Select(SprintRow).ToList(),
-            ReportDataSource.TimeEntries => (await _analytics.GetTimeEntriesAsync(projectId, ct))
-                .Select(entry => TimeRow(entry, names)).ToList(),
+            ReportDataSource.TimeEntries => await TimeRowsAsync(projectId, names, ct),
             _ => []
         };
+    }
+
+    private async Task<List<Dictionary<string, object?>>> TimeRowsAsync(Guid? projectId,
+        IReadOnlyDictionary<string, string> humanNames, CancellationToken ct)
+    {
+        var entries = await _analytics.GetTimeEntriesAsync(projectId, ct);
+        var names = humanNames.ToDictionary(x => x.Key, x => x.Value);
+        var authors = await _users.GetDisplayNamesAsync(entries.Select(x => x.UserId).Distinct(), ct);
+        foreach (var author in authors) names[author.Key] = author.Value;
+        return entries.Select(entry => TimeRow(entry, names)).ToList();
     }
 
     private async Task<List<Dictionary<string, object?>>> UserRowsAsync(

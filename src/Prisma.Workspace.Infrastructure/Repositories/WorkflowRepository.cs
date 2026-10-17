@@ -3,13 +3,16 @@ using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Prisma.Workspace.Application.Features.MethodSecurity;
 
 namespace Prisma.Workspace.Infrastructure.Repositories;
 
 public sealed class WorkflowRepository : IWorkflowRepository
 {
     private readonly AppDbContext _context;
-    public WorkflowRepository(AppDbContext context) => _context = context;
+    private readonly IMethodFeatureConfiguration? _methodFeature;
+    public WorkflowRepository(AppDbContext context, IMethodFeatureConfiguration? methodFeature = null)
+        => (_context, _methodFeature) = (context, methodFeature);
 
     public async Task<IReadOnlyList<WorkflowStatus>> GetStatusesAsync(
         Guid projectId, bool tracking = false, CancellationToken ct = default)
@@ -84,12 +87,22 @@ public sealed class WorkflowRepository : IWorkflowRepository
 
     public void DeleteStage(Stage stage) => _context.Stages.Remove(stage);
 
-    public Task SynchronizeStageWorkItemsAsync(
+    public async Task SynchronizeStageWorkItemsAsync(
         Guid stageId, Guid? workflowStatusId, CancellationToken ct = default)
-        => _context.WorkItems.Where(x => x.StageId == stageId)
-            .ExecuteUpdateAsync(setters => setters
+    {
+        if (_methodFeature?.Enabled == true && await _context.Stages
+            .Where(x => x.Id == stageId).AnyAsync(x => _context.Set<MethodProjectSettings>()
+                .Any(settings => settings.ProjectId == x.ProjectId), ct))
+        {
+            // A sincronização participa do Save/transação do handler e da barreira comum.
+            foreach (var item in await _context.WorkItems.Where(x => x.StageId == stageId).ToListAsync(ct))
+            { item.WorkflowStatusId = workflowStatusId; item.UpdatedAt = DateTimeOffset.UtcNow; }
+            return;
+        }
+        await _context.WorkItems.Where(x => x.StageId == stageId).ExecuteUpdateAsync(setters => setters
                 .SetProperty(x => x.WorkflowStatusId, workflowStatusId)
                 .SetProperty(x => x.UpdatedAt, DateTimeOffset.UtcNow), ct);
+    }
 
     public Task SaveAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 }

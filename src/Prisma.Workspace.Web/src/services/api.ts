@@ -28,6 +28,7 @@ let refreshRequest: Promise<string | null> | null = null;
 export type SetupStatus = {
   initialized: boolean;
   setupAvailable: boolean;
+  methodEnabled?: boolean;
 };
 
 export type SetupInput = {

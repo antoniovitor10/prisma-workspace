@@ -1,5 +1,15 @@
-// Integração contra um Prisma real, num projeto próprio criado para o teste.
-// Só roda com PRISMA_IT=1, PRISMA_URL e PRISMA_EMAIL/PRISMA_PASSWORD (ou PRISMA_TOKEN). Ver README.
+// Integração da fase 2a contra um Prisma de verdade, num projeto próprio criado para o teste.
+//
+// Só roda com PRISMA_IT=1 e:
+//   PRISMA_URL                   API (ex.: http://127.0.0.1:3130, instância da frente)
+//   PRISMA_IT_EMAIL / _PASSWORD  administrador humano da instância de teste. Usado SÓ para o papel
+//                                da pessoa na UI (criar e provisionar o projeto, emitir o token,
+//                                autorizar, liberar retomada, revogar). O MCP e o import recebem
+//                                apenas o token opaco do agente.
+//   PRISMA_IT_PROJECT            opcional; padrão metodo-mcp-it-<data e hora>
+//   PRISMA_IT_GITHUB_FAKE        opcional; URL do GitHub falso da frente vista daqui (ex.: http://127.0.0.1:3134).
+//                                Com ela, o teste cadastra um repositório (App 424242, instalação 1) e exercita
+//                                vincular_pr; sem ela, vincular_pr só é chamado para conferir a recusa sem repositório.
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -10,310 +20,192 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { PrismaApi } from '../src/api.js';
-import { readConfig } from '../src/config.js';
-import { FIELD_NAMES } from '../src/mapping.js';
-import { ensureProjeto } from '../src/setup.js';
 
 const run = promisify(execFile);
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE = join(ROOT, 'test', 'fixtures', 'trabalho');
 const ATIVO = process.env.PRISMA_IT === '1';
-const PROJETO = process.env.PRISMA_IT_PROJECT
-  ?? `metodo-mcp-teste-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
-const OITO = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks',
-  'criar_task', 'mover_status', 'comentar', 'vincular_pr'];
+const URL_API = (process.env.PRISMA_URL ?? '').replace(/\/+$/, '');
+const PROJETO = process.env.PRISMA_IT_PROJECT ?? `metodo-mcp-it-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
+const OITO = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr'];
 
-function envPara(papel: 'agente' | 'humano'): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v;
-  return { ...env, PRISMA_PROJECT: PROJETO, PRISMA_ROLE: papel };
-}
-const SEGREDOS = [process.env.PRISMA_PASSWORD, process.env.PRISMA_TOKEN].filter((x): x is string => !!x);
+let uiHeaders: Record<string, string> = {};
+let projectId = '';
+let agentToken = '';
+let agentTokenId = '';
+const segredos = () => [agentToken, process.env.PRISMA_IT_PASSWORD].filter((x): x is string => !!x);
 function semSegredo(texto: string, onde: string) {
-  for (const s of SEGREDOS) assert.ok(!texto.includes(s), `segredo vazou em ${onde}`);
-  assert.doesNotMatch(texto, /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/, `JWT vazou em ${onde}`);
+  for (const s of segredos()) assert.ok(!texto.includes(s), `segredo vazou em ${onde}`);
+  assert.doesNotMatch(texto, /pmt_[A-Za-z0-9_-]{43}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/, `credencial vazou em ${onde}`);
 }
 
-async function importar(...flags: string[]) {
-  return importarDe(FIXTURE, 'humano', ...flags);
+// ---- papel da pessoa na UI (sessão humana) ----
+async function uiFetch(method: string, path: string, body?: unknown) {
+  const r = await fetch(`${URL_API}${path}`, { method, headers: { ...uiHeaders, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const t = await r.text();
+  return { status: r.status, json: t ? JSON.parse(t) : undefined, text: t };
 }
-async function importarDe(pasta: string, papel: 'agente' | 'humano', ...flags: string[]) {
-  const { stdout, stderr } = await run(process.execPath, ['--import', 'tsx', 'src/import.ts', pasta, ...flags],
-    { cwd: ROOT, env: envPara(papel), timeout: 120_000 });
-  semSegredo(stdout + stderr, 'saída do import');
-  const n = (rotulo: string) => Number(new RegExp(`${rotulo}:\\s*(\\d+)`, 'i').exec(stdout)?.[1] ?? NaN);
-  return { stdout, criados: n('Criados'), atualizados: n('atualizados'), semMudanca: n('sem mudança'), vinculos: n('vínculos criados') };
+async function uiOk(method: string, path: string, body?: unknown) {
+  const r = await uiFetch(method, path, body);
+  assert.ok(r.status < 300, `${method} ${path} → ${r.status} ${r.text}`);
+  return r.json;
+}
+async function tokenFetch(method: string, path: string, body?: unknown) {
+  const r = await fetch(`${URL_API}${path}`, { method, headers: { Authorization: `Bearer ${agentToken}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  return { status: r.status, text: await r.text() };
 }
 
-async function conectar(papel: 'agente' | 'humano') {
-  const transport = new StdioClientTransport({
-    command: process.execPath, args: ['--import', 'tsx', 'src/server.ts'], cwd: ROOT, env: envPara(papel), stderr: 'pipe',
-  });
-  let stderr = '';
-  transport.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
-  const client = new Client({ name: 'prisma-mcp-teste', version: '0.0.0' });
-  await client.connect(transport);
-  const chamar = async (name: string, args: Record<string, unknown> = {}) => {
-    const r = await client.callTool({ name, arguments: args }) as {
-      isError?: boolean; content: { type: string; text?: string }[]; structuredContent?: Record<string, any>;
-    };
-    const texto = r.content.map(c => c.text ?? '').join('\n');
-    semSegredo(texto + JSON.stringify(r.structuredContent ?? {}), `${name} (${papel})`);
-    return { erro: r.isError === true, texto, dados: r.structuredContent ?? {} };
-  };
-  const ok = async (name: string, args: Record<string, unknown> = {}) => {
-    const r = await chamar(name, args);
-    assert.equal(r.erro, false, `${name} ${JSON.stringify(args)} falhou: ${r.texto}`);
-    return r;
-  };
-  const recusa = async (name: string, args: Record<string, unknown>, padrao?: RegExp) => {
-    const r = await chamar(name, args);
-    assert.equal(r.erro, true, `${name} ${JSON.stringify(args)} deveria ser recusado; veio: ${r.texto}`);
-    if (padrao) assert.match(r.texto, padrao);
-    return r;
-  };
-  return { client, chamar, ok, recusa, stderr: () => stderr };
+// ---- processos com o token do agente ----
+function envAgente(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !k.startsWith('PRISMA_')) env[k] = v;
+  return { ...env, PRISMA_URL: URL_API, PRISMA_PROJECT: PROJETO, PRISMA_TOKEN: agentToken };
 }
-type Sessao = Awaited<ReturnType<typeof conectar>>;
-
-// GET /api/WorkItems/board/{id} direto, sem o PrismaApi: é o que o Kanban usa (só itens de topo).
-interface ItemQuadro { id: string; title: string; parentId: string | null; stageId: string;
-  customFields: { fieldId: string; value: string | null }[]; tags?: { name: string }[] }
-async function quadroCru(boardId: string): Promise<ItemQuadro[]> {
-  const url = process.env.PRISMA_URL!.replace(/\/+$/, '');
-  let token = process.env.PRISMA_TOKEN;
-  if (!token) {
-    const r = await fetch(`${url}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: process.env.PRISMA_EMAIL, password: process.env.PRISMA_PASSWORD }) });
-    token = (await r.json() as { accessToken: string }).accessToken;
-  }
-  const h: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
-  const orgs = await (await fetch(`${url}/api/organizations`, { headers: h })).json() as { id: string; isActive?: boolean }[];
-  const ativas = orgs.filter(o => o.isActive !== false);
-  if (ativas.length) h['X-Organization-Id'] = ativas[0].id;
-  const r = await fetch(`${url}/api/WorkItems/board/${boardId}`, { headers: h });
-  assert.equal(r.status, 200, 'GET do quadro');
-  return await r.json() as ItemQuadro[];
-}
-async function conferirQuadro(esperado: Record<string, string>) {
-  const setup = await ensureProjeto(api0());
-  const campoId = setup.fields.get(FIELD_NAMES.id)!;
-  const campoHu = setup.fields.get('HU');
-  assert.ok(campoHu, 'campo personalizado HU');
-  const itens = await quadroCru(setup.boardId);
-  const porChave = new Map(itens.map(i => [i.customFields.find(f => f.fieldId === campoId)?.value, i]));
-  assert.ok(!porChave.has('HU-9001'), 'a HU não vira work item');
-  assert.deepEqual([...porChave.keys()].filter(Boolean).sort(), Object.keys(esperado).sort());
-  for (const [chave, status] of Object.entries(esperado)) {
-    const i = porChave.get(chave)!;
-    assert.equal(i.parentId ?? null, null, `${chave} é item de topo`);
-    assert.equal(i.stageId, setup.stages.get(status as never), `${chave} na coluna ${status}`);
-    assert.equal(i.customFields.find(f => f.fieldId === campoHu)?.value, 'HU-9001', `${chave} campo HU`);
-    assert.ok((i.tags ?? []).some(t => t.name === 'HU-9001'), `${chave} com a tag HU-9001`);
+async function importar(pasta: string) {
+  try {
+    const { stdout, stderr } = await run(process.execPath, ['--import', 'tsx', 'src/import.ts', pasta], { cwd: ROOT, env: envAgente(), timeout: 120_000 });
+    semSegredo(stdout + stderr, 'import');
+    const n = (r: string) => Number(new RegExp(`${r}:\\s*(\\d+)`, 'i').exec(stdout)?.[1] ?? NaN);
+    return { ok: true, saida: stdout, criados: n('Criados'), atualizados: n('atualizados'), semMudanca: n('sem mudança'), vinculos: n('vínculos criados') };
+  } catch (e) {
+    const saida = String((e as { stderr?: string }).stderr ?? (e as Error).message);
+    semSegredo(saida, 'import (erro)');
+    return { ok: false, saida, criados: NaN, atualizados: NaN, semMudanca: NaN, vinculos: NaN };
   }
 }
-let apiGlobal: PrismaApi | undefined;
-const api0 = () => apiGlobal ??= new PrismaApi(readConfig(envPara('humano')));
-const statusDe = async (s: Sessao, id: string) => (await s.ok('obter_task', { id })).dados.task.status as string;
+async function copiaComStatus(trocas: [string, string][]) {
+  const dir = await mkdtemp(join(tmpdir(), 'prisma-mcp-it-'));
+  await cp(FIXTURE, dir, { recursive: true });
+  for (const [arquivo, status] of trocas) {
+    const f = join(dir, 'HU-9001-exemplo-teste', 'tasks', arquivo);
+    await writeFile(f, (await readFile(f, 'utf8')).replace(/^status: .*$/m, `status: ${status}`));
+  }
+  return dir;
+}
 
-describe('integração com o Prisma', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver README)' }, () => {
-  let api: PrismaApi;
-  let agente: Sessao;
-  let humano: Sessao;
+let client: Client | undefined;
+async function chamar(name: string, args: Record<string, unknown> = {}) {
+  const r = await client!.callTool({ name, arguments: args }) as { isError?: boolean; content: { text?: string }[]; structuredContent?: Record<string, any> };
+  const texto = r.content.map(c => c.text ?? '').join('\n');
+  semSegredo(texto + JSON.stringify(r.structuredContent ?? {}), name);
+  return { erro: r.isError === true, texto, dados: r.structuredContent ?? {} };
+}
+const ok = async (n: string, a: Record<string, unknown> = {}) => { const r = await chamar(n, a); assert.equal(r.erro, false, `${n}: ${r.texto}`); return r; };
+const recusa = async (n: string, a: Record<string, unknown>) => { const r = await chamar(n, a); assert.equal(r.erro, true, `${n} deveria ser recusado: ${r.texto}`); return r; };
+const statusDe = async (id: string) => (await ok('obter_task', { id })).dados.task.status as string;
 
+describe('integração 2a com o Prisma (token opaco)', { skip: !ATIVO && 'defina PRISMA_IT=1 (ver cabeçalho)' }, () => {
   before(async () => {
-    api = new PrismaApi(readConfig(envPara('humano')));
+    const login = await fetch(`${URL_API}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: process.env.PRISMA_IT_EMAIL, password: process.env.PRISMA_IT_PASSWORD }) });
+    const jwt = (await login.json() as { accessToken: string }).accessToken;
+    const orgs = await (await fetch(`${URL_API}/api/organizations`, { headers: { Authorization: `Bearer ${jwt}` } })).json() as { id: string; isActive?: boolean }[];
+    uiHeaders = { Authorization: `Bearer ${jwt}`, 'X-Organization-Id': orgs.filter(o => o.isActive !== false)[0].id };
+    const criado = await uiOk('POST', '/api/projects', { key: null, name: PROJETO, description: 'Integração do prisma-mcp (fase 2a).', nature: 1, workType: 1 });
+    projectId = typeof criado === 'string' ? criado : criado.id;
+    await uiOk('POST', `/api/projects/${projectId}/method/provision`, { autonomyLevel: 0 });
+    await uiOk('PUT', `/api/projects/${projectId}/method/settings`, { enabled: true, autonomyLevel: 0 });
+    const emitido = await uiOk('POST', `/api/projects/${projectId}/method/tokens`, { name: 'agente it', role: 'agente', validDays: 1 });
+    agentToken = emitido.token; agentTokenId = emitido.metadata.id;
     process.stderr.write(`# projeto de teste: ${PROJETO}\n`);
   });
-  after(async () => {
-    await agente?.client.close();
-    await humano?.client.close();
-    if (agente) semSegredo(agente.stderr(), 'stderr do servidor');
+  after(async () => { await client?.close(); });
+
+  test('import com token do agente: lote com task autorizada é recusado sem gravar nada', async () => {
+    const r = await importar(FIXTURE); // T-9002 está em em-desenvolvimento no frontmatter
+    assert.equal(r.ok, false, r.saida);
+    assert.deepEqual(await uiOk('GET', `/api/projects/${projectId}/method/tasks`), []);
   });
 
-  test('import cria HU e tasks; segunda rodada não duplica nada', async () => {
-    const um = await importar();
-    assert.equal(um.criados, 3, um.stdout);
-    assert.equal(um.vinculos, 2, um.stdout);
-    const dois = await importar();
-    assert.equal(dois.criados, 0, dois.stdout);
-    assert.equal(dois.atualizados, 0, dois.stdout);
-    assert.equal(dois.semMudanca, 3, dois.stdout);
-    assert.equal(dois.vinculos, 0, dois.stdout);
-
-    const setup = await ensureProjeto(api);
-    assert.equal(setup.stages.size, 7);
-    await conferirQuadro({ 'T-9001': 'concluida', 'T-9002': 'em-desenvolvimento', 'T-9003': 'backlog' });
-    const t2 = (await api.listWorkItemsByBoard(setup.boardId)).find(i => i.title.startsWith('T-9002'))!;
-    const det = await api.getWorkItem(t2.id);
-    assert.equal(det.links.filter(l => !l.isIncoming && l.type === 1).length, 1, 'T-9002 depende de T-9001');
-  });
-
-  test('ensureProjeto é idempotente', async () => {
-    const a = await ensureProjeto(api);
-    const b = await ensureProjeto(api);
-    assert.equal(a.projectId, b.projectId);
-    assert.equal(a.boardId, b.boardId);
-    assert.deepEqual([...a.stages], [...b.stages]);
-    assert.deepEqual([...a.fields], [...b.fields]);
-    const nomes = (await api.listStages(a.boardId)).sort((x, y) => x.position - y.position).map(s => s.name);
-    assert.deepEqual(nomes, ['Backlog', 'Pronta', 'Em desenvolvimento', 'Em revisão', 'Em teste', 'Concluída', 'Bloqueada']);
-  });
-
-  test('servidor stdio expõe exatamente as 8 operações', async () => {
-    agente = await conectar('agente');
-    humano = await conectar('humano');
-    const { tools } = await agente.client.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), [...OITO].sort());
-  });
-
-  test('regras_do_projeto: papel agente e matriz sem autorização', async () => {
-    const r = await agente.ok('regras_do_projeto');
-    assert.equal(r.dados.papel, 'agente');
-    assert.ok(!r.dados.transicoes_permitidas.backlog.includes('em-desenvolvimento'));
-    assert.ok(!r.dados.transicoes_permitidas.pronta.includes('em-desenvolvimento'));
-    assert.match(r.texto, /pare e avise/i);
-    assert.equal((await humano.ok('regras_do_projeto')).dados.papel, 'humano');
-  });
-
-  test('listar_tasks, filtro por status, obter_task e proximas_tasks', async () => {
-    const todas = await agente.ok('listar_tasks');
-    assert.deepEqual(todas.dados.tasks.map((t: any) => t.id).sort(), ['T-9001', 'T-9002', 'T-9003']);
-    assert.match(todas.texto, /T-9002/);
-    const backlog = await agente.ok('listar_tasks', { status: 'backlog' });
-    assert.deepEqual(backlog.dados.tasks.map((t: any) => t.id), ['T-9003']);
-    const t2 = (await agente.ok('obter_task', { id: 'T-9002' })).dados.task;
-    assert.equal(t2.status, 'em-desenvolvimento');
-    assert.equal(t2.titulo, 'Em andamento com dependência concluída');
-    assert.equal(t2.hu, 'HU-9001');
-    assert.equal(t2.arquivo, 'docs/trabalho/HU-9001-exemplo-teste/tasks/T-9002-em-andamento.md');
-    const prox = await agente.ok('proximas_tasks');
-    assert.deepEqual(prox.dados.tasks.map((t: any) => t.id), ['T-9002']);
-    await agente.recusa('obter_task', { id: 'T-0999' });
-  });
-
-  test('agente não autoriza: backlog -> em-desenvolvimento recusado e status intacto', async () => {
-    await agente.recusa('mover_status', { id: 'T-9003', novo_status: 'em-desenvolvimento', motivo: 'teste' }, /autoriza/i);
-    assert.equal(await statusDe(agente, 'T-9003'), 'backlog');
-  });
-
-  test('agente não se autoautoriza por backlog -> bloqueada -> em-desenvolvimento', async () => {
-    await agente.ok('mover_status', { id: 'T-9003', novo_status: 'bloqueada', motivo: 'teste de bloqueio a partir do backlog' });
-    assert.equal(await statusDe(agente, 'T-9003'), 'bloqueada');
-    await agente.recusa('mover_status', { id: 'T-9003', novo_status: 'em-desenvolvimento', motivo: 'tentativa de atalho' });
-    assert.equal(await statusDe(agente, 'T-9003'), 'bloqueada');
-    await humano.ok('mover_status', { id: 'T-9003', novo_status: 'backlog', motivo: 'humano desfaz o teste' });
-  });
-
-  test('agente bloqueia e volta do próprio bloqueio; comentário [status] gravado', async () => {
-    await agente.ok('mover_status', { id: 'T-9002', novo_status: 'bloqueada', motivo: 'aguardando credencial' });
-    assert.equal(await statusDe(agente, 'T-9002'), 'bloqueada');
-    await agente.ok('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'credencial recebida' });
-    assert.equal(await statusDe(agente, 'T-9002'), 'em-desenvolvimento');
-    const item = (await api.listWorkItemsByBoard((await ensureProjeto(api)).boardId))
-      .find(i => i.title.startsWith('T-9002'))!;
-    const textos = (await api.listComments(item.id)).map(c => c.text);
-    assert.ok(textos.some(t => t.startsWith('[status] em-desenvolvimento -> bloqueada · agente · mcp · aguardando credencial')), textos.join('\n'));
-    assert.ok(textos.some(t => t.startsWith('[status] bloqueada -> em-desenvolvimento · agente · mcp · credencial recebida')), textos.join('\n'));
-  });
-
-  test('agente não volta de bloqueio que não registrou', async () => {
-    // Bloqueio feito direto pela API (UI), sem marcador do agente.
-    const setup = await ensureProjeto(api);
-    const item = (await api.listWorkItemsByBoard(setup.boardId)).find(i => i.title.startsWith('T-9002'))!;
-    await api.moveWorkItem(item.id, setup.stages.get('bloqueada')!);
-    await agente.recusa('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'tentativa' }, /bloqueio/i);
-    assert.equal(await statusDe(agente, 'T-9002'), 'bloqueada');
-    await humano.ok('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'humano libera' });
-  });
-
-  test('agente não volta de bloqueio que o humano registrou pelo MCP (mesmo usuário)', async () => {
-    await humano.ok('mover_status', { id: 'T-9002', novo_status: 'bloqueada', motivo: 'humano bloqueia' });
-    await agente.recusa('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'tentativa' }, /bloqueio/i);
-    assert.equal(await statusDe(agente, 'T-9002'), 'bloqueada');
-    await humano.ok('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'humano libera' });
-  });
-
-  test('bloqueio do agente desfeito pela UI não serve para uma volta posterior', async () => {
-    const setup = await ensureProjeto(api);
-    await agente.ok('mover_status', { id: 'T-9002', novo_status: 'bloqueada', motivo: 'bloqueio legítimo' });
-    const item = (await api.listWorkItemsByBoard(setup.boardId)).find(i => i.title.startsWith('T-9002'))!;
-    await api.moveWorkItem(item.id, setup.stages.get('backlog')!);
-    await api.moveWorkItem(item.id, setup.stages.get('bloqueada')!);
-    await agente.recusa('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'reuso do marcador' });
-    await humano.ok('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'humano libera' });
-  });
-
-  test('agente move em-desenvolvimento -> em-revisao e não move o que o git prova', async () => {
-    await agente.ok('mover_status', { id: 'T-9002', novo_status: 'em-revisao', motivo: 'nível 0, sem push' });
-    await agente.recusa('mover_status', { id: 'T-9002', novo_status: 'em-teste', motivo: 'x' });
-    await agente.recusa('mover_status', { id: 'T-9001', novo_status: 'bloqueada', motivo: 'x' });
-    assert.equal(await statusDe(agente, 'T-9001'), 'concluida');
-  });
-
-  test('criar_task: agente cria em backlog, não cria já autorizada; não duplica id', async () => {
-    const r = await agente.ok('criar_task', {
-      id: 'T-9004', titulo: 'Criada pelo MCP', hu: 'HU-9001',
-      arquivo: 'docs/trabalho/HU-9001-exemplo-teste/tasks/T-9004-criada-pelo-mcp.md', cobre: ['CA-1'], risco: 'normal',
-    });
-    assert.equal(r.dados.task.status, 'backlog');
-    await agente.recusa('criar_task', {
-      id: 'T-9005', titulo: 'Autorizada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal', status: 'em-desenvolvimento',
-    });
-    await agente.recusa('criar_task', {
-      id: 'T-9004', titulo: 'Duplicada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal',
-    });
-    const ids = (await agente.ok('listar_tasks')).dados.tasks.map((t: any) => t.id).sort();
-    assert.deepEqual(ids, ['T-9001', 'T-9002', 'T-9003', 'T-9004']);
-    assert.equal((await agente.ok('obter_task', { id: 'T-9004' })).dados.task.hu, 'HU-9001');
-    // mover_status anteriores e a task criada aparecem no GET do quadro (o que o Kanban mostra).
-    await conferirQuadro({ 'T-9001': 'concluida', 'T-9002': 'em-revisao', 'T-9003': 'backlog', 'T-9004': 'backlog' });
-  });
-
-  test('comentar grava no card e recusa marcador reservado', async () => {
-    const texto = `relatório de execução ${Date.now()}`;
-    await agente.ok('comentar', { id: 'T-9001', texto });
-    const item = (await api.listWorkItemsByBoard((await ensureProjeto(api)).boardId)).find(i => i.title.startsWith('T-9001'))!;
-    assert.ok((await api.listComments(item.id)).some(c => c.text.includes(texto)));
-    await agente.recusa('comentar', { id: 'T-9001', texto: 'falso [prisma-mcp:bloqueio]' });
-  });
-
-  test('vincular_pr grava o campo PR e aparece em obter_task', async () => {
-    const url = 'https://github.com/exemplo/repo/pull/9002';
-    await agente.ok('vincular_pr', { id: 'T-9002', url });
-    assert.equal((await agente.ok('obter_task', { id: 'T-9002' })).dados.task.pr, url);
-  });
-
-  test('reimportar não sobrescreve o status do Prisma', async () => {
-    const r = await importar();
-    assert.equal(r.criados, 0, r.stdout);
-    assert.equal(await statusDe(agente, 'T-9002'), 'em-revisao');
-    assert.equal(await statusDe(agente, 'T-9003'), 'backlog');
-  });
-
-  test('import com papel agente não cria task já autorizada', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'prisma-mcp-it-'));
+  test('import em backlog/concluida cria as 3 tasks; segunda rodada não duplica', async () => {
+    const dir = await copiaComStatus([['T-9002-em-andamento.md', 'backlog']]);
     try {
-      await cp(FIXTURE, dir, { recursive: true });
-      const tasks = join(dir, 'HU-9001-exemplo-teste', 'tasks');
-      const base = await readFile(join(tasks, 'T-9003-aguardando-autorizacao.md'), 'utf8');
-      await writeFile(join(tasks, 'T-9010-nova-autorizada.md'), base
-        .replace('id: T-9003', 'id: T-9010').replace('status: backlog', 'status: em-desenvolvimento')
-        .replace('Aguardando autorização humana', 'Nova com status autorizado no arquivo'));
-      let saida = '';
-      try { saida = (await importarDe(dir, 'agente')).stdout; } catch (e) { saida = String((e as Error).message); }
-      const t = await agente.chamar('obter_task', { id: 'T-9010' });
-      assert.ok(t.erro || !['em-desenvolvimento', 'pronta', 'em-revisao', 'em-teste'].includes(t.dados.task?.status),
-        `agente criou T-9010 em ${t.dados.task?.status} pelo import: ${saida}`);
+      const um = await importar(dir);
+      assert.equal(um.ok, true, um.saida);
+      assert.equal(um.criados, 3, um.saida);
+      assert.equal(um.vinculos, 2, um.saida);
+      const dois = await importar(dir);
+      assert.equal(dois.criados, 0, dois.saida);
+      assert.equal(dois.semMudanca, 3, dois.saida);
+      assert.equal(dois.vinculos, 0, dois.saida);
     } finally { await rm(dir, { recursive: true, force: true }); }
+    const tasks = await uiOk('GET', `/api/projects/${projectId}/method/tasks`) as { id: string; status: string; hu: string }[];
+    assert.deepEqual(tasks.map(t => [t.id, t.status, t.hu]).sort(),
+      [['T-9001', 'concluida', 'HU-9001'], ['T-9002', 'backlog', 'HU-9001'], ['T-9003', 'backlog', 'HU-9001']]);
   });
 
-  test('--sincronizar-status: agente recusado, humano reaplica o frontmatter', async () => {
-    await assert.rejects(importarDe(FIXTURE, 'agente', '--sincronizar-status'));
-    assert.equal(await statusDe(agente, 'T-9002'), 'em-revisao');
-    const r = await importar('--sincronizar-status');
-    assert.ok(r.atualizados >= 1, r.stdout);
-    assert.equal(await statusDe(agente, 'T-9002'), 'em-desenvolvimento');
+  test('MCP por stdio só com o token: 8 operações, papel e projeto vindos da API', async () => {
+    const transport = new StdioClientTransport({ command: process.execPath, args: ['--import', 'tsx', 'src/server.ts'], cwd: ROOT, env: envAgente(), stderr: 'pipe' });
+    client = new Client({ name: 'prisma-mcp-it', version: '0.0.0' });
+    await client.connect(transport);
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), [...OITO].sort());
+    const r = await ok('regras_do_projeto');
+    assert.match(r.texto, /agente/);
+    assert.ok(r.texto.includes(PROJETO), r.texto);
+    assert.deepEqual((await ok('listar_tasks')).dados.tasks.map((t: any) => t.id).sort(), ['T-9001', 'T-9002', 'T-9003']);
+    assert.deepEqual((await ok('proximas_tasks')).dados.tasks, [], 'nada autorizado ainda');
+  });
+
+  test('agente não autoriza: recusado pelo MCP e por REST direto com o mesmo token', async () => {
+    await recusa('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'um humano pediu' });
+    const direto = await tokenFetch('POST', `/api/projects/${projectId}/method/tasks/T-9002/move`, { newStatus: 'em-desenvolvimento', reason: 'REST direto' });
+    assert.equal(direto.status, 403, direto.text);
+    assert.equal(await statusDe('T-9002'), 'backlog');
+  });
+
+  test('humano autoriza na sessão; agente vê em proximas_tasks, comenta e bloqueia', async () => {
+    await uiOk('POST', `/api/projects/${projectId}/method/tasks/T-9002/move`, { newStatus: 'em-desenvolvimento', reason: 'humano autoriza' });
+    assert.deepEqual((await ok('proximas_tasks')).dados.tasks.map((t: any) => t.id), ['T-9002']);
+    await ok('comentar', { id: 'T-9002', texto: 'relatório de execução do teste de integração' });
+    await ok('mover_status', { id: 'T-9002', novo_status: 'bloqueada', motivo: 'aguardando credencial' });
+    assert.equal(await statusDe('T-9002'), 'bloqueada');
+  });
+
+  test('retomada: recusada sem liberação; aceita depois que o humano libera na sessão', async () => {
+    await recusa('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'retomando sozinho' });
+    const t = await uiOk('GET', `/api/projects/${projectId}/method/tasks/T-9002`);
+    const pelaCredencial = await tokenFetch('POST', `/api/projects/${projectId}/method/tasks/${t.workItemId}/resume-approval`,
+      { blockingEventId: t.blockingEventId, cycleId: t.cycleId, reason: 'auto' });
+    assert.equal(pelaCredencial.status, 403, pelaCredencial.text);
+    await uiOk('POST', `/api/projects/${projectId}/method/tasks/${t.workItemId}/resume-approval`,
+      { blockingEventId: t.blockingEventId, cycleId: t.cycleId, reason: 'credencial entregue' });
+    await ok('mover_status', { id: 'T-9002', novo_status: 'em-desenvolvimento', motivo: 'credencial recebida' });
+    await ok('mover_status', { id: 'T-9002', novo_status: 'em-revisao', motivo: 'nível 0, sem push' });
+    assert.equal(await statusDe('T-9002'), 'em-revisao');
+  });
+
+  test('criar_task: agente cria em backlog; não cria autorizada nem duplica', async () => {
+    const r = await ok('criar_task', { id: 'T-9004', titulo: 'Criada pelo MCP', hu: 'HU-9001',
+      arquivo: 'docs/trabalho/HU-9001-exemplo-teste/tasks/T-9004.md', cobre: ['CA-1'], risco: 'normal' });
+    assert.equal(r.dados.task.status, 'backlog');
+    await recusa('criar_task', { id: 'T-9005', titulo: 'Autorizada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal', status: 'em-desenvolvimento' });
+    await recusa('criar_task', { id: 'T-9004', titulo: 'Duplicada', hu: 'HU-9001', arquivo: 'x.md', cobre: ['CA-1'], risco: 'normal' });
+  });
+
+  test('vincular_pr: URL de repositório não cadastrado é recusada; com repositório cadastrado, vincula', async () => {
+    await recusa('vincular_pr', { id: 'T-9002', url: 'https://github.com/outro/repo/pull/1' });
+    const fakeUrl = process.env.PRISMA_IT_GITHUB_FAKE?.replace(/\/+$/, '');
+    if (!fakeUrl) return;
+    const repositoryId = 910000 + Math.floor(Math.random() * 80000);
+    const fullName = `qa/mcp-it-${Date.now().toString(36)}`;
+    const fx = (method: string, path: string, body: unknown) => fetch(`${fakeUrl}${path}`, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.ok((await fx('PUT', '/__fixture/repository', { id: repositoryId, full_name: fullName, default_branch: 'main', installation_id: 1 })).ok);
+    assert.ok((await fx('PUT', '/__fixture/pulls/42', { title: 'Ajuste da T-9002', head: { ref: 'feature/livre' } })).ok);
+    const sistema = await uiOk('POST', `/api/projects/${projectId}/method/tokens`, { name: 'sistema it', role: 'sistema', validDays: 1 });
+    await uiOk('POST', `/api/projects/${projectId}/method/repositories`, { host: 'github.com', repositoryId, repositoryFullName: fullName,
+      defaultBranch: 'main', appId: 424242, installationId: 1, appPrivateKeySecretRef: 'test-app-key', webhookSecretRef: 'test-webhook-secret',
+      systemPrincipalId: sistema.metadata.principalId, enabled: true });
+    const url = `https://github.com/${fullName}/pull/42`;
+    await ok('vincular_pr', { id: 'T-9002', url });
+    assert.equal((await ok('obter_task', { id: 'T-9002' })).dados.task.pr, url);
+    await ok('vincular_pr', { id: 'T-9002', url }); // repetir é idempotente
+    await recusa('vincular_pr', { id: 'T-9003', url }); // o mesmo PR não vai para outra task pelo agente
+  });
+
+  test('revogação vale na chamada seguinte: MCP manda parar e avisar', async () => {
+    await uiOk('POST', `/api/projects/${projectId}/method/tokens/${agentTokenId}/revoke`);
+    const r = await recusa('listar_tasks', {});
+    assert.match(r.texto, /pare e avise/i);
+    assert.equal((await tokenFetch('GET', '/api/method/me')).status, 401);
   });
 });

@@ -487,15 +487,19 @@ public class DuplicateWorkItemCommandHandler : IRequestHandler<DuplicateWorkItem
     private readonly IProjectAccessService _projectAccess;
     private readonly IPermissionService _permissions;
     private readonly ITaskFeedRepository _feed;
+    private readonly IMethodGitStore? _methodStore;
+    private readonly Prisma.Workspace.Application.Features.MethodSecurity.IMethodFeatureConfiguration? _methodFeature;
 
     public DuplicateWorkItemCommandHandler(
         IWorkItemManagementRepository management,
         IWorkItemRepository workItems,
         IProjectAccessService projectAccess,
         IPermissionService permissions,
-        ITaskFeedRepository feed)
-        => (_management, _workItems, _projectAccess, _permissions, _feed)
-            = (management, workItems, projectAccess, permissions, feed);
+        ITaskFeedRepository feed,
+        IMethodGitStore? methodStore = null,
+        Prisma.Workspace.Application.Features.MethodSecurity.IMethodFeatureConfiguration? methodFeature = null)
+        => (_management, _workItems, _projectAccess, _permissions, _feed, _methodStore, _methodFeature)
+            = (management, workItems, projectAccess, permissions, feed, methodStore, methodFeature);
 
     public async Task<Guid> Handle(DuplicateWorkItemCommand request, CancellationToken ct)
     {
@@ -554,7 +558,10 @@ public class DuplicateWorkItemCommandHandler : IRequestHandler<DuplicateWorkItem
                 Position = checklist.Position,
                 CreatedAt = now
             });
-        foreach (var custom in source.CustomFieldValues)
+        var method = _methodFeature?.Enabled == true && _methodStore is not null
+            ? await _methodStore.GetProjectAsync(source.Board.ProjectId, ct) : null;
+        // Uma cópia humana conserva seus campos, mas nunca herda a identidade estável do método.
+        foreach (var custom in source.CustomFieldValues.Where(x => method is null || x.FieldDefinitionId != method.MethodIdFieldId))
             copy.CustomFieldValues.Add(new WorkItemCustomFieldValue
             {
                 WorkItemId = copy.Id,

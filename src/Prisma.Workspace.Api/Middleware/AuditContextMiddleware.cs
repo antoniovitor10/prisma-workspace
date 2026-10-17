@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using Prisma.Workspace.Infrastructure.Tenancy;
+using Prisma.Workspace.Application.Interfaces;
+using Prisma.Workspace.Domain.Enums;
 
 namespace Prisma.Workspace.Api.Middleware;
 
@@ -10,8 +12,15 @@ public sealed class AuditContextMiddleware
     private readonly RequestDelegate _next;
     public AuditContextMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, CurrentAuditContext auditContext)
+    public async Task InvokeAsync(HttpContext context, CurrentAuditContext auditContext, IMethodAccessContext? method = null)
     {
+        if (method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+        {
+            context.Response.Headers["X-Correlation-ID"] = actor.CorrelationId;
+            auditContext.Set(actor.ActorId, actor.Channel, context.Connection.RemoteIpAddress?.ToString(), actor.CorrelationId);
+            await _next(context);
+            return;
+        }
         var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
         if (string.IsNullOrWhiteSpace(correlationId)) correlationId = context.TraceIdentifier;
         correlationId = correlationId.Length > 100 ? correlationId[..100] : correlationId;
