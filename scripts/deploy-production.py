@@ -16,6 +16,7 @@ CONTAINER = "prisma-workspace-api"
 SQL_CONTAINER = "detran-kanban-db"
 DATA_ROOT = Path("/home/dev/painel-projects/prisma-runtime")
 BRIDGE_NETWORK = "prisma_ai_bridge"
+METHOD_GIT_REFERENCE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 
 
 def allowed_networks(current):
@@ -40,6 +41,42 @@ def bridge_environment():
     if not healthy("prisma-ai-bridge"):
         raise ValueError("Ponte CLI não ficou saudável; promoção interrompida.")
     return values
+
+
+def method_git_environment():
+    """Lê a configuração externa da integração Git do método; valores nunca são impressos."""
+    path = ROOT / "method-git.env"
+    if not path.exists():
+        return {}
+    if path.stat().st_mode & 0o077:
+        raise ValueError("Configuração privada da integração Git exige permissão 600.")
+    values = {}
+    for line in path.read_text().splitlines():
+        if not line:
+            continue
+        key, separator, value = line.partition("=")
+        if not separator or key in values:
+            raise ValueError("Configuração da integração Git com linha inválida ou repetida.")
+        values[key] = value
+    if values.get("MethodGit__Enabled") not in {"true", "false"}:
+        raise ValueError("Configuração da integração Git exige MethodGit__Enabled=true ou false.")
+    for key, value in values.items():
+        if key == "MethodGit__Enabled":
+            continue
+        reference = key.removeprefix("MethodGit__Secrets__")
+        if reference == key or not METHOD_GIT_REFERENCE.match(reference) or "__" in reference or not value:
+            raise ValueError("Configuração da integração Git aceita apenas MethodGit__Enabled e MethodGit__Secrets__<referência>.")
+    return values
+
+
+def container_environment(current, bridge_values, git_values):
+    environment = dict(item.split("=", 1) for item in current["Config"]["Env"])
+    if git_values:
+        # Com o arquivo presente, ele é a fonte única: chave removida dele sai do contêiner.
+        environment = {key: value for key, value in environment.items() if not key.startswith("MethodGit__")}
+    environment.update(bridge_values)
+    environment.update(git_values)
+    return environment
 
 
 def run(*args, capture=False, env=None):
@@ -88,6 +125,7 @@ def deploy(sha):
         return
     networks = allowed_networks(current)
     bridge_values = bridge_environment()
+    git_values = method_git_environment()
     if bridge_values:
         networks.add(BRIDGE_NETWORK)
     if any(current["HostConfig"].get("PortBindings", {}).values()):
@@ -106,8 +144,7 @@ def deploy(sha):
     run("docker", "cp", SQL_CONTAINER + ":" + sql_path, str(backup / "database.bak"))
     run("docker", "cp", CONTAINER + ":/app/App_Data", str(backup / "App_Data"))
     old_name = CONTAINER + "-rollback-" + stamp
-    environment = dict(item.split("=", 1) for item in current["Config"]["Env"])
-    environment.update(bridge_values)
+    environment = container_environment(current, bridge_values, git_values)
     command = ["docker", "create", "--name", CONTAINER, "--restart", "unless-stopped", "--network", "slc_default"]
     for alias in current["NetworkSettings"]["Networks"]["slc_default"].get("Aliases") or []:
         if alias != current["Id"]:
