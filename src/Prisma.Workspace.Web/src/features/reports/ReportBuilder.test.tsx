@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { notifyManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,11 +8,12 @@ import { ReportBuilder } from './ReportBuilder';
 
 let client: QueryClient | undefined;
 async function renderBuilder() {
-  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = queryClient;
   // Aguarda a consulta mockada e suas notificações antes da busca custosa por role.
   await act(async () => {
     render(
-      <QueryClientProvider client={client!}>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <ReportBuilder />
         </ThemeProvider>
@@ -22,6 +23,9 @@ async function renderBuilder() {
 }
 
 beforeEach(() => {
+  // Entrega as notificações dos mocks dentro do act inicial, antes de consultar os controles carregados.
+  notifyManager.setScheduler(queueMicrotask);
+  notifyManager.setNotifyFunction(callback => act(callback));
   vi.spyOn(api, 'getReportCatalog').mockResolvedValue({
     sources: [{
       source: 1,
@@ -42,6 +46,8 @@ afterEach(() => {
   cleanup();
   client?.clear();
   vi.restoreAllMocks();
+  notifyManager.setScheduler(callback => setTimeout(callback, 0));
+  notifyManager.setNotifyFunction(callback => callback());
 });
 
 describe('editor de filtros e métricas do relatório', () => {

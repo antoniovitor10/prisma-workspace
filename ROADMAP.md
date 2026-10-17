@@ -4,6 +4,15 @@ Organização atual em [docs/workspace/README.md](docs/workspace/README.md). D89
 
 # ROADMAP - fases do projeto
 
+## [~] Fase 16 - Método Git, corte 2a (D100/D101/D102)
+
+- US-METODO-GIT-001 e specs/metodo-git-integration.md: somente2a aprovada conforme GOALS, revisão git-spec-2 e autorização delegada D102 do Maestro em 2026-10-16.
+- F0 contratos → A identidade/política + B webhook/repositório + C UI/MCP → F1 integração/migration aditiva com Down → F2 revisão/QA completo no mesmo sha.
+- Forja integradora (F0/A/UI-C/F1), Ponte (B/MCP-C), Prova QA independente. Testes exclusivamente na instância prisma-metodo (3130/3132, bridge própria).
+- Humanos UI mantêm regras/permissões atuais; agente/sistema recebem matriz em todos os canais. Autorização interativa não é concedida por nenhum token de método.
+- Produção recebe o corte desligado, sem conversão automática de projetos; parâmetros D102 aguardam confirmação do PO antes de habilitação institucional. Sem implantação/merge/main por executores.
+- Reconciliação2b e gate/deploy3 permanecem fora deste corte e sem aprovação. F0 está em andamento; nenhum endpoint/feature2a foi declarado implementado.
+
 ## [~] Fase 15 - Assistente de IA (D91)
 
 - Recorte solicitado em 2026-10-07: chat visualmente inspirado no Zapmind e provedor/modelo por conversa.

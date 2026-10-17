@@ -12,12 +12,13 @@ namespace Prisma.Workspace.Api.Controllers;
 [Route("api/setup")]
 [AllowAnonymous]
 [Tags("Instalação")]
-public sealed class SetupController(IMediator mediator) : ControllerBase
+public sealed class SetupController(IMediator mediator, IConfiguration? configuration = null) : ControllerBase
 {
     [HttpGet("status")]
     [ProducesResponseType(typeof(InstallationSetupStatus), StatusCodes.Status200OK)]
     public async Task<IActionResult> Status(CancellationToken ct)
-        => Ok(await mediator.Send(new GetInstallationStatusQuery(), ct));
+        => Ok((await mediator.Send(new GetInstallationStatusQuery(), ct)) with
+        { MethodEnabled = configuration?.GetValue<bool>("MethodGit:Enabled") == true });
 
     [HttpPost]
     [EnableRateLimiting("setup")]

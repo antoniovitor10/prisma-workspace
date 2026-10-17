@@ -27,6 +27,11 @@ public class MapeamentoDeErrosMiddleware
         {
             await _next(context);
         }
+        catch (Prisma.Workspace.Application.Features.MethodGit.Contracts.MethodOperationException ex)
+        {
+            await WriteProblemAsync(context, ApiErrors.Problem(ex.StatusCode, ex.Code,
+                ex.StatusCode == 409 ? "Conflito de estado" : "Operação do método recusada", ex.Message, context.TraceIdentifier));
+        }
         catch (DomainException ex)
         {
             await WriteProblemAsync(context, ApiErrors.Problem(400, "business_rule_error",

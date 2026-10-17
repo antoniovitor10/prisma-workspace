@@ -4,6 +4,8 @@ using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
 using Prisma.Workspace.Application.Features.Workflow;
 using MediatR;
+using Prisma.Workspace.Application.Features.MethodGit.Contracts;
+using Prisma.Workspace.Application.Features.MethodSecurity;
 
 namespace Prisma.Workspace.Application.Features.WorkItems.Commands;
 
@@ -22,6 +24,9 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IPlatformNotificationPublisher? _notifications;
     private readonly IUserDirectory? _users;
+    private readonly IMethodFeatureConfiguration? _methodFeature;
+    private readonly IMethodGitStore? _methodStore;
+    private readonly IMethodMoveService? _methodMovement;
 
     public MoveWorkItemCommandHandler(
         IWorkItemRepository workItemRepository,
@@ -32,7 +37,10 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
         IWorkflowRepository? workflow = null,
         IBoardRealtimeNotifier? realtime = null,
         IPlatformNotificationPublisher? notifications = null,
-        IUserDirectory? users = null)
+        IUserDirectory? users = null,
+        IMethodFeatureConfiguration? methodFeature = null,
+        IMethodGitStore? methodStore = null,
+        IMethodMoveService? methodMovement = null)
     {
         _workItemRepository = workItemRepository;
         _stageRepository = stageRepository;
@@ -43,6 +51,7 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
         _realtime = realtime;
         _notifications = notifications;
         _users = users;
+        _methodFeature = methodFeature; _methodStore = methodStore; _methodMovement = methodMovement;
     }
 
     public async Task Handle(MoveWorkItemCommand request, CancellationToken cancellationToken)
@@ -76,6 +85,29 @@ public class MoveWorkItemCommandHandler : IRequestHandler<MoveWorkItemCommand>
         }
 
         DomainException.Garantir(destStage is not null, "Escolha uma coluna de destino do quadro.");
+
+        if (_methodFeature?.Enabled == true && _methodStore is not null && _methodMovement is not null
+            && await _methodStore.GetTaskAsync(workItem.Id, cancellationToken) is not null)
+        {
+            var result = await _methodMovement.MoveAsync(new MethodMoveRequest(workItem.Id, destStage!.Id,
+                request.Reason ?? string.Empty, request.Position), cancellationToken);
+            if (result.Applied)
+            {
+                if (_notifications is not null)
+                {
+                    var recipients = workItem.Assignees.Select(x => x.UserId).Concat(workItem.Followers.Select(x => x.UserId))
+                        .Append(workItem.ResponsibleId ?? string.Empty).Where(x => !string.IsNullOrWhiteSpace(x) && x != request.ActorId).Distinct();
+                    await _notifications.PublishManyAsync(recipients.Select(userId => new NotificationEnvelope(workItem.Board.OrganizationId,
+                        userId, NotificationType.StatusChanged, "Status da tarefa alterado",
+                        $"#{workItem.Number} {workItem.Title} agora está em {destStage.Name}.",
+                        $"/projects/{workItem.Board.ProjectId}/backlog?item={workItem.Id}", WorkItemId: workItem.Id,
+                        ProjectId: workItem.Board.ProjectId)), cancellationToken);
+                }
+                if (_automationExecutor is not null)
+                    await _automationExecutor.ExecuteStageEnteredAsync(workItem.Id, destStage.Id, request.ActorId ?? string.Empty, cancellationToken);
+            }
+            return;
+        }
 
         var stageChanged = workItem.StageId != request.DestinationStageId;
         var previousStageId = workItem.StageId;

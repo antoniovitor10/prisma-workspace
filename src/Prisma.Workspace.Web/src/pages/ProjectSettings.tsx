@@ -10,6 +10,7 @@ import { workNatureOptions, workTypeOptions } from './projectClassification';
 import { projectMemberSuccessMessage, translateProjectHistoryKind } from './projectSettingsLabels';
 import { ExternalPortalSettings } from '../features/portal/ExternalPortalSettings';
 import { Page as BasePage } from '../components/PageLayout';
+import { MethodSettingsPanel } from '../features/method-git/MethodSettingsPanel';
 
 interface OrganizationMember { userId: string; name: string; role: number; isActive: boolean; }
 interface TeamSummary { id: string; name: string; }
@@ -94,6 +95,11 @@ const fieldTypes = [[1,'Texto'],[2,'Número'],[3,'Data'],[4,'Sim/não'],[5,'Sele
 export function ProjectSettings() {
   const { project } = useOutletContext<{project: ProjectSummary}>();
   const queryClient = useQueryClient();
+  const methodAvailability = useQuery({ queryKey: ['method-availability'], queryFn: () => api.getSetupStatus(),
+    enabled: !previewMode, staleTime: 60_000, retry: false });
+  const methodEnabled = methodAvailability.data?.methodEnabled === true;
+  const methodBoards = useQuery<{ id: string; name: string; projectId: string }[]>({ queryKey: ['method-boards', project.id],
+    queryFn: () => api.getBoards(), enabled: methodEnabled, staleTime: 30_000 });
   const [savedAt, setSavedAt] = useState('');
   const [form, setForm] = useState({
     name: project.name, description: project.description ?? '', ownerId: project.ownerId ?? '',
@@ -105,7 +111,7 @@ export function ProjectSettings() {
   // apontando direto para a secao, em vez de pedir "procura em configuracoes".
   const [searchParams, setSearchParams] = useSearchParams();
   const pedida = searchParams.get('secao') ?? '';
-  const secao = chavesValidas.has(pedida) ? pedida : 'geral';
+  const secao = pedida === 'metodo' && methodEnabled ? 'metodo' : chavesValidas.has(pedida) ? pedida : 'geral';
   const irPara = (chave: string) => {
     const proximos = new URLSearchParams(searchParams);
     proximos.set('secao', chave);
@@ -186,9 +192,15 @@ export function ProjectSettings() {
           <Icone size={15}/>{rotulo}
         </MenuItem>
       ))}
+      {methodEnabled && <MenuItem type="button" $active={secao === 'metodo'} aria-current={secao === 'metodo' ? 'true' : undefined}
+        onClick={() => irPara('metodo')}>Método de trabalho</MenuItem>}
     </Menu>
 
     <Grid>
+    {secao === 'metodo' && <div style={{ gridColumn: '1 / -1', minWidth: 0 }}>
+      <MethodSettingsPanel key={project.id} projectId={project.id}
+        boards={methodBoards.data?.filter(board => board.projectId === project.id) ?? []} />
+    </div>}
     {secao==='geral'&&<>
     <Section><header><FolderCog size={16}/><h2>Dados do projeto</h2>{savedAt&&<small>Salvo às {savedAt}</small>}</header>
       <Form onSubmit={submit}>

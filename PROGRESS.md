@@ -1,9 +1,124 @@
+# PROGRESS — log de handoff (append-only)
+
+## [2026-10-17] - Codex (Tear) - Frente 1, horas-5: merge de main e reconciliação B07/2a
+
+- Merge sem rebase de `origin/main` `e101aa4` em `fix/time-tracking-20261015`. Em `ReportBuilderFeature`, preservado o filtro B07 por ator e escopo de projeto/equipe junto do carregamento de nomes reais de autores do Método; `MethodPrincipalPresentationTests` atualizado para fornecer os serviços de permissão/escopo vigentes. Testes React mantêm os casos de cada lado, limpam o QueryClient e restauram o `notifyManager`.
+- Gates até aqui: build da solution aprovado em31,52s (1 aviso xUnit antigo); xUnit completo 767/800 aprovados e33 testes SQL Método explicitamente pulados sem conexão própria3132. Primeira rodada teve um timeout da regex de redação de IA sob carga, sem alteração nesse código; caso focado7/7 e execução completa subsequente passaram. `npx tsc -b` aprovado88,60s; lint0erros/12avisos; Vitest180/180 em243,48s; build frontend em67,92s.
+- E2E afetado de relatórios/horas ainda pendente em runtime do merge; prisma-dev e banco preservados. O runtime QA858 permanece preservado para o handoff de baseline C1 após PUBLICADO; QA final do merge será coordenado com Lupa depois de revisão. Conferir ausência de diff em migrations e ModelSnapshot no SHA final.
+
 ## [2026-10-17] - Codex (Tear) - Frente 1, horas-7: datas passadas no E2E
 
 - Ao virar o dia de Brasília, o caso novo de59s de horas-6 tentou criar hoje00:10–00:11 ainda futuro; reprodução real03:01UTC recebeu400 antes daUI (19,76s). PRONTO71 foi retirado explicitamente na fila. Estabilidade test-only em4b761ee/a85f1b2: ajustes usam dia encerrado, caso59s força semana anterior; helper aguarda semana visível/GET200 e exige querydate correta. Preservados todos os asserts temporais, persistência e totais; sem produto/spec/schema/retry/timeout/sleep novos.
 - Previewdesktop/mobile3/3 em56,43s e fonte final verde às03:09:53UTC, ainda dentro da janela inválida anterior. Spec desktop/mobile3x49/49 em586,34s,0pulos/retries;48limpezas/96ações/0falhas. Full após bancoQA limpo:219aprovados/6pulos anteriores/0falhas/retries em1.776,28s; todos96horas/B07verdes;104limpezas/224ações/0falhas. Rich63mobile não reapareceu, arquivo intocado.
 - Checks frescos: build.NET73,01s (0erros/3avisos anteriores), xUnit391/39132,87s (40,85com preparação), tsc-b72,96s, tiposE2E6,37s, lint0erros/12avisos0,81s, Vitest165/165226,41s e Webbuild87,51s. Primeiro xUnit390/391 por deadlockSQL em teste de rollback de quadro; foco1/1 e confirmação integral passaram sem mudar C#, retries, isolamento ou asserções. Tentativa negativa preservada, contraparte do deadlock não identificada.
 - Somente QA3110/SQL3111; dois backups600 verificados/SQLversionado/seed oficial e bancoUnit separado; dev/produção intocados. Main8ec6699 reconferida; delta71→a85 apenas um E2E,4DLLs/ativos da candidata iguais ao produto aprovado. Sem migration/ModelSnapshot contra main. Relatório `docs/time-test-dates-validation.md`. Próximos: commit documental, imagem/SHA/manifesto finais, push/ENTREGAhoras7, nova revisão+QA exatos e então PRONTO; PUBLICADO antes de C1–C6.
+
+## [2026-10-16] - Codex (Forja) - nomes reais das colunas no histórico do método
+
+- QA independente no b2f2bbc encontrou P2: o recorder gravava IDs/status sem fromStageName/toStageName, e a tela exibia Backlog para Backlog. Corrigido só MethodMovementRecorder: consulta única em lote para movimentos, nomes reais das colunas de origem/destino e valores do tracker para criação/renomeação no mesmo Save. Eventos existentes também recebem os nomes verificados. Sem alteração da matriz, UI, schema ou migration; eventos antigos permanecem imutáveis.
+- Cinco regressões novas cobrem nomes personalizados e snapshot após renomeação futura, bloqueio pelo agente, nomes forjados em evento preexistente, transferência humana para coluna sem mapeamento e renomeação na mesma gravação. Teste SQL existente do worker agora exige ambos os nomes no payload junto da prova/histórico/auditoria atômicos. Antes do patch:6/6 falharam; depois:85/85 passaram, zero falhas/pulos,53s de execução (307s com compilação em1CPU/nice19), SQL3132 opt-in ativo. Logs /tmp/prisma-metodo-forja-history-{red,green}.log.
+- Integrado b50dd20 da Prova, só harness E2E: GitHub falso respeita sort/direction e created_at estável; regra JWT exp até10min no futuro; beforeAll não apaga outros repositórios de workers. Nenhuma asserção, timeout, retry ou skip afrouxado. Revisão desse complemento acompanha a próxima ENTREGA.
+- P1 anterior corrigido em d4a21f9 e revisado sem altos/médios; full715/715 passou. Runtime b2f2bbc confirmou API18/18, MCP real9/9, oito ferramentas/CLI idempotente/worker reais pela Ponte. A falha inicial de merge foi reproduzida como ordenação incorreta do fake e corrigida no harness; não exige alterar o produto. Resultados anteriores não aprovam o P2 novo.
+- Próximo: revisão git-12, full720 (715+5 novos), imagem final e QA independente/E2E inteiro no SHA final. CPU pesada da Tear até15:35UTC/liberação explícita; nenhuma operação pesada desta frente em paralelo. P3 de rótulos crus dos eventos segue registrado pela Prova como pendência baixa. Nenhum deploy, pushmain ou outro ambiente tocado.
+
+## [2026-10-16] - Codex (Forja) - correção P1 encontrado no ensaio Git real
+
+- Prova e Ponte reproduziram no955dd26: vínculo explícito do agente403 e nenhum movimento Git, código method_authority_write. Causa: o store usa atualização do mesmo MethodTaskId para invalidar RowVersion/CAS de vínculo; a barreira recusava esse estado modificado como autoridade. Isso bloqueava o vínculo inferido antes do worker chegar ao serviço de movimento.
+- Corrigido só MethodWriteGuard: pulso sem mudança permitido em registro existente/próprio com Edit efetivo, campo único marcado e OriginalValue igual; snapshot inteiro de identidade/provas comparado ao banco sem tracking, versões atual/original conferidas. Versão obsoleta409. State novo, mudança real de ID/concessão/ciclo/bloqueio/liberação/fato ou outras entidades protegidas continuam403. Sem mudança no store da Ponte, matriz, DTO, schema ou migration.
+- Antes do patch:5vermelhos/9verdes(14), incluindo LinkInferredWorker e LinkExplicitAgent com SQLreal/guardATIVO. Depois:88/88 foco71s; fechamento19/19 novos em28s(90casos distintos somando os2extras), sem pulos/falhas. Negativos incluem Originalforjado paraID/concessão/ciclo comflags ocultas, campoextra marcado, tokenreadonly, outroprojeto; SQL comprova CASversão obsoleta409, RowVersion muda e autoridade/coluna permanecem iguais, vínculo/projeção/comentário/inbox atômicos. Helpers de teste SQL passaram a expor escopo/contexto para reutilizar fixtures reais.
+- Validações anteriores696xUnit/160Vitest/53MCP/builds/tipos/lint e imagem955 permanecem evidência anterior, não aprovação final do P1. HTTPreal18etapas e MCPstdio26verificações da Forja passaram no955, mas vínculo válido/worker não eram cobertos por esses smokes. Ponte confirmou7tools e CLI real idempotente; oitava e promoção precisam reensaio. QA955 está reprovado peloP1.
+- Próximo: ENTREGA git-11/revisão, imagem corrigida apósCPUlivre, repetir jornadaGit/MCP e QA/E2Ecompleto no novoSHA; xUnit completo corrigido também pendente. Sem pushmain/deploy/outros ambientes. Execuções focadas foram1processor/nice19, sem disputar suíte pesada da Prova.
+
+## [2026-10-16] - Codex (Forja) - consolidação dos gates locais e candidata à imagem
+
+- Integração F1 e correções revisadas sem altos/médios: git-8-2(6aa037f) e git-9(a23efdc). XUnit completo696/696, zero falhas/pulos, com SQL3132 opt-in; buildsolução0erros/3avisos antigos. A alteração git-9 só toca harness frontend e notas: backend/testesC# idênticos ao6aa037f.
+- Após a estabilização: Vitest COMPLETO160/160 em41arquivos(301s), lint0erros, tsc-bPASS112s, buildWebPASS132s, buildMCPPASS e MCP53/53(HTTP/stdio fake, sem pulos/falhas). A execução real do MCP ainda depende da imagem. Logs/manifestações em /tmp/prisma-metodo-forja-git9-gates.json e /tmp/prisma-metodo-forja-git8-2-results/git8-2-full.trx.
+- Integrado por pull o commit Prova054f2c7, somente dois aliases de variáveis sem uso nos arquivos E2E/fake. Novo lint0erros e12avisos antigos, zero avisos nesses dois arquivos. Coleta Playwright com MethodGit ligado:159cenários/31arquivos, sem executar navegador/API. Nenhum produto/schema/asserção/timeout/retry/skip alterado neste complemento.
+- Imagem própria ainda baseline338918b; script externo build-final.py preparado para SHA exato/árvorelimpa/labels,2CPUs/4GB, só app e xunit-init no prisma-metodo, sem reiniciar SQL. CPU liberada13:13UTC e cedida à Tear, que reservou até13:40UTC; aguardar liberação explícita e reservar antes da imagem. Fonte fica congelada depois deste checkpoint; resultados de runtime/QA/PRONTO serão registrados nos arquivos externos de estado, fila e entregas.
+- Ainda necessários: imagem final, jornada API/UI/MCP/GitHub simulado e E2E completo com QA independente Prova no mesmo SHA, mais ensaio MCP da Ponte. Já passou ensaio de cópia restaurada Up/Down/Up com34cards/colunaslegadas preservadas; migration não mudou. App real GitHub será instalado pelo PO posteriormente e flag de produção permanece desligada por padrão. Nenhum deploy/main nem prisma-dev/prisma-qa/produção tocado.
+
+## [2026-10-16] - Codex (Forja) - estabilização do Vitest no gate completo
+
+- Gate xUnit completo696/696 sem pulos/falhas e build da solução passaram no6aa037f (três avisos antigos). Vitest completo:158passaram e2falharam antes das asserções de negócio, na espera inicial por Editar coluna/Tarefas, com DOM sem dados. Testes/componentes e API de runtime correspondentes são idênticos à main; mesmos14casos isolados passaram sem alteração em35s e38s.
+- Ajustados somente ProjectKanbanDirect.test.tsx e ReportBuilder.test.tsx: render inicial assíncrono dentro de act; notifyManager do React Query entrega por microtask e envolve notificações em act; padrões restaurados no cleanup. Não se mudou produto, fixture/resposta, asserção, timeout, retry nem skip. A opção é suportada pela documentação primária de notifyManager.
+- Foco corrigido14/14PASS43,61s, incluindo consentimento separado, fotografia do impacto, rejeição de impacto obsoleto/reconfirmação, controles e remoção dentro do grupo de filtro. Diffcheck e igualdade das linhas de asserção passaram. Suíte Vitest completa será repetida após o checkpoint e gate de tipos/lint/build continua obrigatório.
+- ENTREGA separada git-9 para revisão da estabilização. F1/gits anteriores seguem aprovados só baixos. Imagem, MCP real, E2E completo e QA independente no SHA final permanecem pendentes; nenhum outro ambiente ou produção tocado.
+
+## [2026-10-16] - Codex (Forja) - correção F1 após revisão git-8
+
+- Corrigido o médio do Prumo: a flag global só descobre o escopo; guard/Serializable entram para principal do Método ou lote que alcance projeto provisionado. Projetos pausados conservam aposentadoria das provas. Validação de coluna ocorre depois da seleção do projeto, inclusive em Save misto. Outros projetos preservam coluna legada sem BoardId, edição/movimento, ExecuteUpdate de workflow e um Save no final da automação.
+- Dois defeitos adicionais comprovados por testes vermelhos reais antes do patch: SignalR cria escopo DI novo e token humano do Método herdava a associação humana ao entrar no quadro de outro projeto; desligar a flag após startup ainda aceitava token opaco em rota genérica. Hub agora reconhece a identidade autenticada da conexão e revalida token/principal/delegação/prazo/revogação/projeto/tenant a cada JoinBoard. Serviço de tokens consulta a flag atual. Sem credencial por query string ou emissão por ID.
+- Validação final focada138/138, zero falhas/pulos,100s; SQL3132 prova isolamento normal fora do Método, lote misto/coluna legada, transação do Método, workflow imediato e automação legada. WebSocket preserva JWT humano em outro quadro e recusa token do Método fora do projeto e depois da revogação. Foram mantidos os testes de matriz, handlers, bulk, cadeia de automações, tokens e retirada de identidade, mais teste de pausa/retomada sem reutilizar concessão. Avisos CS8602/xUnit2031 antigos permanecem visíveis. Um erro de nome no helper de teste foi corrigido antes da rodada verde.
+- Sem mudança de schema/migration nesta correção. Complemento do F1 anterior: ensaio COPY_ONLY/VERIFYONLY/restauração própria Up/Down/Up no284c6cc preservou34cards e todas as colunas legadas, com remoção final do clone/backup. Inventário registra entidade rastreada, tetoUiSession sem autorização e melhoria baixa do teto do token humano; QA da Prova deve conferir efeitos de movimento existentes.
+- ENTREGA git-8-2 segue a nova revisão; imagem, suítes completas e QA independente no SHA final ainda pendentes. Nenhum deploy/main, prisma-dev/prisma-qa ou produção tocado.
+
+## [2026-10-16] - Codex (Forja) - integração F1 do método Git 2a
+
+- Integrados autenticação opaca/JWT, contexto e tenant confiáveis, escopo de projeto nas permissões/consultas/hub, worker e DI. `MethodGit:Enabled` permanece desligada por padrão. Credencial do método não emite sessão humana nem usa cookie de refresh; JWT em portal público não concede autorização interativa de projeto. Humanos na UI mantêm as transições existentes.
+- Barreira comum nos Saves EF assíncrono e síncrono: matriz, identidade/escopo, campos e PR estruturado. Recorder mantém autorização/bloqueio/liberação/ciclo, história e autoria confiável no JSON existente. Serviço único de movimento possui transação serializável, releitura/CAS, fato permanente e consumo da entrega juntos; rollback limpa o tracker antes de qualquer confirmação de falha do worker. Notificação ocorre após commit. Automações revalidam e persistem cada passo com o iniciador; operação dedicada MCP também as aciona.
+- Endpoints de identidade/settings/regras/tasks/next/criação/edição/movimento/comentário/liberação; cards de topo com campo HU/tag. Dependência desconhecida/inacessível impede next. Adoção de IDs legados não concede autorização retroativa, preserva cards e expõe conflitos ao admin UI. Remover/trocar ID ou retirar quadro pela UI revoga a associação ativa sem apagar provas. Duplicação humana preserva o fluxo e omite a chave estável. UI encaixada nas configurações por disponibilidade da instalação; capacidades retornam nomes. Liberação é idempotente por bloqueio/ciclo e sua apresentação sobrevive ao reload.
+- Migration gerada `20261016110439_Add_MethodGit_Security_And_Webhook_Tables`: onze CreateTable e respectivos índices; nenhuma operação de alteração/remoção de tabela legada no Up. Down remove somente as onze novas. SQL real3132 provou Up/Down/Up, fingerprint idêntico das colunas legadas e preservação do card humano; exclusão de quadro após fato Git também preserva fato/história/autorização antiga.
+- Validação focada:111/111 (inclui seis casos SQL reais, handlers de portal/formulário em oito cenários, triagem, matriz UI, escopo, HTTP e autoria); após encaixe final da automação10/10 tasks;4/4 retirada/troca de ID. São116 casos distintos, sem falhas/pulos. UI24/24 Vitest e um teste selecionado de vínculo após ajuste de mensagens passaram. tsc-b do encaixe e buildVite C anteriores passaram; verificação completa das fontes finais, imagem/runtime/MCP/E2E/QA independente ainda pendentes. Avisos preexistentes CS8602 e xUnit2031 não foram suprimidos.
+- A/B/C e complementos estão revisados sem altos/médios; integração F1 segue à ENTREGA git-8/revisão antes de PRONTO-PROD. Janela de silêncio cancelada pelo Maestro; trava global de CPU segue ativa, atualmente com Tear até12:35UTC. Não houve deploy, push main ou modificação em prisma-dev/prisma-qa/produção. Próximo: revisão F1, imagem própria, ensaio em cópia restaurada, suítes completas e QA da Prova no SHA final.
+
+## [2026-10-16] - Codex (Forja) - refinamento das tabelas novas para preservar a UI
+
+- Antes da migration e sem alterar tabelas legadas, refinado o modelo aprovado para executar a preservação humana RF-11.6: BoardId da configuração pode ficar nulo ao excluir o quadro; MethodTaskId pode ficar nulo ao retirar a associação ativa, mantendo fatos e vínculos. Índices únicos filtrados para valores não nulos.
+- Encontrado caminho humano real entre projetos em ExternalRequestTriageFeature.RouteAsync (além das transferências internas do quadro). O controle usa PK ProjectId/WorkItemId, permitindo associação antiga inativa e nova ativa do mesmo card, sem apagar evidência nem alterar o comportamento da triagem. FKs de concessão/bloqueio/liberação/evento relacionado incluem projeto/task/ciclo; tokens e autoria/bloqueio também referenciam principal com ProjectId. Spec registra o refinamento técnico dentro das mesmas onze tabelas autorizadas pela D102; segue para revisão própria antes da geração SQL.
+- Ponte validou o modelo FINAL com9/9 SQL reais no3132,11s, zero falhas/pulos, incluindo dois estados do mesmo WorkItem e mesmo CycleId em projetos diferentes: a FK recusa usar a concessão do outro projeto. Fonte/config final recompilada após as três últimas FKs. Isso usa EnsureCreated em banco descartável protegido; não é o ensaio da migration Up/Down/Up. O teste de transferência e ajuste do store pertencem à Ponte e entram no complemento git-4-3 depois desta dependência de schema ser publicada.
+- Forja validou10/10 focados de autenticação/escopo HTTP/EFInMemory com PK/ciclos compostos (3s); o guard de persistência em preparo ainda não está ligado ao Save, sem alegar teste de matriz genérica por essa rodada. Core F1 permanece fora deste commit. Runtime ainda baseline, sem mudança de Program/DI, migration, imagem ou ambientes protegidos.
+- Próximo: ENTREGA git-6/revisão do modelo novo, Ponte git-4-3, concluir coordenador/serviço único/guards e endpoints F1, só então migration autorizada e F2/QA no SHA final. CPU pesada continua reservada à Frente1, buildVite pendente; nenhuma declaração PRONTO-PROD.
+
+## [2026-10-16] - Codex (Forja) - prova SQL do token e contratos para correção B
+
+- Teste novo MethodTokenSqlTests consome a fixture pública SQL da Ponte sem editá-la: banco descartável próprio3132, igualdade parametrizada TokenHash executada no SQL, índice único da primeira coluna confirmado em sys.indexes, autenticação real com permissões/delegação, LastUsed sem regravar dentro de5min e revogação imediata.1/1 passou; fixture cria/apaga só seu banco protegido por host/prefixo. Restore inicial foi necessário no novo diretório de artifacts; nenhum pacote/lockfile modificado.
+- A pedido da Ponte para médios Prumo/git-4 e fork Prova, contratos acrescentam HeadRepositoryId opcional ao final do evento/snapshot, autor Git observado opcional no snapshot, lista do ciclo com default compatível e busca pontual de observação por projeto com defaultnull. Fakes existentes continuam compiláveis; defaults não fabricam origem/completude/vínculo. Implementação/correção B pertence à Ponte e precisa nova revisão.
+- Baixo2 da UI/git-5 corrigido: refs limitadas a128 e padrãoASCII conforme servidor; cadastro orienta os três eventos necessários do webhook. 15/15 Vitest passaram novamente após ajuste. Componente segue sem encaixe na aplicação atéF1. BuildVite ainda aguarda liberaçãoCPU; não é validação final da2a.
+- A/git-3-2 e UI/git-5 revisados somente baixos. SQL reduz risco do baixo3git-3, sem alegar migração Up/Down/Up, concorrência do movimento, DI/guard genérico ou QA final. Próximo: revisão deste complemento, Bgit-4-2 revista e integraçãoF1/F2. Ambientes protegidos preservados.
+
+## [2026-10-16] - Codex (Forja) - componentes UI C do método Git
+
+- Entregues componentes novos em Web/src/features/method-git: configuração explícita do quadro, tokens, repositórios, PRs não vinculados e liberação de retomada. Cliente usa somente sessão humana existente; token emitido fica em estado local, fora de QueryCache/localStorage, e desaparece ao trocar projeto/aba. Token humano é pessoal, sem seletor de outra pessoa; reemissão avisa redução potencial do teto de tokens anteriores. Sem ícones e usando tokens visuais D68 existentes.
+- Consultas não provisionam; ManagePermissions controla administração, ChangeStatus/UI controla retomada, Edit controla vínculo. Forms com rótulos/validação, confirmação de revogação, erros/retry e estados de carregamento. Repositório exige branch principal explícita e referências externas de segredos. Liberação envia GUID da task/bloqueio/ciclo e motivo, sem mover o card.
+- Validação:15/15 Vitest (10 componentes+5 cliente), tsc-b aprovado, lint0erros/14avisos preexistentes fora desta pasta. Falha transitória do teste novo foi seletor de rótulo que inclui ajuda; corrigido e rodada15/15 verde. BuildVite/QAvisual/jornada real ainda pendentes, aguardando liberação CPU da Frente1 e integraçãoF1; nenhum import em App/ProjectSettings nesta fatia.
+- Próximo: ENTREGA git-5 para revisão dos componentes, build quando CPU liberada; só depois das entregas/revisões A/B/C integrar F1/EF/auth/handlers/migration aditiva e encaixar a UI. Produção permanece desabilitada e PRONTO-PROD exige revisão/QA no SHA final/suítes completas. Nenhum ambiente protegido alterado.
+
+## [2026-10-16] - Codex (Forja) - correção da revisão git-3 e desvio entre quadros
+
+- Corrigidos o médio1 do Prumo e o alto da Prova75b4df0: origens legadas preservam validações existentes nos projetos sem método; em projeto com método não iniciam execução. Token humano agora valida o destino real antes de permitir operação fora do quadro, impedindo criação/transferência para desenvolvimento sem sessão UI. Retorno revisão/desenvolvimento exige mesmo quadro e autorização vigente.
+- Criação com GUID pré-alocado usa Create no projeto e admite a atribuição inicial da identidade, sem liberar alterações posteriores pelo agente. Acrescentado teste de paridade das permissões de delegação nos casos comuns e documentação das restrições adicionais deliberadas. OperationalError opcional publicado no descriptor interno solicitado pela Ponte, sem quebrar construtores existentes.
+- Validação focada isolada: binários recompilados após todas as fontes alteradas; 159/159 testes passaram em14s, sem falhas/pulos (inclui adversariais Prova); detalhes na ENTREGA git-3-2. Não é integração F1, SQL final ou suíte completa. UI C separada continua não rastreada e inclui aviso de que reemissão pode reduzir permissões dos tokens anteriores; só entrará na entrega git-5.
+- Próximo: nova revisão git-3-2 antes do F1; liberar checkpoint da Ponte B/git-4, terminar UI/git-5, integrar e executar regressão/QA no mesmo SHA. Sem migration, imagem ou operação em prisma-dev/prisma-qa/produção nesta correção.
+
+## [2026-10-16] - Codex (Forja) - fatia A de identidade e política do método Git
+
+- Após git-spec-2 aprovada e D102, contratos F0 revisados em git-1 liberaram B/C com médio1 da rotação para A. Implementados em arquivos exclusivos: seis entidades/configurações novas de segurança, contexto scoped imutável, emissão/hash/revogação/expiração, teto real de delegação, política por tipo de autenticação, handler e controller de tokens. Ainda sem registro em Program/DbContext/handlers genéricos nem migration nova; runtime próprio continua na base.
+- Corrigido o médio de rotação: humano só reemite principal de si mesmo; principal deve estar ativo no projeto/organização; papel/nome divergentes400; reemissão nunca amplia teto e cruza permissões atuais do novo emissor e delegante original. Teto reduzido aplica também aos tokens anteriores. Tokens de todos os papéis não emitem/listam/revogam tokens; sessão UI mantém permissões existentes e fica fora da matriz.
+- Baixos F0: validade1..90 validada no serviço e parâmetro do DTO, constantes de canal, GUID do resume documentado, rotaçãoHMAC anterior limitada à janela por responsabilidade do ingressoB. Contratos acrescentam autorGit observado separado do sistema e LastManualChangeAtUtc para impedir replay antigo desfazendo intervenção manual por token humano, sem novo status/coluna.
+- Validação focada isolada da fatia:126/126 (76 contratos e50 casos de token/política/HTTP),11s. Handler/controller reais em Kestrel temporário3136, EF/permissões reais em memória para emissão/delegação, matriz com store controlado; ainda não prova SQL, todas as rotas genéricas, transação de movimento ou integraçãoUI/webhook real. Build em artifacts/tmp excluiu somente fontes B não commitados em construção, sem editá-los; alvo de exclusão externo documentado no handoff.
+- Falhas transitórias: builds conjuntos pegaram ILogger na Application e Comment.Text em arquivos B, corrigidos pela Ponte; fixture própria inicialmente criava raízesInMemory por teste e excedeu20providers, corrigida com raiz compartilhada e nomesDB únicos; nome de enum no teste corrigido para OnHold. Não houve supressão de aviso/teste. Avisos antigos CS8602 e xUnit2031 preservados.
+- MCP da Ponte/Prova revisado git-2 só baixos (78bf9a5/7f4e94b), documentação atualizada pela Prova. UI própria C em preparo:13/13 Vitest, tsc-b e lint0erros/14avisos (12anteriores+2fixturesProva); sem encaixe noApp e sem buildVite/QAvisual ainda. CPU: novas regras GOALS lidas, foco com nice10/2processadores/MSBuildm1; imagem/suíte completa só com travaCPU e fora da janela08:30-10:00BRT.
+- Próximo: ENTREGA git-3/revisãoA, correções altas/médias se houver, UIgit-5, PonteBgit-4; F1 integraDI/auth/contexto/filtros/guard de todos caminhos, autoria/serviço único/migration aditiva Down, e F2 exige revisão+QAindependente mesmoSHA/suítes completas antes de PRONTO-PROD. Prisma-dev/prisma-qa/produção intocados; sem main/deploy/mergePR.
+
+## [2026-10-16] - Codex (Forja) - F0 dos contratos Método Git 2a
+
+- Após git-spec-2 (`7617fdd`) aprovado pelo Prumo somente com baixos, recebida liberação delegada do Maestro na D102 (`fe254ab`): PD-01/PD-05 do corte2a/PD-06 adotados provisoriamente; produção desligada e confirmação do PO antes de habilitar integração institucional. Spec atualizada para approved somente2a com essa fonte, quatro baixos incorporados, roadmap/contexto alinhados. Sem aprovação de2b/3.
+- Main `8ec6699` integrada por merge `052da4f`, conforme instrução do Maestro (sem reescrever histórico). Único conflito foi a história na spec: preservada revisão corrigida e referência US-METODO-GIT-001 agora integrada. Índice/worktree de DECISIONS estava idêntico ao blob anterior ao D102 apesar de HEAD já tê-la: sincronizado somente esse arquivo ao registro já commitado, sem texto novo nem edição alheia descartada.
+- Congelados enums/formato opaco `pmt_`, DTOs e seis arquivos de interfaces para contexto confiável, política, persistênciaGit, provedor/segredos e movimento transacional. Contrato de rotas e responsabilidades em `docs/method-git/contracts-phase2a.md`. Donos Forja F0/A/UI-C/F1, Ponte B/MCP-C, Prova QA/E2E/testes independentes. JWT não é token do método; tipo interativo não vem do papel/cabeçalho; nenhum token concede início/liberação humana; instalaçãoGit no payload é opcional e validada quando presente.
+- Verificações: build Application aprovado (um aviso CS8602 anterior), teste F0 9/9, suíte xUnit completa320/320 no banco próprio SQL3132 (33s), diff limpo e26 CA preservados. Baseline E2E independente da Prova:119 passed/6 skipped/zero failures/retries (12,1min), fonte base338918b/cb67792. Runner usa bridge e proxy loopback interno para contexto seguro/Clipboard; auth+chat2/2 em14,7s. Sem execução de migration nova ou validação funcional2a: nenhum endpoint/serviço foi ligado por F0.
+- Complemento F0 após retorno da Prova: leitura da task expõe ciclo/bloqueio vigente para a ação UI de retomada e snapshot do projeto inclui os seis campos. Build e76/76 testes de contrato (9 próprios+67 adversariais Prova) passaram; erro de compilação transitório no teste da Prova resolvido pela própria dona. Nenhum endpoint/serviço ligado.
+- Próximo passo: ENTREGA git-1/revisão F0, depois A/B/C usando os contratos. F1 reunirá autenticação/EF/handlers/UI e gerará uma migration aditiva; F2/revisão/QA no mesmo sha antes de PRONTO-PROD. Não houve deploy, merge de PR, push na main ou operação em prisma-dev/prisma-qa/produção.
+
+## [2026-10-16] - Codex (Forja) - preparação isolada da frente Git e correção git-spec-2
+
+- Goal METODO-GIT iniciado na worktree `metodo-git`/`feat/metodo-git`, sem alterar produto antes da spec/revisão. Instância própria `prisma-metodo` em bridge `10.245.130.0/24`, app3130/SQL3132, bancos `PrismaMetodo_E2E` e `Prisma_BoardColumns_Metodo_Seeded`; segredos externos gerados e protegidos. Build base338918b, health/login200, 28 migrations existentes, xUnit311/311 e Playwright2/2 de autenticação/chat passaram. Pool Docker esgotado contornado apenas por sub-rede livre da rede nova, sem alterar redes/infra existentes. Ambientes prisma-dev, prisma-qa e produção preservados.
+- Após revisão git-spec reprovada em cb67792 e atribuição do Maestro na FILA, corrigida a spec: humanos UI sem matriz nova, token humano próprio sem personificação/autorização interativa, principal não humano/teto, tenant e auditoria no worker, Down funcional/JSON aditivo, inventário de escritas e dono do movimento transacional, duas executoras+QA. Spec em review; nenhuma autoaprovação.
+- Pendente de registro humano: PD-01/PD-05(2a)/PD-06 e gates aplicáveis (médio7 do Prumo); nova revisão git-spec-2 ainda necessária. Sem implementação 2a, migration nova ou validação funcional final. Continuidade em NOTAS; próximo passo é liberar F0 somente após corrigir/rever e registrar as decisões.
+
+## [2026-10-16] - Codex (Tear) - revisão da integração Git conforme D101
+
+- Tarefa 9, somente documentação em `feat/metodo-git` (base `338918b`): spec draft reorganizada em 2a/2b/3 com 26 critérios separados, PD-02/03/08 resolvidas, recomendações concretas para PD-01/04/05/06/07 aguardando PO, onze tabelas/índices e migration aditiva prevista para G-MIGRATION. Incluídos plano para três executores com arquivos exclusivos/integrador sequencial e migração MCP de email/senha para token opaco emitido pela API, com papel local redundante.
+- Conferidos template, critérios por corte, links locais, decisões/pendências e `git diff --check`; testes de produto não executados por ser documentação. Worktree isolada `metodo-git-docs` porque a branch está ocupada em `maestro-int`; envio somente para `feat/metodo-git`, sem alterar aquela worktree. Nenhum código, migration, container ou banco tocado; prisma-dev preservado para a demonstração. Próximo passo: PO aprovar recomendações/G-SPEC/G-MIGRATION antes da execução 2a.
 
 ## [2026-10-16] - Codex (Tear) - Frente 1, horas-6: precisão ao editar observação
 
@@ -126,6 +241,7 @@
 - Revisão do Prumo no servidor: sem segredo versionado e sem comando que atinja outros containers; achado médio em `compose.server-dev.yaml:24` (`network_mode: host` dá ao app de desenvolvimento alcance ao loopback do servidor) e nove baixos. A branch não foi integrada: aguarda decisão do PO sobre o risco da rede host.
 - Arquivos desta entrada: `DECISIONS.md` (D97), `AGENTS.md`, `docs/workspace/README.md`, `PROGRESS.md`. Sem código de produto, sem push na `main`, sem deploy.
 - Próximo passo: PO decidir rede host, integração da feat na `main`, correção das três falhas preservadas e limpeza das worktrees antigas do PC.
+
 ## [2026-10-13] - Codex (Tear) - ambiente Linux prisma-dev e verificações no servidor
 
 - Tarefa 1 do Maestro executada na branch `chore/server-dev-env`, criada da `feat/ai-assistant-foundation` em `faed2ef`. `git fetch` e leitura das instruções obrigatórias realizados. Instalado SDK .NET 8 (8.0.131), dependências React/Context Explorer e navegadores Chromium/Firefox/WebKit do Playwright. Sem agentes adicionais, ai-memory, produção, hooks, specs ou código/testes de produto alterados.
@@ -362,7 +478,6 @@
 - Main integrada à branch local `chore/maestri-workspace`, preservando a organização D92, landing, histórico de diagnóstico e spec IA draft. Catálogo local agora possui 49 specs e 360 histórias, com governança 42/42 aprovada; o remoto tem 48 specs porque a fundação IA permanece local. Registros finais locais não disparam outro deploy.
 - Próximo passo: testar as melhorias publicadas com a equipe e revisar as decisões pendentes da `SPEC-AI-001` antes de G-SPEC/G-MIGRATION da fundação; esta entrega não implementa nem aprova IA.
 
-
 ## [2026-10-06] — Codex — diagnóstico de recuperação de senha em produção
 
 - Pedido do PO: correção pontual do e-mail de redefinição que não chega em `prisma.nordevs.com.br`.
@@ -566,24 +681,31 @@
 ## [2026-09-22] - Codex - G-DEPLOY do lote de acesso e descrição
 
 - Autorização explícita do PO: "implementa em produção". Publicado o commit `cacbf22`, da branch `fix/invite-recovery-20260922`, usando a mesma imagem validada em QA (`prisma-access-hotfix:20260922`, digest `sha256:ccb7b245e70f08ce8c0bc30bdf824ee149af2b6bd906c0e9e8dcd1b6d6e8fe04`). Sem incluir a migration de colunas independentes.
+
 ## [2026-09-22] - Codex - checkpoint D89: colunas independentes por quadro
 
 - Trabalho isolado na VPS em `/home/dev/prisma-board-columns-20260922`, branch `feat/board-columns-complete-20260922`, base `a85eb10`. Reaproveitamento revisado somente dos arquivos D89 autorizados da worktree QA, sem alterar QA ou produção.
+
 ## [2026-09-22] - Codex - D89: transferência preserva a árvore inteira
 
 - Correção da revisão independente: TransferAsync carrega recursivamente todos os descendentes com IgnoreQueryFilters, revalida projeto/organização e transfere a árvore em uma única transação Serializable, preservando ParentId, arquivamento e histórico/evento individual.
+
 ## [2026-09-22] - Codex - D62: impacto e consentimento recursivo na reclassificação
 
 - Reclassificação por quadro agora possui GET de impacto com nome, total da coluna, estados alterados, descendentes abertos externos e token SHA-256 da fotografia (IDs/vínculos, estado, arquivamento e RowVersion). UPDATE revalida a fotografia dentro da transação Serializable; mudança concorrente cancela integralmente.
+
 ## [2026-09-22] - Codex - D89: referências de automações no backfill
 
 - Migration candidata remapeia AutomationRules.TriggerStageId e ActionValue de MoveToStage por BoardId + LegacyStageId, antes de liberar colunas operacionais. Referências inexistentes/ambíguas abortam antes das clones; contagens de regras e destinos são verificadas.
+
 ## [2026-09-22] - Codex - D89: formulários legados apontam para clones do quadro
 
 - Backfill incremental remapeia ExternalForms.InitialStageId e StageId/stageId nas AssignmentRulesJson por ExternalForm.ExternalPortal.BoardId + LegacyStageId (o modelo não possui BoardId diretamente em ExternalForm).
+
 ## [2026-09-22] - Codex - D89: exclusão de quadro com portal falha de forma explícita
 
 - DeleteBoardAsync verifica portais e formulários vinculados antes de mover tarefas ou retirar colunas. Retorna erro de domínio orientando reconfigurar esses vínculos; não remapeia portal implicitamente nem depende de erro FK/500 para esse caso esperado.
+
 ## [2026-09-22] - Codex - D89: coluna usada por formulário exige reconfiguração
 
 - DeleteStageAsync agora bloqueia a retirada quando formulário do quadro usa a coluna como InitialStageId ou destino StageId/stageId nas regras JSON, incluindo formulários desativados. A mensagem orienta reconfigurar o formulário; nenhuma transferência ocorre antes dessa validação.
@@ -677,6 +799,7 @@
 - Rollback: `prisma-rollback:20260922T150935Z` para o lote anterior à migration e `prisma-rollback:20260922T150935Z-r2` para o estado imediatamente anterior ao ajuste semântico.
 - Próximo passo: acompanhar logs e uso real da equipe; as dívidas de outbox/idempotência e retry SQL permanecem planejadas, sem bloquear esta release.
 - Bloqueios: nenhum.
+
 ## [2026-09-21] — Cursor (Claude) — G-DEPLOY: convite fantasma + modal da tarefa
 - **Autorização:** PO em 2026-09-21: “pode continuar”, após o desbloqueio operacional do Gabriel e o pedido explícito de publicar o patch.
 - **Proteção:** backup SQL `COPY_ONLY`+`CHECKSUM` com `RESTORE VERIFYONLY` válido em `/home/dev/backups/prisma/20260921T154939Z/PrismaWorkspace_20260921T154939Z.bak`, SHA-256 `b11d3a9ea56dcde566f46fd92af83352c8d29d80cbce7a1e3cf0319983580bba`. Imagem anterior etiquetada `prisma-rollback:20260921T154939Z`. Sem migration.
@@ -711,6 +834,7 @@
 - **Bloqueios:** Nenhum.
 
 ---
+
 ## [2026-09-21] — Codex — G-DEPLOY do editor rico de descrição
 - **Autorização:** PO autorizou explicitamente publicar a descrição. O lote contém somente o editor rico do commit `010096e`; o relato posterior sobre múltiplos responsáveis ficou separado.
 - **Proteção:** backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY` aprovado em `/home/dev/backups/prisma/20260921T130836Z/PrismaWorkspace_20260921T130836Z.bak`, SHA-256 `bfea09374810f2604475db5617fd8f5ea7a1dd519dd46e21138a314e641c11e0`. Imagem anterior preservada como `prisma-rollback:20260921T130836Z`.
@@ -728,7 +852,7 @@
 
 ---
 
-# PROGRESS — log de handoff (append-only)
+
 
 Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 É o bastão passado entre Codex, Antigravity e Claude. Não apague entradas antigas.
@@ -767,6 +891,7 @@ Cada sessão de IA adiciona **UMA entrada no topo**, no formato abaixo.
 - **Bloqueios:** nenhum no recorte. Não toquei na API nem em produção. Front E2E desta worktree em `:5450`; API compartilhada em `:5400`.
 
 ---
+
 ## [2026-09-10] — Claude Opus 5 (coordenador) — G-DEPLOY: as três worktrees em produção
 - **Publicado** em `https://prisma.nordevs.com.br` o lote integrado pelo Codex: `feat/edit-column` (editar nome e classificação da coluna), `state-graph-redesign` (grafo de estados) e `feat/workitem-kind-selection` (escolha do tipo nos pontos de criação). Commit `bcb612a`.
 - **Retomada:** o agente que fez os merges parou por limite de uso no meio do E2E, deixando `PROGRESS.md` e três specs sem commit. Conferi os merges (código combinou sem conflito; os conflitos foram só de PROGRESS, com as entradas de todos preservadas), revisei as edições de spec e fechei a validação.

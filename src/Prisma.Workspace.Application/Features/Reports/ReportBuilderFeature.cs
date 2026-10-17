@@ -462,6 +462,8 @@ public class ReportExecutor
             {
                 var entries = (await _analytics.GetTimeEntriesAsync(projectId, ct)).Where(scope.CanRead).ToList();
                 var ids = await _access.GetAccessibleProjectIdsAsync(entries.Select(e => e.WorkItem.Board.ProjectId), scope.ActorId, ct);
+                var authors = await _users.GetDisplayNamesAsync(entries.Select(x => x.UserId).Distinct(), ct);
+                foreach (var author in authors) names[author.Key] = author.Value;
                 return entries.Where(e => ids.Contains(e.WorkItem.Board.ProjectId))
                     .Select(entry => TimeRow(entry, names, Hours)).ToList();
             }
