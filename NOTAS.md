@@ -1,3 +1,14 @@
+# Continuidade — horas-7 (17/10/2026)
+
+- PRONTO71 foi RETIRADO03:02UTC: dado do E2E era futuro nos primeiros11min do dia. Produto H09/H16/B07 segue igual à aprovação71; sótime-tracking-fixes.spec.ts mudou em4b761ee/a85f1b2. Dia encerrado, semana anterior forçada no59s, GET/semana visível/data consultada sincronizados. Todos asserts mantidos. Nova validação em docs/time-test-dates-validation.md.
+- Gates novos concluídos: build.NET73,01; xUnit391/39132,87(40,85prep); tsc72,96; tiposE2E6,37; lint0erros/12avisos0,81; Vitest165/165226,41; Web87,51. Focal49/49 em586,34s, full219PASS/6pulos anteriores/0falhas/retries em1.776,28s,96horas/B07PASS. Rich passou nesta rodada sem tocar arquivo.
+- Preservar negativos: RED03:01UTC19,76s POST400/futuro antesUI, GREENpreview3/3 e fonte final03:09:53 antes00:11BRT; primeiro xUnit390/391 por deadlock em BoardStructureSqlTests rollback35,43s; controle1/1 e nova full391/391, sem mudança de fonte/retry/isolamento. Não afirmar que deadlock foi corrigido.
+- Antes da ENTREGA: commit docs/PROGRESS/NOTAS, push sófix/time-tracking-20261015, imagem doSHAfinal comparada a runtime-tested a85 (quatroDLLs+wwwroot/assets), health/login200. QA3110/SQL3111, unidade própria separada. Login privado /home/agentes/projetos/prisma/.env.qa.login600; nunca imprimir senha. Sem migrations/dev/prod.
+- ReservaCPU/QA Tear até04:15UTC17/10; liberar explicitamente após imagem final. Browserprisma-qa-browser-horas5/WS127.0.0.1:3115 permanece disponívelLupa. Nenhum processo de suíte Tear deve ficar ativo ao liberar. Privados .runlogs/horas-7/CURRENT.md/helpers/logs600/JSON/backups.
+- Nova ENTREGAhoras7 e SQLsubset391 devem conter SHAfinal. Prumo/Lupa aprovam MESMONOVOSHA antes de novo PRONTO; não herdar gates71. PUBLICADO Maestro antes de criarbranch/implementarC1. Lupa quer baselineC1 no produto atual antes da primeiraimagemqa1; alinhado na fila. PreparaçãoC1 sóleitura em .runlogs/horas-5/C1-readonly-preparation.md; nenhum código/branchC1 iniciado. Esperar publicação/revisão/QA não bloqueia nem encerra goal.
+
+## Histórico preservado
+
 # Continuidade — horas-6 para revisão e QA (2026-10-16 Brasília)
 
 - QA final horas-5 no9c REPROVADO somente por QA-H09; H16/H08 aprovados. Corrigido37313ee: preservar string original integral nos campos temporais não alterados. Test-only75f3544 elimina comparação indevida de displayName; mantém todos os campos temporais e contagem2. Nova validação pública em docs/time-entry-precision-validation.md.
