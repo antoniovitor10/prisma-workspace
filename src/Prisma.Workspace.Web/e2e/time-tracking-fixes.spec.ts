@@ -12,18 +12,31 @@ async function day(page:Page,f:TimeFactory,date:string,reload=false){
   await board(page,f,reload);
   const loaded=responseTo(page,'GET','/api/TimeEntries/my/weekly');
   await page.getByRole('button',{name:'Meu Tempo',exact:true}).click();
-  const week:WeeklyTime=await (await loaded).json();
+  const timeModal=page.getByRole('heading',{name:'Meu Tempo',exact:true}).locator('..');
+  let response=await loaded;expect(response.status()).toBe(200);
+  let week:WeeklyTime=await response.json();
+  if(!week.days.some(d=>d.date===date)){
+    expect(Date.parse(date)).toBeLessThan(Date.parse(week.weekStart));
+    const shifted=responseTo(page,'GET','/api/TimeEntries/my/weekly');
+    await timeModal.getByRole('button',{name:'Anterior',exact:true}).click();
+    response=await shifted;expect(response.status()).toBe(200);week=await response.json();
+  }
   const index=week.days.findIndex(d=>d.date===date);expect(index).toBeGreaterThanOrEqual(0);
   const entries=responseTo(page,'GET','/api/me/time/entries');
-  await page.getByRole('heading',{name:'Meu Tempo',exact:true}).locator('..').getByRole('button',{name:'Ajustar',exact:true}).nth(index).click();
+  await timeModal.getByRole('button',{name:'Ajustar',exact:true}).nth(index).click();
   expect((await entries).status()).toBe(200);
   return page.getByRole('heading',{name:/^Ajustar: /}).locator('..');
 }
-const today=()=>{
+const pastDate=(daysAgo=1)=>{
   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
   const date=new Date(`${today}T12:00:00-03:00`);
-  // Usar hoje, no início da madrugada, garante passado e pertence à semana visível.
+  // Um dia já encerrado garante períodos passados também nos primeiros minutos da madrugada.
+  date.setUTCDate(date.getUTCDate()-daysAgo);
   return date.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+};
+const previousWeekDate=()=>{
+  const date=new Date(`${pastDate(0)}T12:00:00-03:00`);
+  return pastDate((date.getUTCDay()+6)%7+1);
 };
 const total=(f:TimeFactory,id:string)=>f.get<{totalSeconds:number}>(`/api/TimeEntries/work-item/${id}/total`);
 
@@ -54,7 +67,7 @@ test('timer em andamento não dobra após recarregar o card',async({page,request
 
 test('editar lançamento no ajuste persiste horários, observação e atualiza dia e semana',async({page,request})=>{
   await withTimeFactory(page,request,async f=>{
-    const task=await f.task();const date=today();
+    const task=await f.task();const date=pastDate();
     const entry=await f.manual(task.id,`${date}T00:00:00-03:00`,`${date}T00:02:00-03:00`);
     const modal=await day(page,f,date);
     const row=modal.getByRole('article',{name:`Lançamento ${task.title}`,exact:true});
@@ -77,7 +90,7 @@ test('editar lançamento no ajuste persiste horários, observação e atualiza d
 
 test('editar só a observação preserva períodos contíguos com frações de segundo',async({page,request})=>{
   await withTimeFactory(page,request,async f=>{
-    const task=await f.task();const date=today();
+    const task=await f.task();const date=pastDate();
     const previous=await f.manual(task.id,`${date}T00:00:00.9999999-03:00`,`${date}T00:01:00.9999999-03:00`);
     const note=f.boards.name('Observação contígua');
     const entry=await f.manual(task.id,`${date}T00:01:00.9999999-03:00`,`${date}T00:02:00.9999999-03:00`,note);
@@ -112,7 +125,7 @@ test('editar só a observação preserva períodos contíguos com frações de s
 
 test('editar só a observação mantém 59 segundos e os instantes de um período isolado',async({page,request})=>{
   await withTimeFactory(page,request,async f=>{
-    const task=await f.task();const date=today();
+    const task=await f.task();const date=previousWeekDate();
     const entry=await f.manual(task.id,`${date}T00:10:00.9999999-03:00`,`${date}T00:11:00.0000001-03:00`);
     expect(entry.durationSeconds).toBe(59);
     const modal=await day(page,f,date);
@@ -141,7 +154,7 @@ test('editar só a observação mantém 59 segundos e os instantes de um períod
 
 test('excluir lançamento exige confirmação, cancelar preserva e confirmar atualiza os totais',async({page,request})=>{
   await withTimeFactory(page,request,async f=>{
-    const task=await f.task();const date=today();
+    const task=await f.task();const date=pastDate();
     const entry=await f.manual(task.id,`${date}T00:00:00-03:00`,`${date}T00:02:00-03:00`);
     const modal=await day(page,f,date);const row=modal.getByRole('article',{name:`Lançamento ${task.title}`,exact:true});
     await row.getByRole('button',{name:'Excluir lançamento',exact:true}).click();
@@ -167,7 +180,7 @@ test('buscar tarefa pelo título e número no ajuste funciona com teclado',async
     const available=await f.get<Array<{id:string;assigned:boolean}>>('/api/me/time/tasks');
     expect(available.findIndex(t=>t.id===task.id)).toBeLessThan(available.findIndex(t=>t.id===unassigned.id));
     expect(available.map(t=>t.id)).not.toContain(archived.id);
-    const date=today();const modal=await day(page,f,date);
+    const date=pastDate();const modal=await day(page,f,date);
     const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
     await field.fill(archived.title);
     await expect(modal.getByText('Nenhuma tarefa encontrada.',{exact:true})).toBeVisible();
@@ -199,7 +212,7 @@ async function longTaskSearch(page:Page,f:TimeFactory){
     tasks.push({id:await created.json() as string,title});
   }
   test.info().annotations.push({type:'fixture-phase',description:`Seis tarefas: ${Math.round(performance.now()-began)} ms`});
-  const modal=await day(page,f,today());
+  const modal=await day(page,f,pastDate());
   const field=modal.getByRole('combobox',{name:'Buscar tarefa por título ou número'});
   const filtered=()=>page.waitForResponse(response=>response.request().method()==='GET'
     &&new URL(response.url()).pathname.toLowerCase()==='/api/me/time/tasks'
