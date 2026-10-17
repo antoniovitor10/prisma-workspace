@@ -281,3 +281,5 @@ Atualizado em 2026-10-16, por Tear, tarefa 8. Registro histórico da branch docs
 ## 2026-10-17 — horas-5
 
 - Merge de `origin/main` e101aa4 preparado em `fix/time-tracking-20261015`, commit `713daae`. Build/xUnit/Vitest/tsc/lint/build frontend passaram; 33 testes SQL opcionais do Método foram pulados sem a instância própria. A E2E afetada teve falhas, incluindo B07 individual; ver `prisma-handoff/goals/entregas/horas-5.md` e evidências privadas em `.runlogs/horas-5`. Próximo passo: revisão do Prumo e investigação/QA Lupa no SHA exato; não declarar PRONTO-PROD até resolver os bloqueios de teste.
+
+- 2026-10-17 horas-5: controle E2E limpo do pai8588a8b e do merge64d3e32 passaram report-builder-privacy 7/7 (130,66s e154,26s); main e101aa4 sem B07 expôs as linhas de terceiros (6 falhas esperadas/1 passou). A falha inicial no DB reutilizado não reapareceu; causa imediata segue sem prova. Parecer Prumo aprovado com ressalva média enquanto Lupa faz QA B07 no SHA64d3e32. Builds de controle e bancos diagnósticos próprios removidos; nenhuma suíte ou listener de Tear ativo.
