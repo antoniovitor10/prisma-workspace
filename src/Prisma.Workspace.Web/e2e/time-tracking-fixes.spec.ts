@@ -13,18 +13,26 @@ async function day(page:Page,f:TimeFactory,date:string,reload=false){
   const loaded=responseTo(page,'GET','/api/TimeEntries/my/weekly');
   await page.getByRole('button',{name:'Meu Tempo',exact:true}).click();
   const timeModal=page.getByRole('heading',{name:'Meu Tempo',exact:true}).locator('..');
+  const visibleWeek=async(week:WeeklyTime)=>{
+    const label=`Semana de ${week.weekStart.slice(8,10)}/${week.weekStart.slice(5,7)}`;
+    await expect(timeModal.getByText(label,{exact:true})).toBeVisible();
+    await expect(timeModal.getByRole('region',{name:'Horas da semana'})).toBeVisible();
+  };
   let response=await loaded;expect(response.status()).toBe(200);
   let week:WeeklyTime=await response.json();
+  await visibleWeek(week);
   if(!week.days.some(d=>d.date===date)){
     expect(Date.parse(date)).toBeLessThan(Date.parse(week.weekStart));
     const shifted=responseTo(page,'GET','/api/TimeEntries/my/weekly');
     await timeModal.getByRole('button',{name:'Anterior',exact:true}).click();
     response=await shifted;expect(response.status()).toBe(200);week=await response.json();
+    await visibleWeek(week);
   }
   const index=week.days.findIndex(d=>d.date===date);expect(index).toBeGreaterThanOrEqual(0);
   const entries=responseTo(page,'GET','/api/me/time/entries');
   await timeModal.getByRole('button',{name:'Ajustar',exact:true}).nth(index).click();
-  expect((await entries).status()).toBe(200);
+  const loadedEntries=await entries;expect(loadedEntries.status()).toBe(200);
+  expect(new URL(loadedEntries.url()).searchParams.get('date')).toBe(date);
   return page.getByRole('heading',{name:/^Ajustar: /}).locator('..');
 }
 const pastDate=(daysAgo=1)=>{
