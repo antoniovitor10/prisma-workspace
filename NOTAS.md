@@ -1,3 +1,14 @@
+# Continuidade — horas-6 para revisão e QA (2026-10-16 Brasília)
+
+- QA final horas-5 no9c REPROVADO somente por QA-H09; H16/H08 aprovados. Corrigido37313ee: preservar string original integral nos campos temporais não alterados. Test-only75f3544 elimina comparação indevida de displayName; mantém todos os campos temporais e contagem2. Nova validação pública em docs/time-entry-precision-validation.md.
+- Gates: build.NET/tsc/lint/Web aprovados, xUnit391/391 incluindoSQL7, Vitest165/165, focal49/49desktop/mobile3x. Full218pass/6pulos anteriores/1falha antigaRich63mobile/0retries, exit1; todos96horas/B07verdes.48/104limpezas focais/full semfalhas. Full não totalmenteverde; sem tocarRich ou migrations.
+- Antes da ENTREGA: commit documental, push sófix/time-tracking-20261015 e imagem doSHAfinal; comparar4DLLs+wwwroot/assets com runtime-tested da75f3544. Health/login200 e revisionOCIexata. QA3110/SQL3111; login em /home/agentes/projetos/prisma/.env.qa.login600, nunca imprimirsenha.
+- ReservaCPU+QA Tear até00:45UTC17/10; liberar explicitamente ao encerrar buildfinal. Browser próprio prisma-qa-browser-horas5/WS127.0.0.1:3115 permanece disponívelLupa, sem mounts/erros ignorados. Nenhuma suíte Tear ativa após liberar. Nunca dev/prod.
+- Entrega externa horas-6.md deve conterSHAfinal/table/limites; horas-6-sql.txt já tem7SQL extraídos da execução391(sem fingir rerunisolado). Privados .runlogs/horas-6/CURRENT.md, logs600 e helpers de redação/manifesto/SQLguards. Fonte funcional373, E2E75, main8ec reconferida depoisfull.
+- Após ENTREGA: aguardarPrumo+Lupa aprovados noMESMOSHA, sem herdar aceite9c. PRONTO-PROD somente então; PUBLICADO Maestro antes de implementar C1–C6. PreparaçãoC1 apenasleitura em .runlogs/horas-5/C1-readonly-preparation.md. Espera não bloqueia nem encerra goal. Legadosinflados: decisão/checagem produção cabeMaestro, Tear não consulta.
+
+## Histórico preservado
+
 # Continuidade — horas-5 para revisão e QA (2026-10-16)
 
 - Branch `fix/time-tracking-20261015`; fonte de produto `62c3c57`, E2E final `44b9fae`, main `8ec6699` reconferida. H16 corrigido com lock SQL transacional e recuperação de abertos próprios; H08 com visibilidade por teclado/lista/modal. Relatório público novo `docs/time-tracking-concurrency-validation.md`; uma entrada PROGRESS desta entrega.
