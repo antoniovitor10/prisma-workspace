@@ -91,6 +91,8 @@ public class OrganizationContextMiddleware
             return false;
         if (path.Equals("/api/organizations/invitations/accept", StringComparison.OrdinalIgnoreCase))
             return false;
+        if (path.Equals("/api/organizations/creation", StringComparison.OrdinalIgnoreCase))
+            return false;
         return true;
     }
 

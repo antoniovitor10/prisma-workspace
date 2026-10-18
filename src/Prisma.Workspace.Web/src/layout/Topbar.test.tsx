@@ -24,6 +24,7 @@ afterEach(() => {
 beforeEach(() => {
   vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);
   vi.spyOn(api, 'logout').mockResolvedValue(undefined as never);
+  vi.spyOn(api, 'getOrganizationCreation').mockResolvedValue({ canCreate: false });
 });
 
 const organizations: OrganizationStateValue['organizations'] = [
@@ -64,6 +65,33 @@ function renderTopbar(
 }
 
 describe('Topbar', () => {
+  it('oferece Nova organização só quando o servidor permite e troca para a organização criada', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+    vi.spyOn(api, 'getOrganizationCreation').mockResolvedValue({ canCreate: true });
+    const created = { ...organizations[0], id: 'org-pessoal', name: 'Pessoal', slug: 'pessoal' };
+    const create = vi.spyOn(api, 'createOrganization').mockResolvedValue(created as never);
+    const { switchOrganization } = renderTopbar();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Menu da conta' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Nova organização' }));
+    fireEvent.change(screen.getByLabelText('Nome da organização'), { target: { value: ' Pessoal ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar organização' }));
+
+    await waitFor(() => expect(switchOrganization).toHaveBeenCalledWith('org-pessoal'));
+    expect(create).toHaveBeenCalledWith({ name: 'Pessoal' });
+    expect(screen.queryByRole('dialog', { name: 'Nova organização' })).not.toBeInTheDocument();
+  });
+
+  it('esconde Nova organização para quem não é administrador da plataforma', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+    renderTopbar();
+
+    await waitFor(() => expect(api.getOrganizationCreation).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole('button', { name: 'Menu da conta' }));
+    expect(await screen.findByRole('menuitem', { name: 'Sair' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Nova organização' })).not.toBeInTheDocument();
+  });
+
   it('exibe a navegação principal e os controles globais no cabeçalho', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
     renderTopbar();

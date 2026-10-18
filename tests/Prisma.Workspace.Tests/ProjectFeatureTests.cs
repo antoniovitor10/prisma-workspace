@@ -236,6 +236,8 @@ public class ProjectFeatureTests
             => Task.FromResult<Organization?>(null);
         public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default)
             => Task.FromResult(false);
+        public Task<bool> IsPlatformAdministratorAsync(string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
         public Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
         public Task<IReadOnlyList<OrganizationMember>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
