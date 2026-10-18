@@ -37,6 +37,10 @@ public class OrganizationsController : ControllerBase
         return Created("/api/organizations", organization);
     }
 
+    [HttpGet("creation")]
+    public async Task<IActionResult> GetCreation(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetOrganizationCreationQuery(UserId), ct));
+
     [HttpGet("current")]
     public async Task<IActionResult> GetCurrent(CancellationToken ct)
         => Ok(await _mediator.Send(new GetCurrentOrganizationQuery(UserId), ct));

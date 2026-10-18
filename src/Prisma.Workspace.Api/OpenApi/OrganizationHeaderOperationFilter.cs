@@ -11,7 +11,8 @@ public class OrganizationHeaderOperationFilter : IOperationFilter
         var path = "/" + (context.ApiDescription.RelativePath ?? string.Empty).Split('?')[0];
         if (!path.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/organizations", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/organizations/invitations/accept", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/api/organizations/invitations/accept", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/organizations/creation", StringComparison.OrdinalIgnoreCase))
             return;
 
         operation.Parameters ??= new List<OpenApiParameter>();

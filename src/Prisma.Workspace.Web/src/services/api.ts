@@ -315,6 +315,9 @@ export const api = {
   async createOrganization(data: { name: string; slug?: string }) {
     return this.request('/api/organizations', { method: 'POST', body: JSON.stringify(data) });
   },
+  async getOrganizationCreation(): Promise<{ canCreate: boolean }> {
+    return this.request('/api/organizations/creation');
+  },
   async getCurrentOrganization() {
     return this.request('/api/organizations/current');
   },

@@ -1,3 +1,10 @@
+## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
+
+- Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
+- Primeira organização continua livre no onboarding; criar outra agora exige IsPlatformAdministrator (servidor recusa com 403 em pt-BR). GET /api/organizations/creation diz se o usuário pode criar; o menu da conta mostra "Nova organização" só nesse caso e troca para a organização criada.
+- Testes: OrganizationCreationTests (3) + Organization*/ProjectFeatureTests 31/31; Topbar.test 8/8 (2 novos); tsc -b e oxlint sem erros novos.
+- Próximo: criar a organização Pessoal e o projeto cooperarpay, configurar o método, tokens, cadastro do repositório, webhook e teste de ponta a ponta.
+
 ## [2026-10-16] - Codex (Forja) - nomes reais das colunas no histórico do método
 
 - QA independente no b2f2bbc encontrou P2: o recorder gravava IDs/status sem fromStageName/toStageName, e a tela exibia Backlog para Backlog. Corrigido só MethodMovementRecorder: consulta única em lote para movimentos, nomes reais das colunas de origem/destino e valores do tracker para criação/renomeação no mesmo Save. Eventos existentes também recebem os nomes verificados. Sem alteração da matriz, UI, schema ou migration; eventos antigos permanecem imutáveis.

@@ -27,6 +27,9 @@ public class OrganizationRepository : IOrganizationRepository
     public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default)
         => _context.Organizations.IgnoreQueryFilters().AnyAsync(x => x.Slug == slug, cancellationToken);
 
+    public Task<bool> IsPlatformAdministratorAsync(string userId, CancellationToken cancellationToken = default)
+        => _context.Users.AnyAsync(x => x.Id == userId && EF.Property<bool>(x, "IsPlatformAdministrator"), cancellationToken);
+
     public async Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
     {
         await _context.Organizations.AddAsync(organization, cancellationToken);

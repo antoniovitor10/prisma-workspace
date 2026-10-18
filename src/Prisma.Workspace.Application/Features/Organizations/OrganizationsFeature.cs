@@ -97,6 +97,20 @@ public class GetCurrentOrganizationQueryHandler : IRequestHandler<GetCurrentOrga
     }
 }
 
+public record OrganizationCreationDto(bool CanCreate);
+
+/// <summary>A primeira organização é livre (onboarding); as seguintes só para o administrador da plataforma.</summary>
+public record GetOrganizationCreationQuery(string UserId) : IRequest<OrganizationCreationDto>;
+
+public class GetOrganizationCreationQueryHandler : IRequestHandler<GetOrganizationCreationQuery, OrganizationCreationDto>
+{
+    private readonly IOrganizationRepository _organizations;
+    public GetOrganizationCreationQueryHandler(IOrganizationRepository organizations) => _organizations = organizations;
+
+    public async Task<OrganizationCreationDto> Handle(GetOrganizationCreationQuery request, CancellationToken ct)
+        => new(await CreateOrganizationCommandHandler.CanCreateAsync(_organizations, request.UserId, ct));
+}
+
 public record CreateOrganizationCommand(string Name, string? Slug, string UserId) : IRequest<OrganizationDto>;
 
 public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrganizationCommand>
@@ -113,8 +127,14 @@ public class CreateOrganizationCommandHandler : IRequestHandler<CreateOrganizati
     private readonly IOrganizationRepository _organizations;
     public CreateOrganizationCommandHandler(IOrganizationRepository organizations) => _organizations = organizations;
 
+    internal static async Task<bool> CanCreateAsync(IOrganizationRepository organizations, string userId, CancellationToken ct)
+        => (await organizations.GetForUserAsync(userId, ct)).Count == 0
+            || await organizations.IsPlatformAdministratorAsync(userId, ct);
+
     public async Task<OrganizationDto> Handle(CreateOrganizationCommand request, CancellationToken ct)
     {
+        if (!await CanCreateAsync(_organizations, request.UserId, ct))
+            throw new AcessoNegadoException("Somente o administrador da plataforma pode criar outra organização.");
         var baseSlug = Slugify(string.IsNullOrWhiteSpace(request.Slug) ? request.Name : request.Slug!);
         DomainException.Garantir(baseSlug.Length >= 2, "Identificador da organização inválido.");
         var slug = baseSlug;

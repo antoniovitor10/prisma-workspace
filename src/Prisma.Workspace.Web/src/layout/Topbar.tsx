@@ -21,7 +21,8 @@ import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActio
 import { DEFAULT_CREATE_KINDS, KIND_COLORS, KIND_ICONS } from '../components/WorkItemKindSelector';
 import { WorkItemKind, kindMeta } from '../features/workItems/workItemKinds';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
-import { useOrganization } from '../features/organizations/OrganizationState';
+import { useOrganization, type OrganizationSummary } from '../features/organizations/OrganizationState';
+import { NewOrganizationDialog } from '../features/organizations/NewOrganizationDialog';
 import { visibleNavEntries } from './navigation';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
@@ -484,6 +485,13 @@ export function Topbar() {
   const [toast, setToast] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [newOrganizationOpen, setNewOrganizationOpen] = useState(false);
+  const organizationCreation = useQuery({
+    queryKey: ['organizations', 'creation'],
+    queryFn: () => api.getOrganizationCreation(),
+    enabled: !previewMode,
+    staleTime: 5 * 60_000,
+  });
 
   const menuRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
@@ -768,6 +776,14 @@ export function Topbar() {
                   <Settings size={14} />Configurações
                 </DropItem>
               )}
+              {organizationCreation.data?.canCreate && (
+                <DropItem
+                  role="menuitem"
+                  onClick={() => { setAccountOpen(false); setNewOrganizationOpen(true); }}
+                >
+                  <Building2 size={14} />Nova organização
+                </DropItem>
+              )}
               <DropDivider />
               <DropItem role="menuitem" onClick={logout}>
                 <LogOut size={14} />Sair
@@ -776,6 +792,19 @@ export function Topbar() {
           )}
         </AccountWrap>
       </Bar>
+
+      {newOrganizationOpen && (
+        <NewOrganizationDialog
+          onClose={() => setNewOrganizationOpen(false)}
+          onCreated={(organization) => {
+            setNewOrganizationOpen(false);
+            queryClient.setQueryData<OrganizationSummary[]>(['organizations'],
+              (list) => [...(list ?? []), organization]);
+            switchOrganization(organization.id);
+            navigate('/home');
+          }}
+        />
+      )}
 
       {/* mobile menu overlay */}
       {menuOpen && (
