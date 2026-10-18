@@ -35,6 +35,32 @@ class DeploymentSafetyTests(unittest.TestCase):
         network["Containers"] = {"bridge": {"Name": "prisma-ai-bridge"}}
         with patch.object(deployment, "inspect", return_value=network), patch.object(deployment, "healthy", return_value=True):
             self.assertEqual(deployment.bridge_environment()["Ai__BridgeUrl"], "http://prisma-ai-bridge:8080/v1")
+    def test_method_git_settings_accept_only_flag_and_secret_references(self):
+        self.assertEqual(deployment.method_git_environment(), {})
+        path = self.root / "method-git.env"
+        path.write_text("MethodGit__Enabled=true\nMethodGit__Secrets__repo_webhook=" + "s" * 40 + "\n")
+        path.chmod(0o644)
+        with self.assertRaisesRegex(ValueError, "600"):
+            deployment.method_git_environment()
+        path.chmod(0o600)
+        self.assertEqual(deployment.method_git_environment()["MethodGit__Secrets__repo_webhook"], "s" * 40)
+        for content in ["MethodGit__Secrets__x=1\n",
+                        "MethodGit__Enabled=yes\n",
+                        "MethodGit__Enabled=true\nJwt__Key=override\n",
+                        "MethodGit__Enabled=true\nMethodGit__Secrets__a__b=1\n",
+                        "MethodGit__Enabled=true\nMethodGit__Secrets__vazio=\n",
+                        "MethodGit__Enabled=true\nMethodGit__Enabled=false\n"]:
+            path.write_text(content)
+            path.chmod(0o600)
+            with self.assertRaises(ValueError):
+                deployment.method_git_environment()
+
+    def test_method_git_file_replaces_previous_method_settings_only(self):
+        current = {"Config": {"Env": ["Jwt__Key=keep", "MethodGit__Enabled=false", "MethodGit__Secrets__old=gone"]}}
+        environment = deployment.container_environment(current, {}, {"MethodGit__Enabled": "true", "MethodGit__Secrets__new": "v"})
+        self.assertEqual(environment, {"Jwt__Key": "keep", "MethodGit__Enabled": "true", "MethodGit__Secrets__new": "v"})
+        self.assertEqual(deployment.container_environment(current, {}, {})["MethodGit__Secrets__old"], "gone")
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
