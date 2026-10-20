@@ -169,3 +169,8 @@ O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal loc
 ### 2026-10-20 — Oficina: novo focal de histórico ainda vermelho
 
 Native3PASS/2FAIL, preservados. Telemetria desktoppushboards/replacebacklog sempushbacklog aponta clique no alternador da árvore anterior; teste agora exige coluna real antes de voltar. Gates e novo nativo aguardam. Não declarar ENTREGA ou fullverde.
+
+
+### 2026-10-20 — Oficina: restauração antes de persistir scroll
+
+Native anterior4PASS/1FAILdesktopY0 preservado. Listener agora aguarda dados aplicados e restauração. Novo teste reproduz perda de bl.y600 durante querypendente:RED1FAIL/2controles→GREEN3PASS;14focais,fullfrontend176PASS44arquivos193s,tipos/lint/build/E2Etypes0. Native novo focal/full queued, sem reduzir asserções, prazo ou retry.

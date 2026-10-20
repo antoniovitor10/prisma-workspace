@@ -1121,8 +1121,11 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     restoredScroll.current = target;
     if (window.scrollY !== urlState.scrollY) window.scrollTo({ top: urlState.scrollY, behavior: 'instant' });
   }, [backlogQuery.data, items, project.id, urlState.scrollY, location.pathname, location.search]);
-  useEffect(() => subscribeBacklogScroll(location.pathname + location.search, position => updateUrl('scrollY', position)),
-    [location.pathname, location.search, updateUrl]);
+  useEffect(() => {
+    // A lista temporariamente curta pode emitir scroll0 antes de a posição salva ser restaurada.
+    if (!backlogQuery.data || backlogQuery.data !== items) return;
+    return subscribeBacklogScroll(location.pathname + location.search, position => updateUrl('scrollY', position));
+  }, [backlogQuery.data, items, location.pathname, location.search, updateUrl]);
 
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
 

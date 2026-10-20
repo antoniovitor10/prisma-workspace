@@ -52,3 +52,14 @@ O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal loc
 A execuçãobacklog-url-history-focal encerrou3PASS/2FAIL:desktop voltou ao backlog em vez deboards; mobile perdeu a rolagem600 e ficou0. Não houve suíte completa após falhar. A guarda6fd3b0b tem contraprova unitária válida, mas não resolveu esse fluxo nativo.
 
 A telemetria desktop registroureplace backlog idx0;push boards idx1;replace backlog idx1;pop backlog idx0. Nenhum push de retorno ao backlog foi registrado. O teste clicava no mesmo alternador assim quetoHaveURL(boards) passava, antes de exigir qualquer elemento da tela do quadro. No ReactRouter instalado, useLinkClickHandler calcula replace por createPath(location)===createPath(path); antes do commit React, location ainda pode ser backlog. A nova hipótese apoiada nessa sequência é clique na árvore anterior durante transição, não mera demora do banco. O E2E agora exige uma coluna[data-stage-id] visível após ir ao quadro e antes de voltar. Exigências originais de histórico/rolagem/seleção/colapso preservadas, sem prazo maior. Nova tipagem e execução focal/completa enfileiradas; não afirmar correção comprovada antes dos resultados.
+
+
+## Preservação da rolagem durante carregamento — 20/10/2026
+
+O focal backlog-url-view-ready-focal teve quatro aprovados e uma falha desktop: posição600 esperada, posição0 recebida antes do voltar/avançar. O mobile passou inclusive pelo histórico; a espera por uma coluna real separou a transição de tela da atualização da URL. A CI39453371272 do commitb86300f também aprovou. Nenhum desses resultados é apresentado como aprovação da nova correção abaixo.
+
+Causa adicional comprovada: o listener de scroll era instalado enquanto a lista ainda carregava. A altura temporária podia emitir posição zero e o codec removia bl.y, substituindo o valor salvo antes da restauração. O listener agora só é instalado quando backlogQuery.data e items representam a mesma lista, após o efeito de restauração. Nenhuma mudança de filtro, seleção ou API.
+
+Novo teste BrowserRouter com consulta pendente e frames controlados: preserva bl.y600 durante o carregamento, exige scrollTo600 ao receber a lista e depois exige persistência de uma nova rolagem400. Implementação anterior: uma falha e dois controles aprovados; a falha concreta recebeu null em vez600 na URL. Corrigido: três testes de integração aprovados; conjunto focal de três arquivos com14 aprovados. Tipos forçados, lint, build e tipos E2E aprovados. Novo frontend completo:176 aprovados em44 arquivos,193 segundos. Backend inalterado,690 aprovados/33skips anteriores.
+
+Nova execução nativa backlog-url-scroll-ready-focal/full enfileirada; não afirmar aprovação antes do resultado. Exigências originais de posição600, seleção, colapso e rota/boards preservadas, sem prazo/retry/skip novo. Autorrevisão sem alto/médio confirmado no recorte; revisão e QA oficiais pendentes. Migration: não.

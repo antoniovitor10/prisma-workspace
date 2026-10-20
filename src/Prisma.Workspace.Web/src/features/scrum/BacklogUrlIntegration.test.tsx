@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../../services/api';
@@ -39,4 +39,33 @@ it('restaura colapso e seleção válida, sem selecionar identificador de outro 
  fireEvent.click(screen.getByTestId('backlog-toggle-children'));
  expect(await screen.findByRole('textbox',{name:'Título de Tarefa filha'})).toBeInTheDocument();
  expect(screen.getByLabelText('Endereço')).not.toHaveTextContent('bl.collapsed');
+});
+
+it('não grava scroll temporário enquanto a lista carrega e só persiste após restaurar a posição', async () => {
+ const originalUrl=window.location.href;
+ const originalScroll=Object.getOwnPropertyDescriptor(window,'scrollY');
+ const frames=new Map<number,FrameRequestCallback>();let nextFrame=0;
+ let resolveItems!:(value:typeof items)=>void;
+ vi.mocked(api.getProjectBacklog).mockImplementation(()=>new Promise(resolve=>{resolveItems=resolve;}));
+ vi.stubGlobal('requestAnimationFrame',vi.fn((callback:FrameRequestCallback)=>{frames.set(++nextFrame,callback);return nextFrame;}));
+ vi.stubGlobal('cancelAnimationFrame',vi.fn((id:number)=>frames.delete(id)));
+ const scrollTo=vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
+ const flushFrames=async()=>{await act(async()=>{const pending=[...frames.values()];frames.clear();pending.forEach(callback=>callback(0));});};
+ try {
+  window.history.replaceState({},'','/projects/project-1/backlog?bl.y=600');
+  Object.defineProperty(window,'scrollY',{configurable:true,value:0});
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  render(<BrowserRouter><ThemeProvider theme={theme}><QueryClientProvider client={client}><BacklogPlanner project={project}/></QueryClientProvider></ThemeProvider></BrowserRouter>);
+  window.dispatchEvent(new Event('scroll'));await flushFrames();
+  expect(new URL(window.location.href).searchParams.get('bl.y')).toBe('600');
+  await act(async()=>resolveItems(items));
+  await screen.findByRole('textbox',{name:'Título de História principal'});
+  expect(scrollTo).toHaveBeenCalledWith({top:600,behavior:'instant'});
+  Object.defineProperty(window,'scrollY',{configurable:true,value:400});
+  window.dispatchEvent(new Event('scroll'));await flushFrames();
+  await waitFor(()=>expect(new URL(window.location.href).searchParams.get('bl.y')).toBe('400'));
+ } finally {
+  cleanup();vi.unstubAllGlobals();window.history.replaceState({},'',originalUrl);
+  if(originalScroll)Object.defineProperty(window,'scrollY',originalScroll);
+ }
 });
