@@ -1981,3 +1981,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 ### 2026-10-20 — Oficina: roteiro de leitura das propostas
 
 Roteiro provisório para14PRs rascunho,24caminhos compartilhados e limites de validação. Nenhuma integração executada; revisão/QA oficiais pendentes. Ver relatorios/oficina-integracao-proposta.md.
+
+
+### 2026-10-20 — Oficina: atualização do roteiro de revisão
+
+Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed transportadoPR30/27, novo guard de rolagemPR40 e entregas de dependências. Fulls locais finais pendentes; nenhuma integração ou aprovação oficial executada.

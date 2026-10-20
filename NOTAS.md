@@ -154,3 +154,8 @@ Tasks310/404/405/407 são de homologação de implementações existentes: teste
 
 ## Oficina — 2026-10-20T14:52:57.324683+00:00 — mapa provisório das propostas
 Criado relatorios/oficina-integracao-proposta.md, ainda não commitado, com ordem de leitura14PRs e22dos24caminhos compartilhados identificados por diff de nomes contra a279. Não é integração nem gate; validar SHAs e resultados no fechamento. Próximo:atualizar após gates/novos commits e incluir na documentação da auditoria, preservando revisões oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: atualização do roteiro de revisão
+
+Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed transportadoPR30/27, novo guard de rolagemPR40 e entregas de dependências. Fulls locais finais pendentes; nenhuma integração ou aprovação oficial executada.
