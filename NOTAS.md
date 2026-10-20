@@ -70,3 +70,9 @@ Próximo: E2E afetado C1, autorrevisão/auto-QA e relatório; C2 tem apenas novo
 
 
 # Continuidade — tarefa 6 entregue
+
+## Fechamento da retificação D13 — 20/10/2026
+
+A contraprova qa-popup-counterproof.log confirmou2FAIL móveis/3PASS controles, com o CSS anterior preservando a quebra de linha restante. A execução corrigida qa-popup-green.log passou5/5 em36,8s, setup e Kanban/Lista nas duas larguras. Capturas de conteúdo mobile antes/depois e corrigidas desktop foram abertas:antes a borda esquerda e o botão Salvar visual ficavam cortados; depois todos os checkboxes e o botão estão contidos no viewport. O título do controle ocupa a linha no mobile e o popup se ancora à esquerda, preservando alinhamento desktop.
+
+A afirmação antiga de27PASS continua retificada para25PASS/2FAIL. Este novo resultado fecha apenas o defeito D13 com prova própria; não transforma o completo anterior223PASS/8FAIL/40skips em verde. A repetição completa corrigida permanece na fila, assim como a contraprova semanal. Auto-QA D13 concluído nas duas larguras; revisão e QA oficiais pendentes.

@@ -1,3 +1,7 @@
+## [2026-10-20] — Oficina — D13 validado após retificação
+- Contraprova popup2FAIL/3controles; corrigido5PASS36,8s em1440/390. Capturas antes/depois mobile e depois desktop abertas, todos os checkboxes e Salvar visual contidos.
+- Histórico25/2 e completo223/8/40 preservados; não declarar branch toda verde. Full corrigido e semanal continuam enfileirados. Sem migration/produção; revisão e QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: full QA revelou oito falhas, correções pendentes de prova
 
 Full223PASS/8FAIL/40skips. L07 lê resposta de documento anterior; manualL08 agora recebe mensagem específica apósC5; popupD13 fica emx-30; grade semanal center torna dias iniciais inalcançáveis no mobile. Correções propostas e regressão dos sete dias em andamento; ainda não são verdes. Corrigida leitura anterior: controles25PASS/2FAIL, não27. Worker futuro propaga exit nativo. Backend724/33 inalterado; frontend/nativos novos enfileirados. Relatório visual mantém todos os limites e falhas.
