@@ -1,8 +1,8 @@
 ## [2026-10-20] — Codex (Oficina) — auditoria documental do backlog
 
 - Baseline `a2797a7`; conferidas as 62 tasks pending/in_progress contra código e decisões, com arquivo/linha, gates e limites em `relatorios/oficina-backlog-audit.md`.
-- Corrigidos nove status: cinco implementações históricas para completed; quatro requisitos contraditos por D88/D99 para cancelled. TASK-102/121 e homologações continuam abertas; propostas dos PRs 27/28 não contam como main.
-- Verificação documental: 62 IDs únicos, referências de arquivo/linha existentes, nove alterações de status e diff sem erros. Nenhum código, spec, schema ou gate alterado; testes de produto não se aplicam.
+- Corrigidos dez status: cinco implementações históricas para completed; cinco requisitos sucedidos por D88/D99 ou instrução humana E03 posterior para cancelled. TASK-102 foi cancelada pela instrução humana posterior do E03; TASK-121 e homologações continuam abertas; propostas dos PRs 27/28 não contam como main.
+- Verificação documental: 62 IDs únicos, referências de arquivo/linha existentes, dez alterações de status e diff sem erros. Nenhum código, spec, schema ou gate alterado; testes de produto não se aplicam.
 - Autorrevisão realizada; auto-QA visual não se aplica. REVISAO e QA oficiais: pendentes. Próximo: revisão humana das correções e execução dos candidatos sem gate após as etapas prioritárias do goal. Sem produção, migration, merge ou push na main.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma

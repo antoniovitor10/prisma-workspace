@@ -1542,7 +1542,11 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Web/src/services/api.ts
     - src/Prisma.Workspace.Application/Features/Stages/Commands/CreateStageCommandHandler.cs
   tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs]
-  status: pending
+  status: cancelled
+  audit_2026_10_20: >-
+    Requisito sucedido pela instrucao humana E03 de 24/09/2026 e spec de remediacao
+    aprovada: criacao so com nome, categoria Em andamento; edicao preserva escolha.
+    Evidencias em relatorios/oficina-backlog-audit.md, TASK-102.
   priority: P0
 
 - id: TASK-103
