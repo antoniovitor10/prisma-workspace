@@ -1,3 +1,9 @@
+## 2026-10-20 — Oficina: auditoria do backlog
+
+- Branch `docs/backlog-audit-20261020`, base `a2797a7`, somente documentação. Relatório em `relatorios/oficina-backlog-audit.md`: 62 tasks e nove correções de status evidenciadas; nenhuma aprovação de gate.
+- O validador identificou três referências inválidas no rascunho (duas pastas E2E e uma linha fora do arquivo); corrigidas antes do commit. Conferência final de referências e diff passou. Sem testes de produto nesta branch documental.
+- Próximo: Maestro conferir especialmente TASK-101/102/104/121 e conclusão histórica TASK-508, sem interpretar isto como homologação oficial ou autorização de deploy. Oficina continua os itens do goal nas branches próprias; continuidade externa em ESTADO-goal-oficina.md. REVISAO e QA oficiais pendentes.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

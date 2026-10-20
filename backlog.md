@@ -1506,7 +1506,10 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Application/Features/Stages/Queries
     - src/Prisma.Workspace.Web/src/services/api.ts
   tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, src/Prisma.Workspace.Web/src/pages/Kanban.test.tsx]
-  status: pending
+  status: completed
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: feita. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-100. Sem operacao em producao.
   priority: P0
 
 - id: TASK-101
@@ -1521,7 +1524,10 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Application/Features/Stages/Commands
     - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
   tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, src/Prisma.Workspace.Web/e2e/task-detail-flow.spec.ts]
-  status: pending
+  status: completed
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: feita. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-101. Sem operacao em producao.
   priority: P0
 
 - id: TASK-102
@@ -1566,7 +1572,10 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Application/Features/WorkItems/WorkItemManagementFeature.cs
     - src/Prisma.Workspace.Web/src/pages/Kanban.tsx
   tests: [tests/Prisma.Workspace.Tests/WorkflowDomainTests.cs, tests/Prisma.Workspace.Tests/MoveWorkItemCommandHandlerTests.cs]
-  status: pending
+  status: completed
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: feita. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-104. Sem operacao em producao.
   priority: P1
 
 - id: TASK-105
@@ -1631,7 +1640,10 @@ Specs: `organizations`, `user-access-permissions`, `boards-stages-wip`, `workflo
     - src/Prisma.Workspace.Web/src/services/api.ts
   tests: [tests/Prisma.Workspace.Tests/MultiBoardPlacementTests.cs, tests/Prisma.Workspace.Tests/BoardProjectionCommandTests.cs]
   human_gate: sim (G-MIGRATION se a conversao dos placements legados alterar dados)
-  status: pending
+  status: completed
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: feita. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-108. Sem operacao em producao.
   priority: P1
 
 - id: TASK-109
@@ -2155,7 +2167,10 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
     - src/Prisma.Workspace.Web/src/features/task/TaskStateGraph.tsx
     - src/Prisma.Workspace.Api/Controllers/TaskFeedController.cs
   tests: [tests/Prisma.Workspace.Tests/TaskStateGraphTests.cs]
-  status: pending
+  status: cancelled
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: sucedida. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-303. Sem operacao em producao.
   priority: P2
 
 - id: TASK-304
@@ -2184,7 +2199,10 @@ Specs: `auth-security`, `responsible-display-name`, `time-tracking`, `task-histo
     - src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.tsx
     - src/Prisma.Workspace.Web/src/features/scrum/BacklogPlanner.tsx
   tests: [src/Prisma.Workspace.Web/src/features/task/DependencyAutocomplete.test.tsx]
-  status: pending
+  status: cancelled
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: sucedida. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-305. Sem operacao em producao.
   priority: P1
 
 - id: TASK-306
@@ -2278,7 +2296,10 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
     - src/Prisma.Workspace.Web/src/features/board/BoardGantt.tsx
     - src/Prisma.Workspace.Web/src/features/board/BoardCalendar.tsx
   tests: [src/Prisma.Workspace.Web/e2e/smoke.spec.ts]
-  status: pending
+  status: cancelled
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: sucedida. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-400. Sem operacao em producao.
   priority: P1
 
 - id: TASK-401
@@ -2319,7 +2340,10 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   files:
     - src/Prisma.Workspace.Web/src/layout/Sidebar.tsx
   tests: [src/Prisma.Workspace.Web/src/layout/Topbar.test.tsx]
-  status: pending
+  status: cancelled
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: sucedida. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-403. Sem operacao em producao.
   priority: P3
 
 - id: TASK-404
@@ -2494,7 +2518,10 @@ Specs: `teams`, `wiki-knowledge`, `external-portal`, `dashboards-reports`, `sla-
   files: [compose.yaml, scripts, docs/installation]
   tests: [src/Prisma.Workspace.Web/e2e]
   human_gate: sim (G-DEPLOY autorizado pelo PO em 2026-09-08; a execucao ainda exige backup e verificacao)
-  status: pending
+  status: completed
+  audit_2026_10_20: >-
+    Auditoria Oficina contra a2797a7: feita. Evidencias e gates em
+    relatorios/oficina-backlog-audit.md, linha da TASK-508. Sem operacao em producao.
   priority: P0
 ```
 

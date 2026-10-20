@@ -1,3 +1,10 @@
+## [2026-10-20] — Codex (Oficina) — auditoria documental do backlog
+
+- Baseline `a2797a7`; conferidas as 62 tasks pending/in_progress contra código e decisões, com arquivo/linha, gates e limites em `relatorios/oficina-backlog-audit.md`.
+- Corrigidos nove status: cinco implementações históricas para completed; quatro requisitos contraditos por D88/D99 para cancelled. TASK-102/121 e homologações continuam abertas; propostas dos PRs 27/28 não contam como main.
+- Verificação documental: 62 IDs únicos, referências de arquivo/linha existentes, nove alterações de status e diff sem erros. Nenhum código, spec, schema ou gate alterado; testes de produto não se aplicam.
+- Autorrevisão realizada; auto-QA visual não se aplica. REVISAO e QA oficiais: pendentes. Próximo: revisão humana das correções e execução dos candidatos sem gate após as etapas prioritárias do goal. Sem produção, migration, merge ou push na main.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
