@@ -1,3 +1,7 @@
+## [2026-10-20] — Oficina — alcance de todos os dias da semana
+- Contraprova1FAILmobile/2controles; corrigido3PASS27,6s em1440/390 com14consultas200 por largura e cliques normais em todos os sete dias. Capturas antes/depois mobile e desktop abertas.
+- Mesmo CSS safe center do PR30; não declarar todos os timeouts resolvidos. Full anterior223/8/40 preservado e nova rodada pendente. Sem migration/produção; revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — D13 validado após retificação
 - Contraprova popup2FAIL/3controles; corrigido5PASS36,8s em1440/390. Capturas antes/depois mobile e depois desktop abertas, todos os checkboxes e Salvar visual contidos.
 - Histórico25/2 e completo223/8/40 preservados; não declarar branch toda verde. Full corrigido e semanal continuam enfileirados. Sem migration/produção; revisão e QA oficiais pendentes.
