@@ -9,7 +9,7 @@ As permissões continuam `contents: read`; o job de implantação não foi alter
 - `sbom-runtime.spdx.json`: Syft examina a imagem candidata local, incluindo pacotes do sistema e dependências
   reconhecidas nos arquivos publicados da aplicação.
 - `sbom-frontend.spdx.json`: inventário das entradas do build frontend a partir de seu diretório/lock.
-  Inclui ferramentas de desenvolvimento; não afirma que cada pacote identificado foi incorporado ao JavaScript final.
+  Configura explicitamente `SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES=true` para incluir ferramentas de desenvolvimento; não afirma que cada pacote identificado foi incorporado ao JavaScript final.
 - `provenance.unsigned.intoto.json`: declaração in-toto com predicate de proveniência SLSA v1,
   vinculando hashes do export, manifesto e dois inventários ao contexto do CI.
 
@@ -49,6 +49,7 @@ confira a origem do workflow e compare os hashes de cada `subject` com os arquiv
 SBOM é inventário, não parecer de ausência de vulnerabilidades. A integração deste lote depende dos ajustes npm
 e NuGet testados das TASK-502/503. Assinatura, registro público e política de promoção permanecem decisões separadas.
 
-Referências: [Anchore SBOM Action](https://github.com/anchore/sbom-action),
+Referências: [configuração JavaScript do Syft](https://oss.anchore.com/docs/capabilities/javascript/),
+[Anchore SBOM Action](https://github.com/anchore/sbom-action),
 [proveniência SLSA v1](https://slsa.dev/spec/v1.1/provenance)
 e [Statement in-toto](https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md).

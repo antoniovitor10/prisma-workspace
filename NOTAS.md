@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: corrigir cobertura dev do inventário frontend
+
+Artefato real203pacotes não continha ferramentas dev: relato anterior estava incorreto. Flag oficial do Syft agora true somente na etapa frontend; contraprova local false/true comprovou exclusão/inclusão. YAML difere só nessa env; runtime/deploy/permissões preservados. Reconfirmar novo artefato automático antes de fechar cobertura dev. PR36 segue rascunho; revisões oficiais pendentes.
+
 ## 2026-10-20 — Oficina: validação real da candidata TASK-505
 
 CI 39409267216 passou, deploy ignorado. Artefato 12259116077 conferido: quatro hashes corretos, 189 pacotes runtime e 203 frontend; proveniência unsigned coerente com merge sintético 6a761ba. Dez testes e contraprova documentados no relatório. PR36 permanece em rascunho; revisão e QA oficiais pendentes. Próximo passo: revisão humana, sem publicação automática.

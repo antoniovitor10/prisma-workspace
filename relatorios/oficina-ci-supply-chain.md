@@ -28,3 +28,11 @@ O run 39409267216, referente ao head 1ec277a e ao merge sintético 6a761ba1890db
 O artefato próprio 12259116077 foi baixado e inspecionado: os quatro SHA-256 da declaração correspondem aos arquivos reais. SPDX runtime: 189 pacotes, incluindo HtmlSanitizer 9.1.982 e AngleSharp 1.7.0. SPDX frontend: 203 pacotes, incluindo @tiptap/core 3.32.0 e react-router 7.18.4. A declaração aponta para refs/pull/36/merge, distingue a execução e o código e permanece explicitamente unsigned. Isso confirma a produção dos inventários e vínculos de integridade; não equivale a assinatura, nível SLSA ou inventário completo de todas as entradas de build.
 
 Este fechamento substitui a pendência de CI do checkpoint acima. Autorrevisão concluída para o recorte, sem achado alto ou médio confirmado. Auto-QA técnico concluído por contraprova local, inspeção do artefato real e CI automático. Não há UI própria neste item. Migration: não. REVISAO e QA oficiais: pendentes. PR continua em rascunho.
+
+## Retificação de cobertura e complemento — 20/10/2026
+
+A inspeção adicional dos203 pacotes frontend mostrou ausência de Vite/Vitest. A afirmação anterior de incluir ferramentas de desenvolvimento estava incorreta: Syft as exclui por padrão, conforme sua documentação oficial. O CI passou a definir explicitamente SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES=true somente na etapa frontend. O inventário de runtime não muda.
+
+Contraprova local com o Syft1.55.0 oficial e uma fixture de lock: com flag false a ferramenta de desenvolvimento não aparece; com true aparece na versão esperada. Ambas as execuções terminaram0 e os oráculos de presença/ausência passaram. Não foram instalados pacotes nem consultado projeto de terceiros. YAML parseado e comparado com o head anterior: única diferença operacional é a variável da etapa frontend; demais jobs/permissões/deploy inalterados. Documentação primária: https://oss.anchore.com/docs/capabilities/javascript/ . O primeiro artefato continua válido para runtime e hashes, mas sua cobertura frontend de desenvolvimento era incompleta.
+
+Este complemento reabre a confirmação de inventário frontend real: aguardar CI automático e conferir Vite/Vitest no novo artefato antes de considerar a cobertura final concluída. Não há novo gate aprovado, migration ou deploy. REVISAO e QA oficiais: pendentes.
