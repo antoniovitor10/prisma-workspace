@@ -1984,3 +1984,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: fechamento TASK-124
+
+Focal local5PASS52,3s; full local123PASS/40skips/0FAIL13,1min. Quatro capturas1440/390 de persistência/rollback abertas. Front169/41,19afetados,back690/33,tipos/lint/build/E2Etypes aprovados. Cancelamentos de requisição e recorte herdado de filtros registrados. Sem migration; PR38 rascunho; revisão e QA oficiais pendentes.

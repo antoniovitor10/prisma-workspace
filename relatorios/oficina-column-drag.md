@@ -45,3 +45,14 @@ O produto de d480de2 tem Vitest completo169PASS/41arquivos em203,56s,19afetadosP
 CI39441941041, head25f12cd:backend,frontend,imagem,governança e E2E success; deploy skipped. Síntese nativa remota123PASS/40skips em4,5min, sem failed/flaky na síntese. Telemetria de toque:endx357/y632,625; pointerup com overTarget=true nos casos de persistência e rollback; cancelamento teve pointercancel, sem UP. Mesmas assertivas de ordem/DTO/teclado/rollback preservadas.
 
 A falha antiga de fimx382fora do alvo e os dois CIs anteriores permanecem como evidência de diagnóstico. O CI aprovado não substitui o focal local sob a trava nem a inspeção das capturas. Tipos explícitos frescos do helper e nativo local continuam enfileirados; produto possui local169PASS/41arquivos,19afetados e tipos/lint/build aprovados. Revisão e QA oficiais pendentes.
+
+
+## Fechamento local — 20/10/2026
+
+O focal column-drag-focal aprovou cinco casos, incluindo setup, em52,3 segundos. A suíte completa column-drag-full aprovou123 casos, com40skips existentes e nenhuma falha, em13,1 minutos. Desktop e mobile exercitaram arraste, persistência após reload, preservação dos cartões e demais campos, alternativa por teclado, cancelamento sem salvar e rollback após erro do servidor. Nenhum prazo, retry ou asserção foi reduzido. A CI anterior39441941041, código25f12cd, também registrou123PASS/40skips e deploy ignorado.
+
+Quatro capturas de persistência e rollback foram abertas nas larguras1440x900/390x844. Após persistir, Em andamento fica primeiro e a tarefa permanece na sua coluna original, agora segunda. Após rollback, A fazer volta à primeira posição. O recorte herdado da barra de filtros mobile está registrado e é tratado separadamente no PR27; não é atribuído a esta correção.
+
+Gates locais de produto: backend690 aprovados/33skips existentes; frontend169 aprovados em41 arquivos,203,56 segundos;19 afetados aprovados; tipos forçados, lint, build e tipos explícitos do E2E aprovados. Contraprovas anteriores preservadas: gestoUP com duas falhas/17filtrados e criação durante pedido pendente com uma falha/16filtrados, ambas restauradas com os controles aprovados. As falhas anteriores de CI e seus diagnósticos permanecem acima.
+
+O log contém cancelamentos SQL/SignalR durante navegação; a aprovação dos testes não certifica ausência de erros de servidor. Autorrevisão final sem alto/médio confirmado neste recorte. Auto-QA concluído nas duas larguras. Migration: não. REVISAO e QA oficiais: pendentes. Entrega somente no PR38 em rascunho, sem produção ou mudança de workflow.

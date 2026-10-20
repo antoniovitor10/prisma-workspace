@@ -170,3 +170,8 @@ Quarto coordenador atual1409774 esperaGeometryE2Etypes0 antes do focal/full. Nã
 CI39441941041, head25f12cd:backend,frontend,imagem,governança e E2E success; deploy skipped. Síntese nativa remota123PASS/40skips em4,5min, sem failed/flaky na síntese. Telemetria de toque:endx357/y632,625; pointerup com overTarget=true nos casos de persistência e rollback; cancelamento teve pointercancel, sem UP. Mesmas assertivas de ordem/DTO/teclado/rollback preservadas.
 
 A falha antiga de fimx382fora do alvo e os dois CIs anteriores permanecem como evidência de diagnóstico. O CI aprovado não substitui o focal local sob a trava nem a inspeção das capturas. Tipos explícitos frescos do helper e nativo local continuam enfileirados; produto possui local169PASS/41arquivos,19afetados e tipos/lint/build aprovados. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: fechamento TASK-124
+
+Focal local5PASS52,3s; full local123PASS/40skips/0FAIL13,1min. Quatro capturas1440/390 de persistência/rollback abertas. Front169/41,19afetados,back690/33,tipos/lint/build/E2Etypes aprovados. Cancelamentos de requisição e recorte herdado de filtros registrados. Sem migration; PR38 rascunho; revisão e QA oficiais pendentes.
