@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — focal real de metodologia
+- Native9PASS2,5min:quatro valores internos×desktop/mobile, pontos8 em quadro/backlog/detalhe e relatório de velocidade, valor interno preservado.
+- Captura do detalhe estava acima do campo; E2E passa a rolar até Story points e exigir visibilidade antes da imagem. Full nativo com esse reforço ainda pendente; não declarar auto-QA final por imagem da descrição.
+- Log SQL registra Operation cancelled by user durante navegação e SQL QA está saudável; observação mantida. Sem alteração de produto neste commit, retry/prazo ou produção; revisão e QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: TASK-123 em validação
 
 Cinco telas não variam mais pontos por metodologia; tipos operacionais excluem o campo e compatibilidade de configurações/API persiste. Escolha reversível registrada em PERGUNTAS. Afetados52PASS; contraprova5FAIL/15PASS e restauração20PASS, sem skip novo. Duas opções RTL inválidas corrigidas após tsc-b --force; gates finais completos e nativo pendentes. Relatório oficina-methodology-contracts.md. Sem migration; revisão/QA oficiais pendentes.

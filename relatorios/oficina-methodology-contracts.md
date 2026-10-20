@@ -21,3 +21,9 @@ Autorrevisão inicial sem alto/médio confirmado: mudança de disponibilidade, n
 Migration: não. REVISAO e QA oficiais: pendentes. Ainda não é ENTREGA. Somente branch própria e futuro PR em rascunho; sem produção, main, merge ou deploy.
 
 Atualização intermediária: build backend aprovado com três avisos anteriores; fullxUnit690PASS/33skips existentes/0FAIL em46s. Bootstrap de banco próprioPrisma_BoardColumns_Oficina_Methodology_Seeded concluído e API temporária encerrada. Tipagem explícita dos dois E2E aprovou. Gates frontend finais aguardam CPU enquanto roda a suíte combinada; o primeiro tipo com duas opções RTL inválidas permanece registrado, sem declarar aprovação antecipada. E2E focal e completo desta branch serão executados somente após frontend final aprovado.
+
+## Focal nativo — 20/10/2026
+
+methodology-focal:9PASS em2,5min, quatro valores internos em1440/390. O input de pontos, o cartão8pts, backlog e relatório de velocidade foram comprovados; o valor interno persistido permaneceu igual. SQL QA está saudável. O log contém SqlException com Operation cancelled by user durante navegação entre rotas e negociaçõesSignalR canceladas; registrar a limitação, sem alegar indisponibilidade nem suprimir erros.
+
+Ao abrir as capturas, o campo de pontos no detalhe ficava abaixo da dobra:toHaveValue comprovava o valor, mas a imagem mostrava só descrição. Antes de começar a suíte completa, o E2E recebeu scrollIntoViewIfNeeded e toBeVisible para capturar o próprio campo. Nenhuma asserção removida ou timeout aumentado. Full nativo enfileirado ainda não começou; novas capturas devem ser abertas depois. Revisão e QA oficiais pendentes.

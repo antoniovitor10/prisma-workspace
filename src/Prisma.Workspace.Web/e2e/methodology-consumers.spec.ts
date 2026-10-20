@@ -27,7 +27,8 @@ for(const methodology of [1,2,3,4])test(`TASK123 mesmas estimativas para valor i
   await page.screenshot({path:`${directory}/methodology-${methodology}-board-${info.project.name}.png`,scale:'css'});
   await page.goto(`/projects/${projectId}/backlog`);await expect(page.getByRole('spinbutton',{name:`Story points de ${title}`,exact:true})).toHaveValue('8');
   await page.goto(`/projects/${projectId}/backlog?item=${itemId}`);
-  const drawer=page.getByRole('dialog');await expect(drawer.getByRole('spinbutton',{name:'Story points',exact:true})).toHaveValue('8');
+  const drawer=page.getByRole('dialog');const points=drawer.getByRole('spinbutton',{name:'Story points',exact:true});await expect(points).toHaveValue('8');
+  await points.scrollIntoViewIfNeeded();await expect(points).toBeVisible();
   await page.screenshot({path:`${directory}/methodology-${methodology}-drawer-${info.project.name}.png`,scale:'css'});
   await page.goto(`/projects/${projectId}/reports`);await expect(page.getByRole('heading',{name:'Velocidade das sprints',exact:true})).toBeVisible();
   const preserved=await request.get(`${apiUrl}/api/projects/${projectId}`,{headers});expect((await preserved.json()).methodology).toBe(methodology);
