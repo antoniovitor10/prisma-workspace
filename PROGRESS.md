@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: cobertura dev confirmada no artefato real
+
+CI39415279231 do6e40688 passou com deploy skipped. Artefato12260922254: quatro hashes corretos,189pacotes runtime e367frontend, incluindo Vite/Vitest/TypeScript/Playwright. Isso fecha a retificação do primeiro inventário203 sem dev. Proveniência permanece unsigned e materiais parciais. PR36 em rascunho; revisão/QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: corrigir cobertura dev do inventário frontend
 
 Artefato real203pacotes não continha ferramentas dev: relato anterior estava incorreto. Flag oficial do Syft agora true somente na etapa frontend; contraprova local false/true comprovou exclusão/inclusão. YAML difere só nessa env; runtime/deploy/permissões preservados. Reconfirmar novo artefato automático antes de fechar cobertura dev. PR36 segue rascunho; revisões oficiais pendentes.
