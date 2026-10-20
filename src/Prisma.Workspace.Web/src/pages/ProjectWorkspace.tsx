@@ -1,6 +1,7 @@
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, FolderKanban } from 'lucide-react';
-import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useOutletContext, useParams, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { ContextBarInjector } from '../layout/ContextBar';
 import { projectNavEntries } from '../layout/navigation';
@@ -172,12 +173,36 @@ export function ProjectWorkspace() {
  * Alternância Backlog ↔ Quadro na barra de contexto. Fonte única: as duas visões
  * injetam o mesmo componente, em vez de repetir a marcação em cada uma.
  */
-function ProjectViewSwitcher({ projectId }: { projectId: string }) {
+export function ProjectViewSwitcher({ projectId }: { projectId: string }) {
+  const { search } = useLocation();
+  const navigate = useNavigate();
+  const refreshHref = (anchor: HTMLAnchorElement) => {
+    // O browser recebe a query antes de o Router concluir a renderização da barra.
+    const destination = new URL(anchor.href);
+    destination.search = window.location.search;
+    anchor.href = destination.href;
+    return destination;
+  };
+  const openView = (view: 'backlog' | 'boards') => (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    const destination = refreshHref(event.currentTarget);
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
+      || (event.currentTarget.target && event.currentTarget.target !== '_self')) return;
+    event.preventDefault();
+    const current = window.location;
+    navigate(`/projects/${projectId}/${view}${destination.search}${destination.hash}`, {
+      replace: current.pathname === destination.pathname && current.search === destination.search && current.hash === destination.hash,
+      preventScrollReset: true,
+    });
+  };
   return (
     <ContextBarInjector>
       <ViewSwitcherWrap aria-label="Alternar visão do projeto">
-        <ViewBtn to={`/projects/${projectId}/backlog`} end>Backlog</ViewBtn>
-        <ViewBtn to={`/projects/${projectId}/boards`}>Quadro</ViewBtn>
+        <ViewBtn to={`/projects/${projectId}/backlog${search}`} onClick={openView('backlog')}
+          onPointerDown={event => { refreshHref(event.currentTarget); }} onFocus={event => { refreshHref(event.currentTarget); }}
+          onContextMenu={event => { refreshHref(event.currentTarget); }} end>Backlog</ViewBtn>
+        <ViewBtn to={`/projects/${projectId}/boards${search}`} onClick={openView('boards')}
+          onPointerDown={event => { refreshHref(event.currentTarget); }} onFocus={event => { refreshHref(event.currentTarget); }}
+          onContextMenu={event => { refreshHref(event.currentTarget); }}>Quadro</ViewBtn>
       </ViewSwitcherWrap>
     </ContextBarInjector>
   );

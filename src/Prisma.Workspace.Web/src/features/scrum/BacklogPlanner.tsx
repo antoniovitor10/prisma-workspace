@@ -37,9 +37,9 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { z } from 'zod';
 import { TaskDetailDrawer } from '../../components/TaskDetailDrawer';
@@ -61,6 +61,8 @@ import {
   type BacklogGroupBy,
 } from './BacklogFilters';
 import { flattenBacklogHierarchy, includeBacklogAncestors } from './BacklogHierarchy';
+import { useBacklogUrlState } from './useBacklogUrlState';
+import { subscribeBacklogScroll } from './BacklogScroll';
 
 const Page = styled.section`
   padding: 20px 28px 40px;
@@ -846,15 +848,17 @@ interface BacklogPlannerProps { project: ProjectSummary; }
 
 export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const showPoints = project.methodology !== 1;
-  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<BacklogItem[]>([]);
-  const [selectedSprintId, setSelectedSprintId] = useState('');
-  const [filters, setFilters] = useState<BacklogFilterState>(defaultBacklogFilters);
-  const [groupBy, setGroupBy] = useState<BacklogGroupBy>('none');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { state: urlState, update: updateUrl, params: searchParams, updateParams } = useBacklogUrlState();
+  const { filters, groupBy, selectedIds: requestedSelectedIds, collapsedIds, sprintId: requestedSprintId } = urlState;
+  const setSelectedSprintId = (value: React.SetStateAction<string>) => updateUrl('sprintId', value);
+  const setFilters = (value: React.SetStateAction<BacklogFilterState>) => updateUrl('filters', value);
+  const setGroupBy = (value: React.SetStateAction<BacklogGroupBy>) => updateUrl('groupBy', value);
+  const setSelectedIds = (value: React.SetStateAction<Set<string>>) => updateUrl('selectedIds', value);
+  const setCollapsedIds = (value: React.SetStateAction<Set<string>>) => updateUrl('collapsedIds', value);
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   // Visao ampla do backlog, pedido dos devs: da a largura inteira a lista e esconde o
   // painel da sprint. Planejar continua possivel sem arrastar — selecionar itens abre a
   // barra em massa, que tem o proprio seletor de sprint e o "Mover para sprint".
@@ -890,10 +894,9 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   });
 
   useEffect(() => { if (backlogQuery.data) setItems(backlogQuery.data); }, [backlogQuery.data]);
-  useEffect(() => {
-    if (selectedSprintId || !sprintQuery.data?.length) return;
-    setSelectedSprintId(sprintQuery.data.find((sprint) => sprint.status === 2)?.id ?? sprintQuery.data[0].id);
-  }, [selectedSprintId, sprintQuery.data]);
+  const selectedSprintId = sprintQuery.data?.some(sprint => sprint.id === requestedSprintId)
+    ? requestedSprintId
+    : sprintQuery.data?.find(sprint => sprint.status === 2)?.id ?? sprintQuery.data?.[0]?.id ?? '';
 
   const selectedSprint = sprintQuery.data?.find((sprint) => sprint.id === selectedSprintId);
   const epics = useMemo(() => items.filter((item) => item.kind === 1).sort((left, right) => left.rank - right.rank), [items]);
@@ -936,20 +939,17 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     () => sortBacklogItems(contextualSprintItems, items, groupBy),
     [contextualSprintItems, groupBy, items],
   );
+  const selectedIds = new Set(items.filter(item => requestedSelectedIds.has(item.id)).map(item => item.id));
   const selectedItems = items.filter((item) => selectedIds.has(item.id));
   const selectedItem = items.find((item) => item.id === searchParams.get('item')) ?? null;
   const activeFilterCount = [filters.kind, filters.priority, filters.boardId]
     .filter((value) => value !== 'all').length + (filters.relation === 'all' ? 0 : 1) + (filters.search ? 1 : 0) + (filters.includeArchived ? 1 : 0);
 
   const openItem = (item: BacklogItem) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('item', item.id);
-    setSearchParams(next, { replace: true });
+    updateParams(next => { next.set('item', item.id); return next; });
   };
   const closeItem = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('item');
-    setSearchParams(next, { replace: true });
+    updateParams(next => { next.delete('item'); return next; });
     void queryClient.invalidateQueries({ queryKey: ['project-backlog', project.id] });
   };
   const toggleItem = (itemId: string) => setSelectedIds((current) => {
@@ -1111,6 +1111,21 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   useEffect(() => {
     try { localStorage.setItem(CHAVE_FILTROS_ABERTOS, String(filtrosAbertos)); } catch { /* idem */ }
   }, [filtrosAbertos]);
+
+  const restoredScroll = useRef<string | null>(null);
+  useEffect(() => {
+    if (!backlogQuery.data || backlogQuery.data !== items) return;
+    if (window.location.pathname + window.location.search !== location.pathname + location.search) return;
+    const target = `${project.id}:${urlState.scrollY}`;
+    if (restoredScroll.current === target) return;
+    restoredScroll.current = target;
+    if (window.scrollY !== urlState.scrollY) window.scrollTo({ top: urlState.scrollY, behavior: 'instant' });
+  }, [backlogQuery.data, items, project.id, urlState.scrollY, location.pathname, location.search]);
+  useEffect(() => {
+    // A lista temporariamente curta pode emitir scroll0 antes de a posição salva ser restaurada.
+    if (!backlogQuery.data || backlogQuery.data !== items) return;
+    return subscribeBacklogScroll(location.pathname + location.search, position => updateUrl('scrollY', position));
+  }, [backlogQuery.data, items, location.pathname, location.search, updateUrl]);
 
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
 

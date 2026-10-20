@@ -1,0 +1,93 @@
+# Oficina — TASK213: estado do Product Backlog na URL
+
+Estado final local:123 E2E aprovados/40skips existentes/nenhuma falha, frontend182 aprovados. O fechamento ao fim registra contraprovas, capturas e limites visuais herdados.
+
+Base origin/main a2797a71b79543cf71930d04547021564a7e4e88. Branch fix/backlog-url-state. Spec aprovada backlog.md, critérios23/24, histórias catalogadas US-B-001-012/013/014. Checkpoint em PR rascunho; validação nativa e suítes finais ainda pendentes.
+
+Mudanças: codec BacklogUrlState e hook useBacklogUrlState; BacklogPlanner usa URL para filtros, agrupamento, seleção, colapso, sprint escolhida, item aberto e posição vertical. ProjectWorkspace preserva a query na alternância Backlog/Quadro. Namespace bl.* separa o estado do backlog e conserva parâmetros externos. Alterações do mesmo evento são compostas antes de substituir a URL; item/filtros/scroll usam o mesmo caminho. Voltar/avançar restaura o estado a partir da URL. IDs de seleção não retornados pelo projeto não participam de ações em massa. Sprint padrão é derivada dos dados atuais, sem navegação extra.
+
+Não há mudança de API, schema, autorização, ordenação, workflow ou dependência. Pesquisa textual informada pelo usuário aparece na URL compartilhada; não são incluídos descrições, nomes oriundos da API, tokens ou credenciais. Escolha registrada em PERGUNTAS. A validação/autorização de dados continua no backend.
+
+Resultados reais até este checkpoint: tipos forçados, lint e build iniciais aprovados; codec/histórico/visão ampla14PASS. Com integração de filtro/item/seleção/colapso,16PASS. Contraprova com Planner da base:2FAIL esperados. Primeira restauração15PASS/1FAIL em carregamento da sprint; removida navegação automática para sprint padrão e derivados16PASS, contraprova2FAIL e restauração16PASS. Build backend aprovado,3 avisos existentes/zero erros. Nenhuma migration nova.
+
+Uma rodada completa antiga teve170PASS/1FAIL e um erro updateParams ausente: teste e hook foram editados durante a execução, tornando a versão carregada inconsistente. Rodada preservada e invalidada como gate final; não apresentar como verde ou falha definitiva da revisão atual. Uma rodada nova com fontes estáveis está enfileirada para afetados, contraprova de composição no mesmo evento, restauração, tsc -b --force, lint, build e Vitest completo. xUnit/seed e tipos explícitos de E2E ainda pendentes; carga compartilhada acima14 adia novas execuções pesadas.
+
+E2E nativo preparado: persistência de seleção e colapso após reload, posição vertical com20itens reais, alternância contextual e voltar/avançar, filtros e item aberto por URL direta, nas larguras1440x900/390x844. Só será enfileirado após gates locais verificados; capturas ainda não produzidas.
+
+Autorrevisão em andamento: maior risco na sincronização entre URL/histórico/consulta assíncrona e na restauração de rolagem após render. Composição de atualizações possui teste específico; a prova em navegador ainda falta. Auto-QA: roteiro preparado, execução pendente. Migration:não. REVISAO e QA oficiais:pendentes.
+
+## Checkpoint compilável — 20/10/2026
+
+Backend próprio:690PASS/33skips existentes; build aprovado/3avisos existentes. Tipos explícitos E2E aprovados. Na revisão atual e estável:16PASS afetados; contraprova da composição1FAIL/6controles; restaurado16PASS; npx tsc -b --force aprovado. Lint/build completos e Vitest completo desta revisão ainda na fila, respeitando carga<=14. Os resultados iniciais aprovados desses comandos pertencem à revisão anterior e não serão apresentados como fechamento da atual. O E2E focal e completo aguarda todos esses gates no coordenador privado.
+
+## Gates locais finais aprovados — 20/10/2026
+
+Revisão fixa30aa487:Vitest completo171PASS/43arquivos em219,82s, nenhum erro não tratado. Afetados16PASS, contraprova composição1FAIL/6controles, restaurado16PASS. npx tsc -b --force, lint e build finais aprovados. Backend690PASS/33skips existentes e tipos explícitos do E2E aprovados. As falhas/rodadas invalidadas anteriores permanecem acima como histórico, sem serem usadas para certificar esta revisão.
+
+O coordenador confirmou todos os gates e enfileirou backlog-url-focal sob a trava global. E2E completo e inspeção das capturas ainda pendentes; não constitui ENTREGA final da task. REVISAO e QA oficiais:pendentes.
+
+## Diagnóstico do CI automático — 20/10/2026
+CI39431928513, head30aa487:backend/frontend/imagem/governança aprovados; E2E121PASS/2FAIL/40skips. Os dois casos de seleção/colapso/rolagem/reload/idaevolta passaram, incluindo mobile. Os dois casos de URLcomitem falharam ao buscar por role o campo de pesquisa no fundo enquanto Dialog.Content estava aberto. O Radix oculta esse fundo da árvore acessível; o mock unitário do Drawer não simula essa semântica. Não é justificativa para usar includeHidden ou force.
+O roteiro foi corrigido para verificar pesquisa/lista acessíveis antes da abertura, navegar por URLcomitem e conferir heading/reload, fechar o modal pelo controle acessível e verificar os mesmos valores/params novamente. As assertivas foram preservadas e acrescentada verificação de fechamento. Nenhum componente de produto foi alterado; nenhum prazo/retry/skip novo. Tipos explícitos do teste corrigido e execução nativa ainda pendentes. O CI automático seguinte39434486868, b18cc9d apenasdocs, falhou na mesma causa conhecida; não foi iniciado rerun manual.
+
+## Nova falha local de histórico — 20/10/2026
+
+O CI39437567918 do68b7d92 passou todos os gates, com E2E123PASS/40skips, sem falha/flaky na síntese e deploy skipped. O focal local seguinte, entretanto, teve4PASS/1FAIL:na etapa goBack do mobile a URL voltou a ser /backlog?bl.y=600 em vez de /boards. A exigência da rota permanece exata; não ampliar prazo nem substituir a asserção.
+
+Mecanismo identificado:um frame do listener de scroll ainda pode executar entre o pop do histórico e o cleanup React. O setter relativo daquela renderização repõe a rota/query antiga. Foi extraído o assinante BacklogScroll com verificação da URL dona antes de agendar e dentro do callback; quatro testes cobrem controle normal, frame pendente após trocar rota, evento após navegação antes de desmontar e outra query na mesma rota. A contraprova remove essas verificações mantendo a gravação antiga; aguardando CPU, depois afetados/tipos/lint/build/full da revisão e novo focal/full. Nenhuma asserção E2E foi retirada ou afrouxada. Produto atual com esta correção ainda não publicado nem certificado pelos resultados anteriores.
+
+## Guarda de localização contraprovada — 20/10/2026
+
+Remover as verificações de dono do listener reproduziu3FAIL/1controle:callback devolve a rota antiga após trocar para quadro, agenda scroll depois de sair antes do cleanup e apaga a query de outra entrada na mesma rota. Restauradas as verificações,20afetados PASS e npx tsc -b --force PASS. A restauração da posição também confere a localização antes de mexer no scroll. A asserção E2E goBack→boards continua idêntica.
+
+O roteiro registra apenas tipo push/replace/pop, classe boards/backlog/other, índice numérico e tempo relativo; não copia URL, IDs, títulos, filtros ou credenciais. Tipos explícitos desta instrumentação serão conferidos pelo coordenador1362595 após history-full-vitest0 e antes do novo focal/full. Lint/build/full desta revisão seguem no runner1291881, com fontes estáveis; não reutilizar os171PASS anteriores para fechar a correção nova. Backend690PASS/33skips permanece sem alteração de código. Sem migration, dependência, timeout/retry/skip/cota ou produção. Revisão e QA oficiais pendentes.
+
+## Gates locais da correção de histórico aprovados — 20/10/2026
+
+Revisão6fd3b0b:Vitest completo175PASS/44arquivos em211,16s; afetados20PASS, contraprova3FAIL/1controle. Tipos forçados, lint e build aprovados. O coordenador1362595 conferiu os tipos explícitos do E2E instrumentado(exit0) e enfileirou backlog-url-history-focal; se passar, executará o completo. Sem afrouxar a exigência goBack→boards ou aumentar prazo.
+
+O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal local4/1 motivou a correção atual. Não usar esses123 como validação do guard novo até nova execução. Backend690PASS/33skips permanece com fonte idêntica. Capturas e novo resultado nativo ainda pendentes. Revisão e QA oficiais pendentes.
+
+
+## Novo focal local — 20/10/2026 15:30 UTC
+
+A execuçãobacklog-url-history-focal encerrou3PASS/2FAIL:desktop voltou ao backlog em vez deboards; mobile perdeu a rolagem600 e ficou0. Não houve suíte completa após falhar. A guarda6fd3b0b tem contraprova unitária válida, mas não resolveu esse fluxo nativo.
+
+A telemetria desktop registroureplace backlog idx0;push boards idx1;replace backlog idx1;pop backlog idx0. Nenhum push de retorno ao backlog foi registrado. O teste clicava no mesmo alternador assim quetoHaveURL(boards) passava, antes de exigir qualquer elemento da tela do quadro. No ReactRouter instalado, useLinkClickHandler calcula replace por createPath(location)===createPath(path); antes do commit React, location ainda pode ser backlog. A nova hipótese apoiada nessa sequência é clique na árvore anterior durante transição, não mera demora do banco. O E2E agora exige uma coluna[data-stage-id] visível após ir ao quadro e antes de voltar. Exigências originais de histórico/rolagem/seleção/colapso preservadas, sem prazo maior. Nova tipagem e execução focal/completa enfileiradas; não afirmar correção comprovada antes dos resultados.
+
+
+## Preservação da rolagem durante carregamento — 20/10/2026
+
+O focal backlog-url-view-ready-focal teve quatro aprovados e uma falha desktop: posição600 esperada, posição0 recebida antes do voltar/avançar. O mobile passou inclusive pelo histórico; a espera por uma coluna real separou a transição de tela da atualização da URL. A CI39453371272 do commitb86300f também aprovou. Nenhum desses resultados é apresentado como aprovação da nova correção abaixo.
+
+Causa adicional comprovada: o listener de scroll era instalado enquanto a lista ainda carregava. A altura temporária podia emitir posição zero e o codec removia bl.y, substituindo o valor salvo antes da restauração. O listener agora só é instalado quando backlogQuery.data e items representam a mesma lista, após o efeito de restauração. Nenhuma mudança de filtro, seleção ou API.
+
+Novo teste BrowserRouter com consulta pendente e frames controlados: preserva bl.y600 durante o carregamento, exige scrollTo600 ao receber a lista e depois exige persistência de uma nova rolagem400. Implementação anterior: uma falha e dois controles aprovados; a falha concreta recebeu null em vez600 na URL. Corrigido: três testes de integração aprovados; conjunto focal de três arquivos com14 aprovados. Tipos forçados, lint, build e tipos E2E aprovados. Novo frontend completo:176 aprovados em44 arquivos,193 segundos. Backend inalterado,690 aprovados/33skips anteriores.
+
+Nova execução nativa backlog-url-scroll-ready-focal/full enfileirada; não afirmar aprovação antes do resultado. Exigências originais de posição600, seleção, colapso e rota/boards preservadas, sem prazo/retry/skip novo. Autorrevisão sem alto/médio confirmado no recorte; revisão e QA oficiais pendentes. Migration: não.
+
+
+## Consulta atual no alternador — 20/10/2026 18:15 UTC
+
+O diagnóstico passivo manteve as asserções originais e reproduziu no desktop: antes do clique, posição e bl.y=600; no push para Quadro, posição600 mas bl.y=0. O href vinha da consulta anterior de useLocation, antes do commit React. O mobile conservou600. A medição separa essa causa das hipóteses anteriores sobre altura e autoscroll.
+
+ProjectViewSwitcher atualiza o destino com window.location.search ao clicar, focar, pressionar ponteiro ou abrir menu contextual; navegação normal calcula replace pela URL atual. Cliques modificados preservam o destino nativo. Seis testes cobrem as duas direções, clique modificado, visão ativa, retorno antes do commit e controle normal. Contraprova com comportamento anterior:5FAIL/1controle, esperado600/recebido10. Corrigido:32PASS/5arquivos. Tipos forçados, lint, build e tipos E2E aprovados. Frontend completo atual:182PASS/45arquivos/212,36s. Backend inalterado:690PASS/33skips anteriores.
+
+A primeira execução completa após esta mudança teve182 testes aprovados, mas uma suíte privada Playwright foi coletada pelo Vitest: gate inválido. Os diagnósticos privados foram renomeados de .spec.ts para .pw.ts, com configurações privadas explícitas atualizadas; nenhuma exclusão, prazo, retry, skip ou asserção foi alterada. O novo completo acima passou. Nativo focal/completo desta revisão ainda pendente sob trava compartilhada. O CI123PASS/40skips do6746658 pertence à revisão anterior.
+
+Autorrevisão: sem novo achado alto/médio no diff; risco residual na interação entre navegação nativa, histórico e renderização assíncrona, coberta pelos seis testes e aguardando navegador. Auto-QA ainda pendente nesta revisão. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento local — 2026-10-20T19:17:56.036309+00:00
+
+Fonte7188864. Focal nativo:5 aprovados em1,1min; completo nativo:123 aprovados,40skips existentes, nenhuma falha,12,6min. Saída nativa0 confirmada, início18:58:50UTC/fim19:11:26UTC, log privado Root.runlogs/oficina/backlog-url-latest-query-full.log. CI39472591882 da mesma fonte:123PASS/40skips/4,2min, cinco jobs aprovados e deploy ignorado. Resultados locais e remotos são distintos.
+
+Frontend completo182 aprovados/45arquivos/212,36s; afetados32PASS/5arquivos, incluindo os seis testes do alternador; contraprova5FAIL/1controle para a consulta antiga. Tipos forçados, lint, build e tipos E2E aprovados. Backend inalterado690 aprovados/33skips anteriores. As execuções inválidas e falhas anteriores permanecem neste relatório.
+
+Auto-QA1440x900/390x844:seleção, colapso, rolagem600, reload, ida ao quadro, retorno, voltar/avançar, parâmetros externos, filtros e abertura direta de item passaram sem alterar as asserções ou ampliar prazo. Capturas do focal e do completo abertas nas duas larguras; mostram a lista na posição restaurada. As verificações nativas conferem seleção e colapso além do que aparece no recorte da imagem.
+
+Ressalva visual herdada:na captura mobile, parte da barra de ações da seleção fica sob a barra contextual fixa ao rolar. O sticky top8 do BacklogPlanner não foi alterado por esta proposta; corresponde à família de sobreposição já catalogada na rodada de QA. Os controles compactos e títulos sintéticos longos também permanecem limitados. Esta entrega não certifica layout combinado nem corrige esses pontos.
+
+Autorrevisão:sem novo achado alto/médio confirmado no diff funcional. A consulta é lida da URL atual no momento da ação; guards impedem frames antigos e dados pendentes de apagar estado; casos de histórico e clique modificado possuem testes. Não captura tokens de autenticação para compor a URL. Pesquisa digitada e parâmetros externos preservados continuam sujeitos ao compartilhamento da URL, conforme escolha registrada em PERGUNTAS.
+
+Migration:não. Nenhuma alteração de API/schema/dependência ou produção. Entrega em PR rascunho. REVISAO e QA oficiais:pendentes.
