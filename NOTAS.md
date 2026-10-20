@@ -1,3 +1,9 @@
+## C5 — serialização de validação corrigida, 20/10/2026 10:30 UTC
+
+O primeiro nativo deu3PASS/2FAIL:timeline/grafo aprovados, cadastro400 sem mensagem por campo. O serializador genérico de ProblemDetails descartava Errors do contrato derivado. WriteProblemAsync agora escreve ValidationErrorResponse com seu tipo concreto. Nova regressão mantém mensagens e não serializa valor tentado de senha.10 afetados aprovados; contraprova1FAIL/9PASS; restauração10PASS. Fontes e binários verdes; API C5 não estava ativa durante a contraprova.
+
+Próximo:novo nativo job c5-native-validation-fixed no lote fair, depois merge só na branch fix/qa-round-1, preservando C2/C3/C4 e documentação. As fontes de QA já têm novas correções visuais ainda não commitadas. Recompilar/reiniciar somente API3120 própria após integrar, sob mutex CPU. Não confundir o nativo anterior com aprovação final. REVISAO e QA oficiais pendentes.
+
 ## Oficina C5 — 08:45 UTC, complemento verde
 
 Backend38, frontend17, tipos app/E2E, lint e build passaram. Red frontend4FAIL esperado e finally restaurou, verde4PASS. Fontes e binários verdes, nenhuma contraprova ativa. Config privada .runlogs/playwright.c5.config.ts no Web usa webServer para API3128/Vite3129 próprios e encerra processos ao terminar, com prazos/retries/asserts nativos preservados. Native ainda pendente; não integrar no QA antes de registrar o resultado. Relatório atualizado.
