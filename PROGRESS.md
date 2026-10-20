@@ -1,3 +1,14 @@
+## [2026-10-20] — Oficina — Gate de instalação e recuperação Community
+- Imagem própria do CI39402799260: bootstrap em DB vazio, replay409, tarefa/anexo e chave reais; backup/VERIFYONLY/restore/CHECKDB aprovados. Sessão antiga, novo login, campos e bytes/hashes preservados.
+- E2E real2PASS nas larguras1440/390; capturas abertas. Primeiro harness falhou na distinção manifesto/configOCI; identidade criptográfica corrigida e falha anterior preservada.
+- Cleanup confirmado:2containers/4volumes/2DBs e demais artefatos próprios removidos, zero erro. Sem migration, produção ou upgrade entre versões. Detalhes em relatorios/oficina-backup-docs.md; revisão e QA oficiais pendentes.
+
+## [2026-10-20] - Codex (Oficina) - TASK-504: documentação de backup Community ensaiada
+
+- Guia de captura conjunta de banco/anexos/chaves/configuração e recuperação sob nome novo; link no quickstart Docker. Sem produto, CI, schema ou migration nova.
+- Bash-n dos5 blocos aprovado. SQL próprio:backup11,7MB, VERIFYONLY/CHECKDB, restauração sem REPLACE e4 contagens idênticas; cópia corrompida recusada e original novamente aprovado. Compose cp recuperou2 arquivos sintéticos com SHA256 idêntico; helpers/volumes exclusivos removidos.
+- Gate clean-install da TASK-504 ainda pendente; PR parcial, sem ENTREGA final. Autorrevisão e limites em relatorios/oficina-backup-docs.md. Quickstart integral com login/anexo real e upgrade entre versões não foram homologados; TASK-507 continua separada. REVISAO e QA oficiais pendentes. Nada em produção.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
