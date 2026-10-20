@@ -1,3 +1,9 @@
+## 2026-10-20 — Oficina: checkpoint de chave técnica
+
+- Worktree oficina-project-key, branch fix/project-key-hidden, basea2797a7. TASK024/D56/spec aprovada; rótulos operacionais sem chave, backend ignora Key legado. Dados técnicos e chaves existentes preservados; relatório versionado e externo contêm limites.
+- Vitest18/18, contraprova7FAIL/11PASS e fontes restauradas. Depois:full163/163, build inclui tsc-b,lint e tipos E2E verdes. Doisunused iniciais removidos. Backend afetado sessão39566 ainda em andamento; filter carregado inicialmente ProjectFeatureTests, full deverá cobrir Scrum atualizado.
+- RuntimeKey3123/3125/DBKeySeeded ainda não iniciado. Configs privadas preparadas na worktree; só usar SQLQA3111. E2Eproject-key-hidden.spec.ts preparado. Próximo: backend verde/contraprova/restauração/full, runtime e E2E/auto-QA, atualizar mesmo PRdraft. REVISAO e QA oficiais pendentes. Sem produção/migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

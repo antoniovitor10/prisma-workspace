@@ -282,13 +282,15 @@ function display(value: unknown) {
 }
 
 function VisualResult({ result }: { result: ReportExecution }) {
+  const columns = result.columns.filter(column => column.key !== 'projectKey');
+  if (!columns.length) return <Message>Selecione campos funcionais, como o nome do projeto, para visualizar este relatório.</Message>;
   if (!result.rows.length) return <Message>Nenhum registro corresponde aos filtros.</Message>;
-  if (result.visualization === 1) return <TableWrap><table><thead><tr>{result.columns.map(column => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>
-    {result.rows.slice(0, 200).map((row, index) => <tr key={index}>{result.columns.map(column => <td key={column.key}>{display(row[column.key])}</td>)}</tr>)}
+  if (result.visualization === 1) return <TableWrap><table><thead><tr>{columns.map(column => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>
+    {result.rows.slice(0, 200).map((row, index) => <tr key={index}>{columns.map(column => <td key={column.key}>{display(row[column.key])}</td>)}</tr>)}
   </tbody></table></TableWrap>;
 
-  const numeric = result.columns.find(column => column.numeric) ?? result.columns[1];
-  const label = result.columns.find(column => column.key !== numeric?.key) ?? result.columns[0];
+  const numeric = columns.find(column => column.numeric) ?? columns[1];
+  const label = columns.find(column => column.key !== numeric?.key) ?? columns[0];
   if (!numeric) return <Message>Escolha uma métrica numérica para esta visualização.</Message>;
   const values = result.rows.slice(0, 20).map(row => ({
     label: display(row[label?.key]), value: Number(row[numeric.key] ?? 0),
@@ -336,6 +338,7 @@ export function ReportBuilder({ projectId }: { projectId?: string }) {
   const catalogQuery = useQuery<ReportCatalog>({
     queryKey: ['report-catalog', scopeProjectId],
     queryFn: () => api.getReportCatalog(scopeProjectId),
+    select: catalog => ({ ...catalog, sources: catalog.sources.map(source => ({ ...source, fields: source.fields.filter(field => field.key !== 'projectKey') })) }),
   });
   const savedQuery = useQuery<SavedReport[]>({
     queryKey: ['saved-reports', projectId],
@@ -431,7 +434,7 @@ export function ReportBuilder({ projectId }: { projectId?: string }) {
             {(catalogQuery.data?.visualizations ?? Object.keys(visualizationNames).map(Number)).map(item => <option key={item} value={item}>{visualizationNames[item]}</option>)}
           </select></Field>
         </Inline>
-        <SectionTitle>Colunas <span>{definition.columns.length} selecionadas</span></SectionTitle>
+        <SectionTitle>Colunas <span>{definition.columns.filter(column => column !== 'projectKey').length} selecionadas</span></SectionTitle>
         <Columns>{selectedSource?.fields.map(field => <label key={field.key}>
           <input type="checkbox" checked={definition.columns.includes(field.key)} onChange={() => toggleColumn(field.key)} />{field.label}
         </label>)}</Columns>

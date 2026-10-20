@@ -33,6 +33,7 @@ describe('Meu trabalho', () => {
     render(<MemoryRouter><QueryClientProvider client={client}><AppThemeProvider><MinhasTarefas /></AppThemeProvider></QueryClientProvider></MemoryRouter>);
 
     const task = await screen.findByRole('button', { name: 'Abrir tarefa 1028: Revisar proposta' });
+    expect(task).not.toHaveTextContent('TEST');
     fireEvent.click(task);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();

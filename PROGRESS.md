@@ -1,3 +1,10 @@
+## [2026-10-20] — Codex (Oficina) — chave técnica interna, validação em andamento
+
+- Branch `fix/project-key-hidden`, base `a2797a7`, TASK-024/D56/spec aprovada. História de rastreabilidade e relatório `relatorios/oficina-project-key.md` criados. Backend ignora Key legado e gera a chave; UI usa nome/número em vez do prefixo técnico, inclusive no construtor de relatórios.
+- Contratos/dados técnicos, chaves existentes, busca técnica, definições/exportações legadas e slugs publicados preservados. Compatibilidade reversível registrada externamente para conferência humana.
+- Frontend afetado18/18, red7falhas/11controles com componentes anteriores, fontes restauradas; full163/163(41arquivos), tipos/lint/build verdes. Backend afetado rodando; contraprova/verde final backend, E2E/full e auto-QA pendentes. Não é conclusão da task.
+- Sem migration, produção, main, merge ou deploy. REVISAO e QA oficiais pendentes; próximo passo: concluir gates e validar jornada nas duas larguras quando o mutex permitir.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.

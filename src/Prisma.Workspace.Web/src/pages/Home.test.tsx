@@ -30,6 +30,7 @@ describe('Home', () => {
     expect(await screen.findByRole('heading', { name: 'O trabalho que importa, claro desde o primeiro olhar.' })).toBeInTheDocument();
     expect(await screen.findByText(/Revisar jornada inicial/)).toBeInTheDocument();
     expect(await screen.findByText('Prisma WorkSpace')).toBeInTheDocument();
+    expect(screen.queryByText(/PRISMA/)).not.toBeInTheDocument();
     expect(await screen.findByText('8')).toBeInTheDocument();
     expect(await screen.findByText('2')).toBeInTheDocument();
 

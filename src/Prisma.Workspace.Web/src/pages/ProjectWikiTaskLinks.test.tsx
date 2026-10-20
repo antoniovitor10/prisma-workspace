@@ -41,7 +41,7 @@ describe('vínculos de tarefas na Wiki', () => {
 
     const input = screen.getByRole('combobox', { name: 'Buscar tarefa para vincular à Wiki' });
     fireEvent.change(input, { target: { value: 'processo de compra' } });
-    fireEvent.click(await screen.findByRole('button', { name: /PRD-42.*Documentar processo de compra/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /#42.*Documentar processo de compra/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Vincular' }));
 
     await waitFor(() => expect(link).toHaveBeenCalledWith('project-1', 'page-1', 42));

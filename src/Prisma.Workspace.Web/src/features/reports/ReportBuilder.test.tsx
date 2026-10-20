@@ -47,6 +47,25 @@ afterEach(() => {
 });
 
 describe('editor de filtros e métricas do relatório', () => {
+  it('oculta chave técnica do catálogo e resultado sem alterar dados técnicos recebidos', async () => {
+    const technical = { key: 'projectKey', label: 'Chave do projeto', type: 'string', numeric: false };
+    const functional = { key: 'project', label: 'Projeto', type: 'string', numeric: false };
+    vi.mocked(api.getReportCatalog).mockResolvedValue({
+      sources: [{ source: 1, name: 'Tarefas', fields: [technical, functional] }],
+      filterOperators: ['eq'], metrics: [1], visualizations: [1],
+    });
+    const result = { columns: [technical, functional], rows: [{ projectKey: 'SEGREDO-TECNICO', project: 'Produto de teste' }],
+      visualization: 1, sourceRowCount: 1, resultRowCount: 1 };
+    const preview = vi.spyOn(api, 'previewReport').mockResolvedValue(result);
+    await renderBuilder();
+    expect(screen.queryByText('Chave do projeto')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }));
+    expect(await screen.findByRole('cell', { name: 'Produto de teste' })).toBeInTheDocument();
+    expect(screen.queryByText('SEGREDO-TECNICO')).not.toBeInTheDocument();
+    expect(preview).toHaveBeenCalledWith(expect.objectContaining({ definition: expect.objectContaining({ columns: ['project'] }) }));
+    expect(result.rows[0].projectKey).toBe('SEGREDO-TECNICO');
+  });
+
   it('mantém todos os controles e a remoção dentro do grupo do filtro', async () => {
     await renderBuilder();
     await screen.findByRole('option', { name: 'Tarefas' });

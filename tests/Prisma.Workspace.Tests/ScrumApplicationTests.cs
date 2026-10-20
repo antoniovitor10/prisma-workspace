@@ -10,18 +10,20 @@ namespace Prisma.Workspace.Tests;
 public class ScrumApplicationTests
 {
     [Fact]
-    public async Task CreateProject_AllowsUniqueKey_AndRejectsDuplicate()
+    public async Task CreateProject_IgnoresClientKeyAndResolvesGeneratedCollision()
     {
-        var repository = new ProjectRepositoryFake { KeyExists = false };
+        var repository = new ProjectRepositoryFake();
         var handler = new CreateProjectCommandHandler(repository);
-
-        var id = await handler.Handle(new CreateProjectCommand("TI", "Tecnologia", null, "owner", WorkNature.Project, WorkType.Development), default);
-
-        Assert.Equal(repository.Added!.Id, id);
-
-        repository.KeyExists = true;
-        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
-            new CreateProjectCommand("TI", "Duplicado", null, "owner", WorkNature.Project, WorkType.Development), default));
+        var command = new CreateProjectCommand("TI", "Tecnologia", null, "owner", WorkNature.Project, WorkType.Development);
+        var firstId = await handler.Handle(command, default);
+        var firstKey = repository.Added!.Key;
+        Assert.Equal(repository.Added.Id, firstId);
+        Assert.NotEqual(command.Key, firstKey);
+        var secondId = await handler.Handle(command, default);
+        Assert.NotEqual(firstId, secondId);
+        Assert.NotEqual(firstKey, repository.Added!.Key);
+        Assert.Equal(firstKey + "2", repository.Added.Key);
+        Assert.Equal(2, repository.Keys.Count);
     }
 
     [Fact]
@@ -49,10 +51,10 @@ public class ScrumApplicationTests
 
     private sealed class ProjectRepositoryFake : IProjectRepository
     {
-        public bool KeyExists { get; set; }
+        public HashSet<string> Keys { get; } = [];
         public Project? Added { get; private set; }
-        public Task<bool> KeyExistsAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(KeyExists);
-        public Task AddAsync(Project project, CancellationToken cancellationToken = default) { Added = project; return Task.CompletedTask; }
+        public Task<bool> KeyExistsAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(Keys.Contains(key));
+        public Task AddAsync(Project project, CancellationToken cancellationToken = default) { Added = project; Keys.Add(project.Key); return Task.CompletedTask; }
         public Task<IReadOnlyList<Project>> GetForUserAsync(string userId, bool includeArchived = false, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Project>>([]);
         public Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<Project?>(null);
         public Task<Project?> GetByIdWithMembersAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<Project?>(null);

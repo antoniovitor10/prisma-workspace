@@ -201,7 +201,6 @@ export default function SprintBacklogPanel({
   sprint,
   items,
   allItems,
-  projectKey,
   onOpenItem,
   onPlan,
   showPoints = true,
@@ -246,7 +245,7 @@ export default function SprintBacklogPanel({
               <ItemTitle $depth={depth}>
                 <strong>{item.title}</strong>
                 <small>
-                  <span>{item.number ? `${projectKey}-${item.number}` : kindNames[item.kind]}</span>
+                  <span>{item.number ? `#${item.number}` : kindNames[item.kind]}</span>
                   <span>{kindNames[item.kind]} · {priorityNames[item.priority]}</span>
                   {parent && <span>↳ {parent.title}</span>}
                   {item.isBlocked && <Badge $warning><AlertTriangle size={9} />Bloqueado</Badge>}
