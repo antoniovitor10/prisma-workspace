@@ -230,6 +230,10 @@ public class ProjectFeatureTests
 
     private sealed class OrganizationRepositoryStub(OrganizationMember member) : IOrganizationRepository
     {
+        public Task<bool> HasMembershipAsync(string userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+        public Task<T> ExecuteCreationAsync<T>(string userId, Func<CancellationToken, Task<T>> create,
+            CancellationToken cancellationToken = default) => create(cancellationToken);
         public Task<IReadOnlyList<Organization>> GetForUserAsync(string userId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Organization>>([]);
         public Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

@@ -54,10 +54,14 @@ const Card = styled.form`
 `;
 
 function OrganizationOnboarding({ onCreated }: { onCreated: (organization: OrganizationSummary) => void }) {
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const create = useMutation({
     mutationFn: () => api.createOrganization({ name }),
-    onSuccess: onCreated,
+    onSuccess: async organization => {
+      await queryClient.invalidateQueries({ queryKey: ['organizations', 'creation'] });
+      onCreated(organization);
+    },
   });
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -88,6 +92,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     () => previewMode ? [previewOrganization] : (query.data ?? []),
     [query.data],
   );
+  const creationQuery = useQuery({
+    queryKey: ['organizations', 'creation'],
+    queryFn: () => api.getOrganizationCreation(),
+    enabled: !previewMode && query.isSuccess && organizations.length === 0 && !invitationToken,
+  });
   const acceptInvitation = useMutation({
     mutationFn: (token: string) => api.acceptOrganizationInvitation(token),
     onSuccess: async data => {
@@ -163,6 +172,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         {contaErrada ? 'Continuar com a conta atual' : 'Continuar'}</button>
     </Card></Center>;
   }
+  if (!organizations.length && creationQuery.isPending)
+    return <Center><p>Verificando seu acesso...</p></Center>;
+  if (!organizations.length && creationQuery.isError)
+    return <Center><Card as="div"><h1>Não foi possível verificar seu acesso</h1><p>Tente novamente para continuar.</p><button onClick={() => creationQuery.refetch()}>Tentar novamente</button></Card></Center>;
+  if (!organizations.length && creationQuery.data?.canCreate === false)
+    return <Center><Card as="div"><h1>Acesso à organização indisponível</h1><p>Peça ao administrador da sua organização para verificar e reativar seu acesso.</p></Card></Center>;
   if (!organizations.length)
     return <OrganizationOnboarding onCreated={organization => {
       queryClient.setQueryData<OrganizationSummary[]>(['organizations'], current => [...(current ?? []), organization]);

@@ -65,6 +65,20 @@ function renderTopbar(
 }
 
 describe('Topbar', () => {
+  it('restaura foco no menu da conta ao cancelar a criação por Escape', async () => {
+    vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+    vi.spyOn(api, 'getOrganizationCreation').mockResolvedValue({ canCreate: true });
+    renderTopbar();
+    const opener = await screen.findByRole('button', { name: 'Menu da conta' });
+    fireEvent.click(opener);
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Nova organização' }));
+    const input = screen.getByLabelText('Nome da organização');
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.keyDown(input, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Nova organização' })).not.toBeInTheDocument());
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
   it('oferece Nova organização só quando o servidor permite e troca para a organização criada', async () => {
     vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
     vi.spyOn(api, 'getOrganizationCreation').mockResolvedValue({ canCreate: true });

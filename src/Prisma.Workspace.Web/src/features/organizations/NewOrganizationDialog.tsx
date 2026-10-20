@@ -1,11 +1,12 @@
-import { useMutation } from '@tanstack/react-query';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../../services/api';
 import type { OrganizationSummary } from './OrganizationState';
 
-const Overlay = styled.div`
+const Overlay = styled(Dialog.Overlay)`
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -15,9 +16,16 @@ const Overlay = styled.div`
   background: rgba(15, 23, 42, 0.45);
 `;
 
-const Card = styled.form`
+const Card = styled(Dialog.Content)`
+  position: fixed;
+  z-index: 201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: grid;
-  width: min(420px, 100%);
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   gap: 14px;
   padding: 24px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -51,27 +59,33 @@ const Button = styled.button<{ $primary?: boolean }>`
 `;
 
 /** Criação de organização adicional; só aparece para quem o servidor permite (administrador da plataforma). */
-export function NewOrganizationDialog({ onClose, onCreated }: {
+export function NewOrganizationDialog({ onClose, onCreated, restoreFocus }: {
   onClose: () => void;
   onCreated: (organization: OrganizationSummary) => void;
+  restoreFocus?: () => void;
 }) {
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const create = useMutation({
     mutationFn: () => api.createOrganization({ name: name.trim() }) as Promise<OrganizationSummary>,
-    onSuccess: onCreated,
+    onSuccess: async organization => {
+      await queryClient.invalidateQueries({ queryKey: ['organizations', 'creation'] });
+      onCreated(organization);
+    },
   });
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (name.trim()) create.mutate();
   };
 
-  return <Overlay onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <Card role="dialog" aria-modal="true" aria-labelledby="new-organization-title" onSubmit={submit}
-      onKeyDown={event => { if (event.key === 'Escape') onClose(); }}>
-      <header><Building2 size={20} /><h2 id="new-organization-title">Nova organização</h2></header>
-      <p>Ambiente separado, com projetos e membros próprios. Ninguém das outras organizações enxerga o que estiver nela.</p>
+  return <Dialog.Root open onOpenChange={open => { if (!open && !create.isPending) onClose(); }}>
+    <Dialog.Portal>
+    <Overlay />
+    <Card asChild onCloseAutoFocus={restoreFocus ? event => { event.preventDefault(); restoreFocus(); } : undefined}><form onSubmit={submit}>
+      <header><Building2 size={20} /><Dialog.Title asChild><h2>Nova organização</h2></Dialog.Title></header>
+      <Dialog.Description asChild><p>Ambiente separado, com projetos e membros próprios. Ninguém das outras organizações enxerga o que estiver nela.</p></Dialog.Description>
       <label>Nome da organização
-        <input autoFocus required maxLength={160} value={name} onChange={event => setName(event.target.value)}
+        <input required maxLength={160} value={name} onChange={event => setName(event.target.value)}
           placeholder="Ex.: Pessoal" />
       </label>
       {create.error && <small role="alert">{create.error instanceof Error ? create.error.message : 'Não foi possível criar a organização.'}</small>}
@@ -81,6 +95,7 @@ export function NewOrganizationDialog({ onClose, onCreated }: {
           {create.isPending ? 'Criando...' : 'Criar organização'}
         </Button>
       </Actions>
-    </Card>
-  </Overlay>;
+    </form></Card>
+    </Dialog.Portal>
+  </Dialog.Root>;
 }

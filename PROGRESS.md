@@ -1,3 +1,15 @@
+## 2026-10-20 — Oficina: conclusão local das ressalvas de organizações
+
+Backend695PASS/33skips e frontend167PASS. Focal9PASS com auto-QA1440/390; completo111PASS/2FAIL/40skips/14bloqueados por colisão de porta no fake. Porta/token privados corrigidos e arquivo IA inteiro17PASS; tipos forçados aprovados. Preservada a falha anterior no relatório. PR28 em rascunho; revisão/QA oficiais pendentes; sem migration. Próximo passo humano: conferir integração do repository com C5.
+
+## [2026-10-20] - Codex (Oficina) - ressalvas de criação de organização, validação em andamento
+
+- Item 2 do goal Oficina, branch própria `fix/org-creation-lows` sobre `a2797a7`. Criação passa por transação SQL e lock da linha Identity do usuário antes de checar/inserir; qualquer membership anterior impede uma nova primeira organização para usuário comum, inclusive inativa. Plataforma mantém sua autoridade. Sem schema, índice ou migration nova.
+- Cache de elegibilidade invalidado no onboarding e na criação adicional. Pessoa sem organização ativa e sem permissão recebe orientação para reativação. Diálogo usa Radix existente, contém foco e o devolve ao menu da conta após fechar; removido autoFocus nativo que se antecipava ao FocusScope.
+- Gates focados iniciais: xUnit regras/ProjectFeature17/17; concorrência SQL3/3 com3rodadas por cenário (mesmo usuário comum, plataforma e usuários distintos); Vitest13/13; lint0erros; build frontend final com tsc-b aprovado. Contraprova backend:3falhas esperadas (inativos e2criações indevidas),2controles aprovados. Contraprova frontend:3falhas esperadas (cache/foco). Fontes corretas restauradas, sem enfraquecer prazos/asserções.
+- Verde final confirmado: full xUnit695PASS/33skips preexistentes/0FAIL; fullVitest167PASS/42arquivos; solução e frontend com tsc-b/lint/build aprovados. E2E focado9/9PASS nas larguras1440x900 e390x844, incluindo setup. Auto-QA das quatro capturas confirmou diálogo e orientação de reativação sem cortes. Suíte nativa completa ainda pendente na trava compartilhada. Nenhum binário vermelho ativo.
+- Autorrevisão inicial sem alto/médio confirmado; não se alega atomicidade nova com o canal de convite nem solução de slug entre usuários distintos. Revisão e QA oficiais pendentes. Continuidade em NOTAS e estado externo; nada em produção/main/deploy.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
