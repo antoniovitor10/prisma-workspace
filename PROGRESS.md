@@ -1,5 +1,10 @@
 ## [2026-10-20] - Codex (Oficina) - rodada QA em branch isolada, validação em andamento
 
+- C5 integrado localmente; Auth combinou nome completo e orientação do administrador. Build conjunto, reinício da API3120 própria e E2E final ainda pendentes.
+- Primeiro nativo C5:3PASS/2FAIL; nome inválido recebia400 sem erros por campo. Serialização de ValidationErrorResponse corrigida, com regressão de mensagens/privacidade:10PASS, contraprova1FAIL/9PASS e restauração10PASS. Novo nativo após a correção ainda pendente; integração local agora realizada.
+- C5 em scratch próprio sobre3f973c1:cadastro completo com claim provisória transacional, transferência ao membership e timeline sobre dados existentes com grafo complementar; ocultações leadtime/automações só na UI. Backend37/37(incluiSQL), frontend16/16, tsc-b/lint/build verdes. Contraprova8FAIL/4PASS; fontes restauradas, rebuild final12/12PASS. E2E/contraprova frontend/fullbranch pendentes; relatório específico relatorios/oficina-qa-c5.md. Não é ENTREGA concluída.
+- Complemento C5: tooltip de permanência oculto também no grafo complementar. SQL da associação por convite passou; afetados finais38 backend/17 frontend, tipos app/E2E, lint e build verdes. Contraprova frontend4FAIL e restauração4PASS. Native próprio C5 ainda pendente.
+
 - C3/C4:status longo da fila passa a quebrar em duas colunas no celular; gráficos preparados recebem nomes pelo título, mantendo acessibilidade de teclado do Recharts. Baseline nativo novo confirmou3 falhas(D14 nas duas larguras e D20 mobile423>390),2 controles aprovados. Fechamento local31Vitest/7 arquivos, tipos app/E2E,lint/build aprovados; nativo após correção ainda pendente. Captura C1 agora espera a opção carregada e verificável por click trial antes da foto.
 
 - Goal Oficina autorizado pelo PO: base `a2797a7`, worktree `oficina-qa`, branch `fix/qa-round-1`; merges de L06, L07 e L08 em ordem, preservando ambos os lados dos conflitos exclusivamente documentais. Sem produção, main, deploy, migration nova ou agentes adicionais.

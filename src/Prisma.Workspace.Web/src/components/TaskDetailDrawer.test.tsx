@@ -133,7 +133,7 @@ describe('TaskDetailDrawer', () => {
     fireEvent.change(screen.getByRole('combobox', { name:'Quadro de destino' }), { target:{ value:'board-2' } });
     expect(screen.getByLabelText('Rota da transferência')).toHaveTextContent('Entrega');
     await waitFor(()=>expect(screen.getByRole('combobox', { name:'Coluna de destino' })).not.toBeDisabled());
-    for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Grafo de estados']) {
+    for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Linha do tempo']) {
       expect(screen.getByRole('button', { name: tab })).toBeInTheDocument();
     }
     fireEvent.click(screen.getByRole('button', { name: 'Comentários' }));

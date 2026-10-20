@@ -531,6 +531,8 @@ export const Auth: React.FC = () => {
   const [inviteFailed, setInviteFailed] = useState(false);
   const [invite, setInvite] = useState<{ email: string; organizationName: string; accountExists: boolean } | null>(null);
   const [fullName, setFullName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
+  const invalidFullName = fullName.trim().split(/\s+/).filter(Boolean).length < 2;
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isRegister, setIsRegister] = useState(hasInvite);
   const [flow, setFlow] = useState<'login' | 'forgot' | 'reset' | 'confirm'>(
@@ -608,6 +610,10 @@ export const Auth: React.FC = () => {
     setSsoNotice(null);
 
     try {
+      if (isRegister && flow === 'login') {
+        setNameTouched(true);
+        if (invalidFullName) throw new Error('Informe seu nome e sobrenome.');
+      }
       if (hasInvite && flow === 'login') {
         if (!invite || !inviteToken) throw new Error('Convite indisponível. Peça um novo link ao administrador.');
         if (isRegister && password !== confirmPassword) throw new Error('As senhas não coincidem.');
@@ -629,7 +635,7 @@ export const Auth: React.FC = () => {
         setNotice('Senha redefinida. Entre novamente.');
         window.history.replaceState({}, '', window.location.pathname);
       } else if (isRegister) {
-        const result = await api.register(email, password);
+        const result = await api.register(email, password, fullName);
         if (result?.developmentToken && result?.userId) {
           await api.confirmEmail(result.userId, result.developmentToken);
           await api.login(email, password);
@@ -745,9 +751,11 @@ export const Auth: React.FC = () => {
             {ssoNotice && <Alert $tone="info"><Shield size={16} /><span>{ssoNotice}</span></Alert>}
 
             <Form onSubmit={handleSubmit}>
-              {hasInvite && isRegister && flow === 'login' && (
-                <Field>Nome completo<InputWrap><Input value={fullName} onChange={e => setFullName(e.target.value)}
-                  autoComplete="name" maxLength={200} required placeholder="Seu nome e sobrenome" /></InputWrap></Field>
+              {isRegister && flow === 'login' && (
+                <Field>Nome completo<InputWrap><Input id="fullName" aria-label="Nome completo" value={fullName} onChange={e => setFullName(e.target.value)}
+                  autoComplete="name" maxLength={200} required placeholder="Seu nome e sobrenome" onBlur={() => setNameTouched(true)}
+                  aria-invalid={nameTouched && invalidFullName} aria-describedby={nameTouched && invalidFullName ? 'registration-name-error' : undefined} /></InputWrap>
+                  {nameTouched && invalidFullName && <small id="registration-name-error" role="alert">Informe seu nome e sobrenome.</small>}</Field>
               )}
               <Field>
                 {flow === 'forgot' ? 'E-mail para recuperação' : 'E-mail corporativo'}

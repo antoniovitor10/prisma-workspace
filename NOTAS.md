@@ -1,3 +1,21 @@
+## Integração QA/C5 local, 20/10/2026
+
+C5 f7fb3a5 integrado à QA após C3/C4 d8ad460. Auth mesclou automaticamente nome completo e orientação do administrador. Documentação foi resolvida preservando os fatos de ambos os lados; marcadores do PROGRESS detectados no commit local foram removidos antes de publicar o merge. Build conjunto, restart somente API3120 e gates finais ainda pendentes. O próximo lote nativo fair usa scratch C5 para seu teste focado e QA para controles/C1; não tomar isso como teste completo do merge.
+
+## C5 — serialização de validação corrigida, 20/10/2026 10:30 UTC
+
+O primeiro nativo deu3PASS/2FAIL:timeline/grafo aprovados, cadastro400 sem mensagem por campo. O serializador genérico de ProblemDetails descartava Errors do contrato derivado. WriteProblemAsync agora escreve ValidationErrorResponse com seu tipo concreto. Nova regressão mantém mensagens e não serializa valor tentado de senha.10 afetados aprovados; contraprova1FAIL/9PASS; restauração10PASS. Fontes e binários verdes; API C5 não estava ativa durante a contraprova.
+
+Próximo:novo nativo job c5-native-validation-fixed no lote fair, depois merge só na branch fix/qa-round-1, preservando C2/C3/C4 e documentação. As fontes de QA já têm novas correções visuais ainda não commitadas. Recompilar/reiniciar somente API3120 própria após integrar, sob mutex CPU. Não confundir o nativo anterior com aprovação final. REVISAO e QA oficiais pendentes.
+
+## Oficina C5 — 08:45 UTC, complemento verde
+
+Backend38, frontend17, tipos app/E2E, lint e build passaram. Red frontend4FAIL esperado e finally restaurou, verde4PASS. Fontes e binários verdes, nenhuma contraprova ativa. Config privada .runlogs/playwright.c5.config.ts no Web usa webServer para API3128/Vite3129 próprios e encerra processos ao terminar, com prazos/retries/asserts nativos preservados. Native ainda pendente; não integrar no QA antes de registrar o resultado. Relatório atualizado.
+
+## Oficina C5 — checkpoint 2026-10-20 07:52UTC
+
+Fontes E binários verdes:backend37/37(incluiSQL), red8FAIL/4PASS, finallyrestaurou e rebuildfinal12/12PASS. Frontend16/16,tipos/lint/buildPASS. Não há runtimeC5 ativo. Relatório relatorios/oficina-qa-c5.md detalha decisões e limites. Próximo:contraprova frontend, tiposE2E, integrar noQA próprio após salvar C2-C4 e resolver somente conflitos documentais/linhaAuth, recompilar/reiniciarAPI3120 sobCPUsemnavegadorativo,E2EC5/fullbranch. API3120atual éb7e4f84 e NÃO contém C5. Nunca substituir aAPI com binários de contraprova.
+
 ## QA — C3/C4 preparados para reteste, 20/10/2026
 
 ReportCharts/ReportsHub passam os títulos como aria-label aos SVGs reais do Recharts, preservando role/teclado. Requests usa duas colunas minmax0 no mobile e quebra do status/título; cabeçalho de tabela fica oculto nesse formato. Baseline confirmado:D14 sem nome nas duas larguras e D20mobile423>390,3 falhas/2 controles. Fechamento local31Vitest/7arquivos,tsc-b,tiposE2E,lint/build todos aprovados.

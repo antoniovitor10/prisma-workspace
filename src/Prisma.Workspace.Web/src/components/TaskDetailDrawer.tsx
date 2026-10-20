@@ -36,7 +36,7 @@ import styled from 'styled-components';
 import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
 import { DependencyAutocomplete } from '../features/task/DependencyAutocomplete';
 import { TaskFeed } from '../features/task/TaskFeed';
-import { TaskStateGraph } from '../features/task/TaskStateGraph';
+import { TaskTimeline } from '../features/task/TaskTimeline';
 import { TaskTaxonomyPanel } from '../features/task/TaskTaxonomyPanel';
 import { TaskTimePanel } from '../features/task/TaskTimePanel';
 import { TaskWikiPages } from '../features/task/TaskWikiPages';
@@ -245,7 +245,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
   const [publicReply,setPublicReply]=useState('');
-  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'graph'>('description');
+  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'>('description');
 
   const fallback=useMemo<WorkItemDetails|null>(()=>item?{
     id:item.id,number:item.number??0,reference:item.number?`${projectKey}-${item.number}`:`${projectKey}-${item.id.slice(-4).toUpperCase()}`,
@@ -282,6 +282,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const invalidate=async()=>Promise.all([
     queryClient.invalidateQueries({queryKey:['work-item',item?.id]}),
     queryClient.invalidateQueries({queryKey:['project-backlog']}),
+    queryClient.invalidateQueries({queryKey:['task-timeline',item?.id]}),
   ]);
   const update=useMutation({
     mutationFn:async(next:Draft)=>{if(realMode&&details)await api.updateWorkItem(details.id,{title:next.title,description:next.description||null,kind:next.kind,stageId:next.stageId||null,priority:next.priority,responsibleId:next.responsibleId||null,teamId:next.teamId||null,origin:next.origin,requesterId:next.requesterId||null,requesterName:next.requesterName||null,requesterEmail:next.requesterEmail||null,startDate:next.startDate||null,dueDate:next.dueDate||null,estimatedHours:numberOrNull(next.estimatedHours),remainingHours:numberOrNull(next.remainingHours),points:numberOrNull(next.points),acceptanceCriteria:next.acceptanceCriteria||null});return next;},
@@ -467,7 +468,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
         <Tab $active={activeTab==='subtasks'} onClick={()=>setActiveTab('subtasks')}>Subtarefas</Tab>
         <Tab $active={activeTab==='attachments'} onClick={()=>setActiveTab('attachments')}>Anexos</Tab>
         <Tab $active={activeTab==='history'} onClick={()=>setActiveTab('history')}>Histórico</Tab>
-        <Tab $active={activeTab==='graph'} onClick={()=>setActiveTab('graph')}>Grafo de estados</Tab>
+        <Tab $active={activeTab==='timeline'} onClick={()=>setActiveTab('timeline')}>Linha do tempo</Tab>
       </Tabs>
 
       {activeTab==='description'&&<>
@@ -521,8 +522,8 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Section><h2><Clock3 size={14}/>Auditoria</h2><Meta><MetaChip>Criada em {new Date(details.createdAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>Atualizada em {new Date(details.updatedAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>{details.commentsCount} comentário(s)</MetaChip><MetaChip>{details.attachmentsCount} anexo(s)</MetaChip></Meta></Section>
       </>}
       {activeTab==='comments'&&<Section><h2><MessageSquareText size={14}/>Comentários internos</h2><VisibilityNote>Visível somente para a equipe interna. Este conteúdo não é enviado nem exibido ao solicitante.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="comments"/>:<Empty>Entre com dados reais para comentar.</Empty>}</Section>}
-      {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações e movimentações desta tarefa.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
-      {activeTab==='graph'&&<Section><h2><GitBranch size={14}/>Grafo de estados</h2><VisibilityNote>Caminho real percorrido pela tarefa entre etapas, com responsáveis e datas de cada transição.</VisibilityNote>{realMode?<TaskStateGraph workItemId={details.id} createdAt={details.createdAt} createdByName={details.requesterName || details.responsibleName}/>:<Empty>Grafo disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações desta tarefa. As movimentações ficam na Linha do Tempo.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='timeline'&&<Section><h2>Linha do tempo</h2><VisibilityNote>Criação e movimentações entre colunas, da mais recente para a mais antiga.</VisibilityNote>{realMode?<TaskTimeline key={details.id} workItemId={details.id} createdAt={details.createdAt}/>:<Empty>Linha do tempo disponível com dados reais.</Empty>}</Section>}
     </Body>}
   </Sheet>}</Dialog.Portal></Dialog.Root>;
 }

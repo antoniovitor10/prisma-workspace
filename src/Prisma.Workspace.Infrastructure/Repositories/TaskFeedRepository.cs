@@ -49,6 +49,7 @@ public class TaskFeedRepository : ITaskFeedRepository
         return await _context.StageHistories
             .AsNoTracking()
             .Include(history => history.Stage)
+            .Include(history => history.WorkItem)
             .Where(history => history.WorkItemId == workItemId)
             .OrderBy(history => history.EnteredAt)
             .ToListAsync(cancellationToken);

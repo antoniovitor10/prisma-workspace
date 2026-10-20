@@ -40,7 +40,7 @@ test('gaveta da tarefa integra seis abas, busca de dependência e regras Kanban'
 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Grafo de estados']) {
+  for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Linha do tempo']) {
     await expect(dialog.getByRole('button', { name: tab, exact: true })).toBeVisible();
   }
 
@@ -63,7 +63,9 @@ test('gaveta da tarefa integra seis abas, busca de dependência e regras Kanban'
   await expect(dialog.getByRole('heading', { name: 'Comentários internos' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Histórico' }).click();
   await expect(dialog.getByRole('heading', { name: 'Histórico imutável' })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Grafo de estados' }).click();
+  await dialog.getByRole('button', { name: 'Linha do tempo', exact: true }).click();
+  await expect(dialog.getByRole('list', { name: 'Movimentações entre colunas' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Ver grafo de estados', exact: true }).click();
   await expect(dialog.getByRole('heading', { name: 'Grafo de estados' })).toBeVisible();
 });
 

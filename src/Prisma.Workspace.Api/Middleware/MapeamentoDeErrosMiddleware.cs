@@ -85,7 +85,11 @@ public class MapeamentoDeErrosMiddleware
         if (context.Response.HasStarted) throw new InvalidOperationException("Resposta já iniciada.");
         context.Response.StatusCode = problem.Status ?? 500;
         context.Response.ContentType = "application/problem+json; charset=utf-8";
-        await context.Response.WriteAsJsonAsync(problem);
+        // Mantém os erros por campo do contrato derivado; serializar como ProblemDetails os descartava.
+        if (problem is ValidationErrorResponse validation)
+            await context.Response.WriteAsJsonAsync(validation);
+        else
+            await context.Response.WriteAsJsonAsync(problem);
     }
 
     private static string ToCamelCase(string value)

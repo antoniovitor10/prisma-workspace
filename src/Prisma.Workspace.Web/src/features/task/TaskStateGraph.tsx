@@ -46,13 +46,6 @@ interface TimelineStep {
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-const durationLabel = (seconds: number) => {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}min`;
-  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
-  return `${(seconds / 86400).toFixed(1)}d`;
-};
-
 const formatDate = (iso: string) => {
   try {
     const d = new Date(iso);
@@ -396,7 +389,7 @@ export function TaskStateGraph({ workItemId, createdAt, createdByName }: TaskSta
               <NodeTopSpacer />
               <StateNodeBubble
                 $isCurrent={step.node.isCurrent}
-                title={`${step.node.name} · ${step.node.visits} visita(s) · Permanência: ${durationLabel(step.node.totalSeconds)}${step.node.isCurrent ? ' (estado atual)' : ''}`}
+                title={`${step.node.name} · ${step.node.visits} visita(s)${step.node.isCurrent ? ' (estado atual)' : ''}`}
               >
                 <Dot $color={getStateDotColor(step.node.name, theme)} />
                 <StateName $isCurrent={step.node.isCurrent}>
