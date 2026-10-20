@@ -133,3 +133,6 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+## Oficina — 2026-10-20 — TASK124
+Implementação de arraste somente no título de coluna, sem mudança de regra de negócio. Gates locais passaram (backend690/33; frontend167). Contraprova4 falhas e restauração5. Falha inicial de seletor de cartão corrigida sem reduzir cobertura. Próximo: E2E focal/completo sob trava e inspeção das capturas, depois atualizar relatório e PR. Não entregar como validado antes desses resultados.

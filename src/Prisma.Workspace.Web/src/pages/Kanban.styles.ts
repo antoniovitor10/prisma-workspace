@@ -280,7 +280,16 @@ export const ColumnSortControl = styled.label`
   > select:focus-visible { outline: 2px solid ${props => props.theme.color.accentBlueAccessible}; outline-offset: 1px; }
 `;
 
-export const ColumnTitle = styled.h3`
+export const ColumnTitle = styled.h3<{ $isColumnDragging?: boolean }>`
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  cursor: ${props => props.$isColumnDragging ? 'grabbing' : 'grab'};
+  touch-action: none;
+  user-select: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   font-size: ${props => props.theme.fontSize.sm};
   font-weight: ${props => props.theme.fontWeight.bold};
   color: ${props => props.theme.color.text};

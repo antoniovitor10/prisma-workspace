@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — TASK124: reordenação de colunas por arraste
+- Título recebe gesto de ponteiro/toque usando API existente, com rollback, proteção contra concorrência e resposta antiga após mudança de quadro. Botões de teclado mantidos.
+- Backend690 aprovados/33 skips existentes; frontend167/41; afetados17; contraprova4 falhas/1 controle, restauração5; tipos forçados/lint/build e tipos E2E aprovados.
+- E2E nativo e auto-QA nas duas larguras pendentes na fila; detalhes em relatorios/oficina-column-drag.md. Sem migration, mudança de workflow, dependência ou produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
