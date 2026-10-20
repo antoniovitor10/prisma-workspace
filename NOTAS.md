@@ -174,3 +174,14 @@ Native3PASS/2FAIL, preservados. Telemetria desktoppushboards/replacebacklog semp
 ### 2026-10-20 — Oficina: restauração antes de persistir scroll
 
 Native anterior4PASS/1FAILdesktopY0 preservado. Listener agora aguarda dados aplicados e restauração. Novo teste reproduz perda de bl.y600 durante querypendente:RED1FAIL/2controles→GREEN3PASS;14focais,fullfrontend176PASS44arquivos193s,tipos/lint/build/E2Etypes0. Native novo focal/full queued, sem reduzir asserções, prazo ou retry.
+
+
+## Consulta atual no alternador — 20/10/2026 18:15 UTC
+
+O diagnóstico passivo manteve as asserções originais e reproduziu no desktop: antes do clique, posição e bl.y=600; no push para Quadro, posição600 mas bl.y=0. O href vinha da consulta anterior de useLocation, antes do commit React. O mobile conservou600. A medição separa essa causa das hipóteses anteriores sobre altura e autoscroll.
+
+ProjectViewSwitcher atualiza o destino com window.location.search ao clicar, focar, pressionar ponteiro ou abrir menu contextual; navegação normal calcula replace pela URL atual. Cliques modificados preservam o destino nativo. Seis testes cobrem as duas direções, clique modificado, visão ativa, retorno antes do commit e controle normal. Contraprova com comportamento anterior:5FAIL/1controle, esperado600/recebido10. Corrigido:32PASS/5arquivos. Tipos forçados, lint, build e tipos E2E aprovados. Frontend completo atual:182PASS/45arquivos/212,36s. Backend inalterado:690PASS/33skips anteriores.
+
+A primeira execução completa após esta mudança teve182 testes aprovados, mas uma suíte privada Playwright foi coletada pelo Vitest: gate inválido. Os diagnósticos privados foram renomeados de .spec.ts para .pw.ts, com configurações privadas explícitas atualizadas; nenhuma exclusão, prazo, retry, skip ou asserção foi alterada. O novo completo acima passou. Nativo focal/completo desta revisão ainda pendente sob trava compartilhada. O CI123PASS/40skips do6746658 pertence à revisão anterior.
+
+Autorrevisão: sem novo achado alto/médio no diff; risco residual na interação entre navegação nativa, histórico e renderização assíncrona, coberta pelos seis testes e aguardando navegador. Auto-QA ainda pendente nesta revisão. Migration:não. REVISAO e QA oficiais:pendentes.

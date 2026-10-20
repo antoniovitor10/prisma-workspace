@@ -63,3 +63,14 @@ Causa adicional comprovada: o listener de scroll era instalado enquanto a lista 
 Novo teste BrowserRouter com consulta pendente e frames controlados: preserva bl.y600 durante o carregamento, exige scrollTo600 ao receber a lista e depois exige persistência de uma nova rolagem400. Implementação anterior: uma falha e dois controles aprovados; a falha concreta recebeu null em vez600 na URL. Corrigido: três testes de integração aprovados; conjunto focal de três arquivos com14 aprovados. Tipos forçados, lint, build e tipos E2E aprovados. Novo frontend completo:176 aprovados em44 arquivos,193 segundos. Backend inalterado,690 aprovados/33skips anteriores.
 
 Nova execução nativa backlog-url-scroll-ready-focal/full enfileirada; não afirmar aprovação antes do resultado. Exigências originais de posição600, seleção, colapso e rota/boards preservadas, sem prazo/retry/skip novo. Autorrevisão sem alto/médio confirmado no recorte; revisão e QA oficiais pendentes. Migration: não.
+
+
+## Consulta atual no alternador — 20/10/2026 18:15 UTC
+
+O diagnóstico passivo manteve as asserções originais e reproduziu no desktop: antes do clique, posição e bl.y=600; no push para Quadro, posição600 mas bl.y=0. O href vinha da consulta anterior de useLocation, antes do commit React. O mobile conservou600. A medição separa essa causa das hipóteses anteriores sobre altura e autoscroll.
+
+ProjectViewSwitcher atualiza o destino com window.location.search ao clicar, focar, pressionar ponteiro ou abrir menu contextual; navegação normal calcula replace pela URL atual. Cliques modificados preservam o destino nativo. Seis testes cobrem as duas direções, clique modificado, visão ativa, retorno antes do commit e controle normal. Contraprova com comportamento anterior:5FAIL/1controle, esperado600/recebido10. Corrigido:32PASS/5arquivos. Tipos forçados, lint, build e tipos E2E aprovados. Frontend completo atual:182PASS/45arquivos/212,36s. Backend inalterado:690PASS/33skips anteriores.
+
+A primeira execução completa após esta mudança teve182 testes aprovados, mas uma suíte privada Playwright foi coletada pelo Vitest: gate inválido. Os diagnósticos privados foram renomeados de .spec.ts para .pw.ts, com configurações privadas explícitas atualizadas; nenhuma exclusão, prazo, retry, skip ou asserção foi alterada. O novo completo acima passou. Nativo focal/completo desta revisão ainda pendente sob trava compartilhada. O CI123PASS/40skips do6746658 pertence à revisão anterior.
+
+Autorrevisão: sem novo achado alto/médio no diff; risco residual na interação entre navegação nativa, histórico e renderização assíncrona, coberta pelos seis testes e aguardando navegador. Auto-QA ainda pendente nesta revisão. Migration:não. REVISAO e QA oficiais:pendentes.
