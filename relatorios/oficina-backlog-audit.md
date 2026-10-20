@@ -88,7 +88,7 @@ Na releitura dos candidatos, foi localizada a instrução humana posterior do E0
 
 Nenhum requisito, dependência, gate ou spec foi alterado para acomodar o código. Tasks de homologação permanecem abertas porque não há evidência suficiente para concluir a homologação oficial. Requisitos antigos de N:N, WIP e quadro transversal não são reativados.
 
-## Próximas implementações candidatas
+## Candidatas identificadas na auditoria inicial
 
 Após os itens prioritários do goal e respeitando dependências: TASK-210/018 (ordem), TASK-024/122 (chave oculta), TASK-124/027 (arraste de colunas), TASK-123 (consumidores de metodologia), TASK-213 (estado do backlog), TASK-301 (snapshot inicial), TASK-502/503 (dependências) e TASK-504/505 (documentação/CI, este após correções de dependências). As ocultações/cadastro/timeline já estão no C5, sem duplicar trabalho. TASK-307 deve ser reconciliada com a branch de horas e sua evidência, sem incorporar por conveniência nem declarar resolvida na main.
 
@@ -104,10 +104,13 @@ Retificação de autorrevisão: a leitura integral da SPEC-TIME-TRACKING confirm
 
 ## Reconciliação da fila após as propostas da Oficina — 20/10/2026
 
-Os resultados abaixo são propostas em PRs rascunho, não estado da main nem homologação oficial. TASK210/018 tem recorte de ordem no PR33; TASK024/122 no PR31; TASK123 no PR37; TASK124/027 no PR38, sem mudar workflow. TASK213 está em implementação isolada. TASK502/503 nos PR32/34; TASK504 no PR35, com instalação/restore real2PASS e limpeza verificada; TASK505 no PR36, SPDX189runtime/367frontend e proveniência unsigned verificados no artefato final. C5 do PR27 cobre TASK300/302/304/401 e preenche autoria inicial em StageHistory.
+Os resultados abaixo são propostas em PRs rascunho, não estado da main nem homologação oficial. TASK210/018 tem recorte de ordem no PR33; TASK024/122 no PR31; TASK123 no PR37; TASK124/027 no PR38, sem mudar workflow. TASK213 tem proposta concluída na branch do PR40: estado do backlog na URL, contraprovas, completo local123PASS/40skips e focal5PASS; não integrada à main. TASK502/503 nos PR32/34; TASK504 no PR35, com instalação/restore real2PASS e limpeza verificada; TASK505 no PR36, SPDX189runtime/367frontend e proveniência unsigned verificados no artefato final. C5 do PR27 cobre TASK300/302/304/401 e preenche autoria inicial em StageHistory.
 
 TASK301 permanece parcial: campos existentes de StageHistory suportam snapshot e foram usados no C5, mas TaskEvent não tem campo de nome. Acrescentar coluna exigiria migration; definir nome dentro do payload mudaria contrato de auditoria/histórico e requer G-HISTORY. Nenhuma dessas mudanças está autorizada neste goal. Duplicação ainda possui snapshot inicial sem ator; não apresentar o recorte C5 como cobertura global. Questão registrada em PERGUNTAS; não criar migration nem reescrever históricos.
 
 TASK500 recebeu recorte documental no PR39:guia Community sem infraestrutura específica, inventário atual delimitado, preservação de compatibilidade/histórico. Não equivale à auditoria completa do snapshot ou à licença/publicação. Gitleaks ausente, não certificar ausência global de segredos.
 
 Tasks310/404/405/407 são de homologação de implementações existentes: testes e auto-QA deste goal são evidências limitadas, não substituem revisão/QA oficiais nem autorizam mudar status para concluído. TASK406 pede dados reais; dados institucionais/produção são proibidos neste goal. TASK408 depende de TASK103 (risco alto/gate) e dos lotes anteriores; não declarar cumprida por uma varredura parcial. TASK307/308 dependem da frente de horas e de suas regras: preservar propostas e evidências existentes, sem incorporar por conveniência ou declarar main resolvida. Tasks de schema/gate/risco alto listadas na tabela continuam fora da implementação autorizada.
+
+
+Fechamento da fila elegível:14PRs em rascunho, com ordem e contatos em [oficina-integracao-proposta.md](oficina-integracao-proposta.md). A etapa final somente leitura está em [oficina-varredura.md](oficina-varredura.md), com15achados e guard vermelho preservado. Não restou candidata autorizada de risco baixo/médio sem dependência ou gate para implementar neste goal. Itens não elegíveis mantêm os motivos da tabela e desta reconciliação. Nenhum status de proposta foi elevado a conclusão canônica.
