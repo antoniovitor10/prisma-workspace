@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: fechamento local da chave oculta
+
+Focal3PASS1440/390,12 capturas inspecionadas; chave ausente do body, compatibilidade preservada. Full105PASS/2FAIL/40skips/14bloqueados por colisão do fake; corrigido ambiente privado e arquivo IA17PASS. Tipos forçados aprovados; frontend164PASS/backend691PASS+33skips. Ressalvas de layout e concorrência registradas. PR31 permanece em rascunho, sem migration; revisão/QA oficiais pendentes.
+
 ## [2026-10-20] — Codex (Oficina) — chave técnica interna, validação em andamento
 
 - Branch `fix/project-key-hidden`, base `a2797a7`, TASK-024/D56/spec aprovada. História de rastreabilidade e relatório `relatorios/oficina-project-key.md` criados. Backend ignora Key legado e gera a chave; UI usa nome/número em vez do prefixo técnico, inclusive no construtor de relatórios.

@@ -26,3 +26,13 @@ Autorrevisão parcial: chave permanece nos dados técnicos por compatibilidade, 
 Migration: não. Nenhuma entidade, índice, schema, ambiente protegido ou produção alterados. REVISAO e QA oficiais: pendentes. Não é ENTREGA concluída.
 
 Atualização 08:58 UTC: primeiro focal nativo1PASS/2FAIL encontrou uma exposição real no painel Projetos vigentes de Meu trabalho. O teste de componente anterior tinha projects vazio e não cobria esse painel. Corrigido somente o rótulo e adicionada fixture preenchida. Novo afetado2PASS; restaurar a versão1084317 reproduziu1FAIL (outro caso fora do filtro); finally restaurou e2PASS. Tipos,lint,build e novo fullVitest164PASS/41arquivos. Asserção nativa body.includes(key) foi preservada; rerun e fullE2E pendentes. Backend permanece idêntico ao validado691/33skips.
+
+## Fechamento local — 20/10/2026
+
+Código de produto d848222. E2E focal final3PASS (setup e uma jornada por largura1440x900/390x844). A asserção que proíbe a chave no body foi mantida após corrigir o painel Projetos vigentes. As12 capturas de início, Meu trabalho, backlog, itens, relatórios e detalhe foram abertas e inspecionadas: rótulos funcionais usam nome do projeto e número da tarefa. Há cortes residuais em títulos longos/navegação horizontal e barra desktop com sidebar; esta task não é uma correção geral de layout. Dados técnicos, exportação legada e slugs não foram apagados.
+
+Suíte completa:105PASS,2FAIL,40skips preexistentes e14 casos não executados. Causa diagnosticada do setup: E2E_AI_PROVIDER_PORT3123 colidia com a API própria desta branch. Ajustado somente o fake para18747 e preenchido Ai:BridgeToken privado exigido pelo runtime. Após reiniciar somente API3123 própria, arquivo IA inteiro17PASS em2min, inclusive os casos anteriormente bloqueados. O resultado anterior continua sendo uma execução com falha; não é apresentado como uma suíte originalmente verde. Não houve novo skip, retry, prazo ou cota.
+
+Fechamento de tipos com npx tsc -b --force aprovado. Frontend completo164PASS/41arquivos, backend691PASS/33skips, builds e lint aprovados. Testes provam geração/colisão sequencial; não provam serialização concorrente de chaves. Contraprovas anteriores permanecem válidas e documentadas.
+
+Autorrevisão concluída no recorte sem alto/médio confirmado. Auto-QA1440/390 concluído para ausência da chave nas superfícies testadas; sem ensaio manual de toda integração externa. Migration: não. REVISAO e QA oficiais: pendentes. PR31 em rascunho.

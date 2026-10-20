@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: fechamento local da chave oculta
+
+Focal3PASS1440/390,12 capturas inspecionadas; chave ausente do body, compatibilidade preservada. Full105PASS/2FAIL/40skips/14bloqueados por colisão do fake; corrigido ambiente privado e arquivo IA17PASS. Tipos forçados aprovados; frontend164PASS/backend691PASS+33skips. Ressalvas de layout e concorrência registradas. PR31 permanece em rascunho, sem migration; revisão/QA oficiais pendentes.
+
 ## Oficina key — 08:58 UTC, vazamento residual corrigido
 
 Native1PASS/2FAIL mostrou a chave no painel Projetos vigentes de Meu trabalho. A fixture antiga tinha projects vazio. Fonte corrigida, afetado2PASS, red1FAIL e finally2PASS; tipos/lint/build/fullVitest164PASS/41arquivos. Fontes atuais verdes. Asserção nativa foi mantida. Novo batch16979 daQA aguarda global com focal causal e fullKey depois dos jobs independentes. API3123 já usa fakeCLI18747, PID atual emapi-current.pid, fonte backend igual à validada691/33skips. Não é ENTREGA final; auto-QA/fullE2E pendentes.
