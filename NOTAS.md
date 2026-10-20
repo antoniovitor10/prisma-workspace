@@ -193,3 +193,18 @@ Autorrevisão: fixture exclusiva remove dependência do primeiro quadro comparti
 CI39471941035 dob52addd:frontend167PASS/1FAIL, ExternalPortalSettings esperava Publicado imediatamente após aparecer o link. O snapshot já contém link persistido e Alterações não salvas: link deriva portalQuery.data, enquanto portalForm é copiado no useEffect posterior. O teste agora aguarda o mesmo texto Publicado antes de editar o endereço, sem ampliar o prazo padrão nem retirar as demais asserções.
 
 Afetados2PASS; contraprova que impede somente a cópia para portalForm:1FAIL/1controle; código restaurado2PASS. Tipos forçados, lint e build aprovados; frontend completo168PASS/43arquivos/186,82s. Nenhuma mudança de produto. CI39473618266, dafb661, também passou antes desta alteração unitária; não é evidência da linha nova. As duas execuções são preservadas, sem apagar a falha inicial. Novo completo nativo ainda aguarda trava. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento local da branch — 2026-10-20T18:58:21.151736+00:00
+
+Completo nativo stability-full-sync-done:121 aprovados,40skips existentes, nenhuma falha,11,6min. Saída nativa0 confirmada; início18:45:41UTC/fim18:57:21UTC. Fonte de código7b39027, sem alteração durante a execução. Log privado Root.runlogs/oficina/stability-full-sync-done.log. CI39474745870 da mesma fonte:121 aprovados/40skips/4,0min, cinco jobs aprovados e deploy ignorado.
+
+Gates finais:frontend168 aprovados/43arquivos/186,82s; tipos forçados, lint e build aprovados; backend inalterado690 aprovados/33skips e build anteriores. Afetados e contraprovas:portal2PASS, efeito impedido1FAIL/1controle, restaurado2PASS; sincronização com Done5 e completedAt:2FAIL/1setup na projeção antiga, restaurado3PASS; semanal3PASS, sete ações alcançáveis. As provas anteriores do editor e da seleção canônica permanecem documentadas.
+
+Auto-QA:abertas as duas capturas de sincronização produzidas no completo,1440x900/390x844; ambas mostram Concluído após recarga. Abertas as quatro capturas semanais próprias (início/fim nas duas larguras). O mobile requer rolagem horizontal para os sete dias. A barra de filtros legada ainda extrapola a largura nesta branch, ressalva visual herdada tratada separadamente no PR27; não é correção deste recorte.
+
+Autorrevisão:nenhum achado alto/médio confirmado no diff final. Fixture limpa seu projeto exclusivo, não consome o primeiro quadro mutável do seed; assertions de persistência mantidas e ampliadas. Esperas unitárias verificam estados finais reais, sem prazo maior. O reporter não inclui conteúdo de tarefa, headers ou credenciais.
+
+Limites:as falhas históricas sem vínculo causal comprovado continuam hipóteses, especialmente BoardStructureSql/QA-H10 original e carregamentos isolados. Ring truncado/arquivo atual sem deadlock não certificam ausência histórica. Logs de cancelamento SignalR/SQL durante navegação e falhas deliberadas do controle CLI foram preservados; não são convertidos em causa das falhas antigas. A execução parcial com categoria3 e a candidata errada continuam inválidas. Nenhum novo retry, skip, test.fail ou relaxamento de asserção.
+
+Migration:não. Entrega em PR rascunho; não há integração ou liberação para produção. REVISAO e QA oficiais:pendentes.
