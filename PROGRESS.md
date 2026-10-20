@@ -1,3 +1,9 @@
+## [2026-10-20] - Codex (Oficina) - TASK-504: documentação de backup Community ensaiada
+
+- Guia de captura conjunta de banco/anexos/chaves/configuração e recuperação sob nome novo; link no quickstart Docker. Sem produto, CI, schema ou migration nova.
+- Bash-n dos5 blocos aprovado. SQL próprio:backup11,7MB, VERIFYONLY/CHECKDB, restauração sem REPLACE e4 contagens idênticas; cópia corrompida recusada e original novamente aprovado. Compose cp recuperou2 arquivos sintéticos com SHA256 idêntico; helpers/volumes exclusivos removidos.
+- Autorrevisão e limites em relatorios/oficina-backup-docs.md. Quickstart integral com login/anexo real e upgrade entre versões não foram homologados; TASK-507 continua separada. REVISAO e QA oficiais pendentes. Nada em produção.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.

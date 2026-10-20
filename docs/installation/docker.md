@@ -96,14 +96,16 @@ docker compose up -d --build --wait app
 ```
 
 Não execute novamente o script de setup quando `.env` já existir. Ele recusa sobrescrever as credenciais.
-Atualizações podem aplicar migrations; faça backup do seu banco local antes de experimentar mudanças de schema.
+Atualizações podem aplicar migrations; faça um [backup consistente e ensaie a restauração](backup-restore.md)
+antes de experimentar mudanças de schema. Preserve banco, anexos, chaves e a configuração do mesmo ponto.
 Para conferir a aplicação, abra `/health` no mesmo endereço e entre com a conta criada no setup.
 
 ## Limitações desta etapa
 
 - O endpoint `/health` valida o processo HTTP; o Compose também exige que o SQL Server esteja saudável antes de
   iniciar a aplicação.
-- Backup, restauração, atualização e rollback serão documentados após ensaio automatizado.
+- O [roteiro de backup e restauração](backup-restore.md) cobre captura e recuperação em destino isolado.
+  O ensaio amplo de upgrade entre versões diferentes permanece uma homologação separada.
 
 ## Diagnóstico
 
