@@ -1,6 +1,6 @@
 # Oficina — TASK-502, manutenção de segurança npm
 
-Base exata: a2797a7. Branch fix/npm-security-20261020, worktree própria oficina-npm-security. US-OPEN-SOURCE-001, SPEC-OPEN-SOURCE-DISTRIBUTION, D38 e D78 aprovadas. Checkpoint local; backend e E2E completos ainda pendentes, sem ENTREGA final.
+Base exata: a2797a7. Branch fix/npm-security-20261020, worktree própria oficina-npm-security. US-OPEN-SOURCE-001, SPEC-OPEN-SOURCE-DISTRIBUTION, D38 e D78 aprovadas. Checkpoint local; E2E completo ainda pendente, sem ENTREGA final.
 
 O lock anterior apresentou8 alertas altos e34 moderados. Pacotes Tiptap foram alinhados em3.32.0, React Router em7.18.4 e Vitest em4.1.11. Core foi declarado como dependência de desenvolvimento explícita da regressão, já existente transitivamente. Demais dependências diretas mantiveram suas versões resolvidas anteriores; nenhuma major direta mudou. Transitividades vulneráveis foram resolvidas dentro dos contratos compatíveis. Não se usou force,legacy-peer-deps ou audit fix major.
 
@@ -10,6 +10,7 @@ Verificação real até aqui:
 
 - Regressão dos atributos do editor:2FAIL com bibliotecas anteriores,2PASS após instalação física própria. O teste confirma que um __proto__ vindo de JSON não torna atributos herdados executáveis na serialização DOM. Fragmento fica destacado, sem executar handler ou chamar rede.
 - Instalação npm ci própria, tsc-b, lint e build passaram.
+- Build da solução backend aprovado; xUnit completo:690PASS,33 skips preexistentes,0 falhas,56s. Bootstrap e seed executados só em banco próprio de QA; API temporária foi encerrada pelo próprio processo antes de liberar a CPU.
 - Suíte completa Vitest:164PASS em42 arquivos,168s, zero falhas.
 - Auditoria npm final:0 críticas,0 altas,0 moderadas,0 baixas. Restaurar manifest/lock anteriores reproduziu8 altas/34 moderadas e exit1; finally restaurou a proposta e a auditoria voltou a0/exit0. Nenhuma instalação alheia foi modificada.
 
@@ -17,4 +18,4 @@ A regressão acompanha o comportamento publicado no [advisory Tiptap](https://gi
 
 Autorrevisão parcial:diff limitado a manifest,lock,testes e documentação; majors e versões diretas fora do lote conferidas. Não houve mudança de API funcional,schema ou migration nova. Riscos: minor do editor e patches de navegação exigem o E2E real; auditoria zero é o resultado do catálogo npm consultado nessa data e não substitui a revisão. O alerta NuGet/AngleSharp é daTASK-503 e não é tratado neste lote.
 
-Auto-QA visual e E2E ainda pendentes. Backend não foi alterado, mas os gates da branch ainda serão registrados. Nada foi publicado ou enviado à produção. REVISAO e QA oficiais:pendentes.
+Auto-QA visual e E2E ainda pendentes. Backend não foi alterado e os gates completos acima passaram. Nada foi publicado ou enviado à produção. REVISAO e QA oficiais:pendentes.
