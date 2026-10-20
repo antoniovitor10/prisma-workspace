@@ -103,3 +103,16 @@ O procedimento usa os alvos já existentes descritos no [guia de deadlocks da Mi
 Duas consultas iniciais do cliente falharam: agregação MAX de bit e QUOTED_IDENTIFIER desligado. Corrigidas a conversão e a opção da conexão, as duas leituras finais retornaram0. Nenhuma configuração persistente do SQL ou alteração de schema foi aplicada.
 
 CI39454900720, head12660a4:cinco jobs aprovados e deploy ignorado. E2E121 aprovados/40skips existentes em4,4min, log conferido. Execução nativa local própria permanece na fila; resultados remotos e locais são distintos. Revisão e QA oficiais pendentes.
+
+
+## Sincronização isolada e retificação da prova — 20/10/2026 18:20 UTC
+
+A execução combinada do PR27 encontrou dois casos de board-stage-sync sem tarefa fora da conclusão: o teste escolhia project.boards[0], já modificado por outros cenários. O teste agora cria projeto/quadro/tarefa exclusivos pela BoardFactory, preserva a troca no drawer seguida de Escape e as verificações de lista/recarga. Acrescenta conferência API do stageId e completedAt. Etapa Done usa categoria5, confirmada no enum do domínio. Nenhum comportamento de produto foi alterado. Commitb52addd, transportado ao PR27 comoe9023e7.
+
+Retificação: uma primeira candidata usou categoria3 (InProgress) com nome de conclusão. Sua contraprova e execução parcial NÃO provam conclusão. A suíte stability-full-own foi interrompida de forma controlada antes da correção:56PASS/20skips/84não executados/1interrompido, inválida como gate. Não houve publicação daquele candidato.
+
+Prova correta: a API confirma Done5 e completedAt antes de a contraprova devolver a projeção antiga somente no GET final. Resultado2FAIL/1setup, esperado Concluído/recebido A fazer nas duas larguras. Restaurada a projeção real:3PASS/40,4s. Capturas1440x900/390x844 abertas e mostram Concluído. Tipos explícitos E2E e lint aprovados; frontend/backend de produto permanecem inalterados desde168PASS/43arquivos e690PASS/33skips. Novo completo stability-full-sync-done aguarda a trava global; não confundir CI anterior121/40 com esta revisão.
+
+Focal semanal próprio:3PASS/52,1s, sete ações Ajustar com respostas200 e sem clique forçado. Capturas mobile inicial/final e desktop final abertas: há rolagem horizontal para alcançar os sete dias no mobile. Isso confirma alcançabilidade, sem afirmar que todos os dias cabem simultaneamente na largura390.
+
+Autorrevisão: fixture exclusiva remove dependência do primeiro quadro compartilhado; asserts de persistência mantidos e ampliados. Auto-QA focal aprovado nas duas larguras; completo pendente. Causas históricas sem evidência, incluindo deadlock, continuam como hipóteses. Migration:não. REVISAO e QA oficiais:pendentes.
