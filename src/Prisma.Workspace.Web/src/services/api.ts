@@ -216,9 +216,9 @@ export const api = {
   },
 
   // Auth endpoints (Identity API)
-  async register(email: string, passwordHash: string) {
+  async register(email: string, passwordHash: string, fullName: string) {
     return this.request('/api/auth/register', {
-      method: 'POST', body: JSON.stringify({ email, password: passwordHash })
+      method: 'POST', body: JSON.stringify({ fullName, email, password: passwordHash })
     });
   },
 
@@ -1312,6 +1312,10 @@ export const api = {
 
   async getMyWork() {
     return this.request('/api/me/work');
+  },
+
+  async getTaskTimeline(workItemId: string) {
+    return this.request(`/api/WorkItems/${workItemId}/timeline`);
   },
 
   async getWorkItemDetails(workItemId: string) {

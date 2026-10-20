@@ -13,7 +13,6 @@ import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { KanbanFilterBar } from '../features/board/KanbanFilterBar';
 import { compareKanbanWorkItems, compareNewestWorkItems, type KanbanCardSort } from '../features/board/kanbanOrdering';
-import { AutomationManager } from '../features/board/AutomationManager';
 import { KanbanBulkToolbar } from '../features/board/KanbanBulkToolbar';
 import {
   applyKanbanFilters, defaultCardSettings, defaultKanbanFilters,
@@ -32,7 +31,6 @@ import {
   X,
   Paperclip,
   CheckSquare,
-  BarChart2,
   Trash2,
   Pencil,
   ArrowUpDown,
@@ -87,9 +85,6 @@ import {
   CancelButton,
   TimerWrapper,
   PlayIcon,
-  LeadTimeTable,
-  LeadTimeTh,
-  LeadTimeTd,
   TempoGrid,
   TempoDay,
   TempoDayLabel,
@@ -266,14 +261,6 @@ interface WeeklyTime {
   days: DailyTime[];
 }
 
-interface StageLeadTime {
-  stageId: string;
-  stageName: string;
-  averageSeconds: number;
-  averageHours: number;
-  averageDays: number;
-  itemsCount: number;
-}
 
 export const Kanban: React.FC = () => {
   /**
@@ -339,7 +326,6 @@ export const Kanban: React.FC = () => {
   const [editStagePending, setEditStagePending] = useState(false);
   const [editStageError, setEditStageError] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
-  const [showLeadTimeModal, setShowLeadTimeModal] = useState(false);
   const [showTempoModal, setShowTempoModal] = useState(false);
   const [weeklyTime, setWeeklyTime] = useState<WeeklyTime | null>(null);
   const [weekStart, setWeekStart] = useState<string | undefined>(undefined);
@@ -386,8 +372,6 @@ export const Kanban: React.FC = () => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dropTargetStageId, setDropTargetStageId] = useState<string | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<UserDto[]>([]);
-  const [leadTimeData, setLeadTimeData] = useState<StageLeadTime[]>([]);
-  const [loadingLeadTime, setLoadingLeadTime] = useState(false);
   const [dragPreview, setDragPreview] = useState<{
     title: string;
     subtitle?: string;
@@ -569,19 +553,7 @@ export const Kanban: React.FC = () => {
     api.getAssignableUsers(projectId).then(setAssignableUsers).catch(() => setAssignableUsers([]));
   }, [selectedBoardId, boards, modoProjeto, urlProjectId]);
 
-  const loadLeadTime = useCallback(async () => {
-    if (!selectedBoardId) return;
-    setLoadingLeadTime(true);
-    try {
-      const data = await api.getBoardLeadTime(selectedBoardId);
-      setLeadTimeData(data);
-    } catch (e) {
-      console.error(e);
-      alert('Erro ao carregar métricas de tempo.');
-    } finally {
-      setLoadingLeadTime(false);
-    }
-  }, [selectedBoardId]);
+
 
   const loadWeekly = useCallback(async (ws?: string) => {
     setLoadingWeekly(true);
@@ -1257,19 +1229,6 @@ export const Kanban: React.FC = () => {
                   >{label}</ViewSwitcherButton>
                 ))}
               </ViewSwitcher>
-              <ActionButton onClick={() => {
-                loadLeadTime();
-                setShowLeadTimeModal(true);
-              }}>
-                <BarChart2 size={16} />
-                <span>Lead Time</span>
-              </ActionButton>
-              <AutomationManager
-                boardId={selectedBoardId}
-                stages={stageOptions}
-                users={userOptions}
-                tags={tagOptions}
-              />
               <ActionButton onClick={() => setShowStageModal(true)}>
                 <Plus size={16} />
                 <span>Nova Coluna</span>
@@ -2044,48 +2003,6 @@ export const Kanban: React.FC = () => {
         onOpenSubtask={workItemId=>{void api.getWorkItemDetails(workItemId).then(details=>setSelectedItem(details as unknown as WorkItem));}}
       />
 
-      {showLeadTimeModal && (
-        <ModalOverlay onClick={() => setShowLeadTimeModal(false)}>
-          <Modal wide onClick={event => event.stopPropagation()}>
-            <ModalTitle>Métricas de Lead Time (Tempo Médio por Etapa)</ModalTitle>
-
-            {loadingLeadTime ? (
-              <div style={{ padding: '40px 0', textAlign: 'center', color: '#94A3B8' }}>
-                Carregando métricas de tempo...
-              </div>
-            ) : leadTimeData.length === 0 ? (
-              <div style={{ padding: '40px 0', textAlign: 'center', color: '#94A3B8' }}>
-                Nenhum histórico de transição registrado neste quadro.
-              </div>
-            ) : (
-              <LeadTimeTable>
-                <thead>
-                  <tr>
-                    <LeadTimeTh>Etapa / Coluna</LeadTimeTh>
-                    <LeadTimeTh>Cards Finalizados</LeadTimeTh>
-                    <LeadTimeTh>Média (Horas)</LeadTimeTh>
-                    <LeadTimeTh>Média (Dias)</LeadTimeTh>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leadTimeData.map(data => (
-                    <tr key={data.stageId}>
-                      <LeadTimeTd><strong>{data.stageName}</strong></LeadTimeTd>
-                      <LeadTimeTd>{data.itemsCount}</LeadTimeTd>
-                      <LeadTimeTd>{data.averageHours}h</LeadTimeTd>
-                      <LeadTimeTd>{data.averageDays} dias</LeadTimeTd>
-                    </tr>
-                  ))}
-                </tbody>
-              </LeadTimeTable>
-            )}
-
-            <ModalActions>
-              <CancelButton type="button" onClick={() => setShowLeadTimeModal(false)}>Fechar</CancelButton>
-            </ModalActions>
-          </Modal>
-        </ModalOverlay>
-      )}
       {showTempoModal && (
         <ModalOverlay onClick={() => setShowTempoModal(false)}>
           <Modal wide onClick={event => event.stopPropagation()}>

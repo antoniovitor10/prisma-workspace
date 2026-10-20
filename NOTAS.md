@@ -1,3 +1,7 @@
+## Oficina C5 — checkpoint 2026-10-20 07:52UTC
+
+Fontes E binários verdes:backend37/37(incluiSQL), red8FAIL/4PASS, finallyrestaurou e rebuildfinal12/12PASS. Frontend16/16,tipos/lint/buildPASS. Não há runtimeC5 ativo. Relatório relatorios/oficina-qa-c5.md detalha decisões e limites. Próximo:contraprova frontend, tiposE2E, integrar noQA próprio após salvar C2-C4 e resolver somente conflitos documentais/linhaAuth, recompilar/reiniciarAPI3120 sobCPUsemnavegadorativo,E2EC5/fullbranch. API3120atual éb7e4f84 e NÃO contém C5. Nunca substituir aAPI com binários de contraprova.
+
 ## 2026-10-20 — Oficina: checkpoint C6 durante espera de navegador
 
 - Implementação C6 em andamento, sem alteração visual antes das capturas. BoardRepository omite quadros de projeto arquivado sem apagá-los; PermissionService e ProjectAccessService usam lote e preservam regras existentes. Interface tem fallback para implementações alternativas, produção EF possui override em lote.
