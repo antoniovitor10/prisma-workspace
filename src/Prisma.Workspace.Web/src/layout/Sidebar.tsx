@@ -105,17 +105,7 @@ const TituloLinha = styled.div`
   }
 `;
 
-const Chave = styled.b`
-  flex: 0 0 auto;
-  margin-top: 2px;
-  padding: 3px 6px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => `color-mix(in srgb, ${theme.color.accentBlue} 10%, ${theme.color.surface})`};
-  color: ${({ theme }) => theme.color.accentBlueAccessible};
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-`;
+
 
 const Descricao = styled.p`
   margin: 0;
@@ -223,10 +213,9 @@ export function Sidebar() {
       {project && (
         <>
           <Cabecalho>
-            {collapsed ? <ProjectMark title={`${project.key} · ${project.name}`}>{project.key.slice(0, 3)}</ProjectMark> : <>
+            {collapsed ? <ProjectMark title={project.name}>{project.name.slice(0, 2).toUpperCase()}</ProjectMark> : <>
               <TituloLinha>
                 <h1>{project.name}</h1>
-                <Chave>{project.key}</Chave>
               </TituloLinha>
               <Descricao>
                 {project.description || 'Workspace integrado do projeto.'}

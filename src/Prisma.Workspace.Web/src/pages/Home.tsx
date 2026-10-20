@@ -181,7 +181,7 @@ export function Home() {
     <MainGrid>
       <Panel>
         <PanelHeader><Clock3 size={16}/><div className="title"><h2>Sua prioridade agora</h2><p>Ordenada por atraso, bloqueio, prazo e importância.</p></div><button onClick={() => navigate('/me/tasks')}>Ver tudo<ArrowRight size={12}/></button></PanelHeader>
-        {workQuery.isLoading ? <Empty>Organizando suas prioridades...</Empty> : focusTasks.length === 0 ? <Empty><span><CheckCircle2 size={24}/><br/>Tudo em ordem por aqui.</span></Empty> : <TaskList>{focusTasks.map(task => <TaskRow key={task.id} $late={task.overdue} onClick={() => navigate('/me/tasks')}><TaskStatus $late={task.overdue} $blocked={task.blocked}/><TaskCopy><span>{task.projectKey ? `${task.projectKey} · ` : ''}{task.boardName}{task.stageName ? ` / ${task.stageName}` : ''}</span><strong>#{task.number} · {task.title}</strong></TaskCopy><Due $late={task.overdue}><CalendarCheck size={12}/>{dueLabel(task.dueDate)}</Due></TaskRow>)}</TaskList>}
+        {workQuery.isLoading ? <Empty>Organizando suas prioridades...</Empty> : focusTasks.length === 0 ? <Empty><span><CheckCircle2 size={24}/><br/>Tudo em ordem por aqui.</span></Empty> : <TaskList>{focusTasks.map(task => <TaskRow key={task.id} $late={task.overdue} onClick={() => navigate('/me/tasks')}><TaskStatus $late={task.overdue} $blocked={task.blocked}/><TaskCopy><span>{task.boardName}{task.stageName ? ` / ${task.stageName}` : ''}</span><strong>#{task.number} · {task.title}</strong></TaskCopy><Due $late={task.overdue}><CalendarCheck size={12}/>{dueLabel(task.dueDate)}</Due></TaskRow>)}</TaskList>}
       </Panel>
 
       <Side>

@@ -177,7 +177,7 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
 function CustomFieldsView({ report }: { report?: CustomFieldReport }) {
   if (!report) return <Empty>Selecione um projeto para analisar campos personalizados.</Empty>;
   if (!report.fields.length) return <Empty>O projeto ainda não possui campos personalizados ativos.</Empty>;
-  return <TableWrap><table><thead><tr><th>Tarefa</th><th>Status</th>{report.fields.map(field => <th key={field.id}>{field.name}</th>)}</tr></thead><tbody>{report.rows.map(row => <tr key={row.workItemId}><td>{row.reference} · {row.title}</td><td>{row.status}</td>{report.fields.map(field => <td key={field.id}>{row.values[field.id] || '—'}</td>)}</tr>)}</tbody></table></TableWrap>;
+  return <TableWrap><table><thead><tr><th>Tarefa</th><th>Status</th>{report.fields.map(field => <th key={field.id}>{field.name}</th>)}</tr></thead><tbody>{report.rows.map(row => <tr key={row.workItemId}><td>#{row.reference.match(/(?:^#|[-])([0-9]+)$/)?.[1] ?? '—'} · {row.title}</td><td>{row.status}</td>{report.fields.map(field => <td key={field.id}>{row.values[field.id] || '—'}</td>)}</tr>)}</tbody></table></TableWrap>;
 }
 
 export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
@@ -271,7 +271,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
 
   return <>
     <Filters>
-      {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.key} · {project.name}</option>)}</select></label>}
+      {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>}
       <label>Prioridade<select value={priority} onChange={event => setPriority(event.target.value === '' ? '' : Number(event.target.value))}><option value="">Todas</option><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></label>
       <label>Pessoa<select aria-label="Pessoa" value={userId} onChange={event => setUserId(event.target.value)}><option value="">Todas as pessoas</option>{(peopleQuery.data ?? []).filter(person => person.isActive).map(person => <option key={person.userId} value={person.userId}>{person.name}</option>)}</select></label>
       <label>Período inicial<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>

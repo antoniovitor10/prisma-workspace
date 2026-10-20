@@ -123,7 +123,7 @@ function TeamCard({ team, users, projects, run }: {
       </AddMember>
       {memberFeedback&&<ActionFeedback role="status" $error={memberFeedback.error}>{memberFeedback.message}</ActionFeedback>}
     </>}
-    <Projects><span><FolderKanban size={13}/>Projetos</span>{projects.map(project => <label key={project.id}><input type="checkbox" checked={team.projectIds.includes(project.id)} onChange={event=>run(()=>event.target.checked?api.addProjectTeam(project.id,team.id):api.removeProjectTeam(project.id,team.id))}/>{project.key} · {project.name}</label>)}</Projects>
+    <Projects><span><FolderKanban size={13}/>Projetos</span>{projects.map(project => <label key={project.id}><input type="checkbox" checked={team.projectIds.includes(project.id)} onChange={event=>run(()=>event.target.checked?api.addProjectTeam(project.id,team.id):api.removeProjectTeam(project.id,team.id))}/>{project.name}</label>)}</Projects>
   </Card>;
 }
 

@@ -1,3 +1,21 @@
+## 2026-10-20 — Oficina: fechamento local da chave oculta
+
+Focal3PASS1440/390,12 capturas inspecionadas; chave ausente do body, compatibilidade preservada. Full105PASS/2FAIL/40skips/14bloqueados por colisão do fake; corrigido ambiente privado e arquivo IA17PASS. Tipos forçados aprovados; frontend164PASS/backend691PASS+33skips. Ressalvas de layout e concorrência registradas. PR31 permanece em rascunho, sem migration; revisão/QA oficiais pendentes.
+
+## Oficina key — 08:58 UTC, vazamento residual corrigido
+
+Native1PASS/2FAIL mostrou a chave no painel Projetos vigentes de Meu trabalho. A fixture antiga tinha projects vazio. Fonte corrigida, afetado2PASS, red1FAIL e finally2PASS; tipos/lint/build/fullVitest164PASS/41arquivos. Fontes atuais verdes. Asserção nativa foi mantida. Novo batch16979 daQA aguarda global com focal causal e fullKey depois dos jobs independentes. API3123 já usa fakeCLI18747, PID atual emapi-current.pid, fonte backend igual à validada691/33skips. Não é ENTREGA final; auto-QA/fullE2E pendentes.
+
+## Oficina — 2026-10-20 07:30UTC, atualização autoritativa
+
+Backend afetado final18/18PASS após contraprova2FAIL e restauração. FullxUnit691PASS/33skips antigos/0FAIL. Fontes e binários verdes. API3123/Vite3125 iniciados, DBPrisma_BoardColumns_Oficina_Key_Seeded emQA3111, cachesVite privados em.runlogs. PIDs em.runlogs/oficina/*-current.pid. Nativeproject-key-hidden enfileirado nofollowup51823 da oficina-qa, antes de fullOrg. Ainda pendentes fullE2E eauto-QA/capturas; não é ENTREGA final. REVISAO/QA oficiais pendentes.
+
+## 2026-10-20 — Oficina: checkpoint de chave técnica
+
+- Worktree oficina-project-key, branch fix/project-key-hidden, basea2797a7. TASK024/D56/spec aprovada; rótulos operacionais sem chave, backend ignora Key legado. Dados técnicos e chaves existentes preservados; relatório versionado e externo contêm limites.
+- Vitest18/18, contraprova7FAIL/11PASS e fontes restauradas. Depois:full163/163, build inclui tsc-b,lint e tipos E2E verdes. Doisunused iniciais removidos. Backend afetado sessão39566 ainda em andamento; filter carregado inicialmente ProjectFeatureTests, full deverá cobrir Scrum atualizado.
+- RuntimeKey3123/3125/DBKeySeeded ainda não iniciado. Configs privadas preparadas na worktree; só usar SQLQA3111. E2Eproject-key-hidden.spec.ts preparado. Próximo: backend verde/contraprova/restauração/full, runtime e E2E/auto-QA, atualizar mesmo PRdraft. REVISAO e QA oficiais pendentes. Sem produção/migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

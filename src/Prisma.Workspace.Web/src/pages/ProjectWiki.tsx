@@ -458,7 +458,7 @@ export function WikiTaskLinks({ projectId, pageId, canEdit }: { projectId: strin
           <FileChip key={item.workItemId}>
             <span className="name" title={item.title} style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/projects/${projectId}/backlog?item=${item.workItemId}`)}>
-              <strong>{item.reference}</strong> · {item.title}
+              <strong>#{item.number}</strong> · {item.title}
             </span>
             {canEdit && <button title="Desvincular" onClick={() => unlink.mutate(item.workItemId)}><X size={13} /></button>}
           </FileChip>

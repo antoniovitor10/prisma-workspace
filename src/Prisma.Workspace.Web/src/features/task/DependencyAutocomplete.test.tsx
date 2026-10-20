@@ -37,12 +37,12 @@ describe('DependencyAutocomplete', () => {
     expect(search).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: 'DET-4' } });
-    await screen.findByRole('button', { name: /DET-42.*Emitir documento/ });
-    fireEvent.click(screen.getByRole('button', { name: /DET-42.*Emitir documento/ }));
+    await screen.findByRole('button', { name: /#42.*Emitir documento/ });
+    fireEvent.click(screen.getByRole('button', { name: /#42.*Emitir documento/ }));
 
     expect(search).toHaveBeenCalledWith('project-1', 'DET-4');
     expect(onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'target' }));
-    expect(input).toHaveValue('DET-42 · Emitir documento');
+    expect(input).toHaveValue('#42 · Emitir documento');
   });
 
   it('apresenta o detalhe do ProblemDetails convertido pelo cliente', async () => {
