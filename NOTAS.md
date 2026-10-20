@@ -1,3 +1,11 @@
+# Oficina — TASK-503, checkpoint de 20/10/2026
+
+Branch fix/nuget-security-20261020, base a2797a7. Backend completo:693 aprovados,33 skips existentes,0 falhas; build aprovado. Auditoria com caminho absoluto confirmou cinco projetos sem alertas; a chamada relativa encontrou erro interno do SDK. Contraprova correta de annotation-xml:2 falhas antigas,4 aprovados após restaurar. Fontes e binários verdes. A hipótese descartada de escape genérico e seus limites estão no relatório.
+
+Frontend completo está enfileirado em .runlogs/oficina/full-gates.py; verificar frontend-*.log e full-gates-run.log. E2E completo está no plano do browser de oficina-qa, job nuget-full-e2e, com wrapper privado. API/Vite3128/3129 só podem iniciar em sequência com C5/Npm sob o mutex CPU; o bootstrap já encerrou seu próprio processo. Não alterar node_modules compartilhado da OficinaOrg por esta branch.
+
+Próximo:inspecionar os resultados, auto-QA e relatório final antes de ENTREGA. REVISAO e QA oficiais pendentes. Sem produção, main, deploy ou migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

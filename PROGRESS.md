@@ -1,3 +1,9 @@
+## [2026-10-20] - Codex (Oficina) - TASK-503: parser HTML com correção publicada
+
+- HtmlSanitizer9.1.982 substitui9.0.967, mantendo a família direta9 e os contratos do fornecedor. AngleSharp/Css transitivos passam para1.x; allowlist e schema preservados. Story e relatório específicos registram a escolha reversível.
+- Contraprova do ponto de integração HTML:2 falhas no pacote antigo e4 aprovados restaurado. Hipótese anterior de escape genérico foi rejeitada por evidência, sem ajuste de produto. Build e fullxUnit693PASS/33 skips existentes, auditoria dos5 projetos sem alertas. Frontend completo e native ainda pendentes.
+- Só worktree própria, banco exclusivo de QA e PR em rascunho; sem migration nova, produção, main ou deploy. Autorrevisão parcial e auto-QA pendente; REVISAO e QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
