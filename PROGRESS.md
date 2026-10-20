@@ -1,3 +1,9 @@
+## [2026-10-20] - Codex (Oficina) - TASK-505: inventário e origem dos artefatos CI
+
+- Branch própria incorpora as dependências npm/NuGet dos PR32/34. SBOMs SPDX de runtime/frontend com action e Syft fixados; declaração unsigned vincula4 arquivos e contextoCI sem copiar o ambiente. Permissões contents:read e demais jobs, inclusive deploy, preservados.
+-10 testes Python aprovados; contraprova2FAIL/8PASS e restauração10PASS. YAML/ordem/flags conferidos; binário Syft oficial com checksum e smoke SPDX aprovado. Evidência e limites em relatorios/oficina-ci-supply-chain.md.
+- CI integrado ainda pendente, PR em rascunho; sem disparo manual de workflow, release, registro ou produção. Auto-QA técnico e autorrevisão parcial registrados; REVISAO e QA oficiais pendentes. Migration nova:não.
+
 ## [2026-10-20] - Codex (Oficina) - manutenção npm compatível, validação em andamento
 
 - TASK-502 sobre a2797a7: famílias Tiptap3.32, React Router7.18.4 e Vitest4.1.11; demais versões diretas preservadas, sem major automático ou force. História e relatório específicos criados.

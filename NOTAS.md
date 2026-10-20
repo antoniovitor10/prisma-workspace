@@ -1,3 +1,11 @@
+# Oficina — TASK-505, checkpoint de 20/10/2026
+
+Branch ci/supply-chain-artifacts-20261020, origem a2797a7 e dependências por merges próprios a9d2c8e/9677abd. Não é merge de PR/main. Proposta reversível em DECISIONS, story/spec aprovadas para o recorte. Dez testes de integridade/privacidade passaram, contraprova2FAIL/8PASS/restauração10PASS, YAML conferido e demais jobs preservados. Syft1.55 oficial validado por checksum; smoke SPDX2.3 aprovado após corrigir tag do seletor no harness privado.
+
+Próximo:PR em rascunho e leitura dos checks automáticos, sem workflow run. Conferir SBOMs e quatro hashes da proveniência no artefato real antes de ENTREGA. A declaração é unsigned e não atribui nívelSLSA. Nenhum segredo deve ser incluído em documento/relatório. Scripts e scanner privados ficam em .runlogs; não instalar globalmente. Não executar scripts de produção no servidor para validar esta task.
+
+REVISAO e QA oficiais pendentes. Sem mudança de produto, nova migration, publicação, main ou deploy.
+
 # Oficina npm — checkpoint 20/10/2026, 08:54 UTC
 
 Branch fix/npm-security-20261020, base a2797a7, somente worktree própria. Frontend concluído localmente:164Vitest,tipos/lint/build,regressão red2/green2,auditoria0 com contraprova42/restauração0. Node_modules é físico e privado desta worktree. Nunca substituir instalações das outras branches. npm11.19.1 usado via npx por erro confirmado do npm10, sem mudar global.
