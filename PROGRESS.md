@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: fechamento local C5
+
+D99 integrado e focal nativo5PASS em36,8s com grafo efetivamente carregado. Capturas1440/390 inspecionadas; nome no primeiro vínculo comprovado porAPI/SQL. Relato canônico oficina-qa-5.md preserva falha inicial400 sem Errors e contraprova tipada1FAIL/9PASS→10PASS. Gates combinados724/33 e173 frontend; fullE2E em execução. Sem migration; revisão/QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: evidências de C1, C3 e C4
 
 Relatórios por grupo consolidados com resultados reais, contraprovas e auto-QA1440/390. Backend completo724PASS/33skips existentes; frontend173PASS/45 arquivos, tipos forçados, lint e builds aprovados. C3/C4 nativo27PASS e D14/D20 fechamento5PASS após3 falhas esperadas. C1 focal5PASS e Brasília5PASS. E2E completo enfileirado; C5 captura do grafo reforçada para aguardar conteúdo. Wiki/Topbar têm ressalvas registradas, sem alegar correção universal. Revisão e QA oficiais pendentes.
