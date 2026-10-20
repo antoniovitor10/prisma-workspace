@@ -19,3 +19,8 @@ Retificação de leitura em20/10: o log controls-after-final registra25PASS/2FAI
 A contraprova qa-weekly-counterproof teve1FAILmobile/2PASScontroles,1min, no primeiro Ajustar inacessível com centro inseguro. Restaurado o CSS safe center, qa-weekly-green teve3PASS em27,6s:setup e sete dias alcançados por cliques normais em desktop1440/mobile390, com daily-by-task e justifications200 para cada dia. Capturas foram abertas:antes a segunda/terça ficavam fora à esquerda no mobile; depois a semana começa pela segunda e o restante é alcançável horizontalmente. Desktop mantém os sete dias centralizados.
 
 É prova do defeito específico de início semanal, com o mesmo patch transportado do PR30. Não prova eliminação de toda intermitência histórica de QA-H10, Kanban, navegação ou deadlock. A suíte combinada anterior223PASS/8FAIL/40skips permanece registrada; focal das oito falhas e full corrigido continuam na fila. Nenhum novo retry/timeout/skip ou alteração de backend nesta correção CSS. Revisão e QA oficiais pendentes.
+
+
+## Controle posterior e ressalva de bootstrap
+
+No completo local anterior à revisão estrita de sincronização, D06desktop falhou antes de main com página branca; os campos não chegaram a ser verificados nesse episódio. Controle instrumentado posterior selecionou C4inteiro27PASS, incluindo projeto/equipe nas duas larguras; quatro capturas D06abertas. A causa do bootstrap original não foi determinada. Tipos/asserções/5s mantidos. Detalhes e exclusão de telemetria sobrescrita no relatório oficina-qa-regressao.md. Não confundir controle positivo de rótulos com correção causal de bootstrap. REVISAO e QA oficiais:pendentes.
