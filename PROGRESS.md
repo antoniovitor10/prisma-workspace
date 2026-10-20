@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: frontend NuGet confirmado após corrida de teste
+
+Frontend completo162PASS/41arquivos após8e04254, correção somente no teste do feedback do editor comprovada no PR30. E2E completo117PASS/2FAIL/40skips por token ausente no harness privado; repetição CLI e auto-QA exato ainda enfileirados. Backend693PASS/33skips e auditoria cinco projetos sem vulneráveis. PR34 em rascunho; não declarar fechamento visual nem revisões oficiais.
+
 ## [2026-10-20] - Codex (Oficina) - TASK-503: parser HTML com correção publicada
 
 - HtmlSanitizer9.1.982 substitui9.0.967, mantendo a família direta9 e os contratos do fornecedor. AngleSharp/Css transitivos passam para1.x; allowlist e schema preservados. Story e relatório específicos registram a escolha reversível.

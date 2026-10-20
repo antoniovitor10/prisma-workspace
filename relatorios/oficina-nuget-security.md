@@ -22,3 +22,9 @@ A hipótese inicial de teste era incorreta:esperava escape genérico de < e > em
 Autorrevisão parcial sem achados altos/médios confirmados; mudança de major transitiva é o principal risco de compatibilidade. O teste não demonstra exploração do Prisma anterior:os filtros já descartam vários elementos, e o resultado mede a correção do parser e a preservação do contrato de sanitização. Auditoria sem alertas é um resultado datado, não homologação de segurança geral.
 
 Auto-QA visual/nativo ainda pendente. Nada em produção, main, merge de PR ou deploy. REVISAO e QA oficiais:pendentes.
+
+## Atualização dos gates — 20/10/2026
+
+A suíte frontend inicialmente teve161PASS/1FAIL: RichTaskDescriptionEditor já exibia a imagem enquanto a mensagem ainda era Loading. A corrida foi diagnosticada e corrigida somente no teste, no PR30, que passou a aguardar o mesmo feedback terminal. Contraprova específica retirou o feedback:1FAIL/6PASS; restauração7PASS. Cherry-pick da correção de teste nesta branch:8e04254. Novo frontend completo162PASS/41arquivos/0FAIL,192,13s. Componente de produto não foi alterado por essa correção.
+
+E2E completo nesta branch117PASS/2FAIL/40skips existentes,11,2min. As duas falhas CLI têm causa no harness: Ai:BridgeToken ausente impede BridgeAsync antes da chamada ao provedor. O token privado foi configurado para o fake18747; repetição focal ainda enfileirada, sem afirmar aprovação até seu resultado. O wrapper encerrou seus serviços próprios ao final do completo. Inspeção visual do editor nas larguras exatas também enfileirada. Backend693PASS/33skips e auditoria absoluta de cinco projetos sem pacotes vulneráveis permanecem válidos. Não há entrega final neste checkpoint.

@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: frontend NuGet confirmado após corrida de teste
+
+Frontend completo162PASS/41arquivos após8e04254, correção somente no teste do feedback do editor comprovada no PR30. E2E completo117PASS/2FAIL/40skips por token ausente no harness privado; repetição CLI e auto-QA exato ainda enfileirados. Backend693PASS/33skips e auditoria cinco projetos sem vulneráveis. PR34 em rascunho; não declarar fechamento visual nem revisões oficiais.
+
 # Oficina — TASK-503, checkpoint de 20/10/2026
 
 Branch fix/nuget-security-20261020, base a2797a7. Backend completo:693 aprovados,33 skips existentes,0 falhas; build aprovado. Auditoria com caminho absoluto confirmou cinco projetos sem alertas; a chamada relativa encontrou erro interno do SDK. Contraprova correta de annotation-xml:2 falhas antigas,4 aprovados após restaurar. Fontes e binários verdes. A hipótese descartada de escape genérico e seus limites estão no relatório.
