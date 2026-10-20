@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — Gate de instalação e recuperação Community
+- Imagem própria do CI39402799260: bootstrap em DB vazio, replay409, tarefa/anexo e chave reais; backup/VERIFYONLY/restore/CHECKDB aprovados. Sessão antiga, novo login, campos e bytes/hashes preservados.
+- E2E real2PASS nas larguras1440/390; capturas abertas. Primeiro harness falhou na distinção manifesto/configOCI; identidade criptográfica corrigida e falha anterior preservada.
+- Cleanup confirmado:2containers/4volumes/2DBs e demais artefatos próprios removidos, zero erro. Sem migration, produção ou upgrade entre versões. Detalhes em relatorios/oficina-backup-docs.md; revisão e QA oficiais pendentes.
+
 ## [2026-10-20] - Codex (Oficina) - TASK-504: documentação de backup Community ensaiada
 
 - Guia de captura conjunta de banco/anexos/chaves/configuração e recuperação sob nome novo; link no quickstart Docker. Sem produto, CI, schema ou migration nova.
