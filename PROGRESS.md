@@ -1,3 +1,7 @@
+## [2026-10-20] — Oficina — prova do CSS semanal em QA combinado
+- Patch safe center validado no PR27:contraprova1FAILmobile/2controles, corrigido3PASS27,6s; sete dias e consultas200 por largura, capturas abertas.
+- Não generalizar para demais timeouts/deadlock ou para full desta branch. Nativepróprio pendente e fullfront162/1 preservado; detalhes no relatório. Sem migration/produção; revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — Continuação da estabilidade
 - Causa CSS comprovada: centro inseguro do grid semanal escondia os dias iniciais. safe center e E2E sete dias nas duas larguras; execução nativa pendente na trava.
 - Corrigida coleta de teste de privacidade node:test pelo Vitest: mesmo teste em Vitest/node, sem exclusão. Backend690PASS/33skips; tipos/lint/build PASS; fullfrontend162PASS/1FAIL em MethodSettingsPanel, causa ainda não confirmada. Não aumentar timeout ou declarar suíte verde.
