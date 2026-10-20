@@ -1,3 +1,12 @@
+## [2026-10-20] — Oficina — focal real de metodologia
+- Native9PASS2,5min:quatro valores internos×desktop/mobile, pontos8 em quadro/backlog/detalhe e relatório de velocidade, valor interno preservado.
+- Captura do detalhe estava acima do campo; E2E passa a rolar até Story points e exigir visibilidade antes da imagem. Full nativo com esse reforço ainda pendente; não declarar auto-QA final por imagem da descrição.
+- Log SQL registra Operation cancelled by user durante navegação e SQL QA está saudável; observação mantida. Sem alteração de produto neste commit, retry/prazo ou produção; revisão e QA oficiais pendentes.
+
+## 2026-10-20 — Oficina: TASK-123 em validação
+
+Cinco telas não variam mais pontos por metodologia; tipos operacionais excluem o campo e compatibilidade de configurações/API persiste. Escolha reversível registrada em PERGUNTAS. Afetados52PASS; contraprova5FAIL/15PASS e restauração20PASS, sem skip novo. Duas opções RTL inválidas corrigidas após tsc-b --force; gates finais completos e nativo pendentes. Relatório oficina-methodology-contracts.md. Sem migration; revisão/QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
@@ -1964,3 +1973,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina TASK123: validação final
+
+Full nativo127PASS/40skips/0FAIL em16,1min; frontend181PASS e backend690PASS/33skips. Capturas1440/390 conferidas, pontos8 visíveis. Cancelamentos com500 preservados como limitação. Sem migration/produção; PR37 rascunho, revisão e QA oficiais pendentes.

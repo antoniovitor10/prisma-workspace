@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: TASK-123 em validação
+
+Cinco telas não variam mais pontos por metodologia; tipos operacionais excluem o campo e compatibilidade de configurações/API persiste. Escolha reversível registrada em PERGUNTAS. Afetados52PASS; contraprova5FAIL/15PASS e restauração20PASS, sem skip novo. Duas opções RTL inválidas corrigidas após tsc-b --force; gates finais completos e nativo pendentes. Relatório oficina-methodology-contracts.md. Sem migration; revisão/QA oficiais pendentes.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
@@ -133,3 +137,14 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+## Focal nativo — 20/10/2026
+
+methodology-focal:9PASS em2,5min, quatro valores internos em1440/390. O input de pontos, o cartão8pts, backlog e relatório de velocidade foram comprovados; o valor interno persistido permaneceu igual. SQL QA está saudável. O log contém SqlException com Operation cancelled by user durante navegação entre rotas e negociaçõesSignalR canceladas; registrar a limitação, sem alegar indisponibilidade nem suprimir erros.
+
+Ao abrir as capturas, o campo de pontos no detalhe ficava abaixo da dobra:toHaveValue comprovava o valor, mas a imagem mostrava só descrição. Antes de começar a suíte completa, o E2E recebeu scrollIntoViewIfNeeded e toBeVisible para capturar o próprio campo. Nenhuma asserção removida ou timeout aumentado. Full nativo enfileirado ainda não começou; novas capturas devem ser abertas depois. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina TASK123: validação final
+
+Full nativo127PASS/40skips/0FAIL em16,1min; frontend181PASS e backend690PASS/33skips. Capturas1440/390 conferidas, pontos8 visíveis. Cancelamentos com500 preservados como limitação. Sem migration/produção; PR37 rascunho, revisão e QA oficiais pendentes.

@@ -198,18 +198,10 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
   const peopleQuery = useQuery<Array<{ userId: string; name: string; isActive: boolean }>>({
     queryKey: ['organization', 'members'], queryFn: () => api.getOrganizationMembers(),
   });
-  const projectsQuery = useQuery<ProjectSummary[]>({
+  const projectsQuery = useQuery<Array<Pick<ProjectSummary, 'id' | 'key' | 'name'>>>({
     queryKey: ['projects', false], queryFn: () => api.getProjects(false), enabled: !fixedProjectId,
   });
-  const fixedProjectQuery = useQuery<ProjectSummary>({
-    queryKey: ['project', fixedProjectId],
-    queryFn: () => api.getProject(fixedProjectId!),
-    enabled: Boolean(fixedProjectId),
-  });
-  const selectedProject = fixedProjectId
-    ? fixedProjectQuery.data
-    : projectsQuery.data?.find(item => item.id === projectId);
-  const showPoints = projectId ? Boolean(selectedProject) && selectedProject?.methodology !== 1 : true;
+  const showPoints = true;
   const preparedQuery = useQuery<PreparedReports>({
     queryKey: ['prepared-reports', projectId, priority, from, to, userId],
     queryFn: () => api.getPreparedReports({

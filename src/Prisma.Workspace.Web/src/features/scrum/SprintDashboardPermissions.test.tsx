@@ -13,9 +13,10 @@ const project:ProjectSummary={
   boards:[],teams:[],members:[],
 };
 
-function renderDashboard(){
+function renderDashboard(methodology = project.methodology){
+  const displayProject = {...project,methodology};
   const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
-  return render(<QueryClientProvider client={client}><ThemeProvider theme={theme}><MemoryRouter><SprintDashboard project={project}/></MemoryRouter></ThemeProvider></QueryClientProvider>);
+  return render(<QueryClientProvider client={client}><ThemeProvider theme={theme}><MemoryRouter><SprintDashboard project={displayProject}/></MemoryRouter></ThemeProvider></QueryClientProvider>);
 }
 
 beforeEach(()=>{
@@ -39,4 +40,11 @@ describe('permissão para criar sprint',()=>{
     renderDashboard();
     expect(await screen.findByRole('button',{name:'Nova sprint'})).toBeInTheDocument();
   });
+});
+
+it.each([1,2,3,4])('mantém pontos da sprint para valor interno %s',async methodology=>{
+ vi.spyOn(api,'getProjectAccess').mockResolvedValue({canManageSprint:true});
+ vi.mocked(api.getProjectSprints).mockResolvedValue([{id:'sprint-1',teamId:'team-1',teamName:'Equipe',name:'Sprint igual',goal:'Entrega',startDate:'2026-10-01',endDate:'2026-10-30',status:2,itemCount:0,completedItemCount:0,storyPoints:8,completedStoryPoints:3,capacities:[]}]);
+ renderDashboard(methodology);
+ expect(await screen.findByText('Pontos entregues',{exact:true})).toBeInTheDocument();
 });
