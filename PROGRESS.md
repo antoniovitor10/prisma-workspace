@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — neutralização do guia operacional Community
+- Guia de instalação independente substitui endereços/caminhos/rede/banco de instalação específica; inventário de referências registra limites e preserva compatibilidade/histórico.
+- Quatro classes operacionais na base, zero no guia novo; link e diff conferidos. Gitleaks ausente: sem certificação global. Somente documentação; exceção de builds/E2E.
+- TASK500 parcial, demais documentos e revisão de snapshot pendentes. Sem produção/migration/publicação; revisão e QA oficiais pendentes. Relatório relatorios/oficina-community-docs.md.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
