@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, FolderKanban } from 'lucide-react';
-import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useOutletContext, useParams, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { ContextBarInjector } from '../layout/ContextBar';
 import { projectNavEntries } from '../layout/navigation';
@@ -173,11 +173,12 @@ export function ProjectWorkspace() {
  * injetam o mesmo componente, em vez de repetir a marcação em cada uma.
  */
 function ProjectViewSwitcher({ projectId }: { projectId: string }) {
+  const { search } = useLocation();
   return (
     <ContextBarInjector>
       <ViewSwitcherWrap aria-label="Alternar visão do projeto">
-        <ViewBtn to={`/projects/${projectId}/backlog`} end>Backlog</ViewBtn>
-        <ViewBtn to={`/projects/${projectId}/boards`}>Quadro</ViewBtn>
+        <ViewBtn to={`/projects/${projectId}/backlog${search}`} end>Backlog</ViewBtn>
+        <ViewBtn to={`/projects/${projectId}/boards${search}`}>Quadro</ViewBtn>
       </ViewSwitcherWrap>
     </ContextBarInjector>
   );
