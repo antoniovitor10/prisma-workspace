@@ -1,11 +1,11 @@
-# Roteiro provisório de revisão das propostas da Oficina
+# Roteiro de revisão das propostas da Oficina
 
-20/10/2026. Base comum a2797a7. Todos os PRs permanecem em rascunho; REVISAO e QA oficiais pendentes. A fila de validação continua ativa. Este documento organiza a leitura das propostas e os pontos de contato; os resultados atuais vivem nos relatórios de cada branch e no ESTADO externo.
+20/10/2026. Base comum a2797a7. Todos os PRs permanecem em rascunho; REVISAO e QA oficiais pendentes. A fila elegível deste goal foi percorrida; resultados e ressalvas foram registrados. Este documento organiza a leitura das propostas e os pontos de contato; os resultados atuais vivem nos relatórios de cada branch e no ESTADO externo.
 
 ## Ordem sugerida de leitura
 
 1. PR29:auditoria do backlog e limites de gate/schema/risco, antes de atribuir conclusão às tasks.
-2. PR27:contrato principal de QA, testesL06/L07/L08 e D99; observar retificações de contagem, esperadoB07/overlap e full pendente.
+2. PR27:contrato principal de QA, testesL06/L07/L08 e D99; observar retificações de contagem, esperadoB07/overlap e o bootstrap do último completo local.
 3. PR28:organizações, concorrência/inatividade e foco.
 4. PR30:diagnóstico e correções comprovadas de estabilidade, com hipóteses sem prova separadas. O ajuste semanal e a espera unitária do editor também foram transportados a outras propostas.
 5. PR32 e PR34:dependências npm/NuGet e suas contraprovas; PR36:SBOM/proveniência depende das duas correções e as incorpora como propostas, com proveniência unsigned.
@@ -14,14 +14,14 @@
 
 ## Revisões publicadas nesta conferência
 
-Snapshot 2026-10-20T18:28:41.526497+00:00. Todos os14 PRs confirmados em rascunho. SHAs observados antes deste commit documental.
+Snapshot 2026-10-20T21:07:20.171242+00:00. Todos os14PRs confirmados em rascunho. SHAs observados antes deste commit documental. Não houve integração.
 
 | PR | SHA |
 |---|---|
-| [PR27](https://github.com/antoniovitor10/prisma-workspace/pull/27) | a0a4522 |
+| [PR27](https://github.com/antoniovitor10/prisma-workspace/pull/27) | e36bbfc |
 | [PR28](https://github.com/antoniovitor10/prisma-workspace/pull/28) | 9bad280 |
-| [PR29](https://github.com/antoniovitor10/prisma-workspace/pull/29) | b07701d |
-| [PR30](https://github.com/antoniovitor10/prisma-workspace/pull/30) | 7b39027 |
+| [PR29](https://github.com/antoniovitor10/prisma-workspace/pull/29) | ebd761d |
+| [PR30](https://github.com/antoniovitor10/prisma-workspace/pull/30) | 62887aa |
 | [PR31](https://github.com/antoniovitor10/prisma-workspace/pull/31) | 37c566e |
 | [PR32](https://github.com/antoniovitor10/prisma-workspace/pull/32) | 6e261e1 |
 | [PR33](https://github.com/antoniovitor10/prisma-workspace/pull/33) | 13b76c5 |
@@ -31,13 +31,13 @@ Snapshot 2026-10-20T18:28:41.526497+00:00. Todos os14 PRs confirmados em rascunh
 | [PR37](https://github.com/antoniovitor10/prisma-workspace/pull/37) | f567171 |
 | [PR38](https://github.com/antoniovitor10/prisma-workspace/pull/38) | 6cb5e90 |
 | [PR39](https://github.com/antoniovitor10/prisma-workspace/pull/39) | 52ee3be |
-| [PR40](https://github.com/antoniovitor10/prisma-workspace/pull/40) | 7188864 |
+| [PR40](https://github.com/antoniovitor10/prisma-workspace/pull/40) | 3c88673 |
 
-PR27:código e9023e7 isola sincronização; novo focal/full local pendente após230PASS/3FAIL/40skips (dois cenários de seed compartilhado e um timeoutC6 sem causa). PR30:código7b39027 inclui espera unitária pelo estado carregado do portal;168PASS/43arquivos, nativo completo local pendente. PR40:código7188864 usa query atual no clique;182PASS/45arquivos eCI123PASS/40skips; novo focal/full local pendente. PR38:full local123PASS/40skips/0FAIL e focal5PASS. Resultados remotos e locais permanecem separados.
+PR27:fonte0a6da1d, CI233PASS/40skips e focal estrito local3PASS; último completo LOCAL anterior232PASS/1bootstrapD06FAIL/40skips, causa sem prova. C4controle posterior27PASS não corrige a causa. PR30:fonte29fd365, CI121PASS/40skips e focal estrito local3PASS; completo local121/40 anterior é de7b39027 e não valida a ordem estrita. A confirmação API agora ocorre depois da UI recarregada nas duas branches. PR40:fonte7188864, frontend182PASS e completo LOCAL123PASS/40skips/0FAIL mais focal5. PR38:completo local123PASS/40skips/0FAIL e focal5. Produtos permanecem independentes, REVISAO/QA oficiais pendentes.
 
 ## Arquivos de produto/testes compartilhados
 
-29 caminhos comuns, derivados somente dos nomes do diff contra a2797a7. Caminho comum não implica conflito textual; patches idênticos transportados são a mesma correção.
+29caminhos comuns, derivados somente dos nomes do diff contraa2797a7. Caminho comum não implica conflito textual; patches idênticos transportados são a mesma correção.
 
 | Arquivo | PRs |
 |---|---|
@@ -71,6 +71,8 @@ PR27:código e9023e7 isola sincronização; novo focal/full local pendente após
 | `tests/Prisma.Workspace.Tests/Infrastructure/HtmlSanitizerServiceTests.cs` | 34, 36 |
 | `tests/Prisma.Workspace.Tests/ProjectFeatureTests.cs` | 28, 31 |
 
+NOTAS.md e PROGRESS.md recebem entradas nas propostas e requerem integração cronológica. Apenas o PR36 altera DECISIONS.md e o workflow CI entre as14propostas desta conferência; não há colisão de novas decisões entre branches. A auditoria corrige status canônicos somente com evidência da base; implementação proposta em PR não é conclusão na main.
+
 ## Critérios de revisão combinada
 
 - Preservar nome completo obrigatório, erro400 por campo e proteção de segredo do PR27 ao revisar os demais caminhos de criação/edição.
@@ -82,4 +84,4 @@ PR27:código e9023e7 isola sincronização; novo focal/full local pendente após
 - SBOM deve incluir devDependencies na parte frontend, runtime separado e quatro subjects/hashes conferidos; não atribuir assinatura ou nívelSLSA à proveniência unsigned.
 - Documentação de recuperação preserva banco/anexos/chaves/configuração; o ensaio de instalação/restauração não equivale a upgrade entre versões nem publicação pública.
 
-As tasks com migration/gate/risco alto, homologações oficiais e dados reais proibidos continuam pendentes conforme auditoria. A varredura final somente leitura será produzida depois de esgotar a fila elegível e suas validações; não há relatório final de varredura neste checkpoint.
+As tasks com migration/gate/risco alto, homologações oficiais e dados reais proibidos continuam pendentes conforme auditoria. A varredura final somente leitura consta em relatorios/oficina-varredura.md:15achados, com código, gravidade, reprodução e limites. Último roteiro nativo3PASS/2FAIL em1,5min; falhas no guard por tentativas automáticas bloqueadas de catálogo/Wiki, sem afrouxar a asserção e sem alteração no servidor. Não equivale a homologação oficial nem corrige as lacunas herdadas de horas.

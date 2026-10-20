@@ -1993,3 +1993,12 @@ Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed
 Mapa atualizado com14PRs rascunho e29caminhos de produto/testes compartilhados. Não houve integração. Relatório preliminar relatorios/oficina-varredura.md registra10achados de código, gravidade e reprodução, distinguindo mutações não executadas e confirmação nativa pendente. Roteiro privado de navegação/GET nas larguras1440/390 aprovado em tipos; execução agendada somente após os três completos próprios. Nenhuma correção nesta etapa. Próximo passo:conferir nativos finais, abrir capturas e fechar relatório sem elevar auto-QA a homologação oficial.
 
 Migration:não. Autorrevisão documental:sem alteração de status funcional sem evidência; mapas e limitações explícitos. Auto-QA nativo pendente. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento da Oficina — 2026-10-20T21:24:45.585745+00:00
+
+Auditoria mantém62tasks com evidência da base a2797a7, sem declarar propostas concluídas na main. Finalizados mapa de revisão dos14PRs em rascunho e varredura de qualidade somente leitura:15achados em relatorios/oficina-varredura.md. Percorridas12telas em1440x900/390x844. Último roteiro privado3PASS/2FAIL, saída1; guard detectou e abortou catálogoPOST e Wiki lock/content sem edição. Código explica o flush automático; não houve gravação real nem correção nesta etapa. Foco invisível, erro de rede em inglês, ausência de anúncio de erro e filtros mobile confirmados nativamente. Bootstrap D06 continua sem causa original comprovada.
+
+Autorrevisão:15achados separados de hipóteses;32parciais/20não feitas/5feitas/5sucedidas continuam classificação da base. Auto-QA limitado e vermelho preservado. PR27 CI233PASS/40skips e focal estrito local3PASS; completo local anterior232PASS/1FAIL/40skips. PR30 CI121PASS/40skips e focal estrito3PASS, completo local anterior121PASS/40skips. PR40 completo local123PASS/40skips e focal5PASS. Contagens não são somáveis.
+
+Nenhuma mudança de produto, migration, aprovação de gate, integração ou publicação nesta entrega documental. REVISAO e QA oficiais:pendentes. Próximo passo do responsável:revisar os14drafts na ordem do mapa, decidir PERGUNTAS e planejar integração com validação combinada. Recursos próprios serão encerrados nominalmente no fechamento externo.
