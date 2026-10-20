@@ -1,3 +1,7 @@
+## Oficina — 2026-10-20 07:30UTC, atualização autoritativa
+
+Backend afetado final18/18PASS após contraprova2FAIL e restauração. FullxUnit691PASS/33skips antigos/0FAIL. Fontes e binários verdes. API3123/Vite3125 iniciados, DBPrisma_BoardColumns_Oficina_Key_Seeded emQA3111, cachesVite privados em.runlogs. PIDs em.runlogs/oficina/*-current.pid. Nativeproject-key-hidden enfileirado nofollowup51823 da oficina-qa, antes de fullOrg. Ainda pendentes fullE2E eauto-QA/capturas; não é ENTREGA final. REVISAO/QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: checkpoint de chave técnica
 
 - Worktree oficina-project-key, branch fix/project-key-hidden, basea2797a7. TASK024/D56/spec aprovada; rótulos operacionais sem chave, backend ignora Key legado. Dados técnicos e chaves existentes preservados; relatório versionado e externo contêm limites.
