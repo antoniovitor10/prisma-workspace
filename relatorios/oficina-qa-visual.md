@@ -15,3 +15,5 @@ Dois ajustes de oráculo:checkboxes deConteúdodocartão são nativamente oculto
 Autorrevisão parcial:nenhum alto/médio confirmado nas mudanças; grades respeitam largura e seletores/campos preservam contratos. Não afirmar correção deD14/D20 nem aprovação doafterC2 ainda. Auto-QA final e E2E afetados pendentes na trava global. C1foi9/9nativo eBrasília5/5; C6API/reativação3/3, agora há roteiro adicional do seletor real e capturas, ainda pendente.
 
 Migration:não. REVISAO e QA oficiais:pendentes. Nenhuma produção/main/mergePR/deploy ou nova aprovação humana.
+
+Atualização 08:50 UTC: C2 concluiu o afetado com7PASS; a contraprova reproduziu3FAIL/4PASS e o verde final voltou a7PASS. Seis after foram abertos e inspecionados. C6 seletor real/reativação também3PASS, seis capturas inspecionadas. Relatos individuais emoficina-qa-2.md e oficina-qa-6.md. C3/C4/D14/D20 seguem pendentes. C1 capturas serão reenquadradas para mostrar os controles depois da rolagem vertical, mantendo asserções geométricas e funcionais.

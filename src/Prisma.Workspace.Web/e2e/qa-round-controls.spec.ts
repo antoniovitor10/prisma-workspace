@@ -154,7 +154,9 @@ test('D14 gráficos de relatórios têm nome acessível', async ({ page, request
     expect(report.status()).toBe(200);
     const reportData = await report.json();
     expect(reportData.tasks.total).toBeGreaterThan(0);
+    const ready = page.waitForResponse(response => response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/reports/prepared' && new URL(response.url()).searchParams.get('projectId') === f.projectId);
     await page.goto(`/projects/${f.projectId}/reports`);
+    expect((await ready).status()).toBe(200);
     await capture(page, info, 'D14-carregamento');
     const charts = page.locator('svg.recharts-surface');
     await expect(charts.first()).toBeVisible();

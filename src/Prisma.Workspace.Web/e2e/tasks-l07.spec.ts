@@ -291,6 +291,7 @@ test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async
     await expect(dialog(page).getByRole('heading', { name: 'Dependências e bloqueios', exact: true })).toBeVisible();
     await dialog(page).getByRole('combobox', { name: 'Buscar tarefa relacionada' }).fill(target.title);
     await expect(dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' })).toBeVisible();
+    await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).scrollIntoViewIfNeeded();
     await qaCapture(page, info, 'autocomplete');
     await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).getByRole('button', { name: target.title, exact: false }).click();
     const linked = responseTo(page, 'POST', `/api/WorkItems/${original.id}/links`);
@@ -316,6 +317,7 @@ test('L07 contrato: criar subtarefa pela UI não deixa responsável principal au
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    await dialog(page).getByLabel('Responsável da subtarefa', { exact: true }).scrollIntoViewIfNeeded();
     await qaCapture(page, info, 'responsavel');
     const created = responseTo(page, 'POST', '/api/WorkItems');
     await dialog(page).getByRole('button', { name: 'Adicionar', exact: true }).click();

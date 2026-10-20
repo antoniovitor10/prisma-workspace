@@ -1,3 +1,9 @@
+## Oficina — 08:50 UTC, grupos C2 e C6 validados
+
+C2final7PASS, red3FAIL/4PASS, restauração7PASS; seis after inspecionados. C6seletor real3PASS,6 imagens inspecionadas, API/SQL/permissões já verdes. Relatórios individuais versionados e externos prontos. Não alegar branch completa ou revisão oficial. Achados adjacentes: Wiki já mostrava Falha ao salvar antes; template de workflow ainda corta no mobile. Não foram corrigidos neste recorte.
+
+C1 precisa apenas capturas reenquadradas (autofoco deixou campo abaixo da dobra, casos funcionais já passaram); roteiro mantém assert e rola até o controle antes da captura. Novo batch16979 está na trava global com C1, diagnósticoD14/D20,C5próprio,fullOrg,Keyfocal/full. Keyfocal anterior encontrou vazamento real emProjetosvigentes; fonte corrigida, novo teste/prova e gates emoficina-project-key. Npm teve red2/green2, full164 Vitest, tipos/lint/build e auditoria0 com contraprova42/restauração0; validações backend/native pendentes.
+
 ## Oficina — visual checkpoint 2026-10-20 07:55UTC
 
 C2–C4parciais com27Vitest/tsc-b/lint/buildPASS. C4proof2FAIL/restauração2PASS, fontes atuais verdes. D14/D20semfixainda; relato relatorios/oficina-qa-visual.md. AfterC2causalaguardaglobal:slugcurtopróprio+idDTOcorrigidos,Gradeancestralminmax0ajustada. Nunca tratar primeiroafter4PASS/3FAILcomoaprovação. L07capturasC1exatas preparadas;C6seletorUIexato reforçado. Followupplano/status.runlogs/oficina.
