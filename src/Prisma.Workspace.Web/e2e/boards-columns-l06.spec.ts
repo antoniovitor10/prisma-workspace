@@ -2,7 +2,6 @@ import type { Locator, Page, Request, Response } from '@playwright/test';
 import { test, expect, navigateWithApi } from './fixtures/functional';
 import { withBoardFactory, type BoardFactory, type BoardItem, type BoardStage } from './fixtures/boards';
 
-test.setTimeout(20_000);
 
 const responseTo = (page: Page, method: string, path: string) => page.waitForResponse(response =>
   response.request().method() === method && new URL(response.url()).pathname.toLowerCase() === path.toLowerCase());

@@ -4,7 +4,6 @@ import { withTimeFactory, withRestrictedTime, type TimeFactory, type TimeEntry, 
   type WeeklyTime, type Justification } from './fixtures/time';
 
 test.use({ timezoneId: 'America/Sao_Paulo' });
-test.setTimeout(20_000);
 const drawer = (page: Page) => page.locator('[role="dialog"][aria-describedby^="task-description-"]');
 const timerStatus = (page: Page) => drawer(page).getByRole('heading', { name: 'Apontamento de horas', exact: true }).locator('..').getByRole('status');
 const responseTo = (page: Page, method: string, path: string) => page.waitForResponse(response =>

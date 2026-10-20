@@ -240,6 +240,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const titleBeforeEditRef=useRef('');
   const editingTitleRef=useRef(false);
   const [subtaskTitle,setSubtaskTitle]=useState('');
+  const [subtaskResponsibleId,setSubtaskResponsibleId]=useState('');
   const [subtaskKind,setSubtaskKind]=useState<number>(WorkItemKind.Subtask);
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
@@ -269,7 +270,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const showStoryPoints=Boolean(projectQuery.data)&&projectQuery.data?.methodology!==1;
 
   useEffect(()=>{if(details){setDraft(toDraft(details));setCustomValues(Object.fromEntries(details.customFields.map(field=>[field.fieldId,field.value??''])));}},[details]);
-  useEffect(()=>{setActiveTab('description');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
+  useEffect(()=>{setActiveTab('description');setSubtaskResponsibleId('');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
   // fecha o popover de responsaveis ao clicar fora dele
   useEffect(()=>{
     if(!assigneeOpen)return;
@@ -322,7 +323,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
   const assignees=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onMutate:()=>setAssigneeFeedback(''),onSuccess:async(_result,variables)=>{setAssigneeId('');setAssigneeFeedback(variables.add?'Responsável adicionado.':'Responsável removido.');await invalidate();}});
   const subtask=useMutation({
-    mutationFn:async()=>({result:await api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),title:subtaskTitle}),
+    mutationFn:async()=>({result:await api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,projectId:details!.projectId,responsibleId:subtaskResponsibleId,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),title:subtaskTitle}),
     onSuccess:async({result,title})=>{
       setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();
       const workItemId=typeof result==='string'?result:(result as {id?:string})?.id;
@@ -363,7 +364,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
     return {attachmentId:attachment.id,alt:attachment.fileName||normalized.name};
   },[details,queryClient,upload]);
   const downloadAttachment=async(attachment:Attachment)=>{const blob=await api.downloadAttachment(details!.id,attachment.id);const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=attachment.fileName;anchor.click();URL.revokeObjectURL(url);};
-  const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&realMode)subtask.mutate();};
+  const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&subtaskResponsibleId&&realMode)subtask.mutate();};
   const submitLink=(event:FormEvent)=>{event.preventDefault();if(linkForm.targetWorkItemId&&realMode)link.mutate();};
   const availableUsers=usersQuery.data?.filter(user=>!details?.participants.some(person=>person.userId===user.id))??[];
   const currentResponsibleIsEligible=Boolean(draft?.responsibleId&&usersQuery.data?.some(user=>user.id===draft.responsibleId));
@@ -502,7 +503,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
       {realMode&&<Section><h2><TagsIcon/>Classificação</h2><TaskTaxonomyPanel workItemId={details.id} taskTypeId={details.taskTypeId} points={details.points} tagIds={details.tags.map(tag=>tag.id)} showPoints={showStoryPoints} onChanged={invalidate}/></Section>}
       </>}
-      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa. Selecione uma subtarefa para abrir todos os detalhes.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id} role='button' tabIndex={0} aria-label={'Abrir detalhes da subtarefa ' + child.title} onClick={()=>onOpenSubtask?.(child.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenSubtask?.(child.id);}}} style={{cursor:onOpenSubtask?'pointer':'default'}}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
+      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa. Selecione uma subtarefa para abrir todos os detalhes.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id} role='button' tabIndex={0} aria-label={'Abrir detalhes da subtarefa ' + child.title} onClick={()=>onOpenSubtask?.(child.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenSubtask?.(child.id);}}} style={{cursor:onOpenSubtask?'pointer':'default'}}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Field>Responsável da subtarefa<select aria-label="Responsável da subtarefa" required value={subtaskResponsibleId} onChange={event=>setSubtaskResponsibleId(event.target.value)}><option value="">Selecionar pessoa...</option>{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field><Button disabled={!subtaskTitle.trim()||!subtaskResponsibleId||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
 
       {activeTab==='attachments'&&<Section><h2><Paperclip size={14}/>Anexos</h2><List>{attachmentsQuery.data?.map(attachment=><Row key={attachment.id}><div><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)} · {attachment.mimeType||'arquivo'}</small></div><div style={{display:'flex',gap:4}}><IconButton aria-label={`Baixar ${attachment.fileName}`} onClick={()=>downloadAttachment(attachment)}><Download size={14}/></IconButton>{realMode&&<IconButton $danger aria-label={`Remover ${attachment.fileName}`} disabled={removeAttachment.isPending} onClick={()=>{if(window.confirm(`Remover o anexo "${attachment.fileName}"?`))removeAttachment.mutate(attachment.id);}}><Trash2 size={14}/></IconButton>}</div></Row>)}{!attachmentsQuery.data?.length&&<Empty>Nenhum anexo.</Empty>}</List>{realMode&&<label style={{display:'inline-flex',marginTop:9}}><input type="file" hidden onChange={onUpload}/><Button as="span"><FileUp size={12}/>{upload.isPending?'Enviando...':'Adicionar anexo'}</Button></label>}</Section>}
 

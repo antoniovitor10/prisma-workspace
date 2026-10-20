@@ -5,6 +5,7 @@ import { withBoardFactory, type BoardFactory } from './fixtures/boards';
 type Task = { id: string; title: string; description: string | null; kind: number; parentId: string | null;
   boardId: string; stageId: string; responsibleId: string | null; priority: number; startDate: string | null;
   dueDate: string | null; estimatedHours: number | null; isArchived: boolean; version: string;
+  links: Array<{ relatedWorkItemId: string }>;
   customFields: Array<{ fieldId: string; value: string | null }> };
 type Checklist = { id: string; text: string; done: boolean };
 const dialog = (page: Page) => page.locator('[role="dialog"][aria-describedby^="task-description-"]');
@@ -221,6 +222,7 @@ test('L07 subtarefa válida abre detalhe completo; tipos inválidos e filhos de 
     await dialog(page).getByRole('button', { name: 'Subtarefas', exact: true }).click();
     const title = f.name('subtarefa UI');
     await dialog(page).getByPlaceholder('Nova subtarefa (somente título)', { exact: true }).fill(title);
+    await dialog(page).getByLabel('Responsável da subtarefa', { exact: true }).selectOption(f.actorId);
     const created = responseTo(page, 'POST', '/api/WorkItems');
     await dialog(page).getByRole('button', { name: 'Adicionar', exact: true }).click();
     const response = await created; expect(response.status()).toBe(201); const id: string = await response.json();
@@ -267,17 +269,23 @@ test('L07 leitor não edita nem arquiva tarefa pela UI ou API', async ({ page, r
   }, 'L07');
 });
 
-test('L07 contrato: dependências ficam ocultas no detalhe da tarefa', async ({ page, request, authenticatedGoto }) => {
-  let dependencyCount = 0;
+test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async ({ page, request, authenticatedGoto }) => {
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
-    const board = await f.board(); const column = await f.stage(board.id); const original = await f.item(board.id, column.id);
+    const board = await f.board(); const column = await f.stage(board.id);
+    const original = await f.item(board.id, column.id);
+    const target = await f.item(board.id, column.id);
     await openTask(page, f.projectId, original.id);
-    dependencyCount = await dialog(page).getByRole('heading', { name: 'Dependências e bloqueios', exact: true }).count();
+    await expect(dialog(page).getByRole('heading', { name: 'Dependências e bloqueios', exact: true })).toBeVisible();
+    await dialog(page).getByRole('combobox', { name: 'Buscar tarefa relacionada' }).fill(target.title);
+    await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).getByRole('button', { name: target.title, exact: false }).click();
+    const linked = responseTo(page, 'POST', `/api/WorkItems/${original.id}/links`);
+    await dialog(page).getByRole('button', { name: 'Vincular', exact: true }).click();
+    expect((await linked).ok()).toBe(true);
+    expect((await task(f, original.id)).links).toEqual(expect.arrayContaining([
+      expect.objectContaining({ relatedWorkItemId: target.id }),
+    ]));
   }, 'L07');
-  // BUG-L07-01: SPEC-F-009/D59 exige ocultação, mas TaskDetailDrawer exibe dependências/autocomplete.
-  test.fail(true, 'BUG-L07-01: dependências visíveis contrariando SPEC-F-009/D59.');
-  expect(dependencyCount).toBe(0);
 });
 
 test('L07 contrato: criar subtarefa pela UI não deixa responsável principal ausente', async ({ page, request, authenticatedGoto }) => {
@@ -288,15 +296,16 @@ test('L07 contrato: criar subtarefa pela UI não deixa responsável principal au
     await openTask(page, f.projectId, parent.id);
     await dialog(page).getByRole('button', { name: 'Subtarefas', exact: true }).click();
     await dialog(page).getByPlaceholder('Nova subtarefa (somente título)', { exact: true }).fill(f.name('responsável obrigatório'));
+    await dialog(page).getByLabel('Responsável da subtarefa', { exact: true }).selectOption(f.actorId);
     const created = responseTo(page, 'POST', '/api/WorkItems');
     await dialog(page).getByRole('button', { name: 'Adicionar', exact: true }).click();
     const response = await created; expect(response.status()).toBe(201); const id: string = await response.json();
     const child = await task(f, id);
     expect(child.parentId).toBe(parent.id);
+    expect(child.responsibleId).toBe(f.actorId);
     responsibleId = child.responsibleId;
   }, 'L07');
-  // BUG-L07-02: regra 1/15 da SPEC-WORK-ITEM-MANAGEMENT exige responsável; UI envia sem ID e API aceita null.
-  test.fail(true, 'BUG-L07-02: subtarefa criada sem responsável principal.');
+  // Regressão BUG-L07-02: toda subtarefa precisa de responsável.
   expect(responsibleId).toEqual(expect.any(String));
 });
 
@@ -317,8 +326,7 @@ test('L07 contrato: pai de outro projeto é recusado como erro de validação', 
       detail = (await refused.json()).detail;
     }, 'L07');
   }, 'L07');
-  // BUG-L07-03: CreateWorkItemHandler lança ArgumentException para pai externo; middleware devolve 500.
-  test.fail(true, 'BUG-L07-03: pai de outro projeto retorna 500 em vez de erro de validação 400.');
+  // Regressão BUG-L07-03: argumento inválido usa Problem Details 400.
   expect(status).toBe(400);
   expect(detail).toContain('pai');
 });

@@ -1,3 +1,10 @@
+## [2026-10-20] - Codex (Oficina) - rodada QA em branch isolada, validação em andamento
+
+- Goal Oficina autorizado pelo PO: base `a2797a7`, worktree `oficina-qa`, branch `fix/qa-round-1`; merges de L06, L07 e L08 em ordem, preservando ambos os lados dos conflitos exclusivamente documentais. Sem produção, main, deploy, migration nova ou agentes adicionais.
+- C1: subtarefa exige seleção explícita de responsável elegível e envia o projeto/responsável no comando; `ArgumentException` usa Problem Details 400; dependências passam a teste positivo de autocomplete/vínculo conforme D99. Padrão de 30s do Playwright restaurado nos lotes L06/L08 conforme o goal.
+- Verificação inicial: middleware 3/3; contraprova com versão anterior 2 falhas 400/500 e 1 controle passando; versão corrigida novamente 3/3. Detalhe Vitest 9/9; contraprova falha porque o botão antigo permite adicionar sem responsável. `tsc -b` passou após corrigir uso indevido de `exact` no teste; lint sem erros. Build frontend e E2E ainda pendentes neste checkpoint; E2E aguarda trava compartilhada. Não é conclusão da entrega.
+- QA próprio em API3120/Vite3121 e banco exclusivo no SQL QA3111. App principal QA não iniciado; ambientes protegidos intocados. Continuidade em `NOTAS.md` e `/home/agentes/projetos/ESTADO-goal-oficina.md`; revisão/QA oficiais pendentes.
+
 
 ## [2026-10-14] - Codex (Tear) - T6 parte B: L08 E2E de horas
 
