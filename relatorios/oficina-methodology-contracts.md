@@ -19,3 +19,5 @@ O primeiro tsc-b --force identificou duas opções exact inválidas de Testing L
 Autorrevisão inicial sem alto/médio confirmado: mudança de disponibilidade, não de valor de estimativa; compatibilidade de edição e dados preservada. Risco: campos adicionais aumentam a altura da tarefa no celular. Auto-QA visual ainda pendente; não afirmar aprovação. Não há framework novo ou mudança de arquitetura.
 
 Migration: não. REVISAO e QA oficiais: pendentes. Ainda não é ENTREGA. Somente branch própria e futuro PR em rascunho; sem produção, main, merge ou deploy.
+
+Atualização intermediária: build backend aprovado com três avisos anteriores; fullxUnit690PASS/33skips existentes/0FAIL em46s. Bootstrap de banco próprioPrisma_BoardColumns_Oficina_Methodology_Seeded concluído e API temporária encerrada. Tipagem explícita dos dois E2E aprovou. Gates frontend finais aguardam CPU enquanto roda a suíte combinada; o primeiro tipo com duas opções RTL inválidas permanece registrado, sem declarar aprovação antecipada. E2E focal e completo desta branch serão executados somente após frontend final aprovado.
