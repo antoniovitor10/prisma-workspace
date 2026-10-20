@@ -29,3 +29,13 @@ Dois cenários reproduziram outra falha de contrato:o último MOVE ainda aponta 
 A hipótese de eventos touch coalescidos é compatível com a falha mobile do CI, mas ainda não chamar a causa específica daquele CI resolvida sem novo E2E. O teste registra geometria/escala/pointer/hitbooleans, sem título/IDs/segredos. O rollback passa a aguardar o mesmo alerta por expect.poll padrão, em vez de Promise infinita, preservando mensagem, quantidade de requests e igualdade da ordem. Isso permite cleanup quando não ocorre o alerta. Os quatro erros posteriores de document-alignment do CI continuam registrados e precisam de reconfirmação; não tratá-los como corrigidos por suposição.
 
 Vitest completo desta revisão, tipos explícitos do E2E e nativo focal/completo seguem pendentes no runner973474 e quarto coordenador981872. O completo167 anterior é da revisão anterior; não usar como gate desta. Nenhum timeout/retry/skip/cota novo, migration ou alteração de workflow. Revisão e QA oficiais pendentes.
+
+## Causa geométrica do E2E mobile confirmada — CI39438607088
+
+Head d480de2:CI backend/frontend/imagem/governança aprovados; E2E121PASS/2FAIL/40skips. As quatro falhas anteriores de document-alignment não se repetiram; a causa exata dessas quatro não foi capturada, não atribuir correção global por hipótese. Restaram os dois casos mobile de colunas.
+
+A evidência de pointer mostrou todos os oito MOVE, UP e lostcapture; início x94,398/y632,625 sobre o título, escala1/DPR2,75. O caminho passou pelo alvo emx346,05(overTarget=true), mas terminou emx382 com overTarget=false no MOVE e no UP. Portanto coalescência não explica estes registros do CI. A correção do handler continua válida para os dois cenários unitários contraprovados, mas não foi a causa específica desse ensaio.
+
+O roteiro calculava o fim pelo centro do retângulo completo, limitado só ao viewport. A coluna é parcialmente recortada pelo contêiner horizontal; o limite do viewport podia ficar fora dela. Agora o fim é o centro da interseção visível com viewport e ancestrais que recortam overflowX. O teste exige largura visível positiva e elementFromPoint pertencente ao alvo antes do gesto, além de todas as mesmas assertivas de persistência/reload/DTO/teclado/cancelamento/rollback. Sem force, clique sintético ou prazo/retry novo. Lint do arquivo aprovado; tipos explícitos corrigidos no processo1409692 e novo E2E aguardam a fila.
+
+O produto de d480de2 tem Vitest completo169PASS/41arquivos em203,56s,19afetadosPASS, tipos/lint/build e tipos do E2E anterior PASS. Este commit altera somente o roteiro e documentação; não certifica o novo E2E sem executá-lo. Revisão e QA oficiais pendentes.

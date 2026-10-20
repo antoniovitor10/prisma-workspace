@@ -17,7 +17,18 @@ async function drag(page:Page,fromId:string,toId:string,mobile:boolean,cancel=fa
  expect(a).not.toBeNull();expect(b).not.toBeNull();
  const width=page.viewportSize()!.width;
  const start={x:Math.min(a!.x+a!.width/2,width-8),y:a!.y+a!.height/2};
- const end={x:Math.min(b!.x+b!.width/2,width-8),y:start.y};
+ const visible=await page.locator(`[data-stage-id="${toId}"]`).evaluate(element=>{
+  const rect=element.getBoundingClientRect();let left=Math.max(0,rect.left);let right=Math.min(innerWidth,rect.right);
+  for(let parent=element.parentElement;parent;parent=parent.parentElement){
+   if(['auto','scroll','hidden','clip'].includes(getComputedStyle(parent).overflowX)){
+    const clip=parent.getBoundingClientRect();left=Math.max(left,clip.left);right=Math.min(right,clip.right);
+   }
+  }
+  return{left,right};
+ });
+ expect(visible.right-visible.left).toBeGreaterThan(0);
+ const end={x:(visible.left+visible.right)/2,y:start.y};
+ expect(await page.evaluate(({point,id})=>document.elementFromPoint(point.x,point.y)?.closest('[data-stage-id]')?.getAttribute('data-stage-id')===id,{point:end,id:toId})).toBe(true);
  if(mobile){
   await page.evaluate(({from,to})=>{
    const events:Array<{type:string;pointer:string;button:number;x:number;y:number;onSource:boolean;overTarget:boolean}>=[];

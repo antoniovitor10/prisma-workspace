@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — destino touch dentro da coluna visível
+- CI39438607088:121PASS/2FAIL/40skips; quatro falhas documentais anteriores não se repetiram. Evidência confirmou MOVE chegando, porém o fim x382 fora do alvo, depois de x346 dentro. Não atribuir esse CI à coalescência.
+- Roteiro agora calcula a interseção visível da coluna e exige hit-test verdadeiro antes do gesto, sem alterar os asserts de comportamento. Lint do teste aprovado; tipos frescos e nativo pendentes.
+- Produto d480de2:fullVitest169PASS/41arquivos,19afetados,tipos/lint/build PASS. Sem novo comportamento de produto neste commit, migration, timeout/retry/skip ou produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — soltura de coluna com movimentos coalescidos
 - Dois testes novos falham no handler anterior, que só confiava no último MOVE; UP agora resolve a coluna pela coordenada final e distância mínima. Afetados19PASS; tipos/lint/build PASS; fullVitest/E2E da revisão pendentes.
 - Nova Coluna bloqueada durante pedido de ordem; contraprova1FAIL e restauração17PASS. Teste de alerta limitado por assert padrão permite limpeza da fixture em falha.
