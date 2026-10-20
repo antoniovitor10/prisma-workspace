@@ -1,3 +1,11 @@
+## 2026-10-20 — Oficina: auditoria do backlog
+
+- Branch `docs/backlog-audit-20261020`, base `a2797a7`, somente documentação. Relatório em `relatorios/oficina-backlog-audit.md`: 62 tasks e dez correções de status evidenciadas; nenhuma aprovação de gate.
+- O validador identificou três referências inválidas no rascunho (duas pastas E2E e uma linha fora do arquivo); corrigidas antes do commit. Conferência final de referências e diff passou. Sem testes de produto nesta branch documental.
+- Releitura dos candidatos localizou pedido humano E03 de 24/09, spec aprovada e E2E que exigem criação sem combo com categoria Em andamento. TASK-102 cancelada; não reintroduzir o seletor antigo da D82.
+- Retificação adicional: SPEC-TIME-TRACKING permite horas em tarefa concluída; o relatório inicial tratava a pergunta antiga como G-SCOPE pendente. TASK-308 corrigida para parcial, sem gate novo; status pending preservado por dependências/cobertura.
+- Próximo: Maestro conferir especialmente TASK-101/102/104/121 e conclusão histórica TASK-508, sem interpretar isto como homologação oficial ou autorização de deploy. Oficina continua os itens do goal nas branches próprias; continuidade externa em ESTADO-goal-oficina.md. REVISAO e QA oficiais pendentes.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
@@ -133,3 +141,37 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+## Reconciliação da fila após as propostas da Oficina — 20/10/2026
+
+Os resultados abaixo são propostas em PRs rascunho, não estado da main nem homologação oficial. TASK210/018 tem recorte de ordem no PR33; TASK024/122 no PR31; TASK123 no PR37; TASK124/027 no PR38, sem mudar workflow. TASK213 está em implementação isolada. TASK502/503 nos PR32/34; TASK504 no PR35, com instalação/restore real2PASS e limpeza verificada; TASK505 no PR36, SPDX189runtime/367frontend e proveniência unsigned verificados no artefato final. C5 do PR27 cobre TASK300/302/304/401 e preenche autoria inicial em StageHistory.
+
+TASK301 permanece parcial: campos existentes de StageHistory suportam snapshot e foram usados no C5, mas TaskEvent não tem campo de nome. Acrescentar coluna exigiria migration; definir nome dentro do payload mudaria contrato de auditoria/histórico e requer G-HISTORY. Nenhuma dessas mudanças está autorizada neste goal. Duplicação ainda possui snapshot inicial sem ator; não apresentar o recorte C5 como cobertura global. Questão registrada em PERGUNTAS; não criar migration nem reescrever históricos.
+
+TASK500 recebeu recorte documental no PR39:guia Community sem infraestrutura específica, inventário atual delimitado, preservação de compatibilidade/histórico. Não equivale à auditoria completa do snapshot ou à licença/publicação. Gitleaks ausente, não certificar ausência global de segredos.
+
+Tasks310/404/405/407 são de homologação de implementações existentes: testes e auto-QA deste goal são evidências limitadas, não substituem revisão/QA oficiais nem autorizam mudar status para concluído. TASK406 pede dados reais; dados institucionais/produção são proibidos neste goal. TASK408 depende de TASK103 (risco alto/gate) e dos lotes anteriores; não declarar cumprida por uma varredura parcial. TASK307/308 dependem da frente de horas e de suas regras: preservar propostas e evidências existentes, sem incorporar por conveniência ou declarar main resolvida. Tasks de schema/gate/risco alto listadas na tabela continuam fora da implementação autorizada.
+
+## Oficina — 2026-10-20T14:52:57.324683+00:00 — mapa provisório das propostas
+Criado relatorios/oficina-integracao-proposta.md, ainda não commitado, com ordem de leitura14PRs e22dos24caminhos compartilhados identificados por diff de nomes contra a279. Não é integração nem gate; validar SHAs e resultados no fechamento. Próximo:atualizar após gates/novos commits e incluir na documentação da auditoria, preservando revisões oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: atualização do roteiro de revisão
+
+Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed transportadoPR30/27, novo guard de rolagemPR40 e entregas de dependências. Fulls locais finais pendentes; nenhuma integração ou aprovação oficial executada.
+
+
+## Varredura preliminar e mapa de revisão — 2026-10-20T18:30:14.761480+00:00
+
+Mapa atualizado com14PRs rascunho e29caminhos de produto/testes compartilhados. Não houve integração. Relatório preliminar relatorios/oficina-varredura.md registra10achados de código, gravidade e reprodução, distinguindo mutações não executadas e confirmação nativa pendente. Roteiro privado de navegação/GET nas larguras1440/390 aprovado em tipos; execução agendada somente após os três completos próprios. Nenhuma correção nesta etapa. Próximo passo:conferir nativos finais, abrir capturas e fechar relatório sem elevar auto-QA a homologação oficial.
+
+Migration:não. Autorrevisão documental:sem alteração de status funcional sem evidência; mapas e limitações explícitos. Auto-QA nativo pendente. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento da Oficina — 2026-10-20T21:24:45.585745+00:00
+
+Auditoria mantém62tasks com evidência da base a2797a7, sem declarar propostas concluídas na main. Finalizados mapa de revisão dos14PRs em rascunho e varredura de qualidade somente leitura:15achados em relatorios/oficina-varredura.md. Percorridas12telas em1440x900/390x844. Último roteiro privado3PASS/2FAIL, saída1; guard detectou e abortou catálogoPOST e Wiki lock/content sem edição. Código explica o flush automático; não houve gravação real nem correção nesta etapa. Foco invisível, erro de rede em inglês, ausência de anúncio de erro e filtros mobile confirmados nativamente. Bootstrap D06 continua sem causa original comprovada.
+
+Autorrevisão:15achados separados de hipóteses;32parciais/20não feitas/5feitas/5sucedidas continuam classificação da base. Auto-QA limitado e vermelho preservado. PR27 CI233PASS/40skips e focal estrito local3PASS; completo local anterior232PASS/1FAIL/40skips. PR30 CI121PASS/40skips e focal estrito3PASS, completo local anterior121PASS/40skips. PR40 completo local123PASS/40skips e focal5PASS. Contagens não são somáveis.
+
+Nenhuma mudança de produto, migration, aprovação de gate, integração ou publicação nesta entrega documental. REVISAO e QA oficiais:pendentes. Próximo passo do responsável:revisar os14drafts na ordem do mapa, decidir PERGUNTAS e planejar integração com validação combinada. Recursos próprios serão encerrados nominalmente no fechamento externo.

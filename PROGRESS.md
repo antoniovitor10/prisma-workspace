@@ -1,3 +1,15 @@
+## [2026-10-20] — Oficina — reconciliação da fila auditada
+- Relatório associa tasks às propostas em PRs rascunho; não alterar status da main por código ainda não integrado.
+- TASK301 ampla depende de contrato de histórico/schema; preservados campos existentes, sem novo gate autoaprovado. Homologações310/404/405/407 e dados reais406 permanecem pendentes. TASK500 recorte documental no PR39, sem certificação global.
+- Documentação apenas; diff conferido, sem testes funcionais ou produção. Revisão/QA oficiais pendentes.
+
+## [2026-10-20] — Codex (Oficina) — auditoria documental do backlog
+
+- Baseline `a2797a7`; conferidas as 62 tasks pending/in_progress contra código e decisões, com arquivo/linha, gates e limites em `relatorios/oficina-backlog-audit.md`.
+- Corrigidos dez status: cinco implementações históricas para completed; cinco requisitos sucedidos por D88/D99 ou instrução humana E03 posterior para cancelled. TASK-102 foi cancelada pela instrução humana posterior do E03; TASK-121 e homologações continuam abertas; propostas dos PRs 27/28 não contam como main.
+- Verificação documental: 62 IDs únicos, referências de arquivo/linha existentes, dez alterações de status e diff sem erros. Nenhum código, spec, schema ou gate alterado; testes de produto não se aplicam.
+- Autorrevisão corrigiu duas interpretações de instruções humanas posteriores: E03/TASK-102 e regra já aprovada de horas em tarefa concluída/TASK-308. Não existe G-SCOPE novo para esta última; dependências/cobertura mantêm pending. Autorrevisão realizada; auto-QA visual não se aplica. REVISAO e QA oficiais: pendentes. Próximo: revisão humana das correções e execução dos candidatos sem gate após as etapas prioritárias do goal. Sem produção, migration, merge ou push na main.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
@@ -1964,3 +1976,29 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: roteiro de leitura das propostas
+
+Roteiro provisório para14PRs rascunho,24caminhos compartilhados e limites de validação. Nenhuma integração executada; revisão/QA oficiais pendentes. Ver relatorios/oficina-integracao-proposta.md.
+
+
+### 2026-10-20 — Oficina: atualização do roteiro de revisão
+
+Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed transportadoPR30/27, novo guard de rolagemPR40 e entregas de dependências. Fulls locais finais pendentes; nenhuma integração ou aprovação oficial executada.
+
+
+## Varredura preliminar e mapa de revisão — 2026-10-20T18:30:14.761480+00:00
+
+Mapa atualizado com14PRs rascunho e29caminhos de produto/testes compartilhados. Não houve integração. Relatório preliminar relatorios/oficina-varredura.md registra10achados de código, gravidade e reprodução, distinguindo mutações não executadas e confirmação nativa pendente. Roteiro privado de navegação/GET nas larguras1440/390 aprovado em tipos; execução agendada somente após os três completos próprios. Nenhuma correção nesta etapa. Próximo passo:conferir nativos finais, abrir capturas e fechar relatório sem elevar auto-QA a homologação oficial.
+
+Migration:não. Autorrevisão documental:sem alteração de status funcional sem evidência; mapas e limitações explícitos. Auto-QA nativo pendente. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento da Oficina — 2026-10-20T21:24:45.585745+00:00
+
+Auditoria mantém62tasks com evidência da base a2797a7, sem declarar propostas concluídas na main. Finalizados mapa de revisão dos14PRs em rascunho e varredura de qualidade somente leitura:15achados em relatorios/oficina-varredura.md. Percorridas12telas em1440x900/390x844. Último roteiro privado3PASS/2FAIL, saída1; guard detectou e abortou catálogoPOST e Wiki lock/content sem edição. Código explica o flush automático; não houve gravação real nem correção nesta etapa. Foco invisível, erro de rede em inglês, ausência de anúncio de erro e filtros mobile confirmados nativamente. Bootstrap D06 continua sem causa original comprovada.
+
+Autorrevisão:15achados separados de hipóteses;32parciais/20não feitas/5feitas/5sucedidas continuam classificação da base. Auto-QA limitado e vermelho preservado. PR27 CI233PASS/40skips e focal estrito local3PASS; completo local anterior232PASS/1FAIL/40skips. PR30 CI121PASS/40skips e focal estrito3PASS, completo local anterior121PASS/40skips. PR40 completo local123PASS/40skips e focal5PASS. Contagens não são somáveis.
+
+Nenhuma mudança de produto, migration, aprovação de gate, integração ou publicação nesta entrega documental. REVISAO e QA oficiais:pendentes. Próximo passo do responsável:revisar os14drafts na ordem do mapa, decidir PERGUNTAS e planejar integração com validação combinada. Recursos próprios serão encerrados nominalmente no fechamento externo.
