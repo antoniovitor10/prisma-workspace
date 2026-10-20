@@ -42,13 +42,19 @@ test('TASK213 filtros e item aberto são restaurados por URL direta',async({page
  await withBoardFactory(page,request,async f=>{
   const board=await f.board();const stages=await f.get<Array<{id:string}>>(`/api/Stages/board/${board.id}`);
   const item=await f.item(board.id,stages[0].id,{kind:5,priority:2});
-  const params=new URLSearchParams({'bl.q':item.title,'bl.kind':'5','bl.priority':'2','bl.board':board.id,'bl.group':'priority','item':item.id});
+  const params=new URLSearchParams({'bl.q':item.title,'bl.kind':'5','bl.priority':'2','bl.board':board.id,'bl.group':'priority'});
   await page.goto(`/projects/${f.projectId}/backlog?${params}`);
   await expect(page.getByRole('textbox',{name:'Pesquisar backlog',exact:true})).toHaveValue(item.title);
   await expect(page.getByRole('textbox',{name:`Título de ${item.title}`,exact:true})).toHaveValue(item.title);
+  params.set('item',item.id);
+  await page.goto(`/projects/${f.projectId}/backlog?${params}`);
   await expect(page.getByRole('heading',{name:item.title,exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:item.title,exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Fechar modal',exact:true}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('textbox',{name:'Pesquisar backlog',exact:true})).toHaveValue(item.title);
+  await expect(page.getByRole('textbox',{name:`Título de ${item.title}`,exact:true})).toHaveValue(item.title);
+  for(const key of ['bl.kind','bl.priority','bl.board','bl.group'])expect(new URL(page.url()).searchParams.get(key)).toBe(params.get(key));
  },'Oficina URL filtros');
 });

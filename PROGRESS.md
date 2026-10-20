@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — roteiro E2E do backlog com modal real
+- CI39431928513:121PASS/2FAIL/40skips; os dois casos falhos consultavam o fundo oculto pelo Radix enquanto o detalhe estava aberto.
+- Teste agora verifica filtros/lista antes da abertura e depois de fechar; mantém URLcomitem/reload e acrescenta conferência dos parâmetros. Sem includeHidden, force, retry, skip ou prazo novo.
+- Produto mantém gates locais171frontend/690backend; tipos do E2E ajustado e nativo seguem pendentes na fila. Revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — TASK213: estado do backlog pela URL
 - Filtros, seleção válida, colapso, sprint escolhida, item e rolagem são lidos da URL e preservados na alternância Backlog/Quadro; alterações do mesmo evento se compõem. Sprint padrão derivada sem navegação extra.
 - Backend690PASS/33skips existentes, build e tipos E2E aprovados. Frontend atual16PASS, contraprova1FAIL/6controles, restauração16PASS, tipos forçados aprovados. Lint/build/fullVitest finais aprovados (171PASS/43arquivos); E2E focal/completo ainda pendentes na trava.
