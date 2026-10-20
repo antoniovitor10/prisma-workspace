@@ -26,3 +26,11 @@ Sem achados altos/médios neste recorte. A ordenação permanece estável por ID
 Unitários e integração acima aprovados; roteiro visual e E2E ainda pendentes em1440x900 e390x844. API3126/Vite3127 e banco exclusivo de QA. Sem produção.
 
 REVISAO e QA oficiais: pendentes.
+
+## Fechamento local — 20/10/2026
+
+Código de produto a09057a. Focal nativo3PASS: cria duas tarefas no topo com posições -100/-200, recarrega, verifica primeira tarefa e preserva posições das demais. Suíte E2E completa121PASS/40skips preexistentes/0FAIL,10,5min, um worker e nenhum retry, sob travas global/CPU. O provedor simulado privado usa18747 e token configurado; nenhum serviço de produção. Tipos refeitos com tsc -b --force: aprovado.
+
+Duas capturas1440x900/390x844 abertas e examinadas: a segunda tarefa criada está no topo e a primeira vem depois, após reload. No celular as demais colunas são acessadas por rolagem horizontal existente; a barra de filtros ainda tem corte no baseline desta branch. C2/C3 corrigem esse problema separadamente no PR27, sem incorporá-lo incidentalmente nesta task.
+
+Autorrevisão e auto-QA do recorte concluídos, sem achado alto/médio confirmado. Concorrência ainda pode produzir empate de posição e normalização continua fora deste recorte; desempate estável porID existente foi preservado. Não declara TASK018 inteira resolvida nem muda importações/criação global. Migration: não. REVISAO e QA oficiais: pendentes. PR33 permanece em rascunho.
