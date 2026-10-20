@@ -22,9 +22,11 @@ public class CreateWorkItemCommandValidator : AbstractValidator<CreateWorkItemCo
             .MaximumLength(300).WithMessage("O subtítulo deve ter no máximo 300 caracteres.");
 
         RuleFor(w => w.Position)
-            .GreaterThanOrEqualTo(0)
-            .LessThan(999_999_999_999d)
-            .WithMessage("A posicao da tarefa esta fora do intervalo permitido.");
+            .Cascade(CascadeMode.Stop)
+            .Must(double.IsFinite)
+            .WithMessage("A posição da tarefa está fora do intervalo permitido.")
+            .ExclusiveBetween(-999_999_999_999d, 999_999_999_999d)
+            .WithMessage("A posição da tarefa está fora do intervalo permitido.");
 
         RuleFor(w => w.EstimatedHours)
             .GreaterThan(0).When(w => w.EstimatedHours.HasValue)

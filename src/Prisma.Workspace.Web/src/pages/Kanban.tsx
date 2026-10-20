@@ -12,7 +12,7 @@ import { WorkItemKindSelector } from '../components/WorkItemKindSelector';
 import type { BacklogItem } from '../types/scrum';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { KanbanFilterBar } from '../features/board/KanbanFilterBar';
-import { compareKanbanWorkItems, compareNewestWorkItems, type KanbanCardSort } from '../features/board/kanbanOrdering';
+import { compareKanbanWorkItems, compareNewestWorkItems, positionBeforeColumn, type KanbanCardSort } from '../features/board/kanbanOrdering';
 import { AutomationManager } from '../features/board/AutomationManager';
 import { KanbanBulkToolbar } from '../features/board/KanbanBulkToolbar';
 import {
@@ -841,9 +841,7 @@ export const Kanban: React.FC = () => {
     if (!newItemTitle.trim() || !selectedBoardId) return;
     try {
       const columnItems = workItems.filter(w => w.stageId === targetStageIdForNewItem);
-      const nextPos = columnItems.length > 0
-        ? Math.max(0, Math.min(...columnItems.map(c => c.position)) - 100)
-        : 100;
+      const nextPos = positionBeforeColumn(columnItems);
 
       await api.createWorkItem({
         boardId: selectedBoardId,

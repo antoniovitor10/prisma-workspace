@@ -1,3 +1,9 @@
+## [2026-10-20] - Codex (Oficina) - TASK210: criação no topo após posição zero
+
+- Corrigido limite zero na criação do Kanban; posições negativas finitas permitidas na validação, sem schema/migration. Story e relatório em relatorios/oficina-card-order.md. TASK018 ampla continua parcial.
+- Contraprovas detectaram2 falhas backend e1 frontend; restauradas. Full backend699PASS/33 skips existentes e frontend164PASS; tipos/lint/build verdes. E2E novo ainda pendente na trava compartilhada, sem afrouxar contratos.
+- Autorrevisão sem altos/médios no recorte; auto-QA visual e revisões oficiais pendentes. Nada em produção.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.

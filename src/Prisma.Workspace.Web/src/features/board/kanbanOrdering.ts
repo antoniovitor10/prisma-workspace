@@ -25,3 +25,8 @@ export function compareKanbanWorkItems(
   if (sort === 'created') return compareNewestWorkItems(a, b);
   return a.position - b.position || a.id.localeCompare(b.id);
 }
+
+/** Insere antes da primeira posição, inclusive quando a coluna já chegou a zero. */
+export function positionBeforeColumn(items: ReadonlyArray<{ position: number }>): number {
+  return items.length ? items.reduce((first, item) => Math.min(first, item.position), Infinity) - 100 : 100;
+}
