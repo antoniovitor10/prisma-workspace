@@ -17,3 +17,9 @@ Autorrevisão em andamento: maior risco na sincronização entre URL/histórico/
 ## Checkpoint compilável — 20/10/2026
 
 Backend próprio:690PASS/33skips existentes; build aprovado/3avisos existentes. Tipos explícitos E2E aprovados. Na revisão atual e estável:16PASS afetados; contraprova da composição1FAIL/6controles; restaurado16PASS; npx tsc -b --force aprovado. Lint/build completos e Vitest completo desta revisão ainda na fila, respeitando carga<=14. Os resultados iniciais aprovados desses comandos pertencem à revisão anterior e não serão apresentados como fechamento da atual. O E2E focal e completo aguarda todos esses gates no coordenador privado.
+
+## Gates locais finais aprovados — 20/10/2026
+
+Revisão fixa30aa487:Vitest completo171PASS/43arquivos em219,82s, nenhum erro não tratado. Afetados16PASS, contraprova composição1FAIL/6controles, restaurado16PASS. npx tsc -b --force, lint e build finais aprovados. Backend690PASS/33skips existentes e tipos explícitos do E2E aprovados. As falhas/rodadas invalidadas anteriores permanecem acima como histórico, sem serem usadas para certificar esta revisão.
+
+O coordenador confirmou todos os gates e enfileirou backlog-url-focal sob a trava global. E2E completo e inspeção das capturas ainda pendentes; não constitui ENTREGA final da task. REVISAO e QA oficiais:pendentes.

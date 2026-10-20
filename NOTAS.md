@@ -136,3 +136,5 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 
 ## Oficina — 2026-10-20T13:26:13.405665+00:00 — TASK213 em validação
 Implementação URL ainda não commitada; consulta de sprint padrão agora derivada, sem navegação extra. Testes16PASS, contraprovaoldPlanner2FAIL e restauração16PASS. Hook centraliza alteração de item e filtros/scroll para compor mesmo evento. Rodada full170/1 não é gate final: fontes evoluíram e causaram updateParams ausente na versão carregada. Runner final380894 deve manter fontes estáveis; backend330164 e nativo409674 aguardam gates. Próximo: verificar logs finais, corrigir causas novas, publicar checkpoint só com resultados reais e executar E2E1440/390. Sem migration/produção.
+
+Gates finais do30aa487 concluídos:171PASS/43frontend,690PASS/33skipsbackend, tipos forçados e explícitosE2E/lint/build PASS. Native backlog-url-focal enfileirado; depoisfull. Próximo: ler log real e capturas, corrigir causa de falha sem novo retry cego ou prazo extra.

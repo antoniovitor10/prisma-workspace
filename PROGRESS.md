@@ -1,6 +1,6 @@
 ## [2026-10-20] — Oficina — TASK213: estado do backlog pela URL
 - Filtros, seleção válida, colapso, sprint escolhida, item e rolagem são lidos da URL e preservados na alternância Backlog/Quadro; alterações do mesmo evento se compõem. Sprint padrão derivada sem navegação extra.
-- Backend690PASS/33skips existentes, build e tipos E2E aprovados. Frontend atual16PASS, contraprova1FAIL/6controles, restauração16PASS, tipos forçados aprovados. Lint/build/fullVitest finais e E2E focal/completo ainda pendentes; manter fonte estável e ler os logs reais.
+- Backend690PASS/33skips existentes, build e tipos E2E aprovados. Frontend atual16PASS, contraprova1FAIL/6controles, restauração16PASS, tipos forçados aprovados. Lint/build/fullVitest finais aprovados (171PASS/43arquivos); E2E focal/completo ainda pendentes na trava.
 - Rodada anterior inconsistente por edição durante execução preservada e invalidada como gate; detalhes em relatorios/oficina-backlog-url.md. Sem migration, dependência, alteração de autorização ou produção. Revisão e QA oficiais pendentes.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
