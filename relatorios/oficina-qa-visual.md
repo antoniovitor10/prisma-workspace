@@ -18,4 +18,16 @@ Migration:não. REVISAO e QA oficiais:pendentes. Nenhuma produção/main/mergePR
 
 Atualização 08:50 UTC: C2 concluiu o afetado com7PASS; a contraprova reproduziu3FAIL/4PASS e o verde final voltou a7PASS. Seis after foram abertos e inspecionados. C6 seletor real/reativação também3PASS, seis capturas inspecionadas. Relatos individuais emoficina-qa-2.md e oficina-qa-6.md. C3/C4/D14/D20 seguem pendentes. C1 capturas serão reenquadradas para mostrar os controles depois da rolagem vertical, mantendo asserções geométricas e funcionais.
 
-Fechamento dos recortes C1/C3/C4: relatos próprios oficina-qa-1.md, oficina-qa-3.md e oficina-qa-4.md. C3/C4 conjunto27PASS, contraprova final D14/D20 3FAIL/2PASS e restauração5PASS. Gates combinados724PASS/33skip backend e173PASS frontend. C5 focal5PASS; captura do grafo será fortalecida para esperar o conteúdo real antes da conclusão visual. E2E completo combinado pendente. Ressalvas visuais estão nos relatos individuais.
+Fechamento dos recortes C1/C3/C4: relatos próprios oficina-qa-1.md, oficina-qa-3.md e oficina-qa-4.md. C3/C4 conjunto25PASS/2FAIL (D13 mobile), contraprova final D14/D20 3FAIL/2PASS e restauração5PASS. Gates combinados724PASS/33skip backend e173PASS frontend. C5 focal5PASS; captura do grafo será fortalecida para esperar o conteúdo real antes da conclusão visual. E2E completo combinado pendente. Ressalvas visuais estão nos relatos individuais.
+
+Retificação: controles25PASS/2FAIL, não27. Full223PASS/8FAIL/40skips; detalhes dos oito casos e correções em andamento. Nenhum resultado do controller substitui log nativo.
+
+## Resultado completo e correções em curso — 20/10/2026
+
+Native completo223PASS/8FAIL/40skips existentes em23,6min. Não é suíte aprovada. As quatro expectativas herdadas de falha em B07/sobreposição de horas continuam herdadas; não foram convertidas em aprovações funcionais nem introduzidos skips novos.
+
+Oito falhas: criação UI L07 desktop/mobile lia resposta anterior à navegação e o Chromium já descartara seu corpo; manual L08 desktop/mobile esperava título genérico, mas a serialização C5 agora entrega o erro específico; D13 mobile Kanban/Lista abre popover a -30px; diário/remover justificativa mobile não alcança Ajustar porque a grade flex centraliza conteúdo mais largo que seu viewport, deixando os primeiros dias fora da área de rolagem.
+
+Correções propostas: L07 limita respostas às requisições iniciadas a partir da resposta da nova navegação e exige cartão antes e depois do reload; manual L08 exige exatamente O fim deve ser maior que o início, mantendo HTTP400/ProblemDetails/ausência de efeitos; popover ganha linha própria e âncora esquerda no celular, com oráculo explícito do checkbox antes das fotos; grade semanal usa safe center, mantendo centralização quando couber e início alcançável quando transbordar. Este último recorte foi diagnosticado e implementado também no PR30, commit71f8232, aplicado aqui por8c2589e. Novo E2E abre os sete dias sem force. Fontes primárias de CSS e diagnóstico no relatório de estabilidade.
+
+Os gates de frontend e novos nativos estão enfileirados. Backend não mudou após724PASS/33skips. Não se declara correção comprovada desses oito casos antes dos resultados novos. O controller privado antigo não propagava exit nativo1; os números acima foram lidos do log, e futuros workers propagam a falha. Leituras anteriores incorretas de27PASS foram retificadas nos relatosC1/C3/C4 e na FILA; o resultado real era25PASS/2FAIL emD13mobile.

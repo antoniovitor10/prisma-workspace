@@ -107,7 +107,7 @@ test('L08 manual na UI recusa fim igual, persiste observação e totaliza segund
     await drawer(page).getByRole('button', { name: 'Registrar manualmente', exact: true }).click();
     const invalid = await refused; expect(invalid.status()).toBe(400);
     expect(await invalid.json()).toMatchObject({ type: 'validation_error', title: 'Erro de validação', status: 400 });
-    await expect(drawer(page).getByRole('alert')).toHaveText('Erro de validação');
+    await expect(drawer(page).getByRole('alert')).toHaveText('O fim deve ser maior que o início.');
     expect(await entries(f, task.id)).toEqual([]);
     await drawer(page).getByLabel('Fim do apontamento', { exact: true }).fill('2026-10-12T14:02');
     await drawer(page).getByPlaceholder('Observação do apontamento (opcional)').fill(note);

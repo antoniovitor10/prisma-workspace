@@ -38,6 +38,8 @@ for (const view of ['Kanban', 'Lista']) {
       await inViewport(sort, page);
       await inViewport(page.getByText(/de \d+ cartão\(ões\)/), page);
       await filters.getByText('Conteúdo do cartão', { exact: true }).click();
+      await expect(filters.getByRole('checkbox', { name: 'Prazo', exact: true })).toBeVisible();
+      await filters.getByRole('button', { name: 'Salvar visual', exact: true }).scrollIntoViewIfNeeded();
       await capture(page, info, `D13-${view}-conteudo`);
       for (const control of await filters.locator('input,select').all()) await inViewport(control, page);
     }, 'Oficina D13');

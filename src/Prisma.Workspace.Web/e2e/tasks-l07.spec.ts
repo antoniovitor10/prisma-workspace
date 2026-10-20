@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Page, TestInfo } from '@playwright/test';
+import type { Page, Response, TestInfo } from '@playwright/test';
 import { test, expect } from './fixtures/test';
 import { withBoardFactory, type BoardFactory } from './fixtures/boards';
 
@@ -20,8 +20,8 @@ type Task = { id: string; title: string; description: string | null; kind: numbe
   customFields: Array<{ fieldId: string; value: string | null }> };
 type Checklist = { id: string; text: string; done: boolean };
 const dialog = (page: Page) => page.locator('[role="dialog"][aria-describedby^="task-description-"]');
-const responseTo = (page: Page, method: string, path: string) => page.waitForResponse(response =>
-  response.request().method() === method && new URL(response.url()).pathname.toLowerCase() === path.toLowerCase());
+const responseTo = (page: Page, method: string, path: string, minimumStart = () => Number.NEGATIVE_INFINITY) => page.waitForResponse(response =>
+  response.request().timing().startTime >= minimumStart() && response.request().method() === method && new URL(response.url()).pathname.toLowerCase() === path.toLowerCase());
 const task = (f: BoardFactory, id: string) => f.get<Task>(`/api/WorkItems/${id}`);
 async function openTask(page: Page, projectId: string, id: string) {
   const loaded = responseTo(page, 'GET', `/api/WorkItems/${id}`);
@@ -73,14 +73,23 @@ test('L07 criar tarefa pela UI persiste ID, quadro, coluna e campos informados',
     await page.getByRole('button', { name: 'Criar Card', exact: true }).click();
     const response = await created; expect(response.status()).toBe(201);
     const id: string = await response.json();
-    const boardsReloaded = responseTo(page, 'GET', '/api/Boards');
-    const columnsReloaded = responseTo(page, 'GET', `/api/Stages/board/${board.id}`);
-    const itemsReloaded = responseTo(page, 'GET', `/api/WorkItems/board/${board.id}`);
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    expect((await boardsReloaded).status()).toBe(200);
-    expect((await columnsReloaded).status()).toBe(200);
-    const persistedItems = await itemsReloaded; expect(persistedItems.status()).toBe(200);
-    expect(await persistedItems.json()).toEqual(expect.arrayContaining([expect.objectContaining({ id, title })]));
+    await expect(page.getByRole('heading', { name: new RegExp(title) })).toBeVisible();
+    let reloadStarted = Number.POSITIVE_INFINITY;
+    const markReload = (response: Response) => {
+      const request = response.request();
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) reloadStarted = request.timing().startTime;
+    };
+    page.on('response', markReload);
+    try {
+      const boardsReloaded = responseTo(page, 'GET', '/api/Boards', () => reloadStarted);
+      const columnsReloaded = responseTo(page, 'GET', `/api/Stages/board/${board.id}`, () => reloadStarted);
+      const itemsReloaded = responseTo(page, 'GET', `/api/WorkItems/board/${board.id}`, () => reloadStarted);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      expect((await boardsReloaded).status()).toBe(200);
+      expect((await columnsReloaded).status()).toBe(200);
+      const persistedItems = await itemsReloaded; expect(persistedItems.status()).toBe(200);
+      expect(await persistedItems.json()).toEqual(expect.arrayContaining([expect.objectContaining({ id, title })]));
+    } finally { page.off('response', markReload); }
     await expect(page.getByRole('heading', { name: new RegExp(title) })).toBeVisible();
     expect(await task(f, id)).toMatchObject({ id, title, description, boardId: board.id, stageId: column.id,
       priority: 2, estimatedHours: 2.5, responsibleId: f.actorId, isArchived: false });

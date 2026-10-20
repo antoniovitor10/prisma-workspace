@@ -158,6 +158,7 @@ const PanelInput = styled.input`
 
 const CardSettingsDetails = styled.details`
   position: relative;
+  @media (max-width: 560px) { flex-basis: 100%; min-width: 0; }
   summary {
     list-style: none;
     height: 30px;
@@ -177,7 +178,8 @@ const CardSettingsDetails = styled.details`
     z-index: 20;
     right: 0;
     top: 36px;
-    width: 240px;
+    width: min(240px, calc(100vw - 56px));
+    @media (max-width: 560px) { left: 0; right: auto; }
     padding: 12px;
     display: grid;
     grid-template-columns: 1fr 1fr;

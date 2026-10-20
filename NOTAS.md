@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: full QA revelou oito falhas, correções pendentes de prova
+
+Full223PASS/8FAIL/40skips. L07 lê resposta de documento anterior; manualL08 agora recebe mensagem específica apósC5; popupD13 fica emx-30; grade semanal center torna dias iniciais inalcançáveis no mobile. Correções propostas e regressão dos sete dias em andamento; ainda não são verdes. Corrigida leitura anterior: controles25PASS/2FAIL, não27. Worker futuro propaga exit nativo. Backend724/33 inalterado; frontend/nativos novos enfileirados. Relatório visual mantém todos os limites e falhas.
+
 ## 2026-10-20 — Oficina: fechamento local C5
 
 D99 integrado e focal nativo5PASS em36,8s com grafo efetivamente carregado. Capturas1440/390 inspecionadas; nome no primeiro vínculo comprovado porAPI/SQL. Relato canônico oficina-qa-5.md preserva falha inicial400 sem Errors e contraprova tipada1FAIL/9PASS→10PASS. Gates combinados724/33 e173 frontend; fullE2E em execução. Sem migration; revisão/QA oficiais pendentes.
