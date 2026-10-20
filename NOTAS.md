@@ -159,3 +159,10 @@ Criado relatorios/oficina-integracao-proposta.md, ainda não commitado, com orde
 ### 2026-10-20 — Oficina: atualização do roteiro de revisão
 
 Snapshot dos14PRs rascunho e28caminhos compartilhados, incluindo seletor do seed transportadoPR30/27, novo guard de rolagemPR40 e entregas de dependências. Fulls locais finais pendentes; nenhuma integração ou aprovação oficial executada.
+
+
+## Varredura preliminar e mapa de revisão — 2026-10-20T18:30:14.761480+00:00
+
+Mapa atualizado com14PRs rascunho e29caminhos de produto/testes compartilhados. Não houve integração. Relatório preliminar relatorios/oficina-varredura.md registra10achados de código, gravidade e reprodução, distinguindo mutações não executadas e confirmação nativa pendente. Roteiro privado de navegação/GET nas larguras1440/390 aprovado em tipos; execução agendada somente após os três completos próprios. Nenhuma correção nesta etapa. Próximo passo:conferir nativos finais, abrir capturas e fechar relatório sem elevar auto-QA a homologação oficial.
+
+Migration:não. Autorrevisão documental:sem alteração de status funcional sem evidência; mapas e limitações explícitos. Auto-QA nativo pendente. REVISAO e QA oficiais:pendentes.
