@@ -2004,3 +2004,18 @@ ProjectViewSwitcher atualiza o destino com window.location.search ao clicar, foc
 A primeira execução completa após esta mudança teve182 testes aprovados, mas uma suíte privada Playwright foi coletada pelo Vitest: gate inválido. Os diagnósticos privados foram renomeados de .spec.ts para .pw.ts, com configurações privadas explícitas atualizadas; nenhuma exclusão, prazo, retry, skip ou asserção foi alterada. O novo completo acima passou. Nativo focal/completo desta revisão ainda pendente sob trava compartilhada. O CI123PASS/40skips do6746658 pertence à revisão anterior.
 
 Autorrevisão: sem novo achado alto/médio no diff; risco residual na interação entre navegação nativa, histórico e renderização assíncrona, coberta pelos seis testes e aguardando navegador. Auto-QA ainda pendente nesta revisão. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento local — 2026-10-20T19:17:56.036309+00:00
+
+Fonte7188864. Focal nativo:5 aprovados em1,1min; completo nativo:123 aprovados,40skips existentes, nenhuma falha,12,6min. Saída nativa0 confirmada, início18:58:50UTC/fim19:11:26UTC, log privado Root.runlogs/oficina/backlog-url-latest-query-full.log. CI39472591882 da mesma fonte:123PASS/40skips/4,2min, cinco jobs aprovados e deploy ignorado. Resultados locais e remotos são distintos.
+
+Frontend completo182 aprovados/45arquivos/212,36s; afetados32PASS/5arquivos, incluindo os seis testes do alternador; contraprova5FAIL/1controle para a consulta antiga. Tipos forçados, lint, build e tipos E2E aprovados. Backend inalterado690 aprovados/33skips anteriores. As execuções inválidas e falhas anteriores permanecem neste relatório.
+
+Auto-QA1440x900/390x844:seleção, colapso, rolagem600, reload, ida ao quadro, retorno, voltar/avançar, parâmetros externos, filtros e abertura direta de item passaram sem alterar as asserções ou ampliar prazo. Capturas do focal e do completo abertas nas duas larguras; mostram a lista na posição restaurada. As verificações nativas conferem seleção e colapso além do que aparece no recorte da imagem.
+
+Ressalva visual herdada:na captura mobile, parte da barra de ações da seleção fica sob a barra contextual fixa ao rolar. O sticky top8 do BacklogPlanner não foi alterado por esta proposta; corresponde à família de sobreposição já catalogada na rodada de QA. Os controles compactos e títulos sintéticos longos também permanecem limitados. Esta entrega não certifica layout combinado nem corrige esses pontos.
+
+Autorrevisão:sem novo achado alto/médio confirmado no diff funcional. A consulta é lida da URL atual no momento da ação; guards impedem frames antigos e dados pendentes de apagar estado; casos de histórico e clique modificado possuem testes. Não captura tokens de autenticação para compor a URL. Pesquisa digitada e parâmetros externos preservados continuam sujeitos ao compartilhamento da URL, conforme escolha registrada em PERGUNTAS.
+
+Migration:não. Nenhuma alteração de API/schema/dependência ou produção. Entrega em PR rascunho. REVISAO e QA oficiais:pendentes.
