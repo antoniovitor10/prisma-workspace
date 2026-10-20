@@ -1,3 +1,22 @@
+## [2026-10-20] — Oficina — prova do CSS semanal em QA combinado
+- Patch safe center validado no PR27:contraprova1FAILmobile/2controles, corrigido3PASS27,6s; sete dias e consultas200 por largura, capturas abertas.
+- Não generalizar para demais timeouts/deadlock ou para full desta branch. Nativepróprio pendente e fullfront162/1 preservado; detalhes no relatório. Sem migration/produção; revisão e QA oficiais pendentes.
+
+## [2026-10-20] — Oficina — Continuação da estabilidade
+- Causa CSS comprovada: centro inseguro do grid semanal escondia os dias iniciais. safe center e E2E sete dias nas duas larguras; execução nativa pendente na trava.
+- Corrigida coleta de teste de privacidade node:test pelo Vitest: mesmo teste em Vitest/node, sem exclusão. Backend690PASS/33skips; tipos/lint/build PASS; fullfrontend162PASS/1FAIL em MethodSettingsPanel, causa ainda não confirmada. Não aumentar timeout ou declarar suíte verde.
+- Evidências e hipótese limitada em relatorios/oficina-e2e-stability.md. Sem migration/produção. Revisão e QA oficiais pendentes.
+
+## 2026-10-20 — Oficina: fechamento do diagnóstico de estabilidade
+
+Corrida comprovada no teste do editor: imagem precedia feedback React; somente teste passou a aguardar a mesma mensagem terminal. Contraprova1FAIL/6PASS e restauração7PASS. Falhas CLI também envolviam token ausente e colisão de porta no harness privado; após correção, arquivo IA17PASS em duas branches. Timeout252 e deadlock não têm causa comprovada; manter hipóteses e próximos ensaios do relatório. PR30 em rascunho, sem migration ou produto alterado. Revisão/QA oficiais pendentes.
+
+## [2026-10-20] - Codex (Oficina) - diagnóstico E2E opt-in e evidências nativas
+
+- Basea2797a7; reporter de origem/duração/status com teste de privacidade1/1, contraprova1FAIL e verde1/1; tipos explícitos/lint aprovados. Não registra títulos,argumentos,mensagens,corpos ou credenciais; não altera produto,assert,prazo,retry,cota ou skips.
+- Quatro specs nativos no runtime próprioorgf51:25PASS/3FAIL/1skip existente. Kanban/editor/sync passaram nesta rodada; não se declara resolvida a intermitência histórica. AI252desktop apresentou navegação33.020ms/documento vazio; mobilepassou7.809ms, causa ainda não comprovada.
+- AI340desktop/mobile mostrou ponteCLI indisponível; faltava configurar URL do fake nativo18747 na API própria. Configuração privada corrigida e runtime saudável; repetição/fullE2E ainda pendentes. Relatório distingue observação,causa de ambiente e hipóteses. REVISAO/QA oficiais pendentes, sem produção/migration/main.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
@@ -1964,3 +1983,61 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: seletor determinístico do seed
+
+Root full230/3/40 escolheu projetos variáveis pelo fallback do seed legado. Novo helper DEMO/INFRACOES, sem fallback arbitrário; RED3FAIL/2controles→GREEN5PASS. Gates tipos/lint/build/E2Etypes aprovados; novo fullfrontend168PASS43arquivos182,85s. MethodSettingsPanel não repetiu a falha, mas causa continua desconhecida. Código1b1d3ff transportado ao PR27 após fim do full; nativos próprios PR30 pendentes.
+
+
+### 2026-10-20 — Oficina: evidência SQL QA limitada
+
+Leitura system_health no SQL QA: ring0deadlocks, XMLtruncado; arquivo atual0deadlocks, sem varrer rollover. Causa histórica BoardStructureSql continua sem grafo. Consultas iniciais8117/1934 corrigidas só no cliente/conexão; leituras finais exit0. CI12660a4:121PASS/40skips, cinco jobs aprovados/deploy ignorado. Nativo local próprio ainda pendente.
+
+
+## Sincronização isolada e retificação da prova — 20/10/2026 18:20 UTC
+
+A execução combinada do PR27 encontrou dois casos de board-stage-sync sem tarefa fora da conclusão: o teste escolhia project.boards[0], já modificado por outros cenários. O teste agora cria projeto/quadro/tarefa exclusivos pela BoardFactory, preserva a troca no drawer seguida de Escape e as verificações de lista/recarga. Acrescenta conferência API do stageId e completedAt. Etapa Done usa categoria5, confirmada no enum do domínio. Nenhum comportamento de produto foi alterado. Commitb52addd, transportado ao PR27 comoe9023e7.
+
+Retificação: uma primeira candidata usou categoria3 (InProgress) com nome de conclusão. Sua contraprova e execução parcial NÃO provam conclusão. A suíte stability-full-own foi interrompida de forma controlada antes da correção:56PASS/20skips/84não executados/1interrompido, inválida como gate. Não houve publicação daquele candidato.
+
+Prova correta: a API confirma Done5 e completedAt antes de a contraprova devolver a projeção antiga somente no GET final. Resultado2FAIL/1setup, esperado Concluído/recebido A fazer nas duas larguras. Restaurada a projeção real:3PASS/40,4s. Capturas1440x900/390x844 abertas e mostram Concluído. Tipos explícitos E2E e lint aprovados; frontend/backend de produto permanecem inalterados desde168PASS/43arquivos e690PASS/33skips. Novo completo stability-full-sync-done aguarda a trava global; não confundir CI anterior121/40 com esta revisão.
+
+Focal semanal próprio:3PASS/52,1s, sete ações Ajustar com respostas200 e sem clique forçado. Capturas mobile inicial/final e desktop final abertas: há rolagem horizontal para alcançar os sete dias no mobile. Isso confirma alcançabilidade, sem afirmar que todos os dias cabem simultaneamente na largura390.
+
+Autorrevisão: fixture exclusiva remove dependência do primeiro quadro compartilhado; asserts de persistência mantidos e ampliados. Auto-QA focal aprovado nas duas larguras; completo pendente. Causas históricas sem evidência, incluindo deadlock, continuam como hipóteses. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Espera pelo estado carregado do portal — 2026-10-20T18:26:21.728174+00:00
+
+CI39471941035 dob52addd:frontend167PASS/1FAIL, ExternalPortalSettings esperava Publicado imediatamente após aparecer o link. O snapshot já contém link persistido e Alterações não salvas: link deriva portalQuery.data, enquanto portalForm é copiado no useEffect posterior. O teste agora aguarda o mesmo texto Publicado antes de editar o endereço, sem ampliar o prazo padrão nem retirar as demais asserções.
+
+Afetados2PASS; contraprova que impede somente a cópia para portalForm:1FAIL/1controle; código restaurado2PASS. Tipos forçados, lint e build aprovados; frontend completo168PASS/43arquivos/186,82s. Nenhuma mudança de produto. CI39473618266, dafb661, também passou antes desta alteração unitária; não é evidência da linha nova. As duas execuções são preservadas, sem apagar a falha inicial. Novo completo nativo ainda aguarda trava. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Fechamento local da branch — 2026-10-20T18:58:21.151736+00:00
+
+Completo nativo stability-full-sync-done:121 aprovados,40skips existentes, nenhuma falha,11,6min. Saída nativa0 confirmada; início18:45:41UTC/fim18:57:21UTC. Fonte de código7b39027, sem alteração durante a execução. Log privado Root.runlogs/oficina/stability-full-sync-done.log. CI39474745870 da mesma fonte:121 aprovados/40skips/4,0min, cinco jobs aprovados e deploy ignorado.
+
+Gates finais:frontend168 aprovados/43arquivos/186,82s; tipos forçados, lint e build aprovados; backend inalterado690 aprovados/33skips e build anteriores. Afetados e contraprovas:portal2PASS, efeito impedido1FAIL/1controle, restaurado2PASS; sincronização com Done5 e completedAt:2FAIL/1setup na projeção antiga, restaurado3PASS; semanal3PASS, sete ações alcançáveis. As provas anteriores do editor e da seleção canônica permanecem documentadas.
+
+Auto-QA:abertas as duas capturas de sincronização produzidas no completo,1440x900/390x844; ambas mostram Concluído após recarga. Abertas as quatro capturas semanais próprias (início/fim nas duas larguras). O mobile requer rolagem horizontal para os sete dias. A barra de filtros legada ainda extrapola a largura nesta branch, ressalva visual herdada tratada separadamente no PR27; não é correção deste recorte.
+
+Autorrevisão:nenhum achado alto/médio confirmado no diff final. Fixture limpa seu projeto exclusivo, não consome o primeiro quadro mutável do seed; assertions de persistência mantidas e ampliadas. Esperas unitárias verificam estados finais reais, sem prazo maior. O reporter não inclui conteúdo de tarefa, headers ou credenciais.
+
+Limites:as falhas históricas sem vínculo causal comprovado continuam hipóteses, especialmente BoardStructureSql/QA-H10 original e carregamentos isolados. Ring truncado/arquivo atual sem deadlock não certificam ausência histórica. Logs de cancelamento SignalR/SQL durante navegação e falhas deliberadas do controle CLI foram preservados; não são convertidos em causa das falhas antigas. A execução parcial com categoria3 e a candidata errada continuam inválidas. Nenhum novo retry, skip, test.fail ou relaxamento de asserção.
+
+Migration:não. Entrega em PR rascunho; não há integração ou liberação para produção. REVISAO e QA oficiais:pendentes.
+
+
+## Revisão estrita da ordem de persistência — 2026-10-20T20:15:41.392990+00:00
+
+Autorrevisão identificou que a confirmação API de b52addd adicionava uma espera antes da recarga, ausente no teste original2354c68. Para preservar exatamente a sequência,29fd365 moveu stageId/completedAt para depois da verificação da UI recarregada. O fluxo normal fecha a gaveta, observa a etapa, recarrega e confere a etapa; somente então consulta a entidade. Não houve alteração de produto, prazo, retry ou asserção removida.
+
+Tipos explícitos E2E e lint aprovados. Nova contraprova privada:2FAIL/1setup em55,1s; ambos os error-context conferidos, esperado Concluído/recebido A fazer. A API real confirma Done5/completedAt somente dentro do interceptor da contraprova, antes de simular a projeção antiga; essa espera não existe no teste normal. Controle normal estrito:3PASS/42,6s, saída0; capturas atuais desktop/mobile abertas. A alteração foi transportada ao PR27 como0a6da1d.
+
+CI39489110440 da fonte29fd365:121PASS/40skips existentes/4,4min; cinco jobs aprovados, deploy ignorado. Log ci-29fd365-e2e.log. O completo LOCAL121/40/11,6min anterior pertence à fonte7b39027 e não é gate da revisão estrita; continua evidência dos outros cenários com produto inalterado. Frontend168/43arquivos, tipos forçados, lint, build e backend690/33skips anteriores permanecem da mesma versão de produto.
+
+Diagnóstico adicional no QA combinado:a0a4522 teve completo local232PASS/1FAIL/40skips, único inesperado D06desktop com página branca antes de main. A reprodução posterior instrumentada executou C4 inteiro por casar também com o nome do arquivo:27PASS/2,0min, incluindo D06projeto/equipe nas duas larguras; quatro capturas D06 abertas. Não foram cinco testes. Métricas project foram sobrescritas por casos seguintes, renomeadas final-c4-case e descartadas para atribuição causal a D06. Métricas team referem-se ao D06equipe. A ocorrência original continua sem causa comprovada; fonte de produto não foi alterada por suposição. Hipóteses e limitações seguem no relatório de regressão do PR27.
+
+Fechamento desta revisão:contraprova válida, focal estrito local aprovado e completo atual remoto aprovado. Nenhum novo achado alto/médio confirmado no diff estrito. Limitações visuais e diagnósticos históricos anteriores permanecem; esta entrega não certifica a integração das propostas. Migration:não. REVISAO e QA oficiais:pendentes.

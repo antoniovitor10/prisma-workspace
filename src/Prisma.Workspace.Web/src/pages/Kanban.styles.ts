@@ -692,7 +692,7 @@ export const LeadTimeTd = styled.td`
 export const TempoGrid = styled.div`
   display: flex;
   gap: ${p => p.theme.space[3]};
-  justify-content: center;
+  justify-content: safe center;
   align-items: flex-end;
   padding: ${p => p.theme.space[8]} ${p => p.theme.space[2]} ${p => p.theme.space[2]};
   flex-wrap: nowrap;

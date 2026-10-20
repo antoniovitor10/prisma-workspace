@@ -1,9 +1,10 @@
+import { selectSeedProject } from './fixtures/seedProject';
 import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures/test';
 
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 
-/** Resolve o projeto seed (INFRACOES) em vez de depender de GUID fixo do banco. */
+/** Resolve o projeto seed explícito (DEMO/INFRACOES) em vez de depender de GUID fixo do banco. */
 async function resolveSeedProjectId(page: Page): Promise<string> {
   if (!/127\.0\.0\.1|localhost/.test(page.url())) {
     await page.goto('/projects');
@@ -11,10 +12,7 @@ async function resolveSeedProjectId(page: Page): Promise<string> {
   }
   type Project = { id: string; key: string; name: string };
   const projects = await appApi<Project[]>(page, '/api/projects');
-  const seeded = projects.find((project) => project.key === 'INFRACOES')
-    ?? projects.find((project) => /infrações|infracoes/i.test(project.name))
-    ?? projects[0];
-  if (!seeded) throw new Error('Nenhum projeto seed disponível para os testes E2E.');
+  const seeded = selectSeedProject(projects);
   return seeded.id;
 }
 
