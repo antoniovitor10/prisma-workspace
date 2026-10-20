@@ -92,3 +92,14 @@ O novo full combinado do PR27 encerrou com230 aprovados, três falhas inesperada
 Commit1b1d3ff centraliza a escolha por DEMO, admite o legado INFRACOES e falha explicitamente se nenhum existir. Fixtures compartilhadas e document-alignment usam o mesmo helper. Cinco testes cobrem ordenação variável, coexistência dos seeds, legado e ausência do seed. Contraprova real com a seleção antiga:3FAIL/2controles. Restauração:5PASS. Tipos forçados, lint, build e tipos E2E aprovados. Novo frontend completo:168PASS em43 arquivos,182,85s. A falha anterior de MethodSettingsPanel não se repetiu; sua causa continua sem confirmação e não foi corrigida por este lote.
 
 O patch de teste foi transportado para o PR27 como8e47329 somente após o full anterior terminar; gates e novo focal/full combinados em andamento. O focal semanal e full próprios do PR30 ainda aguardam a trava, agora com o seletor validado. Essa causa comprovada não é atribuída retroativamente a outras execuções sem artefatos equivalentes. Migration:não. Autorrevisão sem alto/médio confirmado nesta seleção explícita; revisão e QA oficiais pendentes.
+
+
+## Janela de evidência SQL QA — 20/10/2026, 16:37 UTC
+
+Consulta somente leitura no container autorizado prisma-qa-database-1. Um ring_buffer system_health encontrado; zero eventos xml_deadlock_report visíveis, mas XML truncado. Consulta adicional restrita ao arquivo atual do event_file existente: alvo presente, zero deadlocks nesse arquivo. Arquivos de rollover anteriores não foram varridos. Contagens sanitizadas preservadas em .runlogs/oficina/deadlock-ring-count.json e deadlock-current-file-count.json. Nenhum payload de consultas ou credencial foi publicado.
+
+O procedimento usa os alvos já existentes descritos no [guia de deadlocks da Microsoft](https://learn.microsoft.com/sql/relational-databases/sql-server-deadlocks-guide?view=sql-server-ver17). A leitura não cria sessões de eventos. A ausência de registro nessas janelas, especialmente com XML truncado, não prova ausência histórica nem determina a causa do BoardStructureSql. Esse diagnóstico permanece sem grafo para atribuição causal.
+
+Duas consultas iniciais do cliente falharam: agregação MAX de bit e QUOTED_IDENTIFIER desligado. Corrigidas a conversão e a opção da conexão, as duas leituras finais retornaram0. Nenhuma configuração persistente do SQL ou alteração de schema foi aplicada.
+
+CI39454900720, head12660a4:cinco jobs aprovados e deploy ignorado. E2E121 aprovados/40skips existentes em4,4min, log conferido. Execução nativa local própria permanece na fila; resultados remotos e locais são distintos. Revisão e QA oficiais pendentes.

@@ -1988,3 +1988,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 ### 2026-10-20 — Oficina: seletor determinístico do seed
 
 Root full230/3/40 escolheu projetos variáveis pelo fallback do seed legado. Novo helper DEMO/INFRACOES, sem fallback arbitrário; RED3FAIL/2controles→GREEN5PASS. Gates tipos/lint/build/E2Etypes aprovados; novo fullfrontend168PASS43arquivos182,85s. MethodSettingsPanel não repetiu a falha, mas causa continua desconhecida. Código1b1d3ff transportado ao PR27 após fim do full; nativos próprios PR30 pendentes.
+
+
+### 2026-10-20 — Oficina: evidência SQL QA limitada
+
+Leitura system_health no SQL QA: ring0deadlocks, XMLtruncado; arquivo atual0deadlocks, sem varrer rollover. Causa histórica BoardStructureSql continua sem grafo. Consultas iniciais8117/1934 corrigidas só no cliente/conexão; leituras finais exit0. CI12660a4:121PASS/40skips, cinco jobs aprovados/deploy ignorado. Nativo local próprio ainda pendente.
