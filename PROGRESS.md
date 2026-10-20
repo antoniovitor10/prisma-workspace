@@ -1,8 +1,8 @@
-## [2026-10-20] — Codex (Oficina) — diagnóstico E2E opt-in, validação em andamento
+## [2026-10-20] - Codex (Oficina) - diagnóstico E2E opt-in e evidências nativas
 
-- Branch `test/e2e-stability-20261020`, base `a2797a7`. Relatório `relatorios/oficina-e2e-stability.md` preserva falhas históricas e distingue evidência de hipóteses para Kanban, mobile, editor, AI e deadlock SQL.
-- Reporter opt-in registra origem/duração/status sem títulos, mensagens, valores ou anexos; configuração mantém prazos/retries/asserções. Teste de privacidade1/1, contraprova com título1FAIL esperada, restaurado1/1; tipos explícitos e lint passaram.
-- Nenhuma correção de produto sem causa comprovada. Native E2E ainda aguardando mutex compartilhado; autorrevisão parcial e auto-QA pendente. Sem novo skip, test.fail, migration, produção ou deploy. REVISAO e QA oficiais pendentes; não é ENTREGA final.
+- Basea2797a7; reporter de origem/duração/status com teste de privacidade1/1, contraprova1FAIL e verde1/1; tipos explícitos/lint aprovados. Não registra títulos,argumentos,mensagens,corpos ou credenciais; não altera produto,assert,prazo,retry,cota ou skips.
+- Quatro specs nativos no runtime próprioorgf51:25PASS/3FAIL/1skip existente. Kanban/editor/sync passaram nesta rodada; não se declara resolvida a intermitência histórica. AI252desktop apresentou navegação33.020ms/documento vazio; mobilepassou7.809ms, causa ainda não comprovada.
+- AI340desktop/mobile mostrou ponteCLI indisponível; faltava configurar URL do fake nativo18747 na API própria. Configuração privada corrigida e runtime saudável; repetição/fullE2E ainda pendentes. Relatório distingue observação,causa de ambiente e hipóteses. REVISAO/QA oficiais pendentes, sem produção/migration/main.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 

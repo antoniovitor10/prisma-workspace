@@ -37,7 +37,10 @@ O comando é roteiro, ainda não evidência de execução deste checkpoint. Em C
 - Teste Node de privacidade:1/1PASS. Contraprova adicionando título ao JSON:1FAIL esperada; fonte restaurada,1/1PASS novamente.
 - Tipos explícitos do reporter/config/teste passaram com TypeScript6 e `--types node`; primeiro comando sem tipos de Node falhou por configuração de invocação, não por resultado ignorado. Não confundir esse comando com o gate de app `tsc -b`.
 - Lint sem erros, avisos anteriores preservados. Nenhuma asserção, prazo, retry, cota, spec funcional, schema ou migration mudou; nenhum novo skip/test.fail.
-- Navegador nativo aguarda a trava compartilhada. O lote está preparado para executar os quatro specs no runtime próprio de organizações `f51aaee`; os arquivos nativos e de Kanban coincidem com a main, mas esse runtime tem as quatro correções de organizações. Não tratá-lo como binário exato da main. A configuração e o SHA do runtime devem acompanhar qualquer conclusão posterior.
+- Execução nativa concluída sob mutex global/CPU próprio,1worker/retries0:25PASS/3FAIL/1skip preexistente,5,1min. Quatro specs:kanban-responsive,board-stage-sync,rich-task-description eai-assistant. Runtime próprio organizações `f51aaee` em3122/3124, banco próprioSQLQA3111; specs/Kanban idênticos à base, mas não é binário exato da main. Nenhum dos cenários Kanban/editor/sync falhou nessa execução; isso não resolve a intermitência histórica.
+- Falhas:ai-assistant:252desktop e340desktop/mobile. Captura252mostra documento vazio; JSONLlocaliza navegação em:258:14 com33.020ms, seguida de clique em:258:102 com9.353ms e falha. Total42.773ms inclui encerramento. Mobile252passou em7.809ms. Não há evidência suficiente para atribuir a rede, renderização ou produto; não foi alterado o teste.
+- Capturas340mostram “A conexão CLI não está instalada”. CódigoAiConnectionOnboarding lêAi:BridgeUrl e, ausente, tenta hostname de container. A API própria estava sem URL do fake nativo18747, embora o E2E o inicie. Configuração privada corrigida para127.0.0.1:18747/v1; API própria reiniciada saudável. Repetição nativa pendente, portanto ainda não se declara correção comprovada das falhas340.
+- Evidências preservadas emoficina-qa/.runlogs/oficina/stability-evidence:JSONL original,3capturas,vídeos/contextos. Nenhum corpo/segredo foi copiado para este relatório. A suíte completa própria de organizações está enfileirada com a configuração correta; não misturar esse resultado futuro com o baseline inicial.
 
 ## Hipóteses ordenadas e próximo ensaio
 
@@ -48,3 +51,7 @@ O comando é roteiro, ainda não evidência de execução deste checkpoint. Em C
 5. AI/editor: usar origens e tempos para separar estado de catálogo, fake provider, salvamento e interação mobile. Não aumentar cotas nem prazo para passar.
 
 Autorrevisão parcial: privacidade coberta por sentinela e contraprova; reporter é opt-in e não altera o verdict. Auto-QA visual e novas reproduções nativas pendentes. REVISAO e QA oficiais: pendentes.
+
+## Autorrevisão e auto-QA parcial
+
+Releitura de reporter/config/teste:nenhum achado alto/médio; metadados são mínimos e o custo de escrita síncrona só existe no modo opt-in. Capturas de falha nas duas larguras examinadas; não houve mudança visual nesta branch. A ausência de falha do Kanban nesta rodada não é prova de estabilidade permanente. QA-H10/deadlock não reproduzidos com grafo SQL; hipóteses históricas continuam abertas. Sem correção especulativa de transação,timeout,retry,cota ou assert. Migration:não. REVISAO e QA oficiais:pendentes.

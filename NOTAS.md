@@ -1,3 +1,7 @@
+## Oficina — diagnóstico nativo 2026-10-20 07:29UTC
+
+Baseline25PASS/3FAIL/1skip em5,1min, runtimeorgf51. Relatório versionado detalha origens/durações e capturas. Evidência preservada noQA/.runlogs/oficina/stability-evidence. FaltaURLfakeCLI explica mensagem340; API3122 privada foi corrigida e reiniciada, não houve produção. Rerun/full pendentes na trava global.252desktopdocumentovazio/navegação33s continua sem causa; não mudar timeout/assert. Kanban/editor/sync verdes nesta rodada não encerram intermitência. Próximo:analisar fullOrg apósfollowup e completar relato sem atribuições não provadas. REVISAO/QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: observabilidade E2E em andamento
 
 - Branch test/e2e-stability-20261020 a partir de a2797a7. Reporter/config opt-in e relatório versionado, sem alterar produto ou mascarar falhas.
