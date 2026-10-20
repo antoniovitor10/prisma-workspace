@@ -30,15 +30,15 @@ test('concluir pela gaveta move o card no quadro e a mudança sobrevive ao recar
       await page.keyboard.press('Escape');
       await expect(drawer).toBeHidden();
       await expect(row().getByRole('cell').nth(3)).toHaveText(completed!.name);
-      await expect.poll(async () => {
-        const persisted = await factory.get<{ stageId: string; completedAt: string | null }>(`/api/WorkItems/${target.id}`);
-        return { stageId: persisted.stageId, completed: Boolean(persisted.completedAt) };
-      }).toEqual({ stageId: completed!.id, completed: true });
 
       // A recarga precisa ler a mesma etapa persistida, não apenas o cache otimista.
       await authenticatedGoto(`/boards/${board.id}`);
       await page.getByRole('button', { name: 'Lista', exact: true }).click();
       await expect(row().getByRole('cell').nth(3)).toHaveText(completed!.name);
+      await expect.poll(async () => {
+        const persisted = await factory.get<{ stageId: string; completedAt: string | null }>(`/api/WorkItems/${target.id}`);
+        return { stageId: persisted.stageId, completed: Boolean(persisted.completedAt) };
+      }).toEqual({ stageId: completed!.id, completed: true });
       await row().getByRole('cell').nth(3).scrollIntoViewIfNeeded();
       await expect(row().getByRole('cell').nth(3)).toBeVisible();
       const directory = resolve('../../.runlogs/oficina/screenshots');
