@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: validação real da candidata TASK-505
+
+CI 39409267216 passou, deploy ignorado. Artefato 12259116077 conferido: quatro hashes corretos, 189 pacotes runtime e 203 frontend; proveniência unsigned coerente com merge sintético 6a761ba. Dez testes e contraprova documentados no relatório. PR36 permanece em rascunho; revisão e QA oficiais pendentes. Próximo passo: revisão humana, sem publicação automática.
+
 ## [2026-10-20] - Codex (Oficina) - TASK-505: inventário e origem dos artefatos CI
 
 - Branch própria incorpora as dependências npm/NuGet dos PR32/34. SBOMs SPDX de runtime/frontend com action e Syft fixados; declaração unsigned vincula4 arquivos e contextoCI sem copiar o ambiente. Permissões contents:read e demais jobs, inclusive deploy, preservados.

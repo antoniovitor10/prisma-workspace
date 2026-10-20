@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: validação real da candidata TASK-505
+
+CI 39409267216 passou, deploy ignorado. Artefato 12259116077 conferido: quatro hashes corretos, 189 pacotes runtime e 203 frontend; proveniência unsigned coerente com merge sintético 6a761ba. Dez testes e contraprova documentados no relatório. PR36 permanece em rascunho; revisão e QA oficiais pendentes. Próximo passo: revisão humana, sem publicação automática.
+
 # Oficina — TASK-505, checkpoint de 20/10/2026
 
 Branch ci/supply-chain-artifacts-20261020, origem a2797a7 e dependências por merges próprios a9d2c8e/9677abd. Não é merge de PR/main. Proposta reversível em DECISIONS, story/spec aprovadas para o recorte. Dez testes de integridade/privacidade passaram, contraprova2FAIL/8PASS/restauração10PASS, YAML conferido e demais jobs preservados. Syft1.55 oficial validado por checksum; smoke SPDX2.3 aprovado após corrigir tag do seletor no harness privado.

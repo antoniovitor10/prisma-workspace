@@ -20,3 +20,11 @@ candidate-provenance.py registra quatro hashes(export,migrations,SBOMruntime,SBO
 Autorrevisão parcial sem alto/médio confirmado. Limites:inventário frontend inclui dependências de desenvolvimento, materiais resolvidos são parciais e uma declaração unsigned não protege contra substituição de todo o artefato. Não se afirma reprodutibilidade bit a bit, ausência de vulnerabilidades, validação completa de schemas ou licença do Prisma. docs/maintenance/supply-chain.md descreve esses limites e o build type.
 
 Auto-QA técnico pelos testes de integridade e privacidade acima; não há UI alterada. Backend/frontend/E2E não repetidos localmente para o recorte de CI sem impacto de comportamento; a integração completa será verificada no CI automático. Sem nova migration, produção, main, merge de PR, release ou deploy. REVISAO e QA oficiais:pendentes. Não é ENTREGA final antes do CI integrado.
+
+## Fechamento do CI automático — 20/10/2026 11:14 UTC
+
+O run 39409267216, referente ao head 1ec277a e ao merge sintético 6a761ba1890dbe3e3acea99277e9d0b39554b318, terminou com sucesso em Backend, Frontend, Context governance, Container build e E2E (SQL Server, desktop e mobile). Deploy produção: skipped. Nenhum workflow foi disparado manualmente.
+
+O artefato próprio 12259116077 foi baixado e inspecionado: os quatro SHA-256 da declaração correspondem aos arquivos reais. SPDX runtime: 189 pacotes, incluindo HtmlSanitizer 9.1.982 e AngleSharp 1.7.0. SPDX frontend: 203 pacotes, incluindo @tiptap/core 3.32.0 e react-router 7.18.4. A declaração aponta para refs/pull/36/merge, distingue a execução e o código e permanece explicitamente unsigned. Isso confirma a produção dos inventários e vínculos de integridade; não equivale a assinatura, nível SLSA ou inventário completo de todas as entradas de build.
+
+Este fechamento substitui a pendência de CI do checkpoint acima. Autorrevisão concluída para o recorte, sem achado alto ou médio confirmado. Auto-QA técnico concluído por contraprova local, inspeção do artefato real e CI automático. Não há UI própria neste item. Migration: não. REVISAO e QA oficiais: pendentes. PR continua em rascunho.
