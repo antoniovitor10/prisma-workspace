@@ -1,3 +1,11 @@
+# Oficina org — atualização 2026-10-20 07:22UTC
+
+Fontes E binários verdes. FullxUnit695PASS/33skips existentes, fullVitest167PASS, solução/frontend/types/lint/buildPASS. E2E próprio9/9PASS, quatro capturas de diálogo e orientação inativa abertas e inspecionadas nas duas larguras, sem cortes. O texto histórico abaixo sobre DLLs vermelhos está superado.
+
+FullE2E pendente no followup51823 da worktree oficina-qa. Runtime API3122 atualizado para o fake CLI nativo em127.0.0.1:18747/v1, Vite3124, bancoPrisma_BoardColumns_Oficina_Org_Seeded; não usa ponte de produção. PID atual em .runlogs/oficina/api-current.pid. A configuração ausente causou duas falhasCLI na investigação inicial da estabilidade; não mudar assert/prazo para ocultar isso. Falha252tela vazia ainda sem causa.
+
+Próximo: concluir fullE2E e atualizar relatório/PR28/FILA. Não declarar entrega final agora. REVISAO e QA oficiais pendentes.
+
 # Oficina org — 2026-10-20, validação em andamento
 
 Goal: `/home/agentes/projetos/tarefas/GOAL-prisma-oficina.md`. Branch própria `fix/org-creation-lows`, base `a2797a7`. Item 2 adiantado enquanto C1 aguarda a trava compartilhada de navegador. Estado global em `/home/agentes/projetos/ESTADO-goal-oficina.md`.

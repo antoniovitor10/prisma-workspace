@@ -27,7 +27,7 @@ async function newcomer(request: APIRequestContext) {
 async function capture(page: Page, info: TestInfo, label: string) {
   const directory = resolve('../../.runlogs/oficina/auto-qa');
   mkdirSync(directory, { recursive: true });
-  await page.screenshot({ path: `${directory}/${label}-${info.project.name}-${Date.now()}.png` });
+  await page.screenshot({ path: `${directory}/${label}-${info.project.name}-${Date.now()}.png`, scale: 'css' });
 }
 async function session(page: Page, accessToken: string) {
   await page.goto('/login', { waitUntil: 'domcontentloaded' });
