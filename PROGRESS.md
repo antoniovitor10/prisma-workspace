@@ -1,3 +1,7 @@
+## [2026-10-20] — Oficina — gates completos do guard de histórico
+- Revisão6fd3b0b:175PASS/44arquivos,20afetados,contraprova3FAIL/1controle; tipos forçados/lint/build/tiposE2E aprovados.
+- Novo focal de histórico enfileirado, depoisfull se passar. CI123/40 anterior e falha local4/1 preservados como histórico, sem reutilizar validação de outra revisão. Sem migration/produção; revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — impedir scroll antigo de reverter histórico
 - Focal local anterior4PASS/1FAILmobilegoBack, apesar de CI123PASS/40skips do commit anterior. Mantida a mesma asserção de rota.
 - Listener e restauração de scroll conferem URL dona. Contraprova3FAIL/1controle, corrigido20PASS, tipos forçados PASS. Casos incluem troca de rota antes de frame/cleanup e outra query na mesma rota.

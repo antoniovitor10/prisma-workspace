@@ -39,3 +39,9 @@ Mecanismo identificado:um frame do listener de scroll ainda pode executar entre 
 Remover as verificações de dono do listener reproduziu3FAIL/1controle:callback devolve a rota antiga após trocar para quadro, agenda scroll depois de sair antes do cleanup e apaga a query de outra entrada na mesma rota. Restauradas as verificações,20afetados PASS e npx tsc -b --force PASS. A restauração da posição também confere a localização antes de mexer no scroll. A asserção E2E goBack→boards continua idêntica.
 
 O roteiro registra apenas tipo push/replace/pop, classe boards/backlog/other, índice numérico e tempo relativo; não copia URL, IDs, títulos, filtros ou credenciais. Tipos explícitos desta instrumentação serão conferidos pelo coordenador1362595 após history-full-vitest0 e antes do novo focal/full. Lint/build/full desta revisão seguem no runner1291881, com fontes estáveis; não reutilizar os171PASS anteriores para fechar a correção nova. Backend690PASS/33skips permanece sem alteração de código. Sem migration, dependência, timeout/retry/skip/cota ou produção. Revisão e QA oficiais pendentes.
+
+## Gates locais da correção de histórico aprovados — 20/10/2026
+
+Revisão6fd3b0b:Vitest completo175PASS/44arquivos em211,16s; afetados20PASS, contraprova3FAIL/1controle. Tipos forçados, lint e build aprovados. O coordenador1362595 conferiu os tipos explícitos do E2E instrumentado(exit0) e enfileirou backlog-url-history-focal; se passar, executará o completo. Sem afrouxar a exigência goBack→boards ou aumentar prazo.
+
+O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal local4/1 motivou a correção atual. Não usar esses123 como validação do guard novo até nova execução. Backend690PASS/33skips permanece com fonte idêntica. Capturas e novo resultado nativo ainda pendentes. Revisão e QA oficiais pendentes.
