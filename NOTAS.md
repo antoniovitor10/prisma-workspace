@@ -208,3 +208,16 @@ Autorrevisão:nenhum achado alto/médio confirmado no diff final. Fixture limpa 
 Limites:as falhas históricas sem vínculo causal comprovado continuam hipóteses, especialmente BoardStructureSql/QA-H10 original e carregamentos isolados. Ring truncado/arquivo atual sem deadlock não certificam ausência histórica. Logs de cancelamento SignalR/SQL durante navegação e falhas deliberadas do controle CLI foram preservados; não são convertidos em causa das falhas antigas. A execução parcial com categoria3 e a candidata errada continuam inválidas. Nenhum novo retry, skip, test.fail ou relaxamento de asserção.
 
 Migration:não. Entrega em PR rascunho; não há integração ou liberação para produção. REVISAO e QA oficiais:pendentes.
+
+
+## Revisão estrita da ordem de persistência — 2026-10-20T20:15:41.392990+00:00
+
+Autorrevisão identificou que a confirmação API de b52addd adicionava uma espera antes da recarga, ausente no teste original2354c68. Para preservar exatamente a sequência,29fd365 moveu stageId/completedAt para depois da verificação da UI recarregada. O fluxo normal fecha a gaveta, observa a etapa, recarrega e confere a etapa; somente então consulta a entidade. Não houve alteração de produto, prazo, retry ou asserção removida.
+
+Tipos explícitos E2E e lint aprovados. Nova contraprova privada:2FAIL/1setup em55,1s; ambos os error-context conferidos, esperado Concluído/recebido A fazer. A API real confirma Done5/completedAt somente dentro do interceptor da contraprova, antes de simular a projeção antiga; essa espera não existe no teste normal. Controle normal estrito:3PASS/42,6s, saída0; capturas atuais desktop/mobile abertas. A alteração foi transportada ao PR27 como0a6da1d.
+
+CI39489110440 da fonte29fd365:121PASS/40skips existentes/4,4min; cinco jobs aprovados, deploy ignorado. Log ci-29fd365-e2e.log. O completo LOCAL121/40/11,6min anterior pertence à fonte7b39027 e não é gate da revisão estrita; continua evidência dos outros cenários com produto inalterado. Frontend168/43arquivos, tipos forçados, lint, build e backend690/33skips anteriores permanecem da mesma versão de produto.
+
+Diagnóstico adicional no QA combinado:a0a4522 teve completo local232PASS/1FAIL/40skips, único inesperado D06desktop com página branca antes de main. A reprodução posterior instrumentada executou C4 inteiro por casar também com o nome do arquivo:27PASS/2,0min, incluindo D06projeto/equipe nas duas larguras; quatro capturas D06 abertas. Não foram cinco testes. Métricas project foram sobrescritas por casos seguintes, renomeadas final-c4-case e descartadas para atribuição causal a D06. Métricas team referem-se ao D06equipe. A ocorrência original continua sem causa comprovada; fonte de produto não foi alterada por suposição. Hipóteses e limitações seguem no relatório de regressão do PR27.
+
+Fechamento desta revisão:contraprova válida, focal estrito local aprovado e completo atual remoto aprovado. Nenhum novo achado alto/médio confirmado no diff estrito. Limitações visuais e diagnósticos históricos anteriores permanecem; esta entrega não certifica a integração das propostas. Migration:não. REVISAO e QA oficiais:pendentes.
