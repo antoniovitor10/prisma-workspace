@@ -1,3 +1,9 @@
+## Oficina — visual checkpoint 2026-10-20 07:55UTC
+
+C2–C4parciais com27Vitest/tsc-b/lint/buildPASS. C4proof2FAIL/restauração2PASS, fontes atuais verdes. D14/D20semfixainda; relato relatorios/oficina-qa-visual.md. AfterC2causalaguardaglobal:slugcurtopróprio+idDTOcorrigidos,Gradeancestralminmax0ajustada. Nunca tratar primeiroafter4PASS/3FAILcomoaprovação. L07capturasC1exatas preparadas;C6seletorUIexato reforçado. Followupplano/status.runlogs/oficina.
+
+C5scratch991ebcbtembackendverdefinal12,37afetados/16frontend/types/lint/buildjáverdes. Tooltipdepermanênciadografo encontrado depois do checkpoint está sendo retirado na própriaC5comnovoteste; contraprova frontend própria ainda pendente. Não integrar até salvar/validar esse complemento. Task210 nova worktreeoficina-card-order basea279,backendgatesagoraemexecuçãofilaCPU. Semprodução/migration/main/deploy/agentes.
+
 ## Oficina — checkpoint Brasília 2026-10-20
 
 Cinco testes de rateio passaram. Contraprova teve cinco falhas (script esperava quatro e um controle), fontes restauradas em finally; compilação e cinco testes finais passaram. Logs próprios c6-timezone-{green,red,green-final}.log. API3120 ainda requer restart e E2E L08 diário/semanal. C2 estilos locais não incluídos neste commit; baseline aberto antes. Não há contraprova ativa.

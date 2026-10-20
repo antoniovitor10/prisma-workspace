@@ -21,14 +21,14 @@ const PrimaryRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 `;
 
 const SearchBox = styled.label`
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1;
+  flex: 1 1 220px;
   min-width: 0;
   padding: 0 9px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -93,7 +93,9 @@ const Select = styled.select`
   background: ${({ theme }) => theme.color.surface};
   font-size: 12px;
   color: ${({ theme }) => theme.color.textMutedAccessible};
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 `;
 
 const Count = styled.span`

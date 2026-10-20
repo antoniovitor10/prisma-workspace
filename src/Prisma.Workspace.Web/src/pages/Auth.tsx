@@ -849,7 +849,7 @@ export const Auth: React.FC = () => {
               ) : isRegister ? (
                 <>Já possui uma conta? <button type="button" onClick={() => setIsRegister(false)}>Entrar aqui</button></>
               ) : (
-                <>Ainda não tem conta? <button type="button" onClick={() => setIsRegister(true)}>Fale com o administrador</button> ou <button type="button" onClick={() => setIsRegister(true)}>registre-se</button>.</>
+                <>Ainda não tem conta? <button type="button" onClick={() => setNotice('Entre em contato com o administrador da sua organização e solicite um convite.')}>Fale com o administrador</button> ou <button type="button" onClick={() => setIsRegister(true)}>registre-se</button>.</>
               )}
             </FooterNote>
 

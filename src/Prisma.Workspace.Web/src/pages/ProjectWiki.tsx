@@ -67,9 +67,10 @@ const Row = styled.div<{ $active?: boolean; $depth: number }>`
 const Main = styled.section`position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0;`;
 const PageHead = styled.div`
   display: flex; align-items: center; gap: 10px; padding: 14px 20px 10px;
-  input { flex: 1; border: none; background: transparent; font-size: 22px; font-weight: 800; color: ${({ theme }) => theme.color.text}; }
+  input { flex: 1; min-width: 0; border: none; background: transparent; font-size: 22px; font-weight: 800; color: ${({ theme }) => theme.color.text}; }
   input:focus { outline: none; }
   input:disabled { color: ${({ theme }) => theme.color.text}; }
+  @media(max-width:600px) { flex-wrap:wrap; padding:14px; input {flex:1 0 100%;width:100%;} }
 `;
 const Status = styled.span<{ $tone?: 'muted' | 'lock' }>`
   display: inline-flex; align-items: center; gap: 5px;
@@ -331,7 +332,7 @@ function WikiEditor({ projectId, page }: { projectId: string; page: WikiPage }) 
   return (
     <>
       <PageHead>
-        <input value={title} disabled={readOnly} onChange={(event) => setTitle(event.target.value)} onBlur={commitTitle}
+        <input aria-label="Título da página" value={title} disabled={readOnly} onChange={(event) => setTitle(event.target.value)} onBlur={commitTitle}
           onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur(); }} />
         {page.lock.lockedByOther
           ? <Status $tone="lock"><Lock size={12} />Editando: {page.lock.lockedByName}</Status>
