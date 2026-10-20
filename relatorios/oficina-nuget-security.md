@@ -1,6 +1,6 @@
 # Oficina — TASK-503: manutenção NuGet do parser HTML
 
-Base exata: a2797a7. Branch fix/nuget-security-20261020. Referências: D38/D78, US-OPEN-SOURCE-001 e SPEC-OPEN-SOURCE-DISTRIBUTION aprovada. Checkpoint; E2E e frontend completos ainda pendentes.
+Base exata: a2797a7. Branch fix/nuget-security-20261020. Referências: D38/D78, US-OPEN-SOURCE-001 e SPEC-OPEN-SOURCE-DISTRIBUTION aprovada. Entrega local; resultados e limitações do E2E completo preservados no fechamento.
 
 ## Alteração e compatibilidade
 
