@@ -301,6 +301,26 @@ export const Kanban: React.FC = () => {
     return current?.projectId ? boards.filter(b => b.projectId === current.projectId) : boards;
   }, [boards, selectedBoardId]);
   const [stages, setStages] = useState<Stage[]>([]);
+  const [stageOrderPending, setStageOrderPending] = useState(false);
+  const stageOrderPendingRef = useRef(false);
+  const stageBoardRef = useRef(selectedBoardId);
+  const stageDragRef = useRef<{ id: string; boardId: string; pointerId: number; x: number; y: number; dragging: boolean; targetId: string | null } | null>(null);
+  const [draggedStageId, setDraggedStageId] = useState<string | null>(null);
+  const [stageDropTargetId, setStageDropTargetId] = useState<string | null>(null);
+  useEffect(() => {
+    stageBoardRef.current = selectedBoardId;
+    stageDragRef.current = null;
+    setDraggedStageId(null);
+    setStageDropTargetId(null);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, [selectedBoardId]);
+  useEffect(() => () => {
+    stageDragRef.current = null;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [boardDataStatus, setBoardDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [boardDataError, setBoardDataError] = useState('');
@@ -742,29 +762,85 @@ export const Kanban: React.FC = () => {
     }
   };
 
-  const handleMoveStage = async (stageId: string, direction: 'left' | 'right') => {
-    const idx = stages.findIndex(s => s.id === stageId);
-    if (idx === -1) return;
-    const newIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= stages.length) return;
-
-    const newStages = [...stages];
-    [newStages[idx], newStages[newIdx]] = [newStages[newIdx], newStages[idx]];
-    setStages(newStages);
-
+  const persistStageOrder = async (next: Stage[]) => {
+    if (stageOrderPendingRef.current) return;
+    const previous = stages;
+    const boardId = selectedBoardId;
+    stageOrderPendingRef.current = true;
+    setStageOrderPending(true);
+    setStages(next);
     try {
-      const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
-      if (!projectId) throw new Error('Projeto do quadro não encontrado.');
-      await api.reorderStages(selectedBoardId, newStages.map(s => s.id));
-    } catch (err) {
-      setStages(stages);
-      alert((err as Error).message || 'Erro ao reordenar colunas.');
+      if (!boards.find(board => board.id === boardId)?.projectId) throw new Error('Projeto do quadro não encontrado.');
+      await api.reorderStages(boardId, next.map(stage => stage.id));
+    } catch (error) {
+      // Uma resposta antiga nunca restaura colunas no quadro que acabou de ser aberto.
+      if (stageBoardRef.current === boardId) setStages(previous);
+      alert((error as Error).message || 'Erro ao reordenar colunas.');
+    } finally {
+      stageOrderPendingRef.current = false;
+      setStageOrderPending(false);
     }
+  };
+
+  const handleMoveStage = async (stageId: string, direction: 'left' | 'right') => {
+    const index = stages.findIndex(stage => stage.id === stageId);
+    const target = direction === 'left' ? index - 1 : index + 1;
+    if (index < 0 || target < 0 || target >= stages.length) return;
+    const next = [...stages];
+    [next[index], next[target]] = [next[target], next[index]];
+    await persistStageOrder(next);
+  };
+
+  const clearStageDrag = () => {
+    stageDragRef.current = null;
+    setDraggedStageId(null);
+    setStageDropTargetId(null);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+
+  const handleStagePointerDown = (event: React.PointerEvent<HTMLElement>, stageId: string) => {
+    if (event.button !== 0 || stageOrderPendingRef.current || stageDragRef.current || activeDragRef.current) return;
+    stageDragRef.current = { id: stageId, boardId: selectedBoardId, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false, targetId: null };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handleStagePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const drag = stageDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag.dragging && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8) return;
+    drag.dragging = true;
+    event.preventDefault();
+    setDraggedStageId(drag.id);
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+    drag.targetId = getStageIdAtPoint(event.clientX, event.clientY);
+    setStageDropTargetId(drag.targetId === drag.id ? null : drag.targetId);
+  };
+  const handleStagePointerUp = async (event: React.PointerEvent<HTMLElement>) => {
+    const drag = stageDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    // O último movimento pode ser coalescido; o ponto de soltura é a posição final.
+    const targetId = getStageIdAtPoint(event.clientX, event.clientY);
+    const moved = drag.dragging || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 8;
+    clearStageDrag();
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!moved || drag.boardId !== stageBoardRef.current || !targetId || targetId === drag.id) return;
+    const from = stages.findIndex(stage => stage.id === drag.id);
+    const to = stages.findIndex(stage => stage.id === targetId);
+    if (from < 0 || to < 0) return;
+    const next = [...stages];
+    const [stage] = next.splice(from, 1);
+    next.splice(to, 0, stage);
+    await persistStageOrder(next);
+  };
+  const handleStagePointerCancel = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.type === 'lostpointercapture' && event.target !== event.currentTarget) return;
+    if (stageDragRef.current?.pointerId === event.pointerId) clearStageDrag();
   };
 
   const handleCreateStage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStageName.trim() || !selectedBoardId) return;
+    if (stageOrderPendingRef.current || !newStageName.trim() || !selectedBoardId) return;
     try {
       const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
       if (!projectId) throw new Error('Projeto do quadro não encontrado.');
@@ -929,7 +1005,7 @@ export const Kanban: React.FC = () => {
   };
 
   const handleCardPointerDown = (event: React.PointerEvent<HTMLDivElement>, item: WorkItem) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || stageDragRef.current || stageOrderPendingRef.current) return;
 
     const target = event.target as HTMLElement;
     if (target.closest('button, a, input, select, textarea, label')) return;
@@ -1270,7 +1346,7 @@ export const Kanban: React.FC = () => {
                 users={userOptions}
                 tags={tagOptions}
               />
-              <ActionButton onClick={() => setShowStageModal(true)}>
+              <ActionButton disabled={stageOrderPending} onClick={() => setShowStageModal(true)}>
                 <Plus size={16} />
                 <span>Nova Coluna</span>
               </ActionButton>
@@ -1278,7 +1354,7 @@ export const Kanban: React.FC = () => {
           )}
         </BoardHeader>
         {canRenderBoard && boardView === 'kanban' && (
-          <BoardHelp>Arraste um cartão para outra coluna. Use o seletor no cabeçalho de cada coluna para ordenar somente aquela coluna; a ordem manual é a padrão compartilhada.</BoardHelp>
+          <BoardHelp>Arraste cartões entre colunas e o título de uma coluna para reordená-la. Os botões ao lado também movem colunas pelo teclado. Use o seletor no cabeçalho de cada coluna para ordenar somente aquela coluna; a ordem manual é a padrão compartilhada.</BoardHelp>
         )}
 
         {canRenderBoard && boardView !== 'dashboard' && (
@@ -1425,18 +1501,28 @@ export const Kanban: React.FC = () => {
                 <Column
                   key={stage.id}
                   data-stage-id={stage.id}
-                  $isDropTarget={dropTargetStageId === stage.id}
-                  $isDraggingAny={draggedItemId !== null}
+                  $isDropTarget={dropTargetStageId === stage.id || stageDropTargetId === stage.id}
+                  $isDraggingAny={draggedItemId !== null || draggedStageId !== null}
                 >
                   <ColumnHeader>
                     <ColumnHeaderMain>
-                      <ColumnTitle as="h2"><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
+                      <ColumnTitle as="h2"
+                        data-stage-drag-handle={stage.id}
+                        $isColumnDragging={draggedStageId === stage.id}
+                        title="Arraste o título para reordenar. Os botões ao lado permitem mover pelo teclado."
+                        onPointerDown={event => handleStagePointerDown(event, stage.id)}
+                        onPointerMove={handleStagePointerMove}
+                        onPointerUp={handleStagePointerUp}
+                        onPointerCancel={handleStagePointerCancel}
+                        onLostPointerCapture={handleStagePointerCancel}
+                      ><span style={{ color: stage.statusColor || '#64748B', marginRight: 6 }}>●</span>{stage.name}</ColumnTitle>
                       <ColumnHeaderActions>
                         <CardCount>{itemsInStage.length}</CardCount>
                         <ColumnActionButton
                           type="button"
                           title={`Editar coluna ${stage.name}`}
                           aria-label={`Editar coluna ${stage.name}`}
+                          disabled={stageOrderPending}
                           onClick={() => handleOpenEditStage(stage)}
                         >
                           <Pencil size={13} />
@@ -1446,6 +1532,7 @@ export const Kanban: React.FC = () => {
                           $danger
                           title={`Excluir coluna ${stage.name}`}
                           aria-label={`Excluir coluna ${stage.name}`}
+                          disabled={stageOrderPending}
                           onClick={() => handleOpenEditStage(stage)}
                         >
                           <Trash2 size={13} />
@@ -1454,7 +1541,7 @@ export const Kanban: React.FC = () => {
                           type="button"
                           title={`Mover coluna ${stage.name} para a esquerda`}
                           aria-label={`Mover coluna ${stage.name} para a esquerda`}
-                          disabled={stages.indexOf(stage) === 0}
+                          disabled={stageOrderPending || stages.indexOf(stage) === 0}
                           onClick={() => handleMoveStage(stage.id, 'left')}
                         >
                           <ChevronLeft size={14} />
@@ -1463,7 +1550,7 @@ export const Kanban: React.FC = () => {
                           type="button"
                           title={`Mover coluna ${stage.name} para a direita`}
                           aria-label={`Mover coluna ${stage.name} para a direita`}
-                          disabled={stages.indexOf(stage) === stages.length - 1}
+                          disabled={stageOrderPending || stages.indexOf(stage) === stages.length - 1}
                           onClick={() => handleMoveStage(stage.id, 'right')}
                         >
                           <ChevronRight size={14} />
@@ -1625,7 +1712,7 @@ export const Kanban: React.FC = () => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'left');
                               }}
-                              disabled={stages.indexOf(stage) === 0}
+                              disabled={stageOrderPending || stages.indexOf(stage) === 0}
                             >
                               <ChevronLeft size={16} />
                             </ActionIcon>
@@ -1636,7 +1723,7 @@ export const Kanban: React.FC = () => {
                                 event.stopPropagation();
                                 handleMoveItem(item, 'right');
                               }}
-                              disabled={stages.indexOf(stage) === stages.length - 1}
+                              disabled={stageOrderPending || stages.indexOf(stage) === stages.length - 1}
                             >
                               <ChevronRight size={16} />
                             </ActionIcon>

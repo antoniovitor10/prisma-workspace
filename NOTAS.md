@@ -133,3 +133,45 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+## Oficina — 2026-10-20 — TASK124
+Implementação de arraste somente no título de coluna, sem mudança de regra de negócio. Gates locais passaram (backend690/33; frontend167). Contraprova4 falhas e restauração5. Falha inicial de seletor de cartão corrigida sem reduzir cobertura. Próximo: E2E focal/completo sob trava e inspeção das capturas, depois atualizar relatório e PR. Não entregar como validado antes desses resultados.
+
+## Oficina — continuação do CI em 20/10/2026
+CI39426972004 do fe019f1:backend/frontend/imagem/governança aprovados; E2E117PASS/6FAIL/40skips. Duas falhas são arraste mobile; quatro posteriores são document-alignment. Não declarar regressão verde.
+A revisão local confirmou bloqueio Nova Coluna:counter1FAIL/16filtrados e restauração17PASS; tipos/lint passaram. O runner anterior foi encerrado foraRED antes de concluir os gates completos para tratar novo achado.
+Novo contrato de soltura:handler antigo dependia de último MOVE;2 testes(stale e up-only) vão demonstrar RED. Runner973474 aplica correção para coordenada final UP e distância mínima, depois19afetados/tipos/lint/build/full/E2Etypes. Alterações ainda não commitadas; não mexer durante execução.
+E2E mobile inclui evidência de pointer/touch e viewport sem conteúdo de tarefa ou IDs. Espera infinita de alerta substituída por assert.poll com prazo padrão e remoção do listener para permitir cleanup quando o gesto não salvar. Causa das quatro falhas subsequentes ainda exige prova, não assumir resolvidas. Próximo:ler column-release-gates-run.log, publicar só após restauração/gates e executar focal/full nativo sobtrava. Watcher quarto agora981872.
+
+## Correção contraprovada de soltura e concorrência — 20/10/2026
+
+O bloqueio Nova Coluna durante reordenação foi demonstrado:retirar disabled gerou1FAIL/16filtrados; restaurado,17PASS. Há também guarda no submit, sem permitir criação concorrente durante o pedido.
+
+Dois cenários reproduziram outra falha de contrato:o último MOVE ainda aponta à origem, ou nenhum MOVE chega antes do UP. Contra o handler anterior ambos falharam(2FAIL/17filtrados). O handler agora lê elementFromPoint nas coordenadas finais e reconhece a distância mínima entre DOWN/UP; o último target de MOVE serve só ao destaque visual. Com isso,19afetados PASS, tipos forçados/lint/build PASS. Backend permanece690PASS/33skips, sem alteração desde o gate anterior.
+
+A hipótese de eventos touch coalescidos é compatível com a falha mobile do CI, mas ainda não chamar a causa específica daquele CI resolvida sem novo E2E. O teste registra geometria/escala/pointer/hitbooleans, sem título/IDs/segredos. O rollback passa a aguardar o mesmo alerta por expect.poll padrão, em vez de Promise infinita, preservando mensagem, quantidade de requests e igualdade da ordem. Isso permite cleanup quando não ocorre o alerta. Os quatro erros posteriores de document-alignment do CI continuam registrados e precisam de reconfirmação; não tratá-los como corrigidos por suposição.
+
+Vitest completo desta revisão, tipos explícitos do E2E e nativo focal/completo seguem pendentes no runner973474 e quarto coordenador981872. O completo167 anterior é da revisão anterior; não usar como gate desta. Nenhum timeout/retry/skip/cota novo, migration ou alteração de workflow. Revisão e QA oficiais pendentes.
+
+## Causa geométrica do E2E mobile confirmada — CI39438607088
+
+Head d480de2:CI backend/frontend/imagem/governança aprovados; E2E121PASS/2FAIL/40skips. As quatro falhas anteriores de document-alignment não se repetiram; a causa exata dessas quatro não foi capturada, não atribuir correção global por hipótese. Restaram os dois casos mobile de colunas.
+
+A evidência de pointer mostrou todos os oito MOVE, UP e lostcapture; início x94,398/y632,625 sobre o título, escala1/DPR2,75. O caminho passou pelo alvo emx346,05(overTarget=true), mas terminou emx382 com overTarget=false no MOVE e no UP. Portanto coalescência não explica estes registros do CI. A correção do handler continua válida para os dois cenários unitários contraprovados, mas não foi a causa específica desse ensaio.
+
+O roteiro calculava o fim pelo centro do retângulo completo, limitado só ao viewport. A coluna é parcialmente recortada pelo contêiner horizontal; o limite do viewport podia ficar fora dela. Agora o fim é o centro da interseção visível com viewport e ancestrais que recortam overflowX. O teste exige largura visível positiva e elementFromPoint pertencente ao alvo antes do gesto, além de todas as mesmas assertivas de persistência/reload/DTO/teclado/cancelamento/rollback. Sem force, clique sintético ou prazo/retry novo. Lint do arquivo aprovado; tipos explícitos corrigidos no processo1409692 e novo E2E aguardam a fila.
+
+O produto de d480de2 tem Vitest completo169PASS/41arquivos em203,56s,19afetadosPASS, tipos/lint/build e tipos do E2E anterior PASS. Este commit altera somente o roteiro e documentação; não certifica o novo E2E sem executá-lo. Revisão e QA oficiais pendentes.
+
+Quarto coordenador atual1409774 esperaGeometryE2Etypes0 antes do focal/full. Não repetir ensaio sem causa nova se ainda falhar.
+
+## CI da geometria corrigida aprovado — 20/10/2026
+
+CI39441941041, head25f12cd:backend,frontend,imagem,governança e E2E success; deploy skipped. Síntese nativa remota123PASS/40skips em4,5min, sem failed/flaky na síntese. Telemetria de toque:endx357/y632,625; pointerup com overTarget=true nos casos de persistência e rollback; cancelamento teve pointercancel, sem UP. Mesmas assertivas de ordem/DTO/teclado/rollback preservadas.
+
+A falha antiga de fimx382fora do alvo e os dois CIs anteriores permanecem como evidência de diagnóstico. O CI aprovado não substitui o focal local sob a trava nem a inspeção das capturas. Tipos explícitos frescos do helper e nativo local continuam enfileirados; produto possui local169PASS/41arquivos,19afetados e tipos/lint/build aprovados. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: fechamento TASK-124
+
+Focal local5PASS52,3s; full local123PASS/40skips/0FAIL13,1min. Quatro capturas1440/390 de persistência/rollback abertas. Front169/41,19afetados,back690/33,tipos/lint/build/E2Etypes aprovados. Cancelamentos de requisição e recorte herdado de filtros registrados. Sem migration; PR38 rascunho; revisão e QA oficiais pendentes.

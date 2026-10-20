@@ -1,3 +1,23 @@
+## [2026-10-20] — Oficina — CI da coluna com alvo visível
+- CI39441941041/head25f12cd:todos os cinco gates aprovados, deploy skipped. E2E123PASS/40skips,4,5min; toque termina emx357dentro do alvo.
+- Falhas anteriores preservadas e hipótese de coalescência separada da causa geométrica confirmada. Focal/capturas locais e tipos frescos do helper ainda pendentes.
+- Somente documentação neste commit; sem migração/produção. Revisão e QA oficiais pendentes.
+
+## [2026-10-20] — Oficina — destino touch dentro da coluna visível
+- CI39438607088:121PASS/2FAIL/40skips; quatro falhas documentais anteriores não se repetiram. Evidência confirmou MOVE chegando, porém o fim x382 fora do alvo, depois de x346 dentro. Não atribuir esse CI à coalescência.
+- Roteiro agora calcula a interseção visível da coluna e exige hit-test verdadeiro antes do gesto, sem alterar os asserts de comportamento. Lint do teste aprovado; tipos frescos e nativo pendentes.
+- Produto d480de2:fullVitest169PASS/41arquivos,19afetados,tipos/lint/build PASS. Sem novo comportamento de produto neste commit, migration, timeout/retry/skip ou produção. Revisão e QA oficiais pendentes.
+
+## [2026-10-20] — Oficina — soltura de coluna com movimentos coalescidos
+- Dois testes novos falham no handler anterior, que só confiava no último MOVE; UP agora resolve a coluna pela coordenada final e distância mínima. Afetados19PASS; tipos/lint/build PASS; fullVitest/E2E da revisão pendentes.
+- Nova Coluna bloqueada durante pedido de ordem; contraprova1FAIL e restauração17PASS. Teste de alerta limitado por assert padrão permite limpeza da fixture em falha.
+- CI anterior117PASS/6FAIL/40skips preservado, falha mobile ainda requer prova nativa; detalhes em relatorios/oficina-column-drag.md. Sem schema/workflow/dependências/produção. Revisão e QA oficiais pendentes.
+
+## [2026-10-20] — Oficina — TASK124: reordenação de colunas por arraste
+- Título recebe gesto de ponteiro/toque usando API existente, com rollback, proteção contra concorrência e resposta antiga após mudança de quadro. Botões de teclado mantidos.
+- Backend690 aprovados/33 skips existentes; frontend167/41; afetados17; contraprova4 falhas/1 controle, restauração5; tipos forçados/lint/build e tipos E2E aprovados.
+- E2E nativo e auto-QA nas duas larguras pendentes na fila; detalhes em relatorios/oficina-column-drag.md. Sem migration, mudança de workflow, dependência ou produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
@@ -1964,3 +1984,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: fechamento TASK-124
+
+Focal local5PASS52,3s; full local123PASS/40skips/0FAIL13,1min. Quatro capturas1440/390 de persistência/rollback abertas. Front169/41,19afetados,back690/33,tipos/lint/build/E2Etypes aprovados. Cancelamentos de requisição e recorte herdado de filtros registrados. Sem migration; PR38 rascunho; revisão e QA oficiais pendentes.

@@ -279,3 +279,101 @@ describe('Kanban do projeto abre direto', () => {
     await waitFor(() => expect(startTimer).toHaveBeenCalledWith('item-1'));
   });
 });
+
+const columnIds = () => Array.from(document.querySelectorAll<HTMLElement>('[data-stage-id]')).map(element => element.dataset.stageId);
+function pointColumn(fromId: string, toId: string, cancel = false, delivery: 'normal' | 'stale' | 'up-only' = 'normal') {
+  const source = document.querySelector<HTMLElement>(`[data-stage-drag-handle="${fromId}"]`);
+  const target = document.querySelector<HTMLElement>(`[data-stage-id="${toId}"]`);
+  expect(source).not.toBeNull(); expect(target).not.toBeNull();
+  const original = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+  class TestPointerEvent extends MouseEvent {
+    pointerId: number;
+    constructor(type: string, init: PointerEventInit = {}) { super(type, init); this.pointerId = init.pointerId ?? 1; }
+  }
+  vi.stubGlobal('PointerEvent', TestPointerEvent);
+  let releasing = false;
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => delivery === 'stale' && !releasing ? source : target });
+  Object.defineProperty(source!, 'setPointerCapture', { configurable: true, value: vi.fn() });
+  Object.defineProperty(source!, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+  try {
+    fireEvent.pointerDown(source!, { pointerId: 7, button: 0, clientX: 20, clientY: 20 });
+    if (delivery !== 'up-only') fireEvent.pointerMove(source!, { pointerId: 7, button: 0, clientX: delivery === 'stale' ? 30 : 120, clientY: 20 });
+    if (cancel) fireEvent.pointerCancel(source!, { pointerId: 7 });
+    releasing = true;
+    fireEvent.pointerUp(source!, { pointerId: 7, button: 0, clientX: 120, clientY: 20 });
+  } finally {
+    if (original) Object.defineProperty(document, 'elementFromPoint', original);
+    else Reflect.deleteProperty(document, 'elementFromPoint');
+    vi.unstubAllGlobals();
+  }
+}
+
+describe('arraste de colunas', () => {
+  it.each(['stale', 'up-only'] as const)('usa o ponto de soltura quando movimentos chegam incompletos: %s', async delivery => {
+    const reordered = vi.spyOn(api, 'reorderStages').mockResolvedValue(undefined);
+    await renderRota('/boards/board-1');
+    pointColumn('stage-1', 'stage-2', false, delivery);
+    await waitFor(() => expect(reordered).toHaveBeenCalledWith('board-1', ['stage-2', 'stage-1']));
+    expect(columnIds()).toEqual(['stage-2', 'stage-1']);
+  });
+
+  it('persiste a ordem otimista e impede outro arraste durante o pedido', async () => {
+    let finish!: () => void;
+    const reordered = vi.spyOn(api, 'reorderStages').mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+    await renderRota('/boards/board-1');
+    pointColumn('stage-1', 'stage-2');
+    expect(reordered).toHaveBeenCalledWith('board-1', ['stage-2', 'stage-1']);
+    expect(columnIds()).toEqual(['stage-2', 'stage-1']);
+    expect(screen.getByRole('button', { name: 'Nova Coluna' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Mover coluna A fazer para a esquerda' })).toBeDisabled();
+    pointColumn('stage-2', 'stage-1');
+    expect(reordered).toHaveBeenCalledTimes(1);
+    await act(async () => finish());
+    expect(screen.getByRole('button', { name: 'Nova Coluna' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Mover coluna A fazer para a esquerda' })).not.toBeDisabled();
+  });
+
+  it('restaura a ordem confirmada quando o servidor recusa o arraste', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(api, 'reorderStages').mockRejectedValue(new Error('Ordem recusada pelo servidor'));
+    await renderRota('/boards/board-1');
+    pointColumn('stage-1', 'stage-2');
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('Ordem recusada pelo servidor'));
+    expect(columnIds()).toEqual(['stage-1', 'stage-2']);
+    expect(screen.getByRole('button', { name: 'Mover coluna A fazer para a direita' })).not.toBeDisabled();
+  });
+
+  it('cancela o gesto sem persistir ou mover cartões', async () => {
+    const reordered = vi.spyOn(api, 'reorderStages').mockResolvedValue(undefined);
+    await renderRota('/boards/board-1');
+    const card = await screen.findByRole('heading', {name:/Cartão do quadro um/});
+    pointColumn('stage-1', 'stage-2', true);
+    expect(reordered).not.toHaveBeenCalled();
+    expect(columnIds()).toEqual(['stage-1', 'stage-2']);
+    expect(card.closest('[data-stage-id]')).toHaveAttribute('data-stage-id', 'stage-1');
+  });
+
+  it('não restaura colunas antigas quando o quadro muda antes da resposta', async () => {
+    let refuse!: (error: Error) => void;
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(api, 'reorderStages').mockImplementation(() => new Promise<void>((_resolve, reject) => { refuse = reject; }));
+    vi.mocked(api.getBoardStages).mockImplementation(async boardId => boardId === 'board-2'
+      ? [{id:'stage-9',name:'Outro fluxo',position:1000,category:1}]
+      : etapas);
+    await renderRota('/boards/board-1');
+    pointColumn('stage-1', 'stage-2');
+    const selector = screen.getByRole('option', {name:'Planejamento'}).closest('select')!;
+    fireEvent.change(selector, {target:{value:'board-2'}});
+    await screen.findByRole('heading', {name:/Outro fluxo/});
+    await act(async () => refuse(new Error('Pedido anterior recusado')));
+    expect(columnIds()).toEqual(['stage-9']);
+  });
+
+  it('preserva o botão acessível para reordenar sem arraste', async () => {
+    const reordered = vi.spyOn(api, 'reorderStages').mockResolvedValue(undefined);
+    await renderRota('/boards/board-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Mover coluna A fazer para a direita' }));
+    await waitFor(() => expect(reordered).toHaveBeenCalledWith('board-1', ['stage-2', 'stage-1']));
+    expect(columnIds()).toEqual(['stage-2', 'stage-1']);
+  });
+});
