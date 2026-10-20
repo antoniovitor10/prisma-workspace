@@ -1,3 +1,7 @@
+## Oficina — checkpoint Brasília 2026-10-20
+
+Cinco testes de rateio passaram. Contraprova teve cinco falhas (script esperava quatro e um controle), fontes restauradas em finally; compilação e cinco testes finais passaram. Logs próprios c6-timezone-{green,red,green-final}.log. API3120 ainda requer restart e E2E L08 diário/semanal. C2 estilos locais não incluídos neste commit; baseline aberto antes. Não há contraprova ativa.
+
 ## 2026-10-20 — Oficina: checkpoint C6 durante espera de navegador
 
 - Implementação C6 em andamento, sem alteração visual antes das capturas. BoardRepository omite quadros de projeto arquivado sem apagá-los; PermissionService e ProjectAccessService usam lote e preservam regras existentes. Interface tem fallback para implementações alternativas, produção EF possui override em lote.

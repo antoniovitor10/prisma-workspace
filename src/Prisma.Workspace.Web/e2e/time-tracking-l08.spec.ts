@@ -219,19 +219,24 @@ test('L08 períodos: apontamento sobreposto deve ser recusado sem aumentar o tot
   expect(evidence).toEqual({ status: 400, count: 1, seconds: 61 });
 });
 
-test('L08 Brasília: diário e semana dividem intervalo na meia-noite local', async ({ page, request }) => {
-  let evidence: { daily: number[]; weekly: number[] } | undefined;
+test('L08 Brasília: diário divide o intervalo na meia-noite local', async ({ page, request }) => {
   await withTimeFactory(page, request, async f => {
     const task = await f.task(); await f.manual(task.id, '2026-10-12T23:59:30-03:00', '2026-10-13T00:00:30-03:00');
     expect(await total(f, task.id)).toMatchObject({ totalSeconds: 60 });
     const monday = await f.get<DayTime[]>('/api/me/time/daily-by-task?date=2026-10-12');
     const tuesday = await f.get<DayTime[]>('/api/me/time/daily-by-task?date=2026-10-13');
-    const weekly = await f.get<WeeklyTime>('/api/TimeEntries/my/weekly?weekStart=2026-10-12');
-    expect(weekly.weekStart).toBe('2026-10-12'); expect(weekly.days).toHaveLength(7);
-    evidence = { daily: [monday, tuesday].map(day => day.filter(entry => entry.workItemId === task.id).reduce((sum, entry) => sum + entry.seconds, 0)),
-      weekly: weekly.days.slice(0, 2).map(day => day.totalSeconds) };
+    expect([monday, tuesday].map(day => day.filter(entry => entry.workItemId === task.id)
+      .reduce((sum, entry) => sum + entry.seconds, 0))).toEqual([30, 30]);
   });
-  // Gaps 3/4: diário usa UTC; semanal usa Brasília, porém atribui o intervalo inteiro ao início.
-  test.fail(true, 'SPEC-TIME-TRACKING: dias em UTC e falta divisão do intervalo à meia-noite em Brasília.');
-  expect(evidence).toEqual({ daily: [30, 30], weekly: [30, 30] });
+});
+
+test('L08 Brasília: semana divide o intervalo na meia-noite local', async ({ page, request }) => {
+  await withTimeFactory(page, request, async f => {
+    const task = await f.task(); await f.manual(task.id, '2026-10-12T23:59:30-03:00', '2026-10-13T00:00:30-03:00');
+    expect(await total(f, task.id)).toMatchObject({ totalSeconds: 60 });
+    const weekly = await f.get<WeeklyTime>('/api/TimeEntries/my/weekly?weekStart=2026-10-12');
+    expect(weekly.weekStart).toBe('2026-10-12');
+    expect(weekly.days).toHaveLength(7);
+    expect(weekly.days.slice(0, 2).map(day => day.totalSeconds)).toEqual([30, 30]);
+  });
 });

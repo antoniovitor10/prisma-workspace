@@ -3,5 +3,5 @@ using MediatR;
 
 namespace Prisma.Workspace.Application.Features.MeTime.Queries;
 
-/// <summary>Total por tarefa nos lançamentos que começaram no dia (UTC).</summary>
+/// <summary>Total por tarefa no recorte do dia civil de Brasília, inclusive períodos iniciados antes dele.</summary>
 public record GetMyDailyByTaskQuery(string UserId, DateOnly Date) : IRequest<IReadOnlyList<TaskDayTimeDto>>;
