@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: evidências de C1, C3 e C4
+
+Relatórios por grupo consolidados com resultados reais, contraprovas e auto-QA1440/390. Backend completo724PASS/33skips existentes; frontend173PASS/45 arquivos, tipos forçados, lint e builds aprovados. C3/C4 nativo27PASS e D14/D20 fechamento5PASS após3 falhas esperadas. C1 focal5PASS e Brasília5PASS. E2E completo enfileirado; C5 captura do grafo reforçada para aguardar conteúdo. Wiki/Topbar têm ressalvas registradas, sem alegar correção universal. Revisão e QA oficiais pendentes.
+
 ## Integração QA/C5 local, 20/10/2026
 
 C5 f7fb3a5 integrado à QA após C3/C4 d8ad460. Auth mesclou automaticamente nome completo e orientação do administrador. Documentação foi resolvida preservando os fatos de ambos os lados; marcadores do PROGRESS detectados no commit local foram removidos antes de publicar o merge. Build conjunto, restart somente API3120 e gates finais ainda pendentes. O próximo lote nativo fair usa scratch C5 para seu teste focado e QA para controles/C1; não tomar isso como teste completo do merge.

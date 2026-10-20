@@ -17,3 +17,5 @@ Autorrevisão parcial:nenhum alto/médio confirmado nas mudanças; grades respei
 Migration:não. REVISAO e QA oficiais:pendentes. Nenhuma produção/main/mergePR/deploy ou nova aprovação humana.
 
 Atualização 08:50 UTC: C2 concluiu o afetado com7PASS; a contraprova reproduziu3FAIL/4PASS e o verde final voltou a7PASS. Seis after foram abertos e inspecionados. C6 seletor real/reativação também3PASS, seis capturas inspecionadas. Relatos individuais emoficina-qa-2.md e oficina-qa-6.md. C3/C4/D14/D20 seguem pendentes. C1 capturas serão reenquadradas para mostrar os controles depois da rolagem vertical, mantendo asserções geométricas e funcionais.
+
+Fechamento dos recortes C1/C3/C4: relatos próprios oficina-qa-1.md, oficina-qa-3.md e oficina-qa-4.md. C3/C4 conjunto27PASS, contraprova final D14/D20 3FAIL/2PASS e restauração5PASS. Gates combinados724PASS/33skip backend e173PASS frontend. C5 focal5PASS; captura do grafo será fortalecida para esperar o conteúdo real antes da conclusão visual. E2E completo combinado pendente. Ressalvas visuais estão nos relatos individuais.
