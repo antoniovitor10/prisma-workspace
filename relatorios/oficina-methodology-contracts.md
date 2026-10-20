@@ -27,3 +27,10 @@ Atualização intermediária: build backend aprovado com três avisos anteriores
 methodology-focal:9PASS em2,5min, quatro valores internos em1440/390. O input de pontos, o cartão8pts, backlog e relatório de velocidade foram comprovados; o valor interno persistido permaneceu igual. SQL QA está saudável. O log contém SqlException com Operation cancelled by user durante navegação entre rotas e negociaçõesSignalR canceladas; registrar a limitação, sem alegar indisponibilidade nem suprimir erros.
 
 Ao abrir as capturas, o campo de pontos no detalhe ficava abaixo da dobra:toHaveValue comprovava o valor, mas a imagem mostrava só descrição. Antes de começar a suíte completa, o E2E recebeu scrollIntoViewIfNeeded e toBeVisible para capturar o próprio campo. Nenhuma asserção removida ou timeout aumentado. Full nativo enfileirado ainda não começou; novas capturas devem ser abertas depois. Revisão e QA oficiais pendentes.
+
+
+## Fechamento local — 20/10/2026 15:21 UTC
+
+Frontend completo181PASS/41arquivos; afetados52PASS, contraprova5FAIL/15controles, restauração20PASS. Backend690PASS/33skips existentes. Build backend, tsc-b --force, lint, build frontend e tipos explícitos E2E aprovados. O full nativo da própria branch encerrou127PASS/40skips existentes/0FAIL em16,1min, depois do focal9PASS. Fonte funcional5b722bf e captura reforçadaf132e1f. As capturas renovadas de cartões desktop/mobile e detalhe mobile mostram8pts/Story Points8; o campo permanece acessível após rolagem comum. A barra de filtros mobile ainda apresenta recorte herdado nesta branch, tratado separadamente no PR27; não confundir os escopos.
+
+O log completo contém500 associados a cancelamentos SQL/SignalR durante navegação; os testes passaram, mas isso não certifica ausência de erros de console/servidor. Não houve supressão, aumento de prazo ou nova exclusão. Autorrevisão final sem alto/médio confirmado neste recorte; risco de altura adicional no detalhe mobile conferido nas capturas. Auto-QA nas duas larguras realizado. Migration:não. REVISAO e QA oficiais:pendentes. Entrega somente em PR37 rascunho.

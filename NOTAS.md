@@ -143,3 +143,8 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 methodology-focal:9PASS em2,5min, quatro valores internos em1440/390. O input de pontos, o cartão8pts, backlog e relatório de velocidade foram comprovados; o valor interno persistido permaneceu igual. SQL QA está saudável. O log contém SqlException com Operation cancelled by user durante navegação entre rotas e negociaçõesSignalR canceladas; registrar a limitação, sem alegar indisponibilidade nem suprimir erros.
 
 Ao abrir as capturas, o campo de pontos no detalhe ficava abaixo da dobra:toHaveValue comprovava o valor, mas a imagem mostrava só descrição. Antes de começar a suíte completa, o E2E recebeu scrollIntoViewIfNeeded e toBeVisible para capturar o próprio campo. Nenhuma asserção removida ou timeout aumentado. Full nativo enfileirado ainda não começou; novas capturas devem ser abertas depois. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina TASK123: validação final
+
+Full nativo127PASS/40skips/0FAIL em16,1min; frontend181PASS e backend690PASS/33skips. Capturas1440/390 conferidas, pontos8 visíveis. Cancelamentos com500 preservados como limitação. Sem migration/produção; PR37 rascunho, revisão e QA oficiais pendentes.
