@@ -16,7 +16,7 @@ Não foram modificados aplicação, CI, Compose de produto, serviços institucio
 - Contraprova:uma cópia privada teve o cabeçalho corrompido; VERIFYONLY recusou com exit1. O original intacto foi novamente aprovado com exit0. A cópia inválida foi removida do host e do container de QA.
 - Dois arquivos sintéticos representando anexo e chave foram copiados com Compose cp de containers parados e recuperados em volumes novos; SHA256 idêntico nos dois arquivos. Helpers próprios sem portas, com limite de64MB/0,1CPU, já removidos com os quatro volumes próprios. A primeira tentativa encontrou pools Docker esgotados; somente esses helpers passaram a network_mode:none. Nenhuma rede compartilhada foi alterada.
 
-Scripts, logs e backup ficam apenas em .runlogs/oficina, ignorados pelo Git. A conferência SQL pontual de11MB não é suíte pesada; as suítes de produto continuaram serializadas. Os resultados não vêm de produção.
+Scripts, logs e backup ficam apenas em .runlogs/oficina, ignorados pelo Git. A conferência SQL pontual de11MB não é suíte pesada; as suítes de produto continuaram serializadas. Os resultados não vêm de produção. A base restaurada e o backup temporário no SQL foram removidos nominalmente ao encerrar o ensaio; a fonte de QA permaneceu intacta.
 
 ## Autorrevisão e limites
 
