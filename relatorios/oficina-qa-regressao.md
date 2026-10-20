@@ -1,6 +1,6 @@
 # Oficina — regressão integrada C1 a C6
 
-Base a2797a7; PR 27 em rascunho. Fonte de produto c758, ajuste semanal transportado em 8c2589e; d21cf2e acrescentou a evidência semanal. Os relatórios qa-1 a qa-6 detalham os recortes e suas contraprovas. Sem produção ou migration nova. REVISAO e QA oficiais: pendentes.
+Base a2797a7; PR 27 em rascunho. Fonte de produto c758a98, ajuste semanal transportado em 8c2589e; d21cf2e acrescentou a evidência semanal. Os relatórios qa-1 a qa-6 detalham os recortes e suas contraprovas. Sem produção ou migration nova. REVISAO e QA oficiais: pendentes.
 
 ## Resultado atual: ainda há falhas
 
@@ -8,7 +8,7 @@ A execução qa-full-regression-final encerrou em 20/10/2026 às 15:58 UTC: 230 
 
 As três falhas inesperadas foram document-alignment: hierarquia e dependência no desktop, participantes no mobile. Os artefatos mostram que o resolvedor procurou INFRACOES e caiu em projects[0], embora o seed atual seja DEMO. No desktop, escolheu um projeto L08 com uma única tarefa, sem filha ou segundo alvo; no mobile a atribuição recebeu400 por falta de acesso ao projeto escolhido. A regra de autorização está correta e será preservada.
 
-A correção da seleção está em validação na branch de estabilidade. O seletor explícito prefere DEMO, aceita INFRACOES como legado e falha se nenhum seed existir. Contraprova unitária real: três falhas e dois controles aprovados com a seleção antiga; cinco aprovados após restauração. Ainda não transportada para esta branch. É necessário novo focal e full após os gates e o transporte; não declarar verde integral.
+A correção da seleção foi validada na branch de estabilidade e transportada como8e47329. O seletor explícito prefere DEMO, aceita INFRACOES como legado e falha se nenhum seed existir. Contraprova unitária real: três falhas e dois controles aprovados com a seleção antiga; cinco aprovados após restauração. Após o transporte, tipos forçados, lint, build e tipos E2E passaram; novo frontend completo178 aprovados em46 arquivos,196,47 segundos. O focal qa-canonical-seed-focal aprovou17 casos, incluindo setup, em2,1 minutos, cobrindo todos os casos document-alignment nas duas larguras. O novo full está enfileirado; não declarar verde integral.
 
 ## Evidências anteriores preservadas
 
@@ -22,3 +22,8 @@ A correção da seleção está em validação na branch de estabilidade. O sele
 ## Autorrevisão e auto-QA
 
 Autorrevisão identificou o erro de seleção de fixture e bloqueia o fechamento integral. Auto-QA dos recortes C1 a C6 possui provas nas duas larguras, conforme relatórios próprios. Não substitui revisão e QA oficiais. Riscos conhecidos de horas, cancelamentos de requisição e limitações visuais adjacentes continuam registrados nos grupos; nenhum prazo, retry, cota ou asserção foi reduzido.
+
+
+## Atualização de auto-QA — 20/10/2026 16:22 UTC
+
+O focal novo17PASS ocorreu no mesmo banco QA da execução que falhou, sem recriar banco ou enfraquecer hierarquia, relacionamento ou autorização. O seletor explícito resolveu os três casos observados e os demais controles desse arquivo. O último full continua230/3/40 até que a nova execução integral termine. Nenhum skip ou falha esperada novo foi introduzido.

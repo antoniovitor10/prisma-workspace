@@ -50,3 +50,8 @@ Relatórios por grupo consolidados com resultados reais, contraprovas e auto-QA1
 ### 2026-10-20 — Oficina: full integrado ainda vermelho
 
 Resultado real:230 aprovados,3 falhas inesperadas,40 skips,28,9min. Os três casos document-alignment escolheram fixture variável pelo fallbackINFRACOES→projects[0]; seed atualDEMO. Correção com contraprova3FAIL/2controles→5PASS em validação na branch de estabilidade, ainda não transportada. Novo focal/full obrigatório; não alegar verde. Ver relatorios/oficina-qa-regressao.md.
+
+
+### 2026-10-20 — Oficina: seletor corrigido com focal integrado aprovado
+
+Cherry8e47329 do seletor explícito; frontend178PASS46arquivos196,47s, afetados5PASS e tipos/lint/build/E2Etypes aprovados. Novo document-alignment17PASS2,1min nas duas larguras e no banco anterior. Full novo queued; preservar230/3/40 anterior e as quatro falhas esperadas de horas. PR27 rascunho; revisão e QA oficiais pendentes.
