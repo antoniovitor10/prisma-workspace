@@ -24,3 +24,5 @@ Não verificados neste checkpoint: suíte completa E2E, auto-QA nas duas largura
 Autorrevisão parcial: chave permanece nos dados técnicos por compatibilidade, não no rótulo operacional; testes preservam busca técnica e payloads recebidos. API não altera chave de projeto existente. Auto-QA pendente.
 
 Migration: não. Nenhuma entidade, índice, schema, ambiente protegido ou produção alterados. REVISAO e QA oficiais: pendentes. Não é ENTREGA concluída.
+
+Atualização 08:58 UTC: primeiro focal nativo1PASS/2FAIL encontrou uma exposição real no painel Projetos vigentes de Meu trabalho. O teste de componente anterior tinha projects vazio e não cobria esse painel. Corrigido somente o rótulo e adicionada fixture preenchida. Novo afetado2PASS; restaurar a versão1084317 reproduziu1FAIL (outro caso fora do filtro); finally restaurou e2PASS. Tipos,lint,build e novo fullVitest164PASS/41arquivos. Asserção nativa body.includes(key) foi preservada; rerun e fullE2E pendentes. Backend permanece idêntico ao validado691/33skips.

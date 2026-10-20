@@ -5,6 +5,7 @@
 - Frontend afetado18/18, red7falhas/11controles com componentes anteriores, fontes restauradas; full163/163(41arquivos), tipos/lint/build verdes. Backend afetado rodando; contraprova/verde final backend, E2E/full e auto-QA pendentes. Não é conclusão da task.
 - Sem migration, produção, main, merge ou deploy. REVISAO e QA oficiais pendentes; próximo passo: concluir gates e validar jornada nas duas larguras quando o mutex permitir.
 - Atualização:backend contraprova2FAIL, restauração e verde final18/18PASS. FullxUnit691PASS/33skips existentes/0FAIL; runtime próprio3123/3125 saudável, cacheVite exclusivo. Native/E2E/auto-QA continuam pendentes na trava global.
+- Native focal encontrou chave ainda visível em Projetos vigentes:1PASS/2FAIL. Painel corrigido, fixture preenchida adicionada;2PASS, contraprova1FAIL e restauração2PASS. Tipos/lint/build e fullVitest164PASS/41arquivos verdes; rerun/fullE2E/auto-QA pendentes.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 

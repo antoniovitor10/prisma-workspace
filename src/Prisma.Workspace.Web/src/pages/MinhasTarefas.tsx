@@ -123,7 +123,7 @@ export const MinhasTarefas:React.FC=()=>{
 
       <Panel><PanelHeader><Columns3 size={14}/><h2>Projetos vigentes</h2><small>{data?.projects.length??0}</small></PanelHeader><RailList>
         {data?.projects.map(projeto=><RailItem key={projeto.id}>
-          <strong>{projeto.overdueTasks>0&&<AlertCircle size={11} color="#D92D20"/>} {projeto.key} · {projeto.name}</strong>
+          <strong>{projeto.overdueTasks>0&&<AlertCircle size={11} color="#D92D20"/>} {projeto.name}</strong>
           <p>{projeto.openTasks} aberta(s){projeto.overdueTasks>0&&<> · {projeto.overdueTasks} atrasada(s)</>}
             {projeto.currentSprintName&&<> · {projeto.currentSprintName}</>}</p>
         </RailItem>)}

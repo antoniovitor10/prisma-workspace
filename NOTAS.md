@@ -1,3 +1,7 @@
+## Oficina key — 08:58 UTC, vazamento residual corrigido
+
+Native1PASS/2FAIL mostrou a chave no painel Projetos vigentes de Meu trabalho. A fixture antiga tinha projects vazio. Fonte corrigida, afetado2PASS, red1FAIL e finally2PASS; tipos/lint/build/fullVitest164PASS/41arquivos. Fontes atuais verdes. Asserção nativa foi mantida. Novo batch16979 daQA aguarda global com focal causal e fullKey depois dos jobs independentes. API3123 já usa fakeCLI18747, PID atual emapi-current.pid, fonte backend igual à validada691/33skips. Não é ENTREGA final; auto-QA/fullE2E pendentes.
+
 ## Oficina — 2026-10-20 07:30UTC, atualização autoritativa
 
 Backend afetado final18/18PASS após contraprova2FAIL e restauração. FullxUnit691PASS/33skips antigos/0FAIL. Fontes e binários verdes. API3123/Vite3125 iniciados, DBPrisma_BoardColumns_Oficina_Key_Seeded emQA3111, cachesVite privados em.runlogs. PIDs em.runlogs/oficina/*-current.pid. Nativeproject-key-hidden enfileirado nofollowup51823 da oficina-qa, antes de fullOrg. Ainda pendentes fullE2E eauto-QA/capturas; não é ENTREGA final. REVISAO/QA oficiais pendentes.

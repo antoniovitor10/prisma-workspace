@@ -45,3 +45,16 @@ describe('Meu trabalho', () => {
   });
 });
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+it('esconde a chave no painel de projetos vigentes preservando nome e contagem', async () => {
+  vi.spyOn(api, 'getMyWork').mockResolvedValue({ ...dashboard, projects: [{ id: 'project-1', key: 'TECHNICAL-KEY',
+    name: 'Projeto sem prefixo', openTasks: 2, overdueTasks: 0, currentSprintName: null }] });
+  vi.spyOn(api, 'getMyActiveTimer').mockResolvedValue(null);
+  vi.spyOn(api, 'getUserId').mockReturnValue('user-1');
+  vi.spyOn(api, 'getToken').mockReturnValue(null);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<MemoryRouter><QueryClientProvider client={client}><AppThemeProvider><MinhasTarefas /></AppThemeProvider></QueryClientProvider></MemoryRouter>);
+  expect(await screen.findByText('Projeto sem prefixo', { exact: true })).toBeVisible();
+  expect(screen.getByText('2 aberta(s)')).toBeVisible();
+  expect(screen.queryByText(/TECHNICAL-KEY/)).not.toBeInTheDocument();
+});
