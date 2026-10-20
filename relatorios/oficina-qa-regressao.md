@@ -27,3 +27,14 @@ Autorrevisão identificou o erro de seleção de fixture e bloqueia o fechamento
 ## Atualização de auto-QA — 20/10/2026 16:22 UTC
 
 O focal novo17PASS ocorreu no mesmo banco QA da execução que falhou, sem recriar banco ou enfraquecer hierarquia, relacionamento ou autorização. O seletor explícito resolveu os três casos observados e os demais controles desse arquivo. O último full continua230/3/40 até que a nova execução integral termine. Nenhum skip ou falha esperada novo foi introduzido.
+
+
+## Nova rodada local e isolamento de sincronização — 20/10/2026 18:23 UTC
+
+qa-canonical-seed-full encerrou230PASS/3FAIL/40skips em26,6min. Os três casos de document-alignment anteriormente corrigidos passaram. As novas falhas foram board-stage-sync desktop/mobile (o primeiro quadro compartilhado já não tinha tarefa fora da conclusão) e C6mobile com quadro ainda em carregamento aos5s. Não se apresenta esta execução como verde.
+
+A correção do teste de sincronização vem do PR30:b52addd, transportada comoe9023e7. Cria fixture exclusiva e confere categoriaDone5, stageId e completedAt pela API, além dos asserts originais no drawer/lista/reload. Contraprova própria do PR30:2FAIL/1setup, esperado Concluído/recebido A fazer; restaurado3PASS. Não houve alteração adicional de produto. Lint e tipos explícitos E2E desta branch aprovados. Novo focal/full qa-isolated-sync-* aguarda trava global. Frontend178PASS/46arquivos e backend724PASS/33skips permanecem da mesma versão de produto.
+
+C6:diagnóstico passivo sem alterar prazo/asserção teve3PASS/22,8s. Reativação retornou estágios em125–140ms e itens em169–170ms, todos200. Isso não explica retroativamente o timeout anterior. Log/snapshot anterior e métricas numéricas posteriores preservados; nenhuma correção especulativa em cache/API.
+
+CI39457139195 de105188b:233PASS/40skips, cinco jobs aprovados/deploy ignorado. Nova CI de e9023e7 em andamento. Quatro falhas esperadas herdadas B07/overlap continuam lacunas conhecidas, não funcionalidades corrigidas. Autorrevisão e auto-QA focais registradas; suítes finais ainda pendentes. Migration:não. REVISAO e QA oficiais:pendentes.
