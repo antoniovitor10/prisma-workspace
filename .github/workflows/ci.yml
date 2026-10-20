@@ -92,6 +92,30 @@ jobs:
           cd image
           sha256sum prisma-image.tar.gz > prisma-image.sha256
           python3 ../scripts/deployment-manifest.py > migrations.json
+      - name: Inventory candidate runtime
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: prisma-workspace:${{ github.sha }}
+          format: spdx-json
+          output-file: image/sbom-runtime.spdx.json
+          syft-version: v1.55.0
+          dependency-snapshot: false
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Inventory frontend build dependencies
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        env:
+          SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES: 'true'
+        with:
+          path: src/Prisma.Workspace.Web
+          format: spdx-json
+          output-file: image/sbom-frontend.spdx.json
+          syft-version: v1.55.0
+          dependency-snapshot: false
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Record unsigned candidate provenance
+        run: python3 scripts/candidate-provenance.py image
       - name: Store candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

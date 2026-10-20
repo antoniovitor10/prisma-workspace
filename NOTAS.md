@@ -1,3 +1,37 @@
+## 2026-10-20 — Oficina: cobertura dev confirmada no artefato real
+
+CI39415279231 do6e40688 passou com deploy skipped. Artefato12260922254: quatro hashes corretos,189pacotes runtime e367frontend, incluindo Vite/Vitest/TypeScript/Playwright. Isso fecha a retificação do primeiro inventário203 sem dev. Proveniência permanece unsigned e materiais parciais. PR36 em rascunho; revisão/QA oficiais pendentes.
+
+## 2026-10-20 — Oficina: corrigir cobertura dev do inventário frontend
+
+Artefato real203pacotes não continha ferramentas dev: relato anterior estava incorreto. Flag oficial do Syft agora true somente na etapa frontend; contraprova local false/true comprovou exclusão/inclusão. YAML difere só nessa env; runtime/deploy/permissões preservados. Reconfirmar novo artefato automático antes de fechar cobertura dev. PR36 segue rascunho; revisões oficiais pendentes.
+
+## 2026-10-20 — Oficina: validação real da candidata TASK-505
+
+CI 39409267216 passou, deploy ignorado. Artefato 12259116077 conferido: quatro hashes corretos, 189 pacotes runtime e 203 frontend; proveniência unsigned coerente com merge sintético 6a761ba. Dez testes e contraprova documentados no relatório. PR36 permanece em rascunho; revisão e QA oficiais pendentes. Próximo passo: revisão humana, sem publicação automática.
+
+# Oficina — TASK-505, checkpoint de 20/10/2026
+
+Branch ci/supply-chain-artifacts-20261020, origem a2797a7 e dependências por merges próprios a9d2c8e/9677abd. Não é merge de PR/main. Proposta reversível em DECISIONS, story/spec aprovadas para o recorte. Dez testes de integridade/privacidade passaram, contraprova2FAIL/8PASS/restauração10PASS, YAML conferido e demais jobs preservados. Syft1.55 oficial validado por checksum; smoke SPDX2.3 aprovado após corrigir tag do seletor no harness privado.
+
+Próximo:PR em rascunho e leitura dos checks automáticos, sem workflow run. Conferir SBOMs e quatro hashes da proveniência no artefato real antes de ENTREGA. A declaração é unsigned e não atribui nívelSLSA. Nenhum segredo deve ser incluído em documento/relatório. Scripts e scanner privados ficam em .runlogs; não instalar globalmente. Não executar scripts de produção no servidor para validar esta task.
+
+REVISAO e QA oficiais pendentes. Sem mudança de produto, nova migration, publicação, main ou deploy.
+
+# Oficina npm — checkpoint 20/10/2026, 08:54 UTC
+
+Branch fix/npm-security-20261020, base a2797a7, somente worktree própria. Frontend concluído localmente:164Vitest,tipos/lint/build,regressão red2/green2,auditoria0 com contraprova42/restauração0. Node_modules é físico e privado desta worktree. Nunca substituir instalações das outras branches. npm11.19.1 usado via npx por erro confirmado do npm10, sem mudar global.
+
+Build da solução e fullxUnit690PASS/33 skips existentes concluídos. Pendentes:nativeE2E/auto-QA e relatório final. Planejar API/Vite próprias apenas em3120–3129 e banco prefixado noSQLQA3111, sob mutexCPU e navegador. Não usar artefato de outra branch como se fosse este. Relatório relatorios/oficina-npm-security.md e logs.runlogs/oficina detalham todos os resultados. REVISAO e QA oficiais pendentes; sem produção/main/merge/deploy/migration nova.
+
+# Oficina — TASK-503, checkpoint de 20/10/2026
+
+Branch fix/nuget-security-20261020, base a2797a7. Backend completo:693 aprovados,33 skips existentes,0 falhas; build aprovado. Auditoria com caminho absoluto confirmou cinco projetos sem alertas; a chamada relativa encontrou erro interno do SDK. Contraprova correta de annotation-xml:2 falhas antigas,4 aprovados após restaurar. Fontes e binários verdes. A hipótese descartada de escape genérico e seus limites estão no relatório.
+
+Frontend completo está enfileirado em .runlogs/oficina/full-gates.py; verificar frontend-*.log e full-gates-run.log. E2E completo está no plano do browser de oficina-qa, job nuget-full-e2e, com wrapper privado. API/Vite3128/3129 só podem iniciar em sequência com C5/Npm sob o mutex CPU; o bootstrap já encerrou seu próprio processo. Não alterar node_modules compartilhado da OficinaOrg por esta branch.
+
+Próximo:inspecionar os resultados, auto-QA e relatório final antes de ENTREGA. REVISAO e QA oficiais pendentes. Sem produção, main, deploy ou migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

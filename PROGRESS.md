@@ -1,3 +1,33 @@
+## 2026-10-20 — Oficina: cobertura dev confirmada no artefato real
+
+CI39415279231 do6e40688 passou com deploy skipped. Artefato12260922254: quatro hashes corretos,189pacotes runtime e367frontend, incluindo Vite/Vitest/TypeScript/Playwright. Isso fecha a retificação do primeiro inventário203 sem dev. Proveniência permanece unsigned e materiais parciais. PR36 em rascunho; revisão/QA oficiais pendentes.
+
+## 2026-10-20 — Oficina: corrigir cobertura dev do inventário frontend
+
+Artefato real203pacotes não continha ferramentas dev: relato anterior estava incorreto. Flag oficial do Syft agora true somente na etapa frontend; contraprova local false/true comprovou exclusão/inclusão. YAML difere só nessa env; runtime/deploy/permissões preservados. Reconfirmar novo artefato automático antes de fechar cobertura dev. PR36 segue rascunho; revisões oficiais pendentes.
+
+## 2026-10-20 — Oficina: validação real da candidata TASK-505
+
+CI 39409267216 passou, deploy ignorado. Artefato 12259116077 conferido: quatro hashes corretos, 189 pacotes runtime e 203 frontend; proveniência unsigned coerente com merge sintético 6a761ba. Dez testes e contraprova documentados no relatório. PR36 permanece em rascunho; revisão e QA oficiais pendentes. Próximo passo: revisão humana, sem publicação automática.
+
+## [2026-10-20] - Codex (Oficina) - TASK-505: inventário e origem dos artefatos CI
+
+- Branch própria incorpora as dependências npm/NuGet dos PR32/34. SBOMs SPDX de runtime/frontend com action e Syft fixados; declaração unsigned vincula4 arquivos e contextoCI sem copiar o ambiente. Permissões contents:read e demais jobs, inclusive deploy, preservados.
+- 10 testes Python aprovados; contraprova2FAIL/8PASS e restauração10PASS. YAML/ordem/flags conferidos; binário Syft oficial com checksum e smoke SPDX aprovado. Evidência e limites em relatorios/oficina-ci-supply-chain.md.
+- CI integrado ainda pendente, PR em rascunho; sem disparo manual de workflow, release, registro ou produção. Auto-QA técnico e autorrevisão parcial registrados; REVISAO e QA oficiais pendentes. Migration nova:não.
+
+## [2026-10-20] - Codex (Oficina) - manutenção npm compatível, validação em andamento
+
+- TASK-502 sobre a2797a7: famílias Tiptap3.32, React Router7.18.4 e Vitest4.1.11; demais versões diretas preservadas, sem major automático ou force. História e relatório específicos criados.
+- Regressão de atributos importados:2FAIL nas bibliotecas antigas e2PASS nas corrigidas. Instalação física própria, tsc-b/lint/build verdes; fullVitest164PASS/42arquivos. Auditoria42 alertas para0, contraprova do manifest/lock antigo reproduziu42 e finally restaurou0.
+- Falhas de peers antigos e edgesOut no npm10 diagnosticadas; geração coerente com npm11 isolado, sem alterar npm global nem instalações das outras branches. Build backend e fullxUnit690PASS/33 skips existentes aprovados; native/auto-QA ainda pendentes; não é ENTREGA final. Sem produção,migration nova,main ou deploy. REVISAO/QA oficiais pendentes.
+
+## [2026-10-20] - Codex (Oficina) - TASK-503: parser HTML com correção publicada
+
+- HtmlSanitizer9.1.982 substitui9.0.967, mantendo a família direta9 e os contratos do fornecedor. AngleSharp/Css transitivos passam para1.x; allowlist e schema preservados. Story e relatório específicos registram a escolha reversível.
+- Contraprova do ponto de integração HTML:2 falhas no pacote antigo e4 aprovados restaurado. Hipótese anterior de escape genérico foi rejeitada por evidência, sem ajuste de produto. Build e fullxUnit693PASS/33 skips existentes, auditoria dos5 projetos sem alertas. Frontend completo e native ainda pendentes.
+- Só worktree própria, banco exclusivo de QA e PR em rascunho; sem migration nova, produção, main ou deploy. Autorrevisão parcial e auto-QA pendente; REVISAO e QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
