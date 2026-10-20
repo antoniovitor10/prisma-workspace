@@ -819,11 +819,14 @@ export const Kanban: React.FC = () => {
   const handleStagePointerUp = async (event: React.PointerEvent<HTMLElement>) => {
     const drag = stageDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    // O último movimento pode ser coalescido; o ponto de soltura é a posição final.
+    const targetId = getStageIdAtPoint(event.clientX, event.clientY);
+    const moved = drag.dragging || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 8;
     clearStageDrag();
     event.currentTarget.releasePointerCapture(event.pointerId);
-    if (!drag.dragging || drag.boardId !== stageBoardRef.current || !drag.targetId || drag.targetId === drag.id) return;
+    if (!moved || drag.boardId !== stageBoardRef.current || !targetId || targetId === drag.id) return;
     const from = stages.findIndex(stage => stage.id === drag.id);
-    const to = stages.findIndex(stage => stage.id === drag.targetId);
+    const to = stages.findIndex(stage => stage.id === targetId);
     if (from < 0 || to < 0) return;
     const next = [...stages];
     const [stage] = next.splice(from, 1);
@@ -837,7 +840,7 @@ export const Kanban: React.FC = () => {
 
   const handleCreateStage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStageName.trim() || !selectedBoardId) return;
+    if (stageOrderPendingRef.current || !newStageName.trim() || !selectedBoardId) return;
     try {
       const projectId = boards.find(b => b.id === selectedBoardId)?.projectId;
       if (!projectId) throw new Error('Projeto do quadro não encontrado.');
@@ -1343,7 +1346,7 @@ export const Kanban: React.FC = () => {
                 users={userOptions}
                 tags={tagOptions}
               />
-              <ActionButton onClick={() => setShowStageModal(true)}>
+              <ActionButton disabled={stageOrderPending} onClick={() => setShowStageModal(true)}>
                 <Plus size={16} />
                 <span>Nova Coluna</span>
               </ActionButton>

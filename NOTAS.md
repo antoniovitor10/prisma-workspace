@@ -136,3 +136,19 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 
 ## Oficina — 2026-10-20 — TASK124
 Implementação de arraste somente no título de coluna, sem mudança de regra de negócio. Gates locais passaram (backend690/33; frontend167). Contraprova4 falhas e restauração5. Falha inicial de seletor de cartão corrigida sem reduzir cobertura. Próximo: E2E focal/completo sob trava e inspeção das capturas, depois atualizar relatório e PR. Não entregar como validado antes desses resultados.
+
+## Oficina — continuação do CI em 20/10/2026
+CI39426972004 do fe019f1:backend/frontend/imagem/governança aprovados; E2E117PASS/6FAIL/40skips. Duas falhas são arraste mobile; quatro posteriores são document-alignment. Não declarar regressão verde.
+A revisão local confirmou bloqueio Nova Coluna:counter1FAIL/16filtrados e restauração17PASS; tipos/lint passaram. O runner anterior foi encerrado foraRED antes de concluir os gates completos para tratar novo achado.
+Novo contrato de soltura:handler antigo dependia de último MOVE;2 testes(stale e up-only) vão demonstrar RED. Runner973474 aplica correção para coordenada final UP e distância mínima, depois19afetados/tipos/lint/build/full/E2Etypes. Alterações ainda não commitadas; não mexer durante execução.
+E2E mobile inclui evidência de pointer/touch e viewport sem conteúdo de tarefa ou IDs. Espera infinita de alerta substituída por assert.poll com prazo padrão e remoção do listener para permitir cleanup quando o gesto não salvar. Causa das quatro falhas subsequentes ainda exige prova, não assumir resolvidas. Próximo:ler column-release-gates-run.log, publicar só após restauração/gates e executar focal/full nativo sobtrava. Watcher quarto agora981872.
+
+## Correção contraprovada de soltura e concorrência — 20/10/2026
+
+O bloqueio Nova Coluna durante reordenação foi demonstrado:retirar disabled gerou1FAIL/16filtrados; restaurado,17PASS. Há também guarda no submit, sem permitir criação concorrente durante o pedido.
+
+Dois cenários reproduziram outra falha de contrato:o último MOVE ainda aponta à origem, ou nenhum MOVE chega antes do UP. Contra o handler anterior ambos falharam(2FAIL/17filtrados). O handler agora lê elementFromPoint nas coordenadas finais e reconhece a distância mínima entre DOWN/UP; o último target de MOVE serve só ao destaque visual. Com isso,19afetados PASS, tipos forçados/lint/build PASS. Backend permanece690PASS/33skips, sem alteração desde o gate anterior.
+
+A hipótese de eventos touch coalescidos é compatível com a falha mobile do CI, mas ainda não chamar a causa específica daquele CI resolvida sem novo E2E. O teste registra geometria/escala/pointer/hitbooleans, sem título/IDs/segredos. O rollback passa a aguardar o mesmo alerta por expect.poll padrão, em vez de Promise infinita, preservando mensagem, quantidade de requests e igualdade da ordem. Isso permite cleanup quando não ocorre o alerta. Os quatro erros posteriores de document-alignment do CI continuam registrados e precisam de reconfirmação; não tratá-los como corrigidos por suposição.
+
+Vitest completo desta revisão, tipos explícitos do E2E e nativo focal/completo seguem pendentes no runner973474 e quarto coordenador981872. O completo167 anterior é da revisão anterior; não usar como gate desta. Nenhum timeout/retry/skip/cota novo, migration ou alteração de workflow. Revisão e QA oficiais pendentes.

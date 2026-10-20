@@ -19,12 +19,23 @@ async function drag(page:Page,fromId:string,toId:string,mobile:boolean,cancel=fa
  const start={x:Math.min(a!.x+a!.width/2,width-8),y:a!.y+a!.height/2};
  const end={x:Math.min(b!.x+b!.width/2,width-8),y:start.y};
  if(mobile){
+  await page.evaluate(({from,to})=>{
+   const events:Array<{type:string;pointer:string;button:number;x:number;y:number;onSource:boolean;overTarget:boolean}>=[];
+   const listener=(raw:Event)=>{const event=raw as PointerEvent;const element=event.target instanceof Element?event.target:null;events.push({type:event.type,pointer:event.pointerType,button:event.button,x:event.clientX,y:event.clientY,onSource:element?.closest('[data-stage-drag-handle]')?.getAttribute('data-stage-drag-handle')===from,overTarget:document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-stage-id]')?.getAttribute('data-stage-id')===to});};
+   const types=['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture'];
+   types.forEach(type=>document.addEventListener(type,listener,true));
+   (window as Window & {oficinaTouchEvidence?:()=>unknown}).oficinaTouchEvidence=()=>{types.forEach(type=>document.removeEventListener(type,listener,true));return{events,width:innerWidth,viewportScale:visualViewport?.scale,ratio:devicePixelRatio};};
+  },{from:fromId,to:toId});
   const cdp=await page.context().newCDPSession(page);
   try{
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});
    for(let i=1;i<=8;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+(end.x-start.x)*i/8,y:start.y,id:1}]});
    await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});
-  }finally{await cdp.detach();}
+  }finally{
+   await cdp.detach();
+   const evidence=await page.evaluate(()=>{const target=window as Window & {oficinaTouchEvidence?:()=>unknown};const value=target.oficinaTouchEvidence?.();delete target.oficinaTouchEvidence;return value;});
+   console.info('OFICINA_TOUCH_EVIDENCE',JSON.stringify({start,end,evidence}));
+  }
  }else{
   await page.mouse.move(start.x,start.y);await page.mouse.down();
   await page.mouse.move(end.x,end.y,{steps:8});
@@ -61,9 +72,14 @@ test('TASK124 cancelamento não salva e erro do servidor restaura a ordem',async
   try{
    await drag(page,stages[0].id,stages[1].id,info.project.name.includes('mobile'),true);
    expect(attempts).toBe(0);await expect.poll(()=>ids(page)).toEqual(original);
-   const message=new Promise<string>(resolve=>page.once('dialog',async dialog=>{const text=dialog.message();await dialog.dismiss();resolve(text);}));
-   await drag(page,stages[0].id,stages[1].id,info.project.name.includes('mobile'));
-   expect(await message).toContain('Falha sintética de ordenação');expect(attempts).toBe(1);
+   let message:string|undefined;
+   const receive=async(dialog:import('@playwright/test').Dialog)=>{message=dialog.message();await dialog.dismiss();};
+   page.on('dialog',receive);
+   try{
+    await drag(page,stages[0].id,stages[1].id,info.project.name.includes('mobile'));
+    await expect.poll(()=>message).toContain('Falha sintética de ordenação');
+   }finally{page.off('dialog',receive);}
+   expect(attempts).toBe(1);
    await expect.poll(()=>ids(page)).toEqual(original);
    expect((await f.get<Array<{id:string}>>(`/api/Stages/board/${board.id}`)).map(stage=>stage.id)).toEqual(original);
    await capture(page,info,'rollback');

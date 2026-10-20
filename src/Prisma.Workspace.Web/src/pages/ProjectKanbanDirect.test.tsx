@@ -281,7 +281,7 @@ describe('Kanban do projeto abre direto', () => {
 });
 
 const columnIds = () => Array.from(document.querySelectorAll<HTMLElement>('[data-stage-id]')).map(element => element.dataset.stageId);
-function pointColumn(fromId: string, toId: string, cancel = false) {
+function pointColumn(fromId: string, toId: string, cancel = false, delivery: 'normal' | 'stale' | 'up-only' = 'normal') {
   const source = document.querySelector<HTMLElement>(`[data-stage-drag-handle="${fromId}"]`);
   const target = document.querySelector<HTMLElement>(`[data-stage-id="${toId}"]`);
   expect(source).not.toBeNull(); expect(target).not.toBeNull();
@@ -291,13 +291,15 @@ function pointColumn(fromId: string, toId: string, cancel = false) {
     constructor(type: string, init: PointerEventInit = {}) { super(type, init); this.pointerId = init.pointerId ?? 1; }
   }
   vi.stubGlobal('PointerEvent', TestPointerEvent);
-  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => target });
+  let releasing = false;
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => delivery === 'stale' && !releasing ? source : target });
   Object.defineProperty(source!, 'setPointerCapture', { configurable: true, value: vi.fn() });
   Object.defineProperty(source!, 'releasePointerCapture', { configurable: true, value: vi.fn() });
   try {
     fireEvent.pointerDown(source!, { pointerId: 7, button: 0, clientX: 20, clientY: 20 });
-    fireEvent.pointerMove(source!, { pointerId: 7, button: 0, clientX: 120, clientY: 20 });
+    if (delivery !== 'up-only') fireEvent.pointerMove(source!, { pointerId: 7, button: 0, clientX: delivery === 'stale' ? 30 : 120, clientY: 20 });
     if (cancel) fireEvent.pointerCancel(source!, { pointerId: 7 });
+    releasing = true;
     fireEvent.pointerUp(source!, { pointerId: 7, button: 0, clientX: 120, clientY: 20 });
   } finally {
     if (original) Object.defineProperty(document, 'elementFromPoint', original);
@@ -307,6 +309,14 @@ function pointColumn(fromId: string, toId: string, cancel = false) {
 }
 
 describe('arraste de colunas', () => {
+  it.each(['stale', 'up-only'] as const)('usa o ponto de soltura quando movimentos chegam incompletos: %s', async delivery => {
+    const reordered = vi.spyOn(api, 'reorderStages').mockResolvedValue(undefined);
+    await renderRota('/boards/board-1');
+    pointColumn('stage-1', 'stage-2', false, delivery);
+    await waitFor(() => expect(reordered).toHaveBeenCalledWith('board-1', ['stage-2', 'stage-1']));
+    expect(columnIds()).toEqual(['stage-2', 'stage-1']);
+  });
+
   it('persiste a ordem otimista e impede outro arraste durante o pedido', async () => {
     let finish!: () => void;
     const reordered = vi.spyOn(api, 'reorderStages').mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
@@ -314,10 +324,12 @@ describe('arraste de colunas', () => {
     pointColumn('stage-1', 'stage-2');
     expect(reordered).toHaveBeenCalledWith('board-1', ['stage-2', 'stage-1']);
     expect(columnIds()).toEqual(['stage-2', 'stage-1']);
+    expect(screen.getByRole('button', { name: 'Nova Coluna' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Mover coluna A fazer para a esquerda' })).toBeDisabled();
     pointColumn('stage-2', 'stage-1');
     expect(reordered).toHaveBeenCalledTimes(1);
     await act(async () => finish());
+    expect(screen.getByRole('button', { name: 'Nova Coluna' })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: 'Mover coluna A fazer para a esquerda' })).not.toBeDisabled();
   });
 

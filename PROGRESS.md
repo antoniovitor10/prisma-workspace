@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — soltura de coluna com movimentos coalescidos
+- Dois testes novos falham no handler anterior, que só confiava no último MOVE; UP agora resolve a coluna pela coordenada final e distância mínima. Afetados19PASS; tipos/lint/build PASS; fullVitest/E2E da revisão pendentes.
+- Nova Coluna bloqueada durante pedido de ordem; contraprova1FAIL e restauração17PASS. Teste de alerta limitado por assert padrão permite limpeza da fixture em falha.
+- CI anterior117PASS/6FAIL/40skips preservado, falha mobile ainda requer prova nativa; detalhes em relatorios/oficina-column-drag.md. Sem schema/workflow/dependências/produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — TASK124: reordenação de colunas por arraste
 - Título recebe gesto de ponteiro/toque usando API existente, com rollback, proteção contra concorrência e resposta antiga após mudança de quadro. Botões de teclado mantidos.
 - Backend690 aprovados/33 skips existentes; frontend167/41; afetados17; contraprova4 falhas/1 controle, restauração5; tipos forçados/lint/build e tipos E2E aprovados.
