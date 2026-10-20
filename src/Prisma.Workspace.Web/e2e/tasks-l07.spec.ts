@@ -1,6 +1,17 @@
-import type { Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from './fixtures/test';
 import { withBoardFactory, type BoardFactory } from './fixtures/boards';
+
+async function qaCapture(page: Page, info: TestInfo, label: string) {
+  const directory = resolve('../../.runlogs/oficina/screenshots');
+  mkdirSync(directory, { recursive: true });
+  await page.screenshot({ path: `${directory}/C1-${label}-${info.project.name}-after.png`, scale: 'css' });
+}
+async function qaViewport(page: Page, info: TestInfo) {
+  await page.setViewportSize(info.project.name.includes('mobile') ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+}
 
 type Task = { id: string; title: string; description: string | null; kind: number; parentId: string | null;
   boardId: string; stageId: string; responsibleId: string | null; priority: number; startDate: string | null;
@@ -269,7 +280,8 @@ test('L07 leitor não edita nem arquiva tarefa pela UI ou API', async ({ page, r
   }, 'L07');
 });
 
-test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async ({ page, request, authenticatedGoto }) => {
+test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async ({ page, request, authenticatedGoto }, info) => {
+  await qaViewport(page, info);
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
     const board = await f.board(); const column = await f.stage(board.id);
@@ -278,6 +290,8 @@ test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async
     await openTask(page, f.projectId, original.id);
     await expect(dialog(page).getByRole('heading', { name: 'Dependências e bloqueios', exact: true })).toBeVisible();
     await dialog(page).getByRole('combobox', { name: 'Buscar tarefa relacionada' }).fill(target.title);
+    await expect(dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' })).toBeVisible();
+    await qaCapture(page, info, 'autocomplete');
     await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).getByRole('button', { name: target.title, exact: false }).click();
     const linked = responseTo(page, 'POST', `/api/WorkItems/${original.id}/links`);
     await dialog(page).getByRole('button', { name: 'Vincular', exact: true }).click();
@@ -288,7 +302,8 @@ test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async
   }, 'L07');
 });
 
-test('L07 contrato: criar subtarefa pela UI não deixa responsável principal ausente', async ({ page, request, authenticatedGoto }) => {
+test('L07 contrato: criar subtarefa pela UI não deixa responsável principal ausente', async ({ page, request, authenticatedGoto }, info) => {
+  await qaViewport(page, info);
   let responsibleId: string | null = null;
   await authenticatedGoto('/projects');
   await withBoardFactory(page, request, async f => {
@@ -297,6 +312,11 @@ test('L07 contrato: criar subtarefa pela UI não deixa responsável principal au
     await dialog(page).getByRole('button', { name: 'Subtarefas', exact: true }).click();
     await dialog(page).getByPlaceholder('Nova subtarefa (somente título)', { exact: true }).fill(f.name('responsável obrigatório'));
     await dialog(page).getByLabel('Responsável da subtarefa', { exact: true }).selectOption(f.actorId);
+    const box = await dialog(page).getByLabel('Responsável da subtarefa', { exact: true }).boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    await qaCapture(page, info, 'responsavel');
     const created = responseTo(page, 'POST', '/api/WorkItems');
     await dialog(page).getByRole('button', { name: 'Adicionar', exact: true }).click();
     const response = await created; expect(response.status()).toBe(201); const id: string = await response.json();
