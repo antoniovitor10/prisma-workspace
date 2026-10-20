@@ -79,6 +79,7 @@ test('D99 linha do tempo separa movimentos, mantém revisitas e oferece grafo co
     await capture(page, info, 'C5-linha-tempo');
     await drawer.getByRole('button', { name: 'Ver grafo de estados', exact: true }).click();
     await expect(drawer.getByRole('heading', { name: 'Grafo de estados', exact: true })).toBeVisible();
+    await expect(drawer.locator('[title*="Permanência"]')).toHaveCount(0);
     await capture(page, info, 'C5-grafo-complementar');
     await drawer.getByRole('button', { name: 'Histórico', exact: true }).click();
     await expect(drawer.getByText(/moveu de/)).toHaveCount(0);

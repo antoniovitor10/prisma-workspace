@@ -1,3 +1,7 @@
+## Oficina C5 — 08:45 UTC, complemento verde
+
+Backend38, frontend17, tipos app/E2E, lint e build passaram. Red frontend4FAIL esperado e finally restaurou, verde4PASS. Fontes e binários verdes, nenhuma contraprova ativa. Config privada .runlogs/playwright.c5.config.ts no Web usa webServer para API3128/Vite3129 próprios e encerra processos ao terminar, com prazos/retries/asserts nativos preservados. Native ainda pendente; não integrar no QA antes de registrar o resultado. Relatório atualizado.
+
 ## Oficina C5 — checkpoint 2026-10-20 07:52UTC
 
 Fontes E binários verdes:backend37/37(incluiSQL), red8FAIL/4PASS, finallyrestaurou e rebuildfinal12/12PASS. Frontend16/16,tipos/lint/buildPASS. Não há runtimeC5 ativo. Relatório relatorios/oficina-qa-c5.md detalha decisões e limites. Próximo:contraprova frontend, tiposE2E, integrar noQA próprio após salvar C2-C4 e resolver somente conflitos documentais/linhaAuth, recompilar/reiniciarAPI3120 sobCPUsemnavegadorativo,E2EC5/fullbranch. API3120atual éb7e4f84 e NÃO contém C5. Nunca substituir aAPI com binários de contraprova.
