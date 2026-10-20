@@ -1,3 +1,9 @@
+## 2026-10-20 — Oficina: checkpoint C6 durante espera de navegador
+
+- Implementação C6 em andamento, sem alteração visual antes das capturas. BoardRepository omite quadros de projeto arquivado sem apagá-los; PermissionService e ProjectAccessService usam lote e preservam regras existentes. Interface tem fallback para implementações alternativas, produção EF possui override em lote.
+- Testes focados 17/17, SQL QA3111 com banco aleatório próprio criado/removido; 24 projetos, negação e outro tenant. Matriz de todos os perfis/permissões e escopo de tokens cobertos. Contraprova com serviços antigos falhou nos dois defeitos: 6 contra 145 consultas e quadro arquivado ainda listado. Fontes e binários verdes restaurados; 17/17 final passou.
+- E2E C6 preparado mas ainda não executado. C1/C2 baseline aguardam mutex compartilhado; specs adicionais de capturas antes C3/C4 preparadas. Não aplicar ajustes visuais até inspecionar capturas antes. Próximo: browser batch, entrega C1 e capturas C2; depois ajustes/novas validações. REVISAO e QA oficiais pendentes; nada em produção.
+
 # Oficina — 2026-10-20, C1 em validação
 
 Goal inteiro: `/home/agentes/projetos/tarefas/GOAL-prisma-oficina.md`. Trabalhar somente nesta worktree e nas próprias futuras, sem produção/main/deploy/migration. Base a2797a7; merges L06/L07/L08 concluídos. Estado externo em `/home/agentes/projetos/ESTADO-goal-oficina.md`.

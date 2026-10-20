@@ -39,6 +39,9 @@ public sealed class MethodSecurityScopeTests
 
         Assert.Equal(expectedRole, await projects.GetRoleAsync(f.ProjectId, actor.ActorId));
         Assert.Null(await projects.GetRoleAsync(other, actor.ActorId));
+        Assert.Equal([f.ProjectId], await projects.GetAccessibleProjectIdsAsync([f.ProjectId, other], actor.ActorId));
+        Assert.Equal([f.ProjectId], await permissions.GetAllowedProjectIdsAsync(actor.ActorId, PlatformPermission.View, [f.ProjectId, other]));
+        Assert.Empty(await projects.GetAccessibleProjectIdsAsync([f.ProjectId, other], "outro-ator"));
         Assert.Equal([f.ProjectId], await db.Projects.Select(x => x.Id).ToArrayAsync());
         Assert.Equal([ownItem], await db.WorkItems.Select(x => x.Id).ToArrayAsync());
         Assert.Null(await db.WorkItems.SingleOrDefaultAsync(x => x.Id == otherItem));

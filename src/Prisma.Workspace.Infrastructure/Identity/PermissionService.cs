@@ -58,6 +58,45 @@ public class PermissionService : IPermissionService
         return RolePermissionCatalog.Allows(member.Role, permission, scope);
     }
 
+    public async Task<IReadOnlySet<Guid>> GetAllowedProjectIdsAsync(
+        string userId,
+        PlatformPermission permission,
+        IEnumerable<Guid> projectIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = projectIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        var allowed = new HashSet<Guid>();
+        if (ids.Length == 0 || _organizationContext.OrganizationId is not { } organizationId)
+            return allowed;
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } actor)
+        {
+            // O token possui exatamente um projeto; nunca consultar permissões humanas de outros projetos.
+            if (actor.ProjectId is { } projectId && ids.Contains(projectId) && await HasAsync(userId, permission,
+                    PermissionScope.Project, projectId, cancellationToken))
+                allowed.Add(projectId);
+            return allowed;
+        }
+        var role = await _context.OrganizationMembers.AsNoTracking()
+            .Where(member => member.OrganizationId == organizationId && member.UserId == userId && member.IsActive)
+            .Select(member => (OrganizationRole?)member.Role).FirstOrDefaultAsync(cancellationToken);
+        if (role is null) return allowed;
+        var grants = await _context.PermissionGrants.AsNoTracking()
+            .Where(grant => grant.OrganizationId == organizationId && grant.UserId == userId
+                && grant.Permission == permission
+                && ((grant.Scope == PermissionScope.Organization && grant.ScopeId == null)
+                    || (grant.Scope == PermissionScope.Project && grant.ScopeId.HasValue && ids.Contains(grant.ScopeId.Value))))
+            .Select(grant => new { grant.ScopeId, grant.IsAllowed }).ToListAsync(cancellationToken);
+        var defaultAllowed = RolePermissionCatalog.Allows(role.Value, permission, PermissionScope.Project);
+        foreach (var id in ids)
+        {
+            var applicable = grants.Where(grant => grant.ScopeId == null || grant.ScopeId == id).ToList();
+            if (!applicable.Any(grant => !grant.IsAllowed)
+                && (applicable.Any(grant => grant.IsAllowed) || defaultAllowed))
+                allowed.Add(id);
+        }
+        return allowed;
+    }
+
     public async Task EnsureAsync(
         string userId,
         PlatformPermission permission,
