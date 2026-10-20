@@ -1,4 +1,22 @@
-## 2026-10-16 — Forja: correção P2 do histórico e harness final
+# Oficina org — 2026-10-20, validação em andamento
+
+Goal: `/home/agentes/projetos/tarefas/GOAL-prisma-oficina.md`. Branch própria `fix/org-creation-lows`, base `a2797a7`. Item 2 adiantado enquanto C1 aguarda a trava compartilhada de navegador. Estado global em `/home/agentes/projetos/ESTADO-goal-oficina.md`.
+
+Implementado: elegibilidade por qualquer membership; criação com transação ReadCommitted e UPDLOCK/HOLDLOCK na linha Identity; invalidação de cache após onboarding/criação; orientação para acesso inativo; diálogo Radix com contenção e retorno de foco. Interface aditiva do repositório e stub de ProjectFeature atualizados. Sem nova migration ou índice. Não se alega atomicidade entre convite e criação nem correção de slug concorrente entre usuários diferentes.
+
+Passou: xUnit regras/ProjectFeature17/17; SQL3/3 (9 corridas), Vitest13/13, lint0erros e build frontend com tsc-b. Contraprovas reais: backend3falhas esperadas/2controles, frontend3falhas esperadas; fontes corrigidas restauradas. A primeira falha de foco levou à retirada de autoFocus nativo; o teste de cache passou a verificar revalidação efetiva canCreate:false, em vez de flag isInvalidated após a query já estar atualizada.
+
+Pendente: recompilar binários backend verdes após a contraprova (os DLLs no disco ainda são red), rodar suítes completas e E2E/auto-QA quando carga e trava permitirem. Nunca iniciar API org com esses binários antes da recompilação. E2E organization-creation-lows.spec.ts preparado, ainda não executado. Não depende da fixture boards do L06, ausente nesta base.
+
+Scripts/logs privados em `.runlogs/oficina`; run-sql.py usa somente QA3111 e DB randômico prefixado, sem imprimir credenciais. start-api.sh preparado para porta3122/banco Prisma_BoardColumns_Oficina_Org; Vite deve usar3124 e API3122. Nenhum desses dois runtimes org foi iniciado ainda. run-full-xunit.py exige inicializar o schema/seed nesse banco próprio pelo boot normal com a cadeia existente, sem migration nova. Arquivo privado .env.e2e.local contém apenas credenciais QA e portas próprias, ignorado no Git.
+
+C1 na outra worktree própria permanece em API3120/Vite3121 (sessões69718/82500), SQL QA iniciado pela Oficina. E2E C1 sessão35519 espera a trava e verifica load<=14 ao adquiri-la. Não interromper donos alheios. Reserva CPU renovada até05:45; QA até06:00. Renovar ou liberar na FILA conforme o andamento.
+
+Próximo: verde backend, full xUnit/Vitest, E2E e autorrevisão/auto-QA, atualizar relatório externo oficina-org.md e PR em rascunho. Push somente desta branch, sem main/merge/deploy/prod ou alteração de outros worktrees.
+
+---
+
+# 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
 - Vermelho6/6 antes; verde85/85 depois, zero pulos, SQL3132 opt-in. Logs /tmp/prisma-metodo-forja-history-{red,green}.log. Runners privados em /tmp; ler .env.xunit como dados, nunca source nem imprimir valores. Full anterior715/715; novo esperado720. Frontend/MCP de produto não mudaram:160Vitest/53MCP/tipos/builds já verdes, sem necessidade de repetir sem nova mudança.
