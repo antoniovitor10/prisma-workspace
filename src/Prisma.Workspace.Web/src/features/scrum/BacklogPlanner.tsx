@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { z } from 'zod';
 import { TaskDetailDrawer } from '../../components/TaskDetailDrawer';
@@ -61,6 +62,7 @@ import {
 } from './BacklogFilters';
 import { flattenBacklogHierarchy, includeBacklogAncestors } from './BacklogHierarchy';
 import { useBacklogUrlState } from './useBacklogUrlState';
+import { subscribeBacklogScroll } from './BacklogScroll';
 
 const Page = styled.section`
   padding: 20px 28px 40px;
@@ -846,6 +848,7 @@ interface BacklogPlannerProps { project: ProjectSummary; }
 
 export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const showPoints = project.methodology !== 1;
   const [items, setItems] = useState<BacklogItem[]>([]);
   const { state: urlState, update: updateUrl, params: searchParams, updateParams } = useBacklogUrlState();
@@ -1112,20 +1115,14 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const restoredScroll = useRef<string | null>(null);
   useEffect(() => {
     if (!backlogQuery.data || backlogQuery.data !== items) return;
+    if (window.location.pathname + window.location.search !== location.pathname + location.search) return;
     const target = `${project.id}:${urlState.scrollY}`;
     if (restoredScroll.current === target) return;
     restoredScroll.current = target;
     if (window.scrollY !== urlState.scrollY) window.scrollTo({ top: urlState.scrollY, behavior: 'instant' });
-  }, [backlogQuery.data, items, project.id, urlState.scrollY]);
-  useEffect(() => {
-    let frame = 0;
-    const save = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => updateUrl('scrollY', Math.max(0, Math.round(window.scrollY))));
-    };
-    window.addEventListener('scroll', save, { passive: true });
-    return () => { window.removeEventListener('scroll', save); cancelAnimationFrame(frame); };
-  }, [updateUrl]);
+  }, [backlogQuery.data, items, project.id, urlState.scrollY, location.pathname, location.search]);
+  useEffect(() => subscribeBacklogScroll(location.pathname + location.search, position => updateUrl('scrollY', position)),
+    [location.pathname, location.search, updateUrl]);
 
   const backlogPoints = backlogItems.reduce((sum, item) => sum + (item.points ?? 0), 0);
 

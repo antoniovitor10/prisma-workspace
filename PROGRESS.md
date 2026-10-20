@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — impedir scroll antigo de reverter histórico
+- Focal local anterior4PASS/1FAILmobilegoBack, apesar de CI123PASS/40skips do commit anterior. Mantida a mesma asserção de rota.
+- Listener e restauração de scroll conferem URL dona. Contraprova3FAIL/1controle, corrigido20PASS, tipos forçados PASS. Casos incluem troca de rota antes de frame/cleanup e outra query na mesma rota.
+- Lint/build/full da revisão e novo nativo pendentes; telemetria de histórico limitada a classe da rota/índice/tempo. Sem migration, timeout/retry/skip, cota ou produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — roteiro E2E do backlog com modal real
 - CI39431928513:121PASS/2FAIL/40skips; os dois casos falhos consultavam o fundo oculto pelo Radix enquanto o detalhe estava aberto.
 - Teste agora verifica filtros/lista antes da abertura e depois de fechar; mantém URLcomitem/reload e acrescenta conferência dos parâmetros. Sem includeHidden, force, retry, skip ou prazo novo.

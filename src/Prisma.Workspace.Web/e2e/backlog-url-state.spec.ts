@@ -10,6 +10,15 @@ test('TASK213 seleção, colapso e rolagem sobrevivem a reload e ida ao quadro',
   const parent=await f.item(board.id,stages[0].id,{kind:5});const child=await f.item(board.id,stages[0].id,{parentId:parent.id,kind:6});
   for(let index=0;index<20;index++)await f.item(board.id,stages[0].id);
   const params=new URLSearchParams({'bl.selected':parent.id,'bl.collapsed':parent.id});
+  await page.addInitScript(()=>{
+   const events:Array<{kind:string;route:string;index:number|null;t:number}>=[];
+   const record=(kind:string)=>{const end=location.pathname.split('/').at(-1)??'';events.push({kind,route:['boards','backlog'].includes(end)?end:'other',index:Number.isInteger(history.state?.idx)?history.state.idx:null,t:Math.round(performance.now())});};
+   const push=history.pushState.bind(history);const replace=history.replaceState.bind(history);
+   history.pushState=(...args:Parameters<History['pushState']>)=>{push(...args);record('push');};
+   history.replaceState=(...args:Parameters<History['replaceState']>)=>{replace(...args);record('replace');};
+   addEventListener('popstate',()=>record('pop'));
+   (window as Window & {oficinaHistoryEvidence?:unknown}).oficinaHistoryEvidence=events;
+  });
   await page.goto(`/projects/${f.projectId}/backlog?${params}`);
   await expect(page.getByRole('textbox',{name:`Título de ${parent.title}`,exact:true})).toBeVisible();
   await expect(page.getByRole('checkbox',{name:`Selecionar ${parent.title}`,exact:true})).toBeChecked();
@@ -29,8 +38,12 @@ test('TASK213 seleção, colapso e rolagem sobrevivem a reload e ida ao quadro',
   await expect.poll(()=>new URL(page.url()).searchParams.get('bl.collapsed')).toBe(parent.id);
   await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBe(previousY);
   await expect(page.getByRole('textbox',{name:`Título de ${child.title}`,exact:true})).toHaveCount(0);
-  await page.goBack();await expect(page).toHaveURL(new RegExp(`/projects/${f.projectId}/boards`));
-  await page.goForward();await expect(page.getByRole('checkbox',{name:`Selecionar ${parent.title}`,exact:true})).toBeChecked();
+  try{
+   await page.goBack();await expect(page).toHaveURL(new RegExp(`/projects/${f.projectId}/boards`));
+   await page.goForward();await expect(page.getByRole('checkbox',{name:`Selecionar ${parent.title}`,exact:true})).toBeChecked();
+  }finally{
+   console.info('OFICINA_HISTORY_EVIDENCE',JSON.stringify(await page.evaluate(()=>(window as Window & {oficinaHistoryEvidence?:unknown}).oficinaHistoryEvidence)));
+  }
   const dir=resolve('../../.runlogs/oficina/screenshots');mkdirSync(dir,{recursive:true});
   await page.screenshot({path:`${dir}/backlog-url-${info.project.name}.png`,scale:'css'});
  },'Oficina URL');
