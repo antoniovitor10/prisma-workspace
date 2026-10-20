@@ -33,6 +33,8 @@ test('TASK213 seleção, colapso e rolagem sobrevivem a reload e ida ao quadro',
   const switcher=page.locator('[aria-label="Alternar visão do projeto"]');
   const boardLink=switcher.getByRole('link',{name:'Quadro',exact:true});
   await boardLink.click();await expect(page).toHaveURL(new RegExp(`/projects/${f.projectId}/boards`));
+  // A URL muda antes do commit React; aguardar a visão real impede clicar no link da tela anterior.
+  await expect(page.locator('[data-stage-id]').first()).toBeVisible();
   await switcher.getByRole('link',{name:'Backlog',exact:true}).click();
   await expect(page.getByRole('checkbox',{name:`Selecionar ${parent.title}`,exact:true})).toBeChecked();
   await expect.poll(()=>new URL(page.url()).searchParams.get('bl.collapsed')).toBe(parent.id);

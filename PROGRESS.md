@@ -1983,3 +1983,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: novo focal de histórico ainda vermelho
+
+Native3PASS/2FAIL, preservados. Telemetria desktoppushboards/replacebacklog sempushbacklog aponta clique no alternador da árvore anterior; teste agora exige coluna real antes de voltar. Gates e novo nativo aguardam. Não declarar ENTREGA ou fullverde.

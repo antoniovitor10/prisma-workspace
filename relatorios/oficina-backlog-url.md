@@ -45,3 +45,10 @@ O roteiro registra apenas tipo push/replace/pop, classe boards/backlog/other, í
 Revisão6fd3b0b:Vitest completo175PASS/44arquivos em211,16s; afetados20PASS, contraprova3FAIL/1controle. Tipos forçados, lint e build aprovados. O coordenador1362595 conferiu os tipos explícitos do E2E instrumentado(exit0) e enfileirou backlog-url-history-focal; se passar, executará o completo. Sem afrouxar a exigência goBack→boards ou aumentar prazo.
 
 O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal local4/1 motivou a correção atual. Não usar esses123 como validação do guard novo até nova execução. Backend690PASS/33skips permanece com fonte idêntica. Capturas e novo resultado nativo ainda pendentes. Revisão e QA oficiais pendentes.
+
+
+## Novo focal local — 20/10/2026 15:30 UTC
+
+A execuçãobacklog-url-history-focal encerrou3PASS/2FAIL:desktop voltou ao backlog em vez deboards; mobile perdeu a rolagem600 e ficou0. Não houve suíte completa após falhar. A guarda6fd3b0b tem contraprova unitária válida, mas não resolveu esse fluxo nativo.
+
+A telemetria desktop registroureplace backlog idx0;push boards idx1;replace backlog idx1;pop backlog idx0. Nenhum push de retorno ao backlog foi registrado. O teste clicava no mesmo alternador assim quetoHaveURL(boards) passava, antes de exigir qualquer elemento da tela do quadro. No ReactRouter instalado, useLinkClickHandler calcula replace por createPath(location)===createPath(path); antes do commit React, location ainda pode ser backlog. A nova hipótese apoiada nessa sequência é clique na árvore anterior durante transição, não mera demora do banco. O E2E agora exige uma coluna[data-stage-id] visível após ir ao quadro e antes de voltar. Exigências originais de histórico/rolagem/seleção/colapso preservadas, sem prazo maior. Nova tipagem e execução focal/completa enfileiradas; não afirmar correção comprovada antes dos resultados.

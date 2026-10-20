@@ -164,3 +164,8 @@ Novo coordenador nativo1362595 aguarda1291881, confere tiposE2E e executa backlo
 Revisão6fd3b0b:Vitest completo175PASS/44arquivos em211,16s; afetados20PASS, contraprova3FAIL/1controle. Tipos forçados, lint e build aprovados. O coordenador1362595 conferiu os tipos explícitos do E2E instrumentado(exit0) e enfileirou backlog-url-history-focal; se passar, executará o completo. Sem afrouxar a exigência goBack→boards ou aumentar prazo.
 
 O CI123PASS/40skips de68b7d92 continua sendo da revisão anterior, e o focal local4/1 motivou a correção atual. Não usar esses123 como validação do guard novo até nova execução. Backend690PASS/33skips permanece com fonte idêntica. Capturas e novo resultado nativo ainda pendentes. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: novo focal de histórico ainda vermelho
+
+Native3PASS/2FAIL, preservados. Telemetria desktoppushboards/replacebacklog sempushbacklog aponta clique no alternador da árvore anterior; teste agora exige coluna real antes de voltar. Gates e novo nativo aguardam. Não declarar ENTREGA ou fullverde.
