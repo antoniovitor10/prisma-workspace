@@ -1976,3 +1976,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: roteiro de leitura das propostas
+
+Roteiro provisório para14PRs rascunho,24caminhos compartilhados e limites de validação. Nenhuma integração executada; revisão/QA oficiais pendentes. Ver relatorios/oficina-integracao-proposta.md.
