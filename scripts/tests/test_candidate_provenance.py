@@ -46,7 +46,7 @@ class CandidateProvenanceTests(unittest.TestCase):
     def test_subjects_bind_all_four_artifacts_and_keep_workflow_commit_distinct(self):
         statement = self.create()
         subjects = {item["name"]: item["digest"]["sha256"] for item in statement["subject"]}
-        self.assertEqual(set(MODULE.INPUT_FILES), set(subjects))
+        self.assertEqual({"prisma-image.tar.gz", "migrations.json", "sbom-runtime.spdx.json", "sbom-frontend.spdx.json"}, set(subjects))
         self.assertEqual(self.digest, subjects["prisma-image.tar.gz"])
         self.assertIn("b" * 40, statement["predicate"]["runDetails"]["builder"]["id"])
         dependency = statement["predicate"]["buildDefinition"]["resolvedDependencies"][0]
@@ -66,7 +66,9 @@ class CandidateProvenanceTests(unittest.TestCase):
         document["packages"][0]["versionInfo"] = "2.0"
         path.write_text(json.dumps(document))
         second = self.create()
-        self.assertNotEqual(first["subject"][2], second["subject"][2])
+        first_hashes = {item["name"]: item["digest"] for item in first["subject"]}
+        second_hashes = {item["name"]: item["digest"] for item in second["subject"]}
+        self.assertNotEqual(first_hashes["sbom-runtime.spdx.json"], second_hashes["sbom-runtime.spdx.json"])
 
     def test_missing_inventory_is_rejected(self):
         (self.directory / "sbom-frontend.spdx.json").unlink()
