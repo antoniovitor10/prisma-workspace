@@ -2,7 +2,7 @@
 
 - TASK-502 sobre a2797a7: famílias Tiptap3.32, React Router7.18.4 e Vitest4.1.11; demais versões diretas preservadas, sem major automático ou force. História e relatório específicos criados.
 - Regressão de atributos importados:2FAIL nas bibliotecas antigas e2PASS nas corrigidas. Instalação física própria, tsc-b/lint/build verdes; fullVitest164PASS/42arquivos. Auditoria42 alertas para0, contraprova do manifest/lock antigo reproduziu42 e finally restaurou0.
-- Falhas de peers antigos e edgesOut no npm10 diagnosticadas; geração coerente com npm11 isolado, sem alterar npm global nem instalações das outras branches. Backend e native/auto-QA ainda pendentes; não é ENTREGA final. Sem produção,migration nova,main ou deploy. REVISAO/QA oficiais pendentes.
+- Falhas de peers antigos e edgesOut no npm10 diagnosticadas; geração coerente com npm11 isolado, sem alterar npm global nem instalações das outras branches. Build backend e fullxUnit690PASS/33 skips existentes aprovados; native/auto-QA ainda pendentes; não é ENTREGA final. Sem produção,migration nova,main ou deploy. REVISAO/QA oficiais pendentes.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
