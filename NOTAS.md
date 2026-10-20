@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: fechamento do diagnóstico de estabilidade
+
+Corrida comprovada no teste do editor: imagem precedia feedback React; somente teste passou a aguardar a mesma mensagem terminal. Contraprova1FAIL/6PASS e restauração7PASS. Falhas CLI também envolviam token ausente e colisão de porta no harness privado; após correção, arquivo IA17PASS em duas branches. Timeout252 e deadlock não têm causa comprovada; manter hipóteses e próximos ensaios do relatório. PR30 em rascunho, sem migration ou produto alterado. Revisão/QA oficiais pendentes.
+
 ## Oficina — diagnóstico nativo 2026-10-20 07:29UTC
 
 Baseline25PASS/3FAIL/1skip em5,1min, runtimeorgf51. Relatório versionado detalha origens/durações e capturas. Evidência preservada noQA/.runlogs/oficina/stability-evidence. FaltaURLfakeCLI explica mensagem340; API3122 privada foi corrigida e reiniciada, não houve produção. Rerun/full pendentes na trava global.252desktopdocumentovazio/navegação33s continua sem causa; não mudar timeout/assert. Kanban/editor/sync verdes nesta rodada não encerram intermitência. Próximo:analisar fullOrg apósfollowup e completar relato sem atribuições não provadas. REVISAO/QA oficiais pendentes.

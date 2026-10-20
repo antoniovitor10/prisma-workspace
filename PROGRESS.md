@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: fechamento do diagnóstico de estabilidade
+
+Corrida comprovada no teste do editor: imagem precedia feedback React; somente teste passou a aguardar a mesma mensagem terminal. Contraprova1FAIL/6PASS e restauração7PASS. Falhas CLI também envolviam token ausente e colisão de porta no harness privado; após correção, arquivo IA17PASS em duas branches. Timeout252 e deadlock não têm causa comprovada; manter hipóteses e próximos ensaios do relatório. PR30 em rascunho, sem migration ou produto alterado. Revisão/QA oficiais pendentes.
+
 ## [2026-10-20] - Codex (Oficina) - diagnóstico E2E opt-in e evidências nativas
 
 - Basea2797a7; reporter de origem/duração/status com teste de privacidade1/1, contraprova1FAIL e verde1/1; tipos explícitos/lint aprovados. Não registra títulos,argumentos,mensagens,corpos ou credenciais; não altera produto,assert,prazo,retry,cota ou skips.
