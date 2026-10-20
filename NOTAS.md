@@ -1,3 +1,9 @@
+# Oficina npm — checkpoint 20/10/2026, 08:54 UTC
+
+Branch fix/npm-security-20261020, base a2797a7, somente worktree própria. Frontend concluído localmente:164Vitest,tipos/lint/build,regressão red2/green2,auditoria0 com contraprova42/restauração0. Node_modules é físico e privado desta worktree. Nunca substituir instalações das outras branches. npm11.19.1 usado via npx por erro confirmado do npm10, sem mudar global.
+
+Build da solução e fullxUnit690PASS/33 skips existentes concluídos. Pendentes:nativeE2E/auto-QA e relatório final. Planejar API/Vite próprias apenas em3120–3129 e banco prefixado noSQLQA3111, sob mutexCPU e navegador. Não usar artefato de outra branch como se fosse este. Relatório relatorios/oficina-npm-security.md e logs.runlogs/oficina detalham todos os resultados. REVISAO e QA oficiais pendentes; sem produção/main/merge/deploy/migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
@@ -133,3 +139,8 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+
+### 2026-10-20 — Oficina: fechamento TASK-502
+
+Auditoria npm0; frontend164 e backend690/33, tipos/lint/build aprovados. Full E2E117/2/40 preservado; harness CLI corrigido e focal3PASS. Editor final3PASS com imagem hidratada nas duas larguras, capturas abertas. Sem migration; PR32 rascunho; revisão e QA oficiais pendentes.

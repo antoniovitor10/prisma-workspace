@@ -1,3 +1,9 @@
+## [2026-10-20] - Codex (Oficina) - manutenção npm compatível, validação em andamento
+
+- TASK-502 sobre a2797a7: famílias Tiptap3.32, React Router7.18.4 e Vitest4.1.11; demais versões diretas preservadas, sem major automático ou force. História e relatório específicos criados.
+- Regressão de atributos importados:2FAIL nas bibliotecas antigas e2PASS nas corrigidas. Instalação física própria, tsc-b/lint/build verdes; fullVitest164PASS/42arquivos. Auditoria42 alertas para0, contraprova do manifest/lock antigo reproduziu42 e finally restaurou0.
+- Falhas de peers antigos e edgesOut no npm10 diagnosticadas; geração coerente com npm11 isolado, sem alterar npm global nem instalações das outras branches. Build backend e fullxUnit690PASS/33 skips existentes aprovados; native/auto-QA ainda pendentes; não é ENTREGA final. Sem produção,migration nova,main ou deploy. REVISAO/QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
@@ -1964,3 +1970,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: fechamento TASK-502
+
+Auditoria npm0; frontend164 e backend690/33, tipos/lint/build aprovados. Full E2E117/2/40 preservado; harness CLI corrigido e focal3PASS. Editor final3PASS com imagem hidratada nas duas larguras, capturas abertas. Sem migration; PR32 rascunho; revisão e QA oficiais pendentes.
