@@ -1,6 +1,6 @@
 # Oficina — TASK-504: roteiro de backup e restauração Community
 
-Base exata: a2797a7. Branch docs/community-backup-20261020. US-OPEN-SOURCE-001 e SPEC-OPEN-SOURCE-DISTRIBUTION aprovadas. Mudança somente de documentação, sem migration.
+Base exata: a2797a7. Branch docs/community-backup-20261020. US-OPEN-SOURCE-001 e SPEC-OPEN-SOURCE-DISTRIBUTION aprovadas. Mudança somente de documentação, sem migration. PR parcial: o gate clean-install da TASK-504 ainda está pendente; não é ENTREGA final.
 
 ## Entrega
 
@@ -22,6 +22,6 @@ Scripts, logs e backup ficam apenas em .runlogs/oficina, ignorados pelo Git. A c
 
 Autorrevisão:sem achados altos/médios confirmados. Roteiro evita restauração destrutiva e informa preservação conjunta de arquivos/configuração. Revisão humana deve conferir caminhos customizados, arquivos SQL adicionais e credenciais da instalação de destino. Os exemplos usam o banco padrão; o operador substitui seu nome e os nomes lógicos reais.
 
-Auto-QA:verificação técnica de SQL e arquivos acima. Não foi executado um quickstart completo novo com login/anexo real depois da recuperação, nem upgrade entre versões diferentes. O ensaio de arquivos usa conteúdo sintético, sem material criptográfico real. A homologação ampla da TASK-507 permanece pendente. E2E e builds de produto não repetidos:exceção formal de documentação, sem mudança funcional.
+Auto-QA:verificação técnica de SQL e arquivos acima. Não foi executado um quickstart completo novo com login/anexo real depois da recuperação, nem upgrade entre versões diferentes. O ensaio de arquivos usa conteúdo sintético, sem material criptográfico real. A homologação ampla da TASK-507 permanece pendente. E2E e builds de produto não repetidos:exceção formal de documentação, sem mudança funcional. Essa exceção não dispensa o gate clean-install específico da TASK-504; falta o ensaio integral em base vazia e a recuperação funcional da aplicação, que serão feitos só em recursos próprios de QA.
 
 Nada em produção, main, merge de PR ou deploy. REVISAO e QA oficiais:pendentes.

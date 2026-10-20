@@ -2,7 +2,7 @@
 
 - Guia de captura conjunta de banco/anexos/chaves/configuração e recuperação sob nome novo; link no quickstart Docker. Sem produto, CI, schema ou migration nova.
 - Bash-n dos5 blocos aprovado. SQL próprio:backup11,7MB, VERIFYONLY/CHECKDB, restauração sem REPLACE e4 contagens idênticas; cópia corrompida recusada e original novamente aprovado. Compose cp recuperou2 arquivos sintéticos com SHA256 idêntico; helpers/volumes exclusivos removidos.
-- Autorrevisão e limites em relatorios/oficina-backup-docs.md. Quickstart integral com login/anexo real e upgrade entre versões não foram homologados; TASK-507 continua separada. REVISAO e QA oficiais pendentes. Nada em produção.
+- Gate clean-install da TASK-504 ainda pendente; PR parcial, sem ENTREGA final. Autorrevisão e limites em relatorios/oficina-backup-docs.md. Quickstart integral com login/anexo real e upgrade entre versões não foram homologados; TASK-507 continua separada. REVISAO e QA oficiais pendentes. Nada em produção.
 
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 

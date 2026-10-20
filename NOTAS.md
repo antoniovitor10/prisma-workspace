@@ -1,6 +1,6 @@
 # Oficina — TASK-504, 20/10/2026
 
-Branch docs/community-backup-20261020, base a2797a7. Guia e relatório prontos para revisão. Verificação real:SQL COPY_ONLY/CHECKSUM/VERIFYONLY, restauração em base própria nova, CHECKDB e contagens iguais. Cópia corrompida recusada; original aprovado novamente. Dois arquivos sintéticos recuperados via Compose cp com SHA256 igual. Helpers e volumes próprios removidos; nenhum recurso compartilhado foi modificado para contornar a falta de pools Docker.
+Branch docs/community-backup-20261020, base a2797a7. Guia e relatório parciais. Falta o gate clean-install específico da TASK-504, apesar da exceção de E2E para documentação. Não registrar ENTREGA final antes do ensaio integral e recuperação funcional em recursos próprios de QA. Verificação real:SQL COPY_ONLY/CHECKSUM/VERIFYONLY, restauração em base própria nova, CHECKDB e contagens iguais. Cópia corrompida recusada; original aprovado novamente. Dois arquivos sintéticos recuperados via Compose cp com SHA256 igual. Helpers e volumes próprios removidos; nenhum recurso compartilhado foi modificado para contornar a falta de pools Docker.
 
 Não houve ensaio integral de login/anexo real após recuperação nem upgrade entre versões. Revisões oficiais pendentes. Evidência privada em .runlogs/oficina; nunca versionar backup ou configuração. Base restaurada e arquivo temporário SQL foram removidos nominalmente após a verificação. A fonte de QA pertence à manutenção npm e continua necessária ao E2E daquela branch; o backup privado no host foi preservado apenas na própria .runlogs.
 
