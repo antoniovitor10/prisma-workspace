@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: conclusão local das ressalvas de organizações
+
+Backend695PASS/33skips e frontend167PASS. Focal9PASS com auto-QA1440/390; completo111PASS/2FAIL/40skips/14bloqueados por colisão de porta no fake. Porta/token privados corrigidos e arquivo IA inteiro17PASS; tipos forçados aprovados. Preservada a falha anterior no relatório. PR28 em rascunho; revisão/QA oficiais pendentes; sem migration. Próximo passo humano: conferir integração do repository com C5.
+
 # Oficina org — atualização 2026-10-20 07:22UTC
 
 Fontes E binários verdes. FullxUnit695PASS/33skips existentes, fullVitest167PASS, solução/frontend/types/lint/buildPASS. E2E próprio9/9PASS, quatro capturas de diálogo e orientação inativa abertas e inspecionadas nas duas larguras, sem cortes. O texto histórico abaixo sobre DLLs vermelhos está superado.

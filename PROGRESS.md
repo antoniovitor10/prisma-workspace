@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: conclusão local das ressalvas de organizações
+
+Backend695PASS/33skips e frontend167PASS. Focal9PASS com auto-QA1440/390; completo111PASS/2FAIL/40skips/14bloqueados por colisão de porta no fake. Porta/token privados corrigidos e arquivo IA inteiro17PASS; tipos forçados aprovados. Preservada a falha anterior no relatório. PR28 em rascunho; revisão/QA oficiais pendentes; sem migration. Próximo passo humano: conferir integração do repository com C5.
+
 ## [2026-10-20] - Codex (Oficina) - ressalvas de criação de organização, validação em andamento
 
 - Item 2 do goal Oficina, branch própria `fix/org-creation-lows` sobre `a2797a7`. Criação passa por transação SQL e lock da linha Identity do usuário antes de checar/inserir; qualquer membership anterior impede uma nova primeira organização para usuário comum, inclusive inativa. Plataforma mantém sua autoridade. Sem schema, índice ou migration nova.
