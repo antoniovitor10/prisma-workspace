@@ -37,12 +37,12 @@ const tooltipStyle = {
   padding: '6px 10px',
 };
 
-export function DonutChart({ data, height = 210 }: { data: ReportBreakdown[]; height?: number }) {
+export function DonutChart({ data, title, height = 210 }: { title: string; data: ReportBreakdown[]; height?: number }) {
   const items = data.filter((item) => item.value > 0);
   if (!items.length) return <Empty>Sem dados no período.</Empty>;
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <PieChart>
+      <PieChart aria-label={title}>
         <Pie data={items} dataKey="value" nameKey="label" innerRadius="52%" outerRadius="82%" paddingAngle={2}>
           {items.map((_, index) => <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
         </Pie>
@@ -53,12 +53,12 @@ export function DonutChart({ data, height = 210 }: { data: ReportBreakdown[]; he
   );
 }
 
-export function BarsChart({ data, height = 220, color = '#06B6D4' }: { data: ReportBreakdown[]; height?: number; color?: string }) {
+export function BarsChart({ data, title, height = 220, color = '#06B6D4' }: { title: string; data: ReportBreakdown[]; height?: number; color?: string }) {
   const items = data.filter((item) => item.value > 0).slice(0, 10);
   if (!items.length) return <Empty>Sem dados no período.</Empty>;
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={items} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 4 }}>
+      <BarChart aria-label={title} data={items} layout="vertical" margin={{ left: 6, right: 16, top: 4, bottom: 4 }}>
         <CartesianGrid horizontal={false} stroke="#eef1f5" />
         <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
         <YAxis type="category" dataKey="label" width={112} tick={{ fontSize: 12 }} />
@@ -70,12 +70,12 @@ export function BarsChart({ data, height = 220, color = '#06B6D4' }: { data: Rep
 }
 
 export function GroupedBars({
-  data, keys, height = 230,
-}: { data: Array<Record<string, string | number>>; keys: Array<{ key: string; label: string; color: string }>; height?: number }) {
+  data, keys, title, height = 230,
+}: { title: string; data: Array<Record<string, string | number>>; keys: Array<{ key: string; label: string; color: string }>; height?: number }) {
   if (!data.length) return <Empty>Sem dados no período.</Empty>;
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ left: 0, right: 8, top: 6, bottom: 4 }}>
+      <BarChart aria-label={title} data={data} margin={{ left: 0, right: 8, top: 6, bottom: 4 }}>
         <CartesianGrid vertical={false} stroke="#eef1f5" />
         <XAxis dataKey="label" tick={{ fontSize: 12 }} />
         <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
@@ -88,12 +88,12 @@ export function GroupedBars({
 }
 
 export function AreaTrend({
-  points, height = 220, color = '#2563EB', label = 'Valor',
-}: { points: ReportPeriodPoint[]; height?: number; color?: string; label?: string }) {
+  points, title, height = 220, color = '#2563EB', label = 'Valor',
+}: { title: string; points: ReportPeriodPoint[]; height?: number; color?: string; label?: string }) {
   if (!points.length) return <Empty>Sem dados no período.</Empty>;
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={points} margin={{ left: 0, right: 8, top: 6, bottom: 4 }}>
+      <AreaChart aria-label={title} data={points} margin={{ left: 0, right: 8, top: 6, bottom: 4 }}>
         <defs>
           <linearGradient id={`grad-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={color} stopOpacity={0.28} />

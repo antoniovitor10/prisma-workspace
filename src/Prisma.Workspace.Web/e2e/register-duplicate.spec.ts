@@ -9,6 +9,7 @@ test('cadastro duplicado mostra orientação em português', async ({ page }) =>
 
   await page.goto('/login');
   await page.getByRole('button', { name: 'registre-se', exact: true }).click();
+  await page.getByLabel('Nome completo', { exact: true }).fill('Pessoa Duplicada');
   await page.getByLabel('E-mail corporativo').fill(email);
   await page.getByLabel('Senha', { exact: true }).fill(password);
   const responsePromise = page.waitForResponse(response =>

@@ -185,7 +185,7 @@ export function PublicPortal() {
   };
 
   if(loading)return <Shell><Empty>Carregando portal...</Empty></Shell>;
-  if(!portal)return <Shell><Empty>{error || 'Portal não encontrado.'}</Empty></Shell>;
+  if(!portal)return <Shell><Empty>{error || 'Portal não encontrado.'}<p>Confira o endereço ou solicite um novo link ao responsável pelo portal.</p></Empty></Shell>;
 
   return <Shell>
     <Header><h1>{portal.projectName}</h1><p>Abra uma solicitação ou acompanhe o atendimento com seu protocolo.</p></Header>

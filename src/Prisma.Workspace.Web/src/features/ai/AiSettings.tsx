@@ -43,6 +43,7 @@ const Section = styled.section`
 
 export function AiSettings() {
   const status = useAiStatus(); const cache = useQueryClient(); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [busy, setBusy] = useState(false);
+  const [formDismissed, setFormDismissed] = useState(false);
   const [editing, setEditing] = useState<AiConnection | null>(null); const [adding, setAdding] = useState(false); const [groupBy, setGroupBy] = useState('day');
   const administrator = status.data?.isPlatformAdministrator === true; const orgAdmin = status.data?.canAdministerOrganization === true;
   const connections = useQuery<AiConnection[]>({ queryKey: ['ai-connections'], queryFn: () => api.request('/api/admin/ai/connections'), enabled: administrator });
@@ -66,7 +67,7 @@ export function AiSettings() {
     void action(() => api.request(`/api/admin/ai/connections/${id}/oauth/complete`, { method: 'POST', body: JSON.stringify({ code, state }) }));
   }, [administrator, action]);
   if (!administrator && !orgAdmin) return null;
-  const showForm = adding || editing !== null || connections.data?.length === 0;
+  const showForm = adding || editing !== null || (!formDismissed && connections.data?.length === 0);
   const connectionState = (c: AiConnection) => c.type === 'CliSubscription' && !['OpenAI', 'Anthropic', 'Gemini'].includes(c.provider) ? 'Configuração inválida — edite a conexão' : c.isActive ? 'Ativa' : c.testSucceeded ? 'Pronta para ativar' : c.testMessage ? 'Teste falhou' : c.type === 'OAuth' && !c.hasSecret ? 'Sem autenticação' : c.type === 'CliSubscription' ? 'Confira o login ao editar' : 'Pronta para testar';
   return <Section aria-label="Configurações de IA"><h2>Assistente de IA</h2><p>Conecte um provedor, escolha o modelo e teste. Depois, habilite o assistente nesta organização.</p>
     {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
@@ -82,7 +83,7 @@ export function AiSettings() {
           {c.type === 'OAuth' && c.hasSecret && <button className="secondary" disabled={busy} onClick={() => void action(async () => { const auth = await api.request(`/api/admin/ai/connections/${c.id}/oauth/start`, { method: 'POST' }); window.location.assign(auth.url); })}>Autenticar novamente no OpenRouter</button>}
           <button className="secondary" disabled={busy} onClick={() => { if (window.confirm(`Excluir conexão ${c.name}?`)) void action(() => api.request(`/api/admin/ai/connections/${c.id}`, { method: 'DELETE' })); }}>Excluir {c.name}</button></div></details>
       </div>)}
-      {showForm && <AiConnectionForm key={editing?.id ?? 'new'} connection={editing ?? undefined} onAuthenticationStarted={refresh} onCancel={() => { setAdding(false); setEditing(null); }} onSaved={async () => { setAdding(false); setEditing(null); await refresh(); setNotice('Conexão salva. Teste antes de ativar.'); }}/>}</>}
+      {showForm && <AiConnectionForm key={editing?.id ?? 'new'} connection={editing ?? undefined} onAuthenticationStarted={refresh} onCancel={() => { setAdding(false); setEditing(null); setFormDismissed(true); }} onSaved={async () => { setAdding(false); setEditing(null); await refresh(); setNotice('Conexão salva. Teste antes de ativar.'); }}/>}</>}
     {orgAdmin && <><div className="section-heading"><h3>IA nesta organização</h3></div><form aria-label="IA da organização" onSubmit={e => { e.preventDefault(); void action(() => api.request('/api/organizations/current/ai', { method: 'PUT', body: JSON.stringify({ enabled: orgForm.enabled, dailyTokenLimit: orgForm.dailyTokenLimit === '' ? null : Number(orgForm.dailyTokenLimit), userTokenLimit: orgForm.userTokenLimit === '' ? null : Number(orgForm.userTokenLimit) }) })); }}>
       <label className="wide check"><input type="checkbox" checked={orgForm.enabled} onChange={e => setOrgForm(v => ({ ...v, enabled: e.target.checked }))}/><span>Habilitar IA nesta organização</span></label>
       <details className="wide advanced"><summary>Cotas desta organização</summary><div className="fields"><label>Cota diária da organização<input type="number" min="0" value={orgForm.dailyTokenLimit} placeholder="Usar padrão da instalação" onChange={e => setOrgForm(v => ({ ...v, dailyTokenLimit: e.target.value }))}/></label><label>Cota diária por usuário<input type="number" min="0" value={orgForm.userTokenLimit} placeholder="Usar padrão da instalação" onChange={e => setOrgForm(v => ({ ...v, userTokenLimit: e.target.value }))}/></label><small className="wide">Em tokens. Campo vazio usa o padrão da instalação; zero significa sem limite.</small></div></details>

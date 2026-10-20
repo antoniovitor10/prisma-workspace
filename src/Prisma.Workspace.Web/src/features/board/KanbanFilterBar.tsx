@@ -21,14 +21,14 @@ const PrimaryRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 `;
 
 const SearchBox = styled.label`
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1;
+  flex: 1 1 220px;
   min-width: 0;
   padding: 0 9px;
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -93,7 +93,9 @@ const Select = styled.select`
   background: ${({ theme }) => theme.color.surface};
   font-size: 12px;
   color: ${({ theme }) => theme.color.textMutedAccessible};
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 `;
 
 const Count = styled.span`
@@ -156,6 +158,7 @@ const PanelInput = styled.input`
 
 const CardSettingsDetails = styled.details`
   position: relative;
+  @media (max-width: 560px) { flex-basis: 100%; min-width: 0; }
   summary {
     list-style: none;
     height: 30px;
@@ -175,7 +178,8 @@ const CardSettingsDetails = styled.details`
     z-index: 20;
     right: 0;
     top: 36px;
-    width: 240px;
+    width: min(240px, calc(100vw - 56px));
+    @media (max-width: 560px) { left: 0; right: auto; }
     padding: 12px;
     display: grid;
     grid-template-columns: 1fr 1fr;

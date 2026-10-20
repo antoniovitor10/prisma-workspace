@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Prisma.Workspace.Api.OpenApi;
 using Prisma.Workspace.Api.Services;
 using Prisma.Workspace.Application.Interfaces;
+using Prisma.Workspace.Application.Features.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -44,21 +45,20 @@ public sealed class AuthController : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, [FromServices] IMediator mediator, CancellationToken ct)
     {
-        var user = new IdentityUser { UserName = request.Email.Trim(), Email = request.Email.Trim() };
-        var result = await _userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded) return IdentityValidation(result);
-
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var link = BuildFrontendLink("confirm-email", user.Id, token);
-        var emailSent = await _emailSender.SendAsync(user.Email!, "Confirme seu e-mail — Prisma WorkSpace",
+        var result = await mediator.Send(new RegisterUserCommand(request.FullName, request.Email, request.Password), ct);
+        if (!result.Succeeded) return IdentityValidation(IdentityResult.Failed(result.Errors
+            .Select(error => new IdentityError { Code = error.Code, Description = error.Description }).ToArray()));
+        var token = result.ConfirmationToken!;
+        var link = BuildFrontendLink("confirm-email", result.UserId!, token);
+        var emailSent = await _emailSender.SendAsync(request.Email.Trim(), "Confirme seu e-mail — Prisma WorkSpace",
             $"Confirme seu cadastro acessando: {link}", ct);
         if (!emailSent)
-            _logger.LogWarning("Cadastro do usuário {UserId} criado, mas o e-mail de confirmação não pôde ser enviado.", user.Id);
+            _logger.LogWarning("Cadastro do usuário {UserId} criado, mas o e-mail de confirmação não pôde ser enviado.", result.UserId!);
         else
-            _logger.LogInformation("Cadastro criado para o usuário {UserId}; confirmação pendente.", user.Id);
-        return Accepted(new RegisterResponse(true, user.Id,
+            _logger.LogInformation("Cadastro criado para o usuário {UserId}; confirmação pendente.", result.UserId!);
+        return Accepted(new RegisterResponse(true, result.UserId!,
             _emailSender.CanExposeLocalToken ? token : null));
     }
 
@@ -267,6 +267,7 @@ public sealed class AuthController : ControllerBase
 }
 
 public sealed record RegisterRequest(
+    [Required(ErrorMessage = "Informe seu nome e sobrenome."), StringLength(200, MinimumLength = 2, ErrorMessage = "O nome completo deve ter entre 2 e 200 caracteres.")] string FullName,
     [Required, EmailAddress, StringLength(320)] string Email,
     [Required, StringLength(128, MinimumLength = 10)] string Password);
 public sealed record InvitationTokenRequest([Required, StringLength(512)] string Token);

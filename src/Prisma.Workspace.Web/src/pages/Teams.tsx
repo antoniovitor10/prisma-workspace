@@ -27,6 +27,7 @@ const Header = styled.header`
 `;
 const Create = styled.form`
   display:flex; flex-wrap:wrap; gap:8px;
+  label{display:grid;gap:5px;font-size:13px;font-weight:700;min-width:0;}
   input{width:230px;max-width:100%;min-height:38px;padding:0 10px;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.md};}
   @media (max-width:700px){width:100%; input{width:100%;flex:1 1 100%;}}
 `;
@@ -138,7 +139,7 @@ export function Teams() {
   const create=useMutation({mutationFn:()=>api.createTeam(name,40),onSuccess:()=>{setName('');return queryClient.invalidateQueries({queryKey:['teams']});}});
   const submit=(event:FormEvent)=>{event.preventDefault();if(name.trim())create.mutate();};
   return <Page>
-    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><CreateArea><Create onSubmit={submit}><input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create>{create.error&&<ActionFeedback role="alert" $error $compact>{(create.error as Error).message}</ActionFeedback>}</CreateArea></Header>
+    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><CreateArea><Create onSubmit={submit}><label>Nome da nova equipe<input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/></label><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create>{create.error&&<ActionFeedback role="alert" $error $compact>{(create.error as Error).message}</ActionFeedback>}</CreateArea></Header>
     {action.error && <ActionFeedback role="alert" $error>{(action.error as Error).message}</ActionFeedback>}
     <Grid>{teamsQuery.data?.map(team=><TeamCard key={team.id} team={team} users={usersQuery.data??[]} projects={projectsQuery.data??[]} run={run=>action.mutateAsync(run)}/>)}</Grid>
     {!teamsQuery.isLoading && !teamsQuery.data?.length && <Message>Nenhuma equipe cadastrada.</Message>}

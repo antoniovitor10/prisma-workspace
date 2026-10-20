@@ -1,3 +1,4 @@
+import { selectSeedProject } from './seedProject';
 import { expect, test as base, type Page } from '@playwright/test';
 
 type SeedBoard = { id: string; name: string; teamId?: string };
@@ -50,10 +51,7 @@ export const test = base.extend<TestFixtures>({
       }
       await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/);
       const projects = await authenticatedApiGet<SeedProject[]>(page, '/api/projects');
-      const summary = projects.find((project) => project.key === 'INFRACOES')
-        ?? projects.find((project) => /infrações|infracoes/i.test(project.name))
-        ?? projects.find((project) => project.boards.length > 0);
-      if (!summary) throw new Error('Nenhum projeto seed com quadro disponível para leitura E2E.');
+      const summary = selectSeedProject(projects);
       const project = await authenticatedApiGet<SeedProject>(page, `/api/projects/${summary.id}`);
       if (!project.boards.length) throw new Error(`Projeto seed ${project.key} não possui quadro.`);
       return project;

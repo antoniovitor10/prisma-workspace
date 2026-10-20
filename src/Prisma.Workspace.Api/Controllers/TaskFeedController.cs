@@ -54,6 +54,11 @@ public class TaskFeedController : ControllerBase
         return Ok(await _mediator.Send(new GetTaskEventsQuery(workItemId, ActorId), cancellationToken));
     }
 
+    [HttpGet("timeline")]
+    [ProducesResponseType(typeof(TaskTimelineDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTimeline(Guid workItemId, CancellationToken cancellationToken)
+        => Ok(await _mediator.Send(new GetTaskTimelineQuery(workItemId, ActorId), cancellationToken));
+
     [HttpGet("state-graph")]
     [ProducesResponseType(typeof(TaskStateGraphDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStateGraph(Guid workItemId, CancellationToken cancellationToken)

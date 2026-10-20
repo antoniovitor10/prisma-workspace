@@ -28,6 +28,7 @@ public class BoardRepository : IBoardRepository
     {
         return await _context.Boards
             .AsNoTracking()
+            .Where(b => !b.Project.IsArchived)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(cancellationToken);
     }

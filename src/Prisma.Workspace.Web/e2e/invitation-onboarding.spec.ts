@@ -47,7 +47,7 @@ test('conta pendente usa a senha existente; concorrência consome convite uma ve
   const password = process.env.E2E_TEST_USER_PASSWORD!;
   const guest = await playwright.request.newContext();
   try {
-    expect((await guest.post(`${apiUrl}/api/auth/register`, { data: { email, password } })).status()).toBe(202);
+    expect((await guest.post(`${apiUrl}/api/auth/register`, { data: { fullName: 'Pessoa Convidada', email, password } })).status()).toBe(202);
     const invitation = await page.evaluate(async ({ apiUrl, email }) => {
       const response = await fetch(`${apiUrl}/api/organizations/current/invitations`, {
         method: 'POST', headers: { 'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ test('conta pendente usa a senha existente; concorrência consome convite uma ve
     expect((await complete(`${password}wrong`)).status()).toBe(400);
     const results = await Promise.all([complete(password), complete(password)]);
     expect(results.map(r => r.status()).sort()).toEqual([200, 400]);
-    expect((await guest.post(`${apiUrl}/api/auth/login`, { data: { email, password } })).status()).toBe(200);
+    expect((await guest.post(`${apiUrl}/api/auth/login`, { data: { fullName: 'Pessoa Convidada', email, password } })).status()).toBe(200);
     expect((await guest.post(`${apiUrl}/api/auth/invitation/preview`, { data: { token: 'invalid' } })).status()).toBe(400);
   } finally { await guest.dispose(); }
 });
@@ -78,7 +78,7 @@ test('cadastro não confirmado é concluído pelo convite sem exigir a senha ant
   const newPassword = `${oldPassword}Novo!`;
   const guest = await playwright.request.newContext();
   try {
-    expect((await guest.post(`${apiUrl}/api/auth/register`, { data: { email, password: oldPassword } })).status()).toBe(202);
+    expect((await guest.post(`${apiUrl}/api/auth/register`, { data: { fullName: 'Pessoa Convidada', email, password: oldPassword } })).status()).toBe(202);
     const invitation = await page.evaluate(async ({ apiUrl, email }) => {
       const response = await fetch(`${apiUrl}/api/organizations/current/invitations`, {
         method: 'POST', headers: { 'Content-Type': 'application/json',
@@ -96,6 +96,6 @@ test('cadastro não confirmado é concluído pelo convite sem exigir a senha ant
       fullName: 'Gabriel Convidado', confirmPassword: newPassword } });
     expect(claimed.status()).toBe(200);
     expect((await guest.post(`${apiUrl}/api/auth/login`, { data: { email, password: newPassword } })).status()).toBe(200);
-    expect((await guest.post(`${apiUrl}/api/auth/login`, { data: { email, password: oldPassword } })).status()).toBe(401);
+    expect((await guest.post(`${apiUrl}/api/auth/login`, { data: { fullName: 'Pessoa Convidada', email, password: oldPassword } })).status()).toBe(401);
   } finally { await guest.dispose(); }
 });
