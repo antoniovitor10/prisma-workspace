@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — Continuação da estabilidade
+- Causa CSS comprovada: centro inseguro do grid semanal escondia os dias iniciais. safe center e E2E sete dias nas duas larguras; execução nativa pendente na trava.
+- Corrigida coleta de teste de privacidade node:test pelo Vitest: mesmo teste em Vitest/node, sem exclusão. Backend690PASS/33skips; tipos/lint/build PASS; fullfrontend162PASS/1FAIL em MethodSettingsPanel, causa ainda não confirmada. Não aumentar timeout ou declarar suíte verde.
+- Evidências e hipótese limitada em relatorios/oficina-e2e-stability.md. Sem migration/produção. Revisão e QA oficiais pendentes.
+
 ## 2026-10-20 — Oficina: fechamento do diagnóstico de estabilidade
 
 Corrida comprovada no teste do editor: imagem precedia feedback React; somente teste passou a aguardar a mesma mensagem terminal. Contraprova1FAIL/6PASS e restauração7PASS. Falhas CLI também envolviam token ausente e colisão de porta no harness privado; após correção, arquivo IA17PASS em duas branches. Timeout252 e deadlock não têm causa comprovada; manter hipóteses e próximos ensaios do relatório. PR30 em rascunho, sem migration ou produto alterado. Revisão/QA oficiais pendentes.

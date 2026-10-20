@@ -1,7 +1,8 @@
+// @vitest-environment node
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import type { FullConfig, FullResult, TestCase, TestResult, TestStep } from '@playwright/test/reporter';
 import DiagnosticReporter from '../../e2e/reporters/diagnostic.ts';
 

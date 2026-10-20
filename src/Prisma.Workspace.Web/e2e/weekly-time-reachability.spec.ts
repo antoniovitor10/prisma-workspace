@@ -17,7 +17,7 @@ test('QA-H10 todos os dias da semana são alcançáveis sem forçar clique',asyn
  const response=await loaded;expect(response.status()).toBe(200);const week:{days:Array<{date:string}>}=await response.json();expect(week.days).toHaveLength(7);
  const panel=page.getByRole('heading',{name:'Meu Tempo',exact:true}).locator('..');
  const directory=resolve('../../.runlogs/oficina/screenshots');mkdirSync(directory,{recursive:true});
- await page.screenshot({path:`${directory}/weekly-start-${info.project.name}.png`,scale:'css'});
+ await page.screenshot({path:`${directory}/weekly-start-${info.project.name}-${process.env.OFICINA_SCREENSHOT_PHASE??'after'}.png`,scale:'css'});
  for(let index=0;index<week.days.length;index++){
   const date=week.days[index].date;
   const matches=(response:import('@playwright/test').Response,path:string)=>{const url=new URL(response.url());return url.pathname.toLowerCase()===path&&url.searchParams.get('date')===date;};
@@ -28,5 +28,5 @@ test('QA-H10 todos os dias da semana são alcançáveis sem forçar clique',asyn
   const adjust=page.getByRole('heading',{name:/^Ajustar: /}).locator('..');await expect(adjust).toBeVisible();
   await adjust.getByRole('button',{name:'Fechar',exact:true}).click();
  }
- await page.screenshot({path:`${directory}/weekly-end-${info.project.name}.png`,scale:'css'});
+ await page.screenshot({path:`${directory}/weekly-end-${info.project.name}-${process.env.OFICINA_SCREENSHOT_PHASE??'after'}.png`,scale:'css'});
 });
