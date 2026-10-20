@@ -50,7 +50,8 @@ ao Git, issues ou logs. `VERIFYONLY` verifica a mídia, mas não substitui o ens
 
 ## Ensaiar a restauração sem substituir o banco original
 
-Use uma cópia isolada da instalação, com outro projeto Compose, porta livre e volumes novos. Defina `COMPOSE_PROJECT_NAME=prisma-recovery` no shell do clone isolado e uma porta diferente em seu `.env`;
+Use uma cópia isolada da instalação, com outro projeto Compose, porta livre e volumes novos. Execute
+`export COMPOSE_PROJECT_NAME=prisma-recovery` no shell do clone isolado e defina uma porta diferente em seu `.env`;
 esse nome prevalece sobre `name` do Compose. Confira `docker compose ps` antes de continuar. Mantenha o serviço
 `app` parado e inicie somente o `database` com `docker compose up -d --wait database`. A edição Developer do SQL Server continua restrita a desenvolvimento
 e testes. Não execute setup nem inicie a aplicação sobre a base restaurada antes de conferir sua configuração.
@@ -102,7 +103,9 @@ docker compose cp "$prisma_snapshot_dir/App_Data/." app:/app/App_Data
 docker compose cp "$prisma_snapshot_dir/DataProtection-Keys/." app:/root/.aspnet/DataProtection-Keys
 ```
 
-O container `app` precisa existir para o `compose cp`; crie-o sem iniciá-lo com `docker compose create app`.
+Antes do comando `create`, confira o commit registrado no backup e construa ou carregue sua imagem correspondente
+nesse clone isolado. O container `app` precisa existir para o `compose cp`; `docker compose create app` o cria sem
+iniciar o processo. O SQL de destino precisa aceitar backups da versão de origem; não restaure em uma versão anterior.
 Confira a configuração privada do destino: banco `PRISMA_DB_NAME=PrismaWorkspaceRestored`, senha correspondente
 ao SQL de destino, chave JWT original, setup desabilitado e URLs/porta da instalação isolada. Não sobrescreva
 cegamente o `.env` novo com a configuração do servidor antigo. Depois, inicie a mesma versão da aplicação registrada
