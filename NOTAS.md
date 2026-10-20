@@ -1,3 +1,9 @@
+## 2026-10-20 — Oficina: observabilidade E2E em andamento
+
+- Branch test/e2e-stability-20261020 a partir de a2797a7. Reporter/config opt-in e relatório versionado, sem alterar produto ou mascarar falhas.
+- Node privacidade1/1, red de título falhou como esperado e fonte restaurada; tipos explícitos comtypesnode/lint verdes. O teste usa diretório temporário dentro da worktree e remove somente os dois caminhos conhecidos, sem remoção recursiva. A primeira versão usava temporário próprio em /tmp; ajustada para respeitar a restrição do goal.
+- Browser aguardando trava global no batch da oficina-qa. A execução nativa prevista usa runtime próprio orgf51 e specs idênticos ao baseline; registrar essa diferença. Até reproduzir com causa, nenhum defeito é declarado corrigido. Próximo: analisar JSONL, screenshots e resultado nativo, então ajustar somente o que a evidência comprovar. REVISAO e QA oficiais pendentes.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

@@ -1,3 +1,9 @@
+## [2026-10-20] — Codex (Oficina) — diagnóstico E2E opt-in, validação em andamento
+
+- Branch `test/e2e-stability-20261020`, base `a2797a7`. Relatório `relatorios/oficina-e2e-stability.md` preserva falhas históricas e distingue evidência de hipóteses para Kanban, mobile, editor, AI e deadlock SQL.
+- Reporter opt-in registra origem/duração/status sem títulos, mensagens, valores ou anexos; configuração mantém prazos/retries/asserções. Teste de privacidade1/1, contraprova com título1FAIL esperada, restaurado1/1; tipos explícitos e lint passaram.
+- Nenhuma correção de produto sem causa comprovada. Native E2E ainda aguardando mutex compartilhado; autorrevisão parcial e auto-QA pendente. Sem novo skip, test.fail, migration, produção ou deploy. REVISAO e QA oficiais pendentes; não é ENTREGA final.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.
