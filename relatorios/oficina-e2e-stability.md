@@ -116,3 +116,10 @@ Prova correta: a API confirma Done5 e completedAt antes de a contraprova devolve
 Focal semanal próprio:3PASS/52,1s, sete ações Ajustar com respostas200 e sem clique forçado. Capturas mobile inicial/final e desktop final abertas: há rolagem horizontal para alcançar os sete dias no mobile. Isso confirma alcançabilidade, sem afirmar que todos os dias cabem simultaneamente na largura390.
 
 Autorrevisão: fixture exclusiva remove dependência do primeiro quadro compartilhado; asserts de persistência mantidos e ampliados. Auto-QA focal aprovado nas duas larguras; completo pendente. Causas históricas sem evidência, incluindo deadlock, continuam como hipóteses. Migration:não. REVISAO e QA oficiais:pendentes.
+
+
+## Espera pelo estado carregado do portal — 2026-10-20T18:26:21.728174+00:00
+
+CI39471941035 dob52addd:frontend167PASS/1FAIL, ExternalPortalSettings esperava Publicado imediatamente após aparecer o link. O snapshot já contém link persistido e Alterações não salvas: link deriva portalQuery.data, enquanto portalForm é copiado no useEffect posterior. O teste agora aguarda o mesmo texto Publicado antes de editar o endereço, sem ampliar o prazo padrão nem retirar as demais asserções.
+
+Afetados2PASS; contraprova que impede somente a cópia para portalForm:1FAIL/1controle; código restaurado2PASS. Tipos forçados, lint e build aprovados; frontend completo168PASS/43arquivos/186,82s. Nenhuma mudança de produto. CI39473618266, dafb661, também passou antes desta alteração unitária; não é evidência da linha nova. As duas execuções são preservadas, sem apagar a falha inicial. Novo completo nativo ainda aguarda trava. Migration:não. REVISAO e QA oficiais:pendentes.

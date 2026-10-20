@@ -37,7 +37,7 @@ describe('ExternalPortalSettings',()=>{
 
     const openLink=await screen.findByRole('link',{name:'Abrir portal público'});
     expect(openLink).toHaveAttribute('href',`${window.location.origin}/portal/teste`);
-    expect(screen.getByText('Publicado')).toBeInTheDocument();
+    expect(await screen.findByText('Publicado')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Endereço público'),{target:{value:'novo-endereco'}});
 
