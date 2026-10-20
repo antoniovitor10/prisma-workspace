@@ -156,7 +156,19 @@ test('D14 gráficos de relatórios têm nome acessível', async ({ page, request
     expect(reportData.tasks.total).toBeGreaterThan(0);
     const ready = page.waitForResponse(response => response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/reports/prepared' && new URL(response.url()).searchParams.get('projectId') === f.projectId);
     await page.goto(`/projects/${f.projectId}/reports`);
-    expect((await ready).status()).toBe(200);
+    const uiReport = await ready;
+    expect(uiReport.status()).toBe(200);
+    const uiData = await uiReport.json();
+    await info.attach('D14-render-diagnostic', { contentType: 'application/json', body: JSON.stringify({
+      taskTotal: uiData.tasks.total,
+      statusGroups: uiData.tasksByStatus.length,
+      priorityGroups: uiData.tasksByPriority.length,
+      containers: await page.locator('.recharts-responsive-container').evaluateAll(nodes => nodes.map(node => ({
+        width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
+      }))),
+      svgCount: await page.locator('svg.recharts-surface').count(),
+    }) });
+    expect(uiData.tasks.total).toBeGreaterThan(0);
     await capture(page, info, 'D14-carregamento');
     const charts = page.locator('svg.recharts-surface');
     await expect(charts.first()).toBeVisible();
