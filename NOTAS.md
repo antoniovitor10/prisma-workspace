@@ -139,3 +139,8 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+
+### 2026-10-20 — Oficina: fechamento TASK-502
+
+Auditoria npm0; frontend164 e backend690/33, tipos/lint/build aprovados. Full E2E117/2/40 preservado; harness CLI corrigido e focal3PASS. Editor final3PASS com imagem hidratada nas duas larguras, capturas abertas. Sem migration; PR32 rascunho; revisão e QA oficiais pendentes.
