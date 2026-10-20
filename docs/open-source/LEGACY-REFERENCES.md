@@ -34,3 +34,21 @@
 A existência dessas referências é tolerada apenas no repositório privado de preparação. O repositório não pode ser
 tornado público enquanto domínios, IPs, e-mails e nomes institucionais de superfície não forem eliminados ou
 formalmente justificados no inventário final.
+
+## Conferência delimitada — 20/10/2026
+
+Base a2797a7, revisão de preparação privada da Community Edition. A tabela de setembro acima é histórica,
+não uma contagem atual. README e DbInitializer já usam identidade Prisma e dados de demonstração; não foi
+feita substituição cega de dados ou migrations. O guia docs/installation/deployment.md passou a descrever
+operação independente, sem caminhos, rede, host, container ou banco de uma instalação institucional.
+
+As chaves de storage legadas em api.ts e PublicPortal.tsx são identificadores de compatibilidade, não nomes
+visíveis da interface. Renomeá-las sem transporte de dados pode encerrar sessões ou perder acesso a protocolos;
+foram preservadas nesta revisão. IDs/classes de migrations e decisões históricas também permanecem intactos,
+conforme D76.
+
+Os documentos server-dev.md, server-dev-validation.md, workspace/README.md, workspace/validation.md e os
+inventários históricos ainda precisam de seleção/anonimização antes de qualquer snapshot público. Esse recorte
+não certifica o histórico Git, a árvore inteira, ausência global de segredos ou liberação pública. Nenhum arquivo
+.env, runtime, histórico de conversa ou ambiente institucional foi lido. A licença e os gates de publicação
+continuam humanos e pendentes.
