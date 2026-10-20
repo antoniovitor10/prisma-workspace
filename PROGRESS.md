@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — reconciliação da fila auditada
+- Relatório associa tasks às propostas em PRs rascunho; não alterar status da main por código ainda não integrado.
+- TASK301 ampla depende de contrato de histórico/schema; preservados campos existentes, sem novo gate autoaprovado. Homologações310/404/405/407 e dados reais406 permanecem pendentes. TASK500 recorte documental no PR39, sem certificação global.
+- Documentação apenas; diff conferido, sem testes funcionais ou produção. Revisão/QA oficiais pendentes.
+
 ## [2026-10-20] — Codex (Oficina) — auditoria documental do backlog
 
 - Baseline `a2797a7`; conferidas as 62 tasks pending/in_progress contra código e decisões, com arquivo/linha, gates e limites em `relatorios/oficina-backlog-audit.md`.
