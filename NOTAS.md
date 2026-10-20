@@ -164,3 +164,9 @@ O roteiro calculava o fim pelo centro do retângulo completo, limitado só ao vi
 O produto de d480de2 tem Vitest completo169PASS/41arquivos em203,56s,19afetadosPASS, tipos/lint/build e tipos do E2E anterior PASS. Este commit altera somente o roteiro e documentação; não certifica o novo E2E sem executá-lo. Revisão e QA oficiais pendentes.
 
 Quarto coordenador atual1409774 esperaGeometryE2Etypes0 antes do focal/full. Não repetir ensaio sem causa nova se ainda falhar.
+
+## CI da geometria corrigida aprovado — 20/10/2026
+
+CI39441941041, head25f12cd:backend,frontend,imagem,governança e E2E success; deploy skipped. Síntese nativa remota123PASS/40skips em4,5min, sem failed/flaky na síntese. Telemetria de toque:endx357/y632,625; pointerup com overTarget=true nos casos de persistência e rollback; cancelamento teve pointercancel, sem UP. Mesmas assertivas de ordem/DTO/teclado/rollback preservadas.
+
+A falha antiga de fimx382fora do alvo e os dois CIs anteriores permanecem como evidência de diagnóstico. O CI aprovado não substitui o focal local sob a trava nem a inspeção das capturas. Tipos explícitos frescos do helper e nativo local continuam enfileirados; produto possui local169PASS/41arquivos,19afetados e tipos/lint/build aprovados. Revisão e QA oficiais pendentes.

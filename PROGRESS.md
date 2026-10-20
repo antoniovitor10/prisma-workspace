@@ -1,3 +1,8 @@
+## [2026-10-20] — Oficina — CI da coluna com alvo visível
+- CI39441941041/head25f12cd:todos os cinco gates aprovados, deploy skipped. E2E123PASS/40skips,4,5min; toque termina emx357dentro do alvo.
+- Falhas anteriores preservadas e hipótese de coalescência separada da causa geométrica confirmada. Focal/capturas locais e tipos frescos do helper ainda pendentes.
+- Somente documentação neste commit; sem migração/produção. Revisão e QA oficiais pendentes.
+
 ## [2026-10-20] — Oficina — destino touch dentro da coluna visível
 - CI39438607088:121PASS/2FAIL/40skips; quatro falhas documentais anteriores não se repetiram. Evidência confirmou MOVE chegando, porém o fim x382 fora do alvo, depois de x346 dentro. Não atribuir esse CI à coalescência.
 - Roteiro agora calcula a interseção visível da coluna e exige hit-test verdadeiro antes do gesto, sem alterar os asserts de comportamento. Lint do teste aprovado; tipos frescos e nativo pendentes.
