@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: TASK-123 em validação
+
+Cinco telas não variam mais pontos por metodologia; tipos operacionais excluem o campo e compatibilidade de configurações/API persiste. Escolha reversível registrada em PERGUNTAS. Afetados52PASS; contraprova5FAIL/15PASS e restauração20PASS, sem skip novo. Duas opções RTL inválidas corrigidas após tsc-b --force; gates finais completos e nativo pendentes. Relatório oficina-methodology-contracts.md. Sem migration; revisão/QA oficiais pendentes.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.

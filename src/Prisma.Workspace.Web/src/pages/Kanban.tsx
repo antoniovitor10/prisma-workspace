@@ -316,9 +316,8 @@ export const Kanban: React.FC = () => {
   const [columnSorts, setColumnSorts] = useState<Record<string, KanbanCardSort>>({});
   const [savedFilters, setSavedFilters] = useState<SavedFilterOption[]>([]);
   const [cardSettings, setCardSettings] = useState<KanbanCardSettings>(defaultCardSettings);
-  const [projectMethodology, setProjectMethodology] = useState<number | null>(null);
   const [projectKey, setProjectKey] = useState('ITEM');
-  const showStoryPoints = projectMethodology !== null && projectMethodology !== 1;
+  const showStoryPoints = true;
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [catalogTags, setCatalogTags] = useState<CatalogTagDto[]>([]);
   const [boardSprints, setBoardSprints] = useState<SprintOptionDto[]>([]);
@@ -553,16 +552,14 @@ export const Kanban: React.FC = () => {
     const projectId = urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId;
     if (!projectId) {
       setBoardSprints([]);
-      setProjectMethodology(null);
       return;
     }
     api.getProject(projectId)
-      .then((project: {methodology?:number;key?:string;teams?:Array<{id:string;name:string}>}) => {
-        setProjectMethodology(project.methodology ?? 1);
+      .then((project: {key?:string;teams?:Array<{id:string;name:string}>}) => {
         setProjectKey(project.key ?? 'ITEM');
         setProjectTeams(project.teams ?? []);
       })
-      .catch(() => { setProjectMethodology(null); setProjectKey('ITEM'); setProjectTeams([]); });
+      .catch(() => { setProjectKey('ITEM'); setProjectTeams([]); });
     api.getProjectSprints(projectId)
       .then((items: SprintOptionDto[]) => setBoardSprints(items.filter(item => item.status === 1 || item.status === 2)))
       .catch(() => setBoardSprints([]));

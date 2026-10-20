@@ -842,11 +842,11 @@ const quickSchema = z.object({
 });
 type QuickForm = z.infer<typeof quickSchema>;
 
-interface BacklogPlannerProps { project: ProjectSummary; }
+interface BacklogPlannerProps { project: Omit<ProjectSummary, 'methodology'>; }
 
 export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const queryClient = useQueryClient();
-  const showPoints = project.methodology !== 1;
+  const showPoints = true;
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<BacklogItem[]>([]);
   const [selectedSprintId, setSelectedSprintId] = useState('');

@@ -1,3 +1,7 @@
+## 2026-10-20 — Oficina: TASK-123 em validação
+
+Cinco telas não variam mais pontos por metodologia; tipos operacionais excluem o campo e compatibilidade de configurações/API persiste. Escolha reversível registrada em PERGUNTAS. Afetados52PASS; contraprova5FAIL/15PASS e restauração20PASS, sem skip novo. Duas opções RTL inválidas corrigidas após tsc-b --force; gates finais completos e nativo pendentes. Relatório oficina-methodology-contracts.md. Sem migration; revisão/QA oficiais pendentes.
+
 ## [2026-10-18] - Claude Code (Maestro) - nova organização só para o administrador da plataforma
 
 - Fase 2a ligada em produção (b89804b, PR #25): deploy lê method-git.env (600) com MethodGit__Enabled e os segredos do repositório pessoal cooperarpay (GitHub App prisma-metodo-vitor, só leitura de PRs). Saúde ok, sem erros novos no log.

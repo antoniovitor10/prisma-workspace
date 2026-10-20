@@ -58,7 +58,7 @@ interface StageOption {
 }
 interface AssignableUser { id: string; displayName?: string; email?: string; userName?: string; }
 interface Attachment { id: string; fileName: string; fileSize?: number; mimeType?: string; createdAt: string; }
-interface ProjectOption { id: string; methodology?: number; teams: Array<{id: string; name: string}>; }
+interface ProjectOption { id: string; teams: Array<{id: string; name: string}>; }
 
 interface Draft {
   title: string;
@@ -266,7 +266,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
-  const showStoryPoints=Boolean(projectQuery.data)&&projectQuery.data?.methodology!==1;
+  const showStoryPoints = true;
 
   useEffect(()=>{if(details){setDraft(toDraft(details));setCustomValues(Object.fromEntries(details.customFields.map(field=>[field.fieldId,field.value??''])));}},[details]);
   useEffect(()=>{setActiveTab('description');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);

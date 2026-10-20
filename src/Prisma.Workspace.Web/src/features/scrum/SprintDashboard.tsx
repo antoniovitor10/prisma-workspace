@@ -436,10 +436,10 @@ function CapacityEditor({ sprint, member, workload, readOnly, onSave }: Capacity
   );
 }
 
-interface SprintDashboardProps { project: ProjectSummary; }
+interface SprintDashboardProps { project: Omit<ProjectSummary, 'methodology'>; }
 
 export function SprintDashboard({ project }: SprintDashboardProps) {
-  const showStoryPoints = project.methodology !== 1;
+  const showStoryPoints = true;
   const theme = useTheme();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
