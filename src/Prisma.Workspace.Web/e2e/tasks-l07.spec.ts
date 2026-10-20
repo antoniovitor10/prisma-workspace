@@ -291,9 +291,11 @@ test('L07 D99: dependências oferecem autocomplete e vínculo persistido', async
     await expect(dialog(page).getByRole('heading', { name: 'Dependências e bloqueios', exact: true })).toBeVisible();
     await dialog(page).getByRole('combobox', { name: 'Buscar tarefa relacionada' }).fill(target.title);
     await expect(dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' })).toBeVisible();
-    await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).scrollIntoViewIfNeeded();
+    const option = dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).getByRole('button', { name: target.title, exact: false });
+    await expect(option).toBeVisible();
+    await option.click({ trial: true });
     await qaCapture(page, info, 'autocomplete');
-    await dialog(page).getByRole('listbox', { name: 'Tarefas encontradas' }).getByRole('button', { name: target.title, exact: false }).click();
+    await option.click();
     const linked = responseTo(page, 'POST', `/api/WorkItems/${original.id}/links`);
     await dialog(page).getByRole('button', { name: 'Vincular', exact: true }).click();
     expect((await linked).ok()).toBe(true);

@@ -1,3 +1,9 @@
+## QA — C3/C4 preparados para reteste, 20/10/2026
+
+ReportCharts/ReportsHub passam os títulos como aria-label aos SVGs reais do Recharts, preservando role/teclado. Requests usa duas colunas minmax0 no mobile e quebra do status/título; cabeçalho de tabela fica oculto nesse formato. Baseline confirmado:D14 sem nome nas duas larguras e D20mobile423>390,3 falhas/2 controles. Fechamento local31Vitest/7arquivos,tsc-b,tiposE2E,lint/build todos aprovados.
+
+C1 funcional passou5 testes novamente; captura de responsável foi inspecionada. A foto do autocomplete ainda pegava o estado de busca:novo framing espera a opção real e um click trial, mantendo seleção e vínculo como antes. Não declarar a última captura pronta sem conferir o job c1-options-visible. Próximo:merge próprio do C5, rebuild API3120 e gates finais, preservando as alterações. Native fair aguarda mutex global, um job por aquisição. REVISAO e QA oficiais pendentes.
+
 ## Oficina — 08:50 UTC, grupos C2 e C6 validados
 
 C2final7PASS, red3FAIL/4PASS, restauração7PASS; seis after inspecionados. C6seletor real3PASS,6 imagens inspecionadas, API/SQL/permissões já verdes. Relatórios individuais versionados e externos prontos. Não alegar branch completa ou revisão oficial. Achados adjacentes: Wiki já mostrava Falha ao salvar antes; template de workflow ainda corta no mobile. Não foram corrigidos neste recorte.

@@ -152,23 +152,23 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Kpi><span>Horas realizadas</span><strong>{report.hours.realized.toLocaleString('pt-BR')}h</strong></Kpi>
     </Kpis>
     <Grid>
-      <Card><h3>Tarefas por status</h3><DonutChart data={report.tasksByStatus} /></Card>
-      <Card><h3>Tarefas por prioridade</h3><DonutChart data={report.tasksByPriority} /></Card>
-      <Card><h3>Tarefas por origem</h3><DonutChart data={report.tasksByOrigin} /></Card>
-      <Card><h3>Tarefas por responsável</h3><BarsChart data={report.tasksByResponsible} color="#06B6D4" /></Card>
-      <Card><h3>Tarefas por equipe</h3><BarsChart data={report.tasksByTeam} color="#2563EB" /></Card>
-      <Card><h3>Tarefas por projeto</h3><BarsChart data={report.tasksByProject} color="#7A5CC6" /></Card>
-      <Card><h3>Solicitações por categoria</h3><BarsChart data={report.externalRequests.byCategory} color="#E8833A" /></Card>
-      <Card><h3>Solicitações por solicitante</h3><BarsChart data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
+      <Card><h3>Tarefas por status</h3><DonutChart title="Tarefas por status" data={report.tasksByStatus} /></Card>
+      <Card><h3>Tarefas por prioridade</h3><DonutChart title="Tarefas por prioridade" data={report.tasksByPriority} /></Card>
+      <Card><h3>Tarefas por origem</h3><DonutChart title="Tarefas por origem" data={report.tasksByOrigin} /></Card>
+      <Card><h3>Tarefas por responsável</h3><BarsChart title="Tarefas por responsável" data={report.tasksByResponsible} color="#06B6D4" /></Card>
+      <Card><h3>Tarefas por equipe</h3><BarsChart title="Tarefas por equipe" data={report.tasksByTeam} color="#2563EB" /></Card>
+      <Card><h3>Tarefas por projeto</h3><BarsChart title="Tarefas por projeto" data={report.tasksByProject} color="#7A5CC6" /></Card>
+      <Card><h3>Solicitações por categoria</h3><BarsChart title="Solicitações por categoria" data={report.externalRequests.byCategory} color="#E8833A" /></Card>
+      <Card><h3>Solicitações por solicitante</h3><BarsChart title="Solicitações por solicitante" data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
     </Grid>
     <Grid>
-      {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
-      <Card><h3>Previsto versus realizado (horas)</h3><GroupedBars
+      {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart title="Velocidade das sprints" data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
+      <Card><h3>Previsto versus realizado (horas)</h3><GroupedBars title="Previsto versus realizado (horas)"
         data={[{ label: 'Horas', planned: report.hours.planned, realized: report.hours.realized }]}
         keys={[{ key: 'planned', label: 'Previsto', color: '#06B6D4' }, { key: 'realized', label: 'Realizado', color: '#10B981' }]}
       /></Card>
-      <Card><h3>Volume de trabalho por período</h3><AreaTrend points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
-      <Card><h3>Burndown da sprint atual</h3><AreaTrend points={report.burndown} color="#D92D20" label="Restante" /></Card>
+      <Card><h3>Volume de trabalho por período</h3><AreaTrend title="Volume de trabalho por período" points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
+      <Card><h3>Burndown da sprint atual</h3><AreaTrend title="Burndown da sprint atual" points={report.burndown} color="#D92D20" label="Restante" /></Card>
     </Grid>
   </>;
 }
