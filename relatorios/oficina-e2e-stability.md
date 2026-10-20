@@ -83,3 +83,12 @@ A contraprova qa-weekly-counterproof teve1FAILmobile/2PASScontroles,1min, no pri
 É prova do defeito específico de início semanal, com o mesmo patch transportado do PR30. Não prova eliminação de toda intermitência histórica de QA-H10, Kanban, navegação ou deadlock. A suíte combinada anterior223PASS/8FAIL/40skips permanece registrada; focal das oito falhas e full corrigido continuam na fila. Nenhum novo retry/timeout/skip ou alteração de backend nesta correção CSS. Revisão e QA oficiais pendentes.
 
 O ensaio acima ocorreu no QA combinado do PR27; o focal e o completo próprios desta branch seguem enfileirados. Localfront162PASS/1FAIL e hipóteses não comprovadas continuam válidos como limites, não foram substituídos pelo resultado CSS.
+
+
+## Seleção do seed comprovada — 20/10/2026
+
+O novo full combinado do PR27 encerrou com230 aprovados, três falhas inesperadas e40 skips. Os três casos document-alignment escolheram projetos variáveis: o resolvedor procurava INFRACOES, mas o initializer atual cria DEMO, e o fallback escolhia projects[0]. Os artefatos desktop mostram uma única tarefa L08 onde eram exigidos filha e segundo alvo; o mobile recebeu400 ao tentar atribuir pessoa sem acesso ao projeto da fixture. Não é motivo para enfraquecer a autorização.
+
+Commit1b1d3ff centraliza a escolha por DEMO, admite o legado INFRACOES e falha explicitamente se nenhum existir. Fixtures compartilhadas e document-alignment usam o mesmo helper. Cinco testes cobrem ordenação variável, coexistência dos seeds, legado e ausência do seed. Contraprova real com a seleção antiga:3FAIL/2controles. Restauração:5PASS. Tipos forçados, lint, build e tipos E2E aprovados. Novo frontend completo:168PASS em43 arquivos,182,85s. A falha anterior de MethodSettingsPanel não se repetiu; sua causa continua sem confirmação e não foi corrigida por este lote.
+
+O patch de teste foi transportado para o PR27 como8e47329 somente após o full anterior terminar; gates e novo focal/full combinados em andamento. O focal semanal e full próprios do PR30 ainda aguardam a trava, agora com o seletor validado. Essa causa comprovada não é atribuída retroativamente a outras execuções sem artefatos equivalentes. Migration:não. Autorrevisão sem alto/médio confirmado nesta seleção explícita; revisão e QA oficiais pendentes.

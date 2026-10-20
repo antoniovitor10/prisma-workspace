@@ -163,3 +163,8 @@ E2E semanal e completo da branch própria foram enfileirados para diagnóstico e
 A contraprova qa-weekly-counterproof teve1FAILmobile/2PASScontroles,1min, no primeiro Ajustar inacessível com centro inseguro. Restaurado o CSS safe center, qa-weekly-green teve3PASS em27,6s:setup e sete dias alcançados por cliques normais em desktop1440/mobile390, com daily-by-task e justifications200 para cada dia. Capturas foram abertas:antes a segunda/terça ficavam fora à esquerda no mobile; depois a semana começa pela segunda e o restante é alcançável horizontalmente. Desktop mantém os sete dias centralizados.
 
 É prova do defeito específico de início semanal, com o mesmo patch transportado do PR30. Não prova eliminação de toda intermitência histórica de QA-H10, Kanban, navegação ou deadlock. A suíte combinada anterior223PASS/8FAIL/40skips permanece registrada; focal das oito falhas e full corrigido continuam na fila. Nenhum novo retry/timeout/skip ou alteração de backend nesta correção CSS. Revisão e QA oficiais pendentes.
+
+
+### 2026-10-20 — Oficina: seletor determinístico do seed
+
+Root full230/3/40 escolheu projetos variáveis pelo fallback do seed legado. Novo helper DEMO/INFRACOES, sem fallback arbitrário; RED3FAIL/2controles→GREEN5PASS. Gates tipos/lint/build/E2Etypes aprovados; novo fullfrontend168PASS43arquivos182,85s. MethodSettingsPanel não repetiu a falha, mas causa continua desconhecida. Código1b1d3ff transportado ao PR27 após fim do full; nativos próprios PR30 pendentes.

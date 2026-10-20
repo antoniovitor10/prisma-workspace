@@ -1983,3 +1983,8 @@ Identificação histórica na main: Codex + agentes Orca; mesma entrada, sem dup
 - **Decisões novas:** D1–D5 (ver DECISIONS.md).
 - **Próximo passo:** Antigravity cria a solution da Fase 0 (esqueleto, sem entidades).
 - **Bloqueios:** Frontend (Next.js vs Blazor) em aberto — decidir na Fase 2 (D6).
+
+
+### 2026-10-20 — Oficina: seletor determinístico do seed
+
+Root full230/3/40 escolheu projetos variáveis pelo fallback do seed legado. Novo helper DEMO/INFRACOES, sem fallback arbitrário; RED3FAIL/2controles→GREEN5PASS. Gates tipos/lint/build/E2Etypes aprovados; novo fullfrontend168PASS43arquivos182,85s. MethodSettingsPanel não repetiu a falha, mas causa continua desconhecida. Código1b1d3ff transportado ao PR27 após fim do full; nativos próprios PR30 pendentes.
