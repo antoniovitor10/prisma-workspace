@@ -1,3 +1,15 @@
+## 2026-10-20 — Oficina: frontend NuGet confirmado após corrida de teste
+
+Frontend completo162PASS/41arquivos após8e04254, correção somente no teste do feedback do editor comprovada no PR30. E2E completo117PASS/2FAIL/40skips por token ausente no harness privado; repetição CLI e auto-QA exato ainda enfileirados. Backend693PASS/33skips e auditoria cinco projetos sem vulneráveis. PR34 em rascunho; não declarar fechamento visual nem revisões oficiais.
+
+# Oficina — TASK-503, checkpoint de 20/10/2026
+
+Branch fix/nuget-security-20261020, base a2797a7. Backend completo:693 aprovados,33 skips existentes,0 falhas; build aprovado. Auditoria com caminho absoluto confirmou cinco projetos sem alertas; a chamada relativa encontrou erro interno do SDK. Contraprova correta de annotation-xml:2 falhas antigas,4 aprovados após restaurar. Fontes e binários verdes. A hipótese descartada de escape genérico e seus limites estão no relatório.
+
+Frontend completo está enfileirado em .runlogs/oficina/full-gates.py; verificar frontend-*.log e full-gates-run.log. E2E completo está no plano do browser de oficina-qa, job nuget-full-e2e, com wrapper privado. API/Vite3128/3129 só podem iniciar em sequência com C5/Npm sob o mutex CPU; o bootstrap já encerrou seu próprio processo. Não alterar node_modules compartilhado da OficinaOrg por esta branch.
+
+Próximo:inspecionar os resultados, auto-QA e relatório final antes de ENTREGA. REVISAO e QA oficiais pendentes. Sem produção, main, deploy ou migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
@@ -133,3 +145,8 @@ Atualizado em 2026-10-13, por Tear, tarefa 3.
 - Falhas da tarefa 2 em board-stage-sync desktop/mobile e rich-task-description mobile não se repetiram nas duas rodadas limpas. Specs intactos. Logs e artefatos locais ignorados em `.runlogs/integration`, test-results e playwright-report; os do CI ficam no workspace temporário sob essa pasta.
 - Ambiente final: somente app/SQL persistentes prisma-dev, saudáveis; app/API da branch em 0.0.0.0:3100 e SQL exclusivo em 127.0.0.1:3102. Operação: `scripts/run-local.sh up` / `scripts/run-local.sh down`. Usuário admin@prisma.example.invalid, senha no arquivo ignorado `.env.e2e.seedpassword`. Nenhum recurso de produção ou outro projeto alterado.
 - Próximo passo: Maestro revisar, abrir PR e fazer merge na main conforme autorização do PO. Tear não abre PR, integra main nem publica. Sem QA visual humano ou conta CLI/inferência real nesta tarefa.
+
+
+### 2026-10-20 — Oficina: fechamento TASK-503
+
+Backend693/33, frontend162, tipos/lint/build e auditoria NuGet aprovados. Full E2E117/2/40 preservado; harness CLI corrigido e focal3PASS. Editor3PASS50,2s e capturas1440/390 abertas com imagem real. CancelamentoPUT500 no encerramento registrado. Sem migration; PR34 rascunho; revisão e QA oficiais pendentes.
