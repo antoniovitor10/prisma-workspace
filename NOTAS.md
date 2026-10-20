@@ -1,3 +1,9 @@
+# Oficina npm — checkpoint 20/10/2026, 08:54 UTC
+
+Branch fix/npm-security-20261020, base a2797a7, somente worktree própria. Frontend concluído localmente:164Vitest,tipos/lint/build,regressão red2/green2,auditoria0 com contraprova42/restauração0. Node_modules é físico e privado desta worktree. Nunca substituir instalações das outras branches. npm11.19.1 usado via npx por erro confirmado do npm10, sem mudar global.
+
+Build da solução e fullxUnit690PASS/33 skips existentes concluídos. Pendentes:nativeE2E/auto-QA e relatório final. Planejar API/Vite próprias apenas em3120–3129 e banco prefixado noSQLQA3111, sob mutexCPU e navegador. Não usar artefato de outra branch como se fosse este. Relatório relatorios/oficina-npm-security.md e logs.runlogs/oficina detalham todos os resultados. REVISAO e QA oficiais pendentes; sem produção/main/merge/deploy/migration nova.
+
 ## 2026-10-16 — Forja: correção P2 do histórico e harness final
 
 - Dono exclusivo: MethodMovementRecorder.cs, MethodMovementHistoryTests.cs novo, asserções em MethodMovementSqlTests.cs e estas notas/PROGRESS. Todos os nomes de colunas vêm dos IDs validados; uma consulta por lote, tracker prevalece no mesmo Save, snapshots não mudam com renomeações futuras. Matriz e estrutura imutável preservadas.
