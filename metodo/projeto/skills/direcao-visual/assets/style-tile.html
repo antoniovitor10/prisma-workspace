@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Style tile · Rota</title>
+<!-- EDITAR: as fontes da rota (Google Fonts). No máximo 2 famílias (3 se houver uma de dado). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Troque FAMILIA+DISPLAY e FAMILIA+TEXTO pelas famílias da rota (espaço vira +) e use os mesmos nomes em --f-display e --f-texto. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=FAMILIA+DISPLAY:wght@500;700&family=FAMILIA+TEXTO:wght@400;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<!--
+  Style tile da skill direcao-visual. NÃO é uma página do site: é o painel da rota.
+  Regras:
+  - Só var(--*) de tokens.css. Nenhum hex, nenhuma fonte, nenhum tamanho solto neste arquivo.
+  - Edite apenas: tokens.css, o <link> das fontes, os textos marcados com data-editar e a seção .assinatura.
+  - Trocar de rota = trocar tokens.css. Se precisar mexer no CSS abaixo para a rota funcionar, a rota está no lugar errado.
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--c-fundo);
+    color: var(--c-texto);
+    font-family: var(--f-texto);
+    font-size: var(--t-corpo);
+    line-height: var(--altura-linha);
+    padding-bottom: calc(var(--barra-mobile) + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 900px) { body { padding-bottom: 0; } }
+
+  .tile { max-width: 1280px; margin: 0 auto; padding: var(--espaco-5) var(--margem-pagina); display: grid; gap: var(--espaco-5); }
+  @media (min-width: 900px) {
+    .tile { grid-template-columns: 5fr 7fr; grid-template-areas: "cab cab" "tipo cor" "botoes card" "foto form" "ass ass" "barra barra"; column-gap: var(--espaco-5); }
+    .cab { grid-area: cab; } .tipo { grid-area: tipo; } .cor { grid-area: cor; } .botoes { grid-area: botoes; }
+    .card-bloco { grid-area: card; } .foto { grid-area: foto; } .form { grid-area: form; } .ass { grid-area: ass; } .barra-bloco { grid-area: barra; }
+  }
+
+  .rotulo { font-size: var(--t-pequeno); color: var(--c-texto-2); margin: 0 0 var(--espaco-3); }
+  section { min-width: 0; }
+
+  /* Cabeçalho da rota */
+  .cab { border-bottom: 1px solid var(--c-linha); padding-bottom: var(--espaco-4); }
+  .cab h1 { font-family: var(--f-display); font-size: var(--t-h2); line-height: var(--altura-linha-titulo); margin: 0 0 var(--espaco-2); }
+  .cab p { margin: 0; color: var(--c-texto-2); max-width: var(--medida); }
+
+  /* Tipografia */
+  .tipo .h1 { font-family: var(--f-display); font-size: var(--t-h1); line-height: var(--altura-linha-titulo); margin: 0 0 var(--espaco-3); }
+  .tipo .h2 { font-family: var(--f-display); font-size: var(--t-h2); line-height: var(--altura-linha-titulo); margin: var(--espaco-4) 0 var(--espaco-2); }
+  .tipo .h3 { font-family: var(--f-texto); font-size: var(--t-h3); font-weight: 600; margin: var(--espaco-4) 0 var(--espaco-2); }
+  .tipo p { max-width: var(--medida); margin: 0 0 var(--espaco-3); }
+  .tipo .legenda { font-size: var(--t-pequeno); color: var(--c-texto-2); }
+  .tipo .dado { font-family: var(--f-dado); font-variant-numeric: tabular-nums; }
+
+  /* Cor */
+  .amostras { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--espaco-3); }
+  .amostra { border: 1px solid var(--c-linha); border-radius: var(--raio); overflow: hidden; font-size: var(--t-pequeno); }
+  .amostra i { display: block; height: 4.5rem; }
+  .amostra span { display: block; padding: var(--espaco-2); }
+  .contrastes { width: 100%; border-collapse: collapse; margin-top: var(--espaco-4); font-size: var(--t-pequeno); }
+  .contrastes th, .contrastes td { text-align: left; padding: var(--espaco-2); border-bottom: 1px solid var(--c-linha); }
+  .contrastes .falha { font-weight: 700; }
+
+  /* Botões */
+  .linha-botoes { display: flex; flex-wrap: wrap; gap: var(--espaco-3); align-items: center; margin-bottom: var(--espaco-3); }
+  .btn {
+    font: 600 var(--t-corpo)/1 var(--f-texto);
+    min-height: var(--alvo-min); padding: 0 var(--espaco-4);
+    display: inline-flex; align-items: center; gap: var(--espaco-2);
+    border-radius: var(--raio-botao); border: 2px solid var(--c-acao);
+    background: var(--c-acao); color: var(--c-acao-texto);
+    text-decoration: none; cursor: pointer;
+    transition: transform var(--dur) var(--curva), background-color var(--dur) var(--curva);
+  }
+  @media (min-width: 900px) { .btn { min-height: var(--alvo-min-desktop); } }
+  .btn--sec { background: transparent; color: var(--c-acao); }
+  @media (hover: hover) and (pointer: fine) { .btn:hover { transform: translateY(-1px); } }
+  .btn.is-hover { transform: translateY(-1px); }
+  .btn:focus-visible, .btn.is-foco { outline: 3px solid var(--c-foco); outline-offset: 3px; }
+  .btn:active, .btn.is-ativo { transform: translateY(1px); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .link { color: var(--c-acao); text-underline-offset: 0.2em; }
+  /* link fora de parágrafo é alvo de toque: altura mínima da casa */
+  .card .link, .estado .link { display: inline-flex; align-items: center; min-height: var(--alvo-min); }
+  .estado { display: grid; gap: var(--espaco-1); font-size: var(--t-pequeno); color: var(--c-texto-2); }
+
+  /* Card de serviço (um, de propósito: três cards iguais é sintoma) */
+  .card { background: var(--c-superficie); border-radius: var(--raio); padding: var(--espaco-4); box-shadow: var(--sombra); max-width: 34rem; }
+  .card h3 { font-family: var(--f-display); font-size: var(--t-h3); margin: 0 0 var(--espaco-2); }
+  .card dl { display: grid; grid-template-columns: auto 1fr; gap: var(--espaco-1) var(--espaco-3); margin: var(--espaco-3) 0; font-size: var(--t-pequeno); }
+  .card dt { color: var(--c-texto-2); }
+  .card dd { margin: 0; font-family: var(--f-dado); font-variant-numeric: tabular-nums; }
+
+  /* Foto tratada */
+  .foto figure { margin: 0; }
+  .foto img, .foto .falta { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--raio); display: block; }
+  @media (min-width: 900px) { .foto img, .foto .falta { aspect-ratio: 3 / 2; } }
+  .foto .falta { background: var(--c-superficie); border: 1px dashed var(--c-linha); display: grid; place-items: center; padding: var(--espaco-4); text-align: center; color: var(--c-texto-2); font-size: var(--t-pequeno); }
+  .foto figcaption { font-size: var(--t-pequeno); color: var(--c-texto-2); margin-top: var(--espaco-2); }
+
+  /* Formulário */
+  .campo { display: grid; gap: var(--espaco-1); max-width: 24rem; margin-bottom: var(--espaco-3); }
+  .campo label { font-weight: 600; }
+  .campo input { font: inherit; font-size: max(16px, var(--t-corpo)); min-height: var(--alvo-min); padding: 0 var(--espaco-3); border: 1.5px solid var(--c-linha); border-radius: var(--raio); background: var(--c-fundo); color: var(--c-texto); }
+  .campo input:focus-visible { outline: 3px solid var(--c-foco); outline-offset: 1px; border-color: var(--c-acao); }
+  .campo .erro { font-size: var(--t-pequeno); }
+  .campo--erro input { border-color: var(--c-texto); border-width: 2px; }
+
+  /* Assinatura: o elemento memorável da rota. Edite livremente DENTRO desta seção, só com var(--*). */
+  .ass { border-top: 1px solid var(--c-linha); padding-top: var(--espaco-5); }
+
+  /* Barra de ação mobile */
+  .barra { display: flex; gap: var(--espaco-2); padding: var(--espaco-2) var(--margem-pagina) calc(var(--espaco-2) + env(safe-area-inset-bottom)); background: var(--c-fundo); border-top: 1px solid var(--c-linha); min-height: var(--barra-mobile); align-items: center; }
+  .barra .btn { flex: 1; justify-content: center; }
+  @media (max-width: 899px) { .barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; } }
+  @media (min-width: 900px) { .barra { max-width: 390px; border: 1px solid var(--c-linha); border-radius: var(--raio); } }
+</style>
+</head>
+<body>
+<main class="tile">
+
+  <header class="cab">
+    <p class="rotulo">Style tile · direção visual</p>
+    <h1 data-editar>Rota A · Nome da rota</h1>
+    <p data-editar>Atributos: acolhedor mas preciso · premium mas acessível · local mas atual.</p>
+  </header>
+
+  <section class="tipo" aria-labelledby="s-tipo">
+    <p class="rotulo" id="s-tipo">Tipografia</p>
+    <p class="h1" data-editar>A frase-tese do hero, com as palavras do cliente</p>
+    <p data-editar>Parágrafo de corpo com a voz do profissional: frases curtas, um fato concreto por frase, sem promessa abstrata. Exemplo: atendemos de segunda a sábado e a primeira consulta dura 40 minutos, com exame e plano por escrito.</p>
+    <p class="h2" data-editar>Título de seção que responde a uma pergunta do cliente</p>
+    <p class="h3" data-editar>Subtítulo de apoio</p>
+    <p class="legenda" data-editar>Legenda de foto ou nota: Dra. Fulana, CRO-SE 0000, responsável técnica.</p>
+    <p class="dado" data-editar>Seg–Sex 8h–19h · Sáb 8h–12h · (79) 0000-0000</p>
+  </section>
+
+  <section class="cor" aria-labelledby="s-cor">
+    <p class="rotulo" id="s-cor">Cor (papéis e contrastes calculados nesta página)</p>
+    <div class="amostras" id="amostras"></div>
+    <table class="contrastes" id="contrastes">
+      <thead><tr><th>Par</th><th>Contraste</th><th>Mínimo</th><th>Resultado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="botoes" aria-labelledby="s-botoes">
+    <p class="rotulo" id="s-botoes">Botões e estados</p>
+    <div class="linha-botoes">
+      <span class="estado"><a class="btn" href="#" data-cta data-editar>Agendar pelo WhatsApp</a>repouso</span>
+      <span class="estado"><a class="btn is-hover" href="#">Agendar pelo WhatsApp</a>hover</span>
+      <span class="estado"><a class="btn is-foco" href="#">Agendar pelo WhatsApp</a>foco</span>
+      <span class="estado"><a class="btn is-ativo" href="#">Agendar pelo WhatsApp</a>ativo</span>
+    </div>
+    <div class="linha-botoes">
+      <span class="estado"><a class="btn btn--sec" href="#" data-editar>Ver como chegar</a>secundário</span>
+      <span class="estado"><button class="btn" disabled>Enviando…</button>desabilitado</span>
+      <span class="estado"><a class="link" href="#" data-editar>Ler sobre o tratamento</a>link no texto</span>
+    </div>
+  </section>
+
+  <section class="card-bloco" aria-labelledby="s-card">
+    <p class="rotulo" id="s-card">Card de serviço</p>
+    <article class="card">
+      <h3 data-editar>Nome do serviço principal</h3>
+      <p data-editar>Para quem é, em uma frase concreta.</p>
+      <dl>
+        <dt>Duração</dt><dd data-editar>40 min</dd>
+        <dt>Sessões</dt><dd data-editar>1 a 2</dd>
+        <dt>Retorno</dt><dd data-editar>15 dias</dd>
+      </dl>
+      <a class="link" href="#" data-editar>Perguntar sobre este serviço no WhatsApp</a>
+    </article>
+  </section>
+
+  <section class="foto" aria-labelledby="s-foto">
+    <p class="rotulo" id="s-foto">Foto tratada (mobile 4:5, desktop 3:2)</p>
+    <figure>
+      <!-- EDITAR: foto real com autorização "sim" no docs/insumos/INDICE.md, copiada para esta pasta. -->
+      <img src="foto.jpg" alt="" data-editar onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'falta',textContent:this.dataset.falta||'Foto que falta: descreva aqui (ex.: mãos da dentista ajustando a moldeira, luz da janela, sem rosto)'}))" data-falta="Foto que falta: descreva aqui o enquadramento, a luz e o tratamento de cor.">
+      <figcaption data-editar>Legenda real: quem, onde, o quê.</figcaption>
+    </figure>
+  </section>
+
+  <section class="form" aria-labelledby="s-form">
+    <p class="rotulo" id="s-form">Formulário</p>
+    <div class="campo">
+      <label for="tel">WhatsApp com DDD</label>
+      <input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(79) 9 0000-0000">
+    </div>
+    <div class="campo campo--erro">
+      <label for="nome">Nome</label>
+      <input id="nome" type="text" autocomplete="name" aria-describedby="nome-erro" aria-invalid="true">
+      <span class="erro" id="nome-erro">Informe seu nome para a gente saber como te chamar.</span>
+    </div>
+  </section>
+
+  <section class="ass" aria-labelledby="s-ass">
+    <p class="rotulo" id="s-ass">Assinatura da rota</p>
+    <!-- EDITAR: o elemento memorável tirado do mundo do cliente (ex.: "sumário do tratamento", "etiqueta de espécime", "como chegar em 3 fotos").
+         HTML e um <style> local aqui dentro, só com var(--*). Mostre como ele fica no desktop e como muda no mobile. -->
+    <div data-editar>
+      <p>Descreva e desenhe aqui a assinatura.</p>
+    </div>
+  </section>
+
+  <section class="barra-bloco" aria-labelledby="s-barra">
+    <p class="rotulo" id="s-barra">Barra de ação no mobile (fixa no rodapé abaixo de 900px; aqui, a prévia)</p>
+    <nav class="barra" aria-label="Ações rápidas">
+      <a class="btn" href="#" data-cta data-editar>WhatsApp</a>
+      <a class="btn btn--sec" href="#" data-editar>Ligar</a>
+    </nav>
+  </section>
+
+</main>
+
+<script>
+  // Lê os tokens de cor e calcula o contraste WCAG dos pares que importam. Sem dependências.
+  const PAPEIS = ['--c-fundo', '--c-superficie', '--c-texto', '--c-texto-2', '--c-acao', '--c-acao-texto', '--c-acento', '--c-linha'];
+  const PARES = [
+    ['--c-texto', '--c-fundo', 4.5], ['--c-texto', '--c-superficie', 4.5], ['--c-texto-2', '--c-fundo', 4.5],
+    ['--c-acao-texto', '--c-acao', 4.5], ['--c-acao', '--c-fundo', 3], ['--c-linha', '--c-fundo', 1.2],
+  ];
+  const css = getComputedStyle(document.documentElement);
+  const cnv = document.createElement('canvas'); cnv.width = cnv.height = 1;
+  const ctx = cnv.getContext('2d', { willReadFrequently: true });
+  function rgb(valor) { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = '#000'; ctx.fillStyle = valor; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3); }
+  const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const hex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+  const am = document.getElementById('amostras');
+  for (const p of PAPEIS) {
+    const v = css.getPropertyValue(p).trim(); if (!v) continue;
+    const d = document.createElement('div'); d.className = 'amostra';
+    d.innerHTML = `<i style="background:var(${p})"></i><span>${p.replace('--c-', '')}<br>${hex(rgb(v))}</span>`;
+    am.appendChild(d);
+  }
+  const tb = document.querySelector('#contrastes tbody');
+  for (const [a, b, min] of PARES) {
+    const va = css.getPropertyValue(a).trim(), vb = css.getPropertyValue(b).trim(); if (!va || !vb) continue;
+    const c = contraste(rgb(va), rgb(vb)); const ok = c >= min;
+    const tr = document.createElement('tr'); if (!ok) tr.className = 'falha';
+    tr.innerHTML = `<td>${a.replace('--c-', '')} sobre ${b.replace('--c-', '')}</td><td>${c.toFixed(2)}:1</td><td>${min}:1</td><td>${ok ? 'passa' : 'FALHA'}</td>`;
+    tb.appendChild(tr);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+/* tokens.css · fonte única de cor, tipo, espaço, raio, sombra e movimento.
+   Variáveis por PAPEL, nunca por matiz (--c-acao, não --verde).
+   Na página e nos componentes, use só var(--*): nenhum hex solto.
+   Valores abaixo são neutros de exemplo: a rota escolhida substitui todos.
+   Confira os contrastes com: node <skill direcao-visual>/scripts/contraste.mjs tokens.css */
+
+:root {
+  /* Cor */
+  --c-fundo: #ffffff;          /* fundo da página */
+  --c-superficie: #f1f2f0;     /* blocos, cartões, faixas */
+  --c-texto: #1b1c1e;          /* texto principal (≥ 4,5:1 sobre fundo e superfície) */
+  --c-texto-2: #55595f;        /* legenda, texto secundário (≥ 4,5:1 sobre o fundo) */
+  --c-acao: #22577a;           /* botão principal, link (≥ 3:1 sobre o fundo) */
+  --c-acao-texto: #ffffff;     /* texto sobre --c-acao (≥ 4,5:1) */
+  --c-acento: #e0a526;         /* detalhe da assinatura; nunca texto sem conferir */
+  --c-linha: #d4d6d2;          /* fios e bordas */
+  --c-foco: var(--c-acao);     /* contorno de foco */
+
+  /* Tipo */
+  --f-display: "Familia Display", Georgia, serif;
+  --f-texto: "Familia Texto", system-ui, sans-serif;
+  --f-dado: ui-monospace, "SFMono-Regular", monospace;  /* horários, preços, números */
+
+  --t-h1: clamp(2.25rem, 1.4rem + 4vw, 4.5rem);
+  --t-h2: clamp(1.625rem, 1.2rem + 1.8vw, 2.5rem);
+  --t-h3: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --t-corpo: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --t-pequeno: 0.875rem;
+  --altura-linha: 1.55;
+  --altura-linha-titulo: 1.1;
+  --medida: 65ch;              /* largura máxima de texto corrido */
+
+  /* Espaço e forma */
+  --espaco-1: 0.25rem;
+  --espaco-2: 0.5rem;
+  --espaco-3: 1rem;
+  --espaco-4: 1.5rem;
+  --espaco-5: 2.5rem;
+  --espaco-secao: clamp(3rem, 2rem + 5vw, 7rem);
+  --margem-pagina: clamp(1rem, 0.5rem + 3vw, 3rem);
+  --raio: 6px;
+  --raio-botao: 6px;
+  --sombra: none;              /* uma camada de profundidade, no máximo */
+
+  /* Toque e barra mobile */
+  --alvo-min: 48px;            /* padrão da casa no mobile (WCAG exige ≥ 24px) */
+  --alvo-min-desktop: 44px;
+  --barra-mobile: 64px;        /* altura da barra fixa inferior (WhatsApp + Ligar) */
+
+  /* Movimento */
+  --dur: 180ms;
+  --curva: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 0ms; }
+}
