@@ -19,9 +19,9 @@ metadata:
 ## Caminho até a produção
 
 1. `push` ou `pull_request` para a `main` dispara o `CI` (`.github/workflows/ci.yml:3-8`); execuções antigas do mesmo ref são canceladas, exceto na `main` (linhas 13-15).
-2. Em paralelo: **Backend** (restore e build Release, linhas 18-31), **Frontend** (lint, Vitest em série, build, `npm audit --audit-level=critical`, linhas 34-58), **Context governance** (linhas 60-74) e **Container** (testes Python de deploy e da ponte, `docker build` com label do commit, exporta imagem, sha256 e `migrations.json`, linhas 76-100).
-3. **E2E** carrega a candidata e roda `scripts/ci-e2e.sh` com SQL descartável, desktop e mobile (linhas 104-122).
-4. **Deploy produção** depois de todos (linha 126), environment `production`, concorrência `prisma-production` sem cancelar publicação em andamento (linhas 130-135): copia imagem e script por `scp` para `/home/dev/prisma-deploy/incoming/<sha>` e executa `deploy-production.py <sha>` por SSH (linhas 144-164). Segredos `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` ficam no GitHub.
+2. Em paralelo: **Backend** (restore e build Release, linhas 18-31), **Frontend** (lint, Vitest em série, build, `npm audit --audit-level=critical`, linhas 34-58) e **Container** (testes Python de deploy e da ponte, `docker build` com label do commit, exporta imagem, sha256 e `migrations.json`, linhas 60-85).
+3. **E2E** carrega a candidata e roda `scripts/ci-e2e.sh` com SQL descartável, desktop e mobile (linhas 87-106).
+4. **Deploy produção** depois de todos (linha 110), só na `main` por push ou `workflow_dispatch`, environment `production`, concorrência `prisma-production` sem cancelar publicação em andamento (linhas 114-119): copia imagem e script por `scp` para `/home/dev/prisma-deploy/incoming/<sha>` e executa `deploy-production.py <sha>` por SSH (linhas 147-148). Segredos `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` ficam no GitHub.
 5. `deploy-production.py` confere checksum e label da imagem, compara o manifesto de migrations, faz backup SQL `COPY_ONLY` com `CHECKSUM` e `RESTORE VERIFYONLY` mais cópia dos anexos em `/home/dev/backups/prisma/<data>-<commit>`, renomeia o contêiner atual para `prisma-workspace-api-rollback-<data>`, sobe a candidata na rede `slc_default` e verifica a saúde interna e `https://prisma.nordevs.com.br/health`.
 
 ## Rollback
@@ -32,7 +32,7 @@ metadata:
 
 ## O que verificar depois de integrar
 
-- O run do `CI` na `main` com os seis jobs verdes (`gh run list --branch main --limit 1`; `gh run view <id>`), só leitura.
+- O run do `CI` na `main` com os cinco jobs verdes (backend, frontend, container, E2E e deploy) (`gh run list --branch main --limit 1`; `gh run view <id>`), só leitura.
 - `https://prisma.nordevs.com.br/health` respondendo. Logs e contêiner de produção não são lidos pelos agentes do servidor.
 
 ## Exemplos do projeto

@@ -39,5 +39,5 @@ Licença, SBOM, proveniência, versionamento SemVer e primeira release `v0.1.0`,
 
 ## Origem das regras
 
-- D68, D75, D76, D77, D78, D79, D80; `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/open-source/*`, `scripts/audit-public-snapshot.sh`, `.github/dependabot.yml`, `ROADMAP.md` (fase 13).
+- D68, D75, D76, D77, D78, D79, D80; `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/open-source/*`, `scripts/audit-public-snapshot.sh`, `.github/dependabot.yml`, o antigo `ROADMAP.md` (fase 13, hoje resumida em `metodo/projeto/contexto.md` e no histórico do git).
 - Decisão do Vitor de 2026-10-21: método versionado no repositório público.
