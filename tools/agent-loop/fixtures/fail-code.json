@@ -1,8 +1,0 @@
-{
-  "id": "fixture-fail-code",
-  "title": "Repeated code failure",
-  "objective": "Demonstrate deterministic retry blocking",
-  "code": "FAIL_CODE",
-  "details": { "signature": "fixture-repeat" },
-  "max_attempts": 3
-}

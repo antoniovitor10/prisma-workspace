@@ -51,7 +51,7 @@ Com `revisao_seguranca: quando-sensivel`, toda task que toca uma linha desta tab
 | G-DEPLOY | princípio 1: agente nunca integra nem publica; o Maestro integra com revisão aprovada e CI verde; risco alto espera o Vitor |
 | G-COMPLETION | `tem_homologacao: false`: no nível 2 a task termina `concluida` depois da integração; o Vitor confere e pode reabrir; `fechar-hu` |
 
-O painel de aprovações do Context Explorer e o `.agent-state/gate-decisions.json` não autorizam nada.
+O antigo `.agent-state/gate-decisions.json` não autoriza nada; a autorização é a mudança de status no Prisma, feita pelo Vitor.
 
 ## Armadilhas conhecidas
 

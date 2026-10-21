@@ -34,11 +34,10 @@ Licença, SBOM, proveniência, versionamento SemVer e primeira release `v0.1.0`,
 
 ## Armadilhas conhecidas
 
-- `CONTRIBUTING.md:9-10,22` ainda manda criar história em `stories/`, spec aprovada e entrada no `PROGRESS.md`; `GOVERNANCE.md` também descreve o fluxo antigo. Ajustar os dois ao método é uma task própria, junto com o PR de remoção do legado.
 - `SECURITY.md:11-12` fala de repositório privado; o repositório já é público.
 - A auditoria do snapshot não roda no CI: rode `node metodo/nucleo/scripts/segredos.mjs` em toda entrega.
 
 ## Origem das regras
 
-- D68, D75, D76, D77, D78, D79, D80; `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/open-source/*`, `scripts/audit-public-snapshot.sh`, `.github/dependabot.yml`, `ROADMAP.md` (fase 13).
+- D68, D75, D76, D77, D78, D79, D80; `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/open-source/*`, `scripts/audit-public-snapshot.sh`, `.github/dependabot.yml`, o antigo `ROADMAP.md` (fase 13, hoje resumida em `metodo/projeto/contexto.md` e no histórico do git).
 - Decisão do Vitor de 2026-10-21: método versionado no repositório público.

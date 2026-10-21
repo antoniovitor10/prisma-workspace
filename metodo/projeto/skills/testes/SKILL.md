@@ -1,6 +1,6 @@
 ---
 name: testes
-description: Como os testes funcionam no Prisma WorkSpace - xUnit (com SQL Server opt-in), Vitest com Testing Library, Playwright E2E desktop e mobile, governança do Context Explorer, testes Python e do MCP; onde ficam, como rodar tudo ou um arquivo, como subir o ambiente E2E no servidor, seletores por papel e rótulo, massa de dados, dublês de API e testes instáveis conhecidos. Use em toda task que escreve, roda ou avalia testes, e antes de dar uma task como pronta.
+description: Como os testes funcionam no Prisma WorkSpace - xUnit (com SQL Server opt-in), Vitest com Testing Library, Playwright E2E desktop e mobile, testes Python e do MCP; onde ficam, como rodar tudo ou um arquivo, como subir o ambiente E2E no servidor, seletores por papel e rótulo, massa de dados, dublês de API e testes instáveis conhecidos. Use em toda task que escreve, roda ou avalia testes, e antes de dar uma task como pronta.
 metadata:
   origem: projeto
   versao: "1"
@@ -20,7 +20,6 @@ O "o que testar" é do método (`metodo/nucleo/referencias/testes.md`). Aqui fic
 - **No servidor, todo Playwright roda dentro de** `flock /home/agentes/projetos/.trava-navegador <comando>`, e execução pesada (E2E inteiro, xUnit inteiro, build de imagem) só depois de `uptime` com carga de 1 minuto até 14 (skill `operacao-agentes`).
 - **Nunca contra produção** nem contra os ambientes `prisma-dev` e `prisma-metodo`. Os scripts E2E só aceitam banco `DetranKanban_E2E*` ou `DetranKanban_MigrationTest_*` (`src/Prisma.Workspace.Web/e2e/README.md:29-35`).
 - **Linha de base** em `metodo/projeto/config.yaml` (`linha_de_base`): nenhuma task cria falha nova nem piora uma existente.
-- **Enquanto o legado existir** (até o PR de remoção), qualquer mudança em `specs/`, nos blocos YAML do `backlog.md`, em `agents/`, `workflows/`, `profiles/`, `context/` ou `tools/agent-loop` quebra o job Context governance, que exige contagens fixas em `tools/context-explorer/lib/canonical.js:9-29` (53 specs, 111 tasks, 16 nós, 21 arestas, 7 gates, 11 estados, 47 testes do loop) e 19 domínios e 5 agentes. Trabalho novo só em `metodo/` e `docs/`, que o job não lê.
 
 ## Ferramentas, onde ficam e como rodar
 
@@ -29,7 +28,6 @@ O "o que testar" é do método (`metodo/nucleo/referencias/testes.md`). Aqui fic
 | xUnit 2.9.3 | `tests/Prisma.Workspace.Tests` (62 arquivos) | `dotnet test Prisma.Workspace.sln -c Release` | `dotnet test --filter FullyQualifiedName~UpdateStageCommandHandlerTests` | **não** (só build) |
 | Vitest 4 + Testing Library, jsdom | `src/Prisma.Workspace.Web/src/**/*.test.ts(x)` (41 arquivos) | `npm test -- --pool=threads --maxWorkers=1 --fileParallelism=false` | `npx vitest run src/layout/Topbar.test.tsx` | sim |
 | Playwright 1.62 | `src/Prisma.Workspace.Web/e2e/*.spec.ts` (30 arquivos) | `bash scripts/ci-e2e.sh <imagem>` ou `npm run e2e` | `bash scripts/ci-e2e.sh <imagem> e2e/board-stage-sync.spec.ts` ou `npx playwright test e2e/board-stage-sync.spec.ts` | sim, contra a imagem |
-| Governança | `tools/context-explorer/test` (42) | `cd tools/context-explorer && npm test` | `node --test test/<arquivo>.js` | sim |
 | MCP | `tools/prisma-mcp/test` | `cd tools/prisma-mcp && npm ci && npm test` | | não |
 | Python | `scripts/tests`, `infra/ai-bridge/test_bridge.py` | `python3 -m unittest discover -s scripts/tests` | | sim (job Container) |
 
@@ -66,7 +64,6 @@ Configuração do Vitest em `src/Prisma.Workspace.Web/vitest.config.ts:6-8` (jsd
 - **Integração (xUnit + SQL Server):** `tests/Prisma.Workspace.Tests/BoardStructureSqlTests.cs:14-29`, falha no meio da exclusão do quadro desfaz tarefa, coluna e histórico.
 - **Componente (Vitest):** `src/Prisma.Workspace.Web/src/layout/Topbar.test.tsx`, menu da conta e "Nova organização" só para quem pode criar.
 - **Interação (Playwright):** `src/Prisma.Workspace.Web/e2e/board-stage-sync.spec.ts:12-40`, concluir pela gaveta move o card e sobrevive ao recarregamento, por papel e rótulo.
-- **Governança:** `tools/context-explorer/test/*.js` contra `lib/canonical.js`.
 
 ## Testes lentos ou instáveis conhecidos
 

@@ -32,7 +32,7 @@ Manter a produção do DETRAN estável enquanto o produto vira uma distribuiçã
 
 ## Roadmap curto
 
-Fonte: `ROADMAP.md` (fica até o PR de remoção do legado; depois, este resumo e as HUs).
+Fonte: o antigo `ROADMAP.md`, removido em 2026-10-21 (está no histórico do git). Daqui em diante, este resumo e as HUs.
 
 - **Concluídas:** fases 0 a 7 (fundação, domínio e banco, Kanban, tarefa rica, horas, inteligência, MVP para equipes de TI, portal externo), 9 (renovação visual D68/D70), 10 (visões e consultas por projeto), 11 (home autenticada), 12 (natureza e tipo de trabalho) e 13.1 (setup seguro da Community).
 - **Em andamento:**
@@ -106,4 +106,4 @@ A partir de 2026-10-21 vale o método (ADR-0103, que substitui D67, D78 e a part
 | `AGENTS.md` antigo | `AGENTS.md` roteador do método; o conteúdo vivo foi para este arquivo, os princípios e as skills |
 | time Tear, Prumo e Farol (D96, D97), Batuta e ai-memory | time de 2026-10-21 (ADR-0104), sem Batuta nem ai-memory para os agentes do servidor |
 
-Os artefatos antigos continuam no repositório até um PR separado de remoção, para o CI seguir verde: o job Context governance exige as contagens atuais (skill `testes`). Até lá, nenhum deles autoriza nada e não se edita nenhum. Depois da remoção, o histórico (`PROGRESS.md`, `NOTAS.md`, `stories/`, `backlog.md`, specs) continua no git.
+Os artefatos antigos foram removidos do repositório em 2026-10-21, junto com o job Context governance do CI e as ferramentas `tools/context-explorer` e `tools/agent-loop` (ADR-0103). O histórico (`PROGRESS.md`, `NOTAS.md`, `stories/`, `backlog.md`, `specs/`, `DECISIONS.md`, `ROADMAP.md`) continua no git; nenhum deles autoriza nada.

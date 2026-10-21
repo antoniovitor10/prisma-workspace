@@ -74,11 +74,12 @@ Aplicação, landing e ferramentas compartilham este repositório. Na instalaç�
 | `src/Prisma.Workspace.*` | API, domínio, aplicação, infraestrutura e frontend |
 | `tests/` | Testes do backend |
 | `apps/landing/` | Landing estática e versões preservadas |
-| `tools/` | Context Explorer e loop de execução |
-| `stories/`, `specs/`, `backlog.md` | Intenção humana, contratos e tarefas estruturadas |
-| `docs/workspace/` | Visão atual, prioridades, equipe, fontes e passagem de contexto |
+| `tools/prisma-mcp/` | Servidor MCP do rastreador de tarefas do método |
+| `metodo/` | Método de trabalho: núcleo, configuração, contexto, princípios e skills do projeto |
+| `docs/trabalho/` | Histórias (HU) e tasks |
+| `docs/decisoes/` | Decisões de arquitetura (ADR) |
 
-O [painel do workspace](docs/workspace/README.md) reúne o estado atual. Maestri é o coordenador local;
-andares de planejamento compartilham a raiz e não autorizam execução concorrente sem isolamento Git.
+O trabalho segue o método descrito em [AGENTS.md](AGENTS.md): cada mudança nasce de uma HU, vira tasks e passa
+por revisão antes de entrar na `main`. O status das tasks fica no próprio Prisma WorkSpace.
 A landing pode ser servida para conferência com `python -m http.server 5500 --directory apps/landing`.
 O deploy da landing e o deploy da aplicação continuam separados. A consolidação local não publica nenhum deles.

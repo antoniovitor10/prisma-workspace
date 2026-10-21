@@ -1,10 +1,9 @@
 # Integração contínua
 
-O workflow `CI` executa quatro gates independentes em pushes e pull requests para `main`:
+O workflow `CI` executa três gates independentes em pushes e pull requests para `main`:
 
 - restore e build do backend .NET; execução de testes retirada deste job por solicitação do mantenedor em 22/09/2026;
 - instalação reprodutível, lint, testes e build do frontend;
-- testes do modelo de governança/Context Explorer;
 - construção completa da imagem Docker.
 
 As Actions externas são fixadas por SHA e atualizadas pelo Dependabot. O frontend também bloqueia advisories npm de

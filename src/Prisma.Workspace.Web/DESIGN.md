@@ -46,7 +46,7 @@ components:
 ## Overview
 
 Registro da identidade existente, sem proposta de novo estilo. Fonte normativa de
-implementação: src/styles/theme.ts; autoridade de produto: D68 em DECISIONS.md.
+implementação: src/styles/theme.ts; autoridade de produto: ADR-0068 em docs/decisoes/.
 O espectro Prisma identifica a marca. Controles funcionais usam cores acessíveis,
 superfícies do tema, hierarquia de leitura e linguagem direta.
 
