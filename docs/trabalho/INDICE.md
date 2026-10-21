@@ -114,7 +114,7 @@
 | [ADR-0082](../decisoes/ADR-0082-classificacao-explicita-da-categoria-de-coluna-sem-inferenci.md) | Classificação explícita da categoria de coluna sem inferência nem backfill | aceita | 2026-09-08 |
 | [ADR-0083](../decisoes/ADR-0083-quadro-como-visao-opcional-do-projeto-com-fluxo-compartilhad.md) | Quadro como visão opcional do projeto com fluxo compartilhado e sem WIP | substituida | 2026-09-08 |
 | [ADR-0084](../decisoes/ADR-0084-retorno-da-sprint-a-um-unico-projeto-com-estado-calculado-po.md) | Retorno da sprint a um único projeto com estado calculado por datas | aceita | 2026-09-09 |
-| [ADR-0085](../decisoes/ADR-0085-estudo-de-viabilidade-de-multi-banco-de-dados-configuravel-n.md) | Estudo de viabilidade de multi-banco de dados configurável na instalação | aceita | 2026-09-09 |
+| [ADR-0085](../decisoes/ADR-0085-estudo-de-viabilidade-de-multi-banco-de-dados-configuravel-n.md) | Estudo de viabilidade de multi-banco de dados configurável na instalação | proposta | 2026-09-09 |
 | [ADR-0086](../decisoes/ADR-0086-seed-de-demonstracao-pula-base-ja-populada-registrando-warni.md) | Seed de demonstração pula base já populada registrando Warning | aceita | 2026-09-09 |
 | [ADR-0087](../decisoes/ADR-0087-navegacao-global-em-trilho-lateral-recolhivel-de-icones.md) | Navegação global em trilho lateral recolhível de ícones | substituida | 2026-09-08 |
 | [ADR-0088](../decisoes/ADR-0088-navegacao-global-no-cabecalho-e-painel-lateral-restrito-ao-c.md) | Navegação global no cabeçalho e painel lateral restrito ao contexto do projeto | aceita | 2026-09-10 |

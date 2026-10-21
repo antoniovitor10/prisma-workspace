@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env.*)",
+      "Read(./*.pem)",
+      "Read(./**/*.pem)",
+      "Read(./*.key)",
+      "Read(./**/*.key)",
+      "Read(./*.p12)",
+      "Read(./**/*.p12)",
+      "Read(./*.pfx)",
+      "Read(./**/*.pfx)",
+      "Read(./*.jks)",
+      "Read(./**/*.jks)",
+      "Read(./*.keystore)",
+      "Read(./**/*.keystore)",
+      "Read(./id_rsa)",
+      "Read(./**/id_rsa)",
+      "Read(./id_ed25519)",
+      "Read(./**/id_ed25519)",
+      "Read(./.local/**)",
+      "Read(./.maestri/**)",
+      "Read(./.agent-state/**)",
+      "Read(./src/Prisma.Workspace.Web/e2e/.auth/**)",
+      "Read(./**/secrets.json)",
+      "Read(./**/Properties/launchSettings.json)",
+      "Read(./method-git.env)",
+      "Read(./**/method-git.env)"
+    ]
+  }
+}

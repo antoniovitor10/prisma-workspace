@@ -1,13 +1,10 @@
 ---
 name: dominio
-description: >
-  Regras de negócio vigentes, glossário ubíquo e mapa determinístico de
-  domínio -> referência -> código -> testes do Prisma WorkSpace. Carregar ao
-  escrever ou refinar HU, quebrar tasks, implementar ou revisar mudanças de
-  domínio, aplicação, API, banco ou interface.
+description: Regras de negócio vigentes, glossário ubíquo e mapa determinístico de domínio -> referência -> código -> testes do Prisma WorkSpace. Carregar ao escrever ou refinar HU, quebrar tasks, implementar ou revisar mudanças de domínio, aplicação, API, banco ou interface.
 metadata:
-  criado_em: "2026-10-21"
-  atualizado_em: "2026-10-21"
+  origem: projeto
+  versao: "1"
+  revisar_em: ""
 ---
 
 # Skill de Projeto · Domínio do Prisma WorkSpace

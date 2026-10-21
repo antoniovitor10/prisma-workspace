@@ -1,7 +1,7 @@
 ---
 id: ADR-0085
 titulo: "Estudo de viabilidade de multi-banco de dados configurável na instalação"
-status: aceita
+status: proposta   # D85 está em aberto, não decidida
 data: 2026-09-09
 origem: "DECISIONS.md D85"
 substitui: ""
