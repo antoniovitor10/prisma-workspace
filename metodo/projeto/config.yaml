@@ -1,0 +1,104 @@
+# Configuração do método neste projeto.
+# Preenchida pelo agente de onboarding (skill aplicar-metodo) e revisada pelo desenvolvedor.
+# A versão do método instalada fica em metodo/nucleo/VERSAO.
+
+projeto: "Prisma WorkSpace"
+
+# Caminho absoluto do repositório central do método (o que tem INSTALAR.md e template/).
+# Usado por "atualiza o método" para achar a versão nova. Ex.: C:\Users\voce\Desktop\claude-organization\metodo
+metodo_origem: 'C:UsersVitorDesktopclaude-organizationmetodo'
+
+# Onde ficam os status das tasks.
+#   local  → no frontmatter de cada task em docs/trabalho/ (padrão)
+#   prisma → no Prisma, via MCP; o frontmatter NÃO tem status (ver rastreadores/prisma.md)
+rastreador: prisma
+prisma:
+  url: "https://prisma.nordevs.com.br"   # organização Nordevs; o token vem de PRISMA_TOKEN (ambiente), nunca daqui
+  projeto_id: ""                          # preenchido quando o projeto prisma-workspace for criado no Prisma
+
+# Autonomia do agente (veja metodo/nucleo/fluxo.md, seção "Entrega e autonomia")
+#   0 supervisionado | 1 aprovar-merge | 2 autônomo
+autonomia: 2            # decisão do Vitor em 2026-10-21: com o revisor aprovando e o CI verde, o Maestro integra
+autonomia_risco_alto: 1 # migration, permissão, dado pessoal, histórico, workflow e deploy esperam o ok do Vitor
+
+# true = existe homologação; no nível 2 a task termina em em-teste, não em concluida
+tem_homologacao: false   # merge na main publica direto em produção (prisma.nordevs.com.br, atende o DETRAN)
+
+status:
+  fluxo: [backlog, pronta, em-desenvolvimento, em-revisao, em-teste, concluida]
+  extras: [bloqueada]
+  # status em que o agente PODE iniciar uma task
+  agente_pode_iniciar: [em-desenvolvimento]
+  # status para onde o agente PODE mover por conta própria (ver fluxo.md, "Quem move o status")
+  agente_pode_mover_para: [em-revisao, bloqueada]
+  # só no nível de autonomia 2, além dos acima
+  agente_pode_mover_para_nivel2: [em-teste, concluida]
+
+git:
+  usa_git: true
+  branch_principal: main
+  padrao_branch: "task/{id}-{slug}"          # ex.: task/T-0007-botao-whatsapp
+  padrao_commit: "{tipo}({id}): {resumo}"    # tipo: feat | fix | refactor | docs | test | chore | ci | wip; resumo em inglês, imperativo
+  padrao_titulo_pr: "[{id}] {titulo}"        # o rastreador prisma identifica a task por aqui
+  plataforma: github                         # github | gitlab | nenhuma
+  # true = arquivos do método ficam fora do git (via .git/info/exclude).
+  # Útil em repositório de equipe antes de a equipe adotar o método.
+  # Com true, os três padrões acima são os DA EQUIPE (lidos do histórico), sem {id} de task:
+  # o método fica invisível para quem não o usa. Ex.: "{tipo}/{slug}", "{tipo}: {resumo}", "{titulo}".
+  metodo_fora_do_git: false
+
+# Revisão de segurança/LGPD: sempre | quando-sensivel | nunca
+revisao_seguranca: quando-sensivel
+
+# Segurança do agente (ver metodo/nucleo/referencias/seguranca.md).
+seguranca:
+  # Arquivos que o agente nunca lê. gerar-adaptadores.mjs vira isto em travas do Claude Code (.claude/settings.json).
+  # Acrescente os do projeto que guardam segredo, ex.: "android/gradle.properties", "appsettings.Production.json".
+  arquivos_proibidos: [".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "*.jks", "*.keystore", "id_rsa", "id_ed25519", ".local/**", ".maestri/**", ".agent-state/**", "src/Prisma.Workspace.Web/e2e/.auth/**", "**/secrets.json", "**/Properties/launchSettings.json", "method-git.env"]
+
+# Comandos do projeto. Vazio = não existe (o testador registra isso no relatório).
+comandos:
+  instalar: "dotnet restore Prisma.Workspace.sln && cd src/Prisma.Workspace.Web && npm ci"
+  rodar: "npm run dev (PC, porta 5450); no servidor, ambiente próprio de cada agente na faixa de portas dele (skill operacao-agentes)"
+  testar: "dotnet test Prisma.Workspace.sln -c Release && cd src/Prisma.Workspace.Web && npm test -- --pool=threads --maxWorkers=1 --fileParallelism=false"
+  e2e: "cd src/Prisma.Workspace.Web && npm run e2e   # no servidor, sempre dentro de flock /home/agentes/projetos/.trava-navegador"
+  lint: "cd src/Prisma.Workspace.Web && npm run lint && npx tsc -b   # nunca tsc --noEmit: não checa nada neste projeto"
+  build: "dotnet build Prisma.Workspace.sln -c Release && cd src/Prisma.Workspace.Web && npm run build"
+  deploy: "merge na main: o CI testa, gera a imagem e publica em produção. Agentes nunca publicam."
+
+# Testes (ver metodo/nucleo/referencias/testes.md e a skill de projeto `testes`).
+testes:
+  interacao:
+    ferramenta: "playwright"
+    pasta: "src/Prisma.Workspace.Web/e2e/"
+    rodar_um: "cd src/Prisma.Workspace.Web && npx playwright test {arquivo}"
+    ambiente: "API com banco E2E próprio e frontend no ar (scripts/run-api-e2e.sh e npm run dev), ou bash scripts/ci-e2e.sh <imagem> {arquivo}; projetos chromium-desktop e chromium-mobile"
+  roteiro_homologacao: true   # o testador escreve o roteiro para quem homologa (status em-teste)
+
+# Linha de base: o que JÁ falha antes de qualquer task (projeto existente).
+# Registrada no onboarding rodando os comandos uma vez. Regra: nenhuma task cria falha nova
+# nem piora uma existente; uma falha que some sai daqui. Vazio = tudo passa hoje.
+linha_de_base:
+  data: "2026-10-21"       # medida pelo CI 39098740642 da main a2797a7 (todos os jobs verdes)
+  testes_falhando: []      # xUnit não roda no CI; última execução completa registrada: 715 de 720 em 2026-10-16
+  e2e_falhando: ["instável no servidor (passa no CI): rich-task-description mobile, board-stage-sync, ai-assistant 149/221/340"]   # CI: 119 passaram, 40 pulados (34 do method-git exigem E2E_METHOD_GIT=1), 0 falhas
+  lint_erros: null
+  lint_escopo: "oxlint em src/Prisma.Workspace.Web (cerca de 12 avisos antigos, nenhum erro)"
+  build: "passa (3 avisos antigos no backend: xUnit2031 em BoardStructureSqlTests.cs:104, possível null em SprintRepository.cs:19 e ReportBuilderFeature.cs:536)"
+
+# Pastas de descoberta de skills que gerar-adaptadores.mjs preenche (ver metodo/nucleo/referencias/agent-skills.md).
+#   agents  → .agents/skills (Codex, Copilot, Cursor, Gemini CLI, OpenCode)
+#   claude  → .claude/skills + .claude/agents (Claude Code)
+#   extras: github (.github/skills) | cursor (.cursor/skills) | gemini (.gemini/skills) | opencode (.opencode/skills) | kiro (.kiro/skills)
+adaptadores: [agents, claude, gemini]   # gemini: Agulha roda no agy (Antigravity)
+
+# Opcional: qual IA cada papel usa, para orquestradores como o Maestri.
+# Ex.: implementador: codex | revisor-codigo: claude
+# Time de 2026-10-21 (ADR-0104). Quem revisa ou testa nunca é quem implementou.
+modelos_por_papel:
+  arquiteto: claude          # Maestro (PC)
+  planejador: claude         # Maestro (PC)
+  implementador: agy | claude   # Agulha (agy) ou Linha (Claude Code), no servidor
+  testador: claude | agy        # o executor que não implementou a task
+  revisor-codigo: codex      # Esquadro, único terminal Codex
+  revisor-seguranca: codex   # Esquadro

@@ -62,3 +62,9 @@ __pycache__/
 # Recuperação privada e isolamento local
 /.local/
 /.maestri/
+
+# --- método ---
+# Insumos brutos do cliente: dados pessoais de terceiros e mídia original. O índice (docs/insumos/INDICE.md) é versionado.
+docs/insumos/brutos/
+# Capturas e relatórios gerados pelas skills de verificação
+qa/
