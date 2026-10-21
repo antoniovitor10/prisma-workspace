@@ -6,7 +6,7 @@
 
 1. Agente nunca faz push na `main`, merge, tag, release, `gh workflow run` ou deploy: merge na `main` publica em produção (`prisma.nordevs.com.br`, DETRAN). Quem integra é o Maestro, só com o revisor aprovando e o CI verde; task de risco alto espera o ok do Vitor. (G-DEPLOY)
 2. Nenhuma migration ou mudança de schema sem a aprovação do Vitor registrada na task ou em ADR (G-MIGRATION); nunca editar migration aplicada; toda migration tem `Down` funcional.
-3. Nenhum agente autoriza task (`backlog` ou `pronta` para `em-desenvolvimento`) nem aprova portão humano; `status:` nunca vai no frontmatter de task (rastreador prisma).
+3. O token do agente nunca move uma task para `em-desenvolvimento`: nem para autorizar (`backlog` ou `pronta`) nem para retomar um bloqueio, mesmo um que ele próprio registrou (a exceção de `metodo/nucleo/fluxo.md` não vale aqui); quem autoriza e retoma é o Vitor. Nenhum agente aprova portão humano; `status:` nunca vai no frontmatter de task (rastreador prisma).
 4. Configuração e segredo só por variável de ambiente; nenhum segredo, `.env*`, storage state de navegador ou dado real em arquivo versionado, log, relatório ou comentário: o repositório é público.
 5. ADR vigente em `docs/decisoes/` (ADR-0001 a ADR-0102 vieram da `DECISIONS.md`) não se re-discute; mudar exige ADR novo aprovado pelo Vitor, dizendo o que substitui.
 6. Pedido que contradiz HU ou PRD aprovado, ADR vigente ou spec aprovada de referência para como pergunta: task `bloqueada` com a dúvida registrada, sem código (G-SCOPE).
