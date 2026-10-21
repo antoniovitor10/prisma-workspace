@@ -4,19 +4,19 @@ O Prisma WorkSpace adota desenvolvimento aberto com decisões rastreáveis.
 
 ## Papéis
 
-- **Product Owner:** define visão, prioridade, escopo e aprova Human Gates.
+- **Product Owner:** define visão, prioridade e escopo, aprova HUs e autoriza tasks.
 - **Maintainers:** revisam código, segurança, releases e documentação.
-- **Contributors:** propõem issues, specs, código, testes e documentação.
+- **Contributors:** propõem issues, HUs, código, testes e documentação.
 
 ## Decisões
 
-- `ROADMAP.md` define fases e prioridade.
-- `DECISIONS.md` registra decisões técnicas consolidadas.
-- `stories/` preserva intenção funcional humana.
-- specs aprovadas em `specs/` são o contrato de implementação.
-- mudanças sensíveis seguem os Human Gates descritos em `AGENTS.md`.
+- O trabalho segue o método em `AGENTS.md` e `metodo/`: HU, tasks, revisão e integração.
+- `metodo/projeto/contexto.md` resume o produto e o roadmap; `metodo/projeto/principios.md` traz as regras inegociáveis.
+- `docs/decisoes/` registra as decisões de arquitetura (ADR); uma decisão só muda com um ADR novo.
+- Os contratos vigentes de cada área estão nas referências da skill `metodo/projeto/skills/dominio`.
+- Mudanças sensíveis (schema, permissões, histórico, workflow, deploy) esperam a aprovação do Product Owner.
 
-Nenhuma automação ou agente de IA aprova gates humanos. Mudanças incompatíveis devem ser discutidas antes da
+Nenhuma automação ou agente de IA autoriza tasks nem aprova mudanças sensíveis. Mudanças incompatíveis devem ser discutidas antes da
 implementação e registradas de forma auditável.
 
 ## Releases

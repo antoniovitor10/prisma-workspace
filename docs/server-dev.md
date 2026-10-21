@@ -9,8 +9,6 @@ Requer Docker Compose, Python 3, curl, GNU time, Node 22 e SDK .NET 8.
 sudo apt-get update
 sudo apt-get install -y dotnet-sdk-8.0
 npm ci --prefix src/Prisma.Workspace.Web
-npm install --prefix tools/context-explorer --package-lock=false
-npm ci --prefix tools/context-explorer/web
 scripts/run-local.sh up
 ```
 
@@ -46,7 +44,6 @@ npm run build
 npx playwright install --with-deps
 npm run e2e
 cd ../..
-npm test --prefix tools/context-explorer
 python3 -m unittest discover -s scripts/tests
 python3 infra/ai-bridge/test_bridge.py
 ```

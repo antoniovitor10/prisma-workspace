@@ -82,7 +82,6 @@ Como rodar a aplicação:
 ## Armadilhas conhecidas
 
 - Os scripts do servidor (`scripts/run-local.sh`, `setup-e2e-database.sh`, `run-api-e2e.sh`, `test-server-dev.sh`) e o `compose.server-dev.yaml` estão fixos no projeto Docker `prisma-dev`, nas portas 3100/3102 e no `.env.server-dev` (`scripts/setup-e2e-database.sh:12-24`). `prisma-dev` é demonstração e os agentes não o usam. Para ambiente próprio, use `scripts/ci-e2e.sh` com imagem de nome próprio ou parametrize os scripts numa task.
-- `tools/context-explorer/web` usa `start /B` no script `dev` (Windows); não roda assim no servidor.
 - Os scripts `.ps1` são do PC; no servidor use os `.sh` equivalentes.
 - `package.json` usa `^` e `~`: a versão instalada é a do `package-lock.json`.
 

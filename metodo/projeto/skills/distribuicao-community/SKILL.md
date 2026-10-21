@@ -34,7 +34,6 @@ Licença, SBOM, proveniência, versionamento SemVer e primeira release `v0.1.0`,
 
 ## Armadilhas conhecidas
 
-- `CONTRIBUTING.md:9-10,22` ainda manda criar história em `stories/`, spec aprovada e entrada no `PROGRESS.md`; `GOVERNANCE.md` também descreve o fluxo antigo. Ajustar os dois ao método é uma task própria, junto com o PR de remoção do legado.
 - `SECURITY.md:11-12` fala de repositório privado; o repositório já é público.
 - A auditoria do snapshot não roda no CI: rode `node metodo/nucleo/scripts/segredos.mjs` em toda entrega.
 

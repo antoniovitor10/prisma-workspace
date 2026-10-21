@@ -2,7 +2,7 @@
 
 Plataforma de gestão ágil com múltiplos quadros, projetos, tarefas, horas e colaboração.
 A SPA usa React, TypeScript e Styled Components. Sua identidade existente é D68,
-documentada em DECISIONS.md e implementada em src/styles/theme.ts.
+documentada no ADR-0068 (docs/decisoes/) e implementada em src/styles/theme.ts.
 
 O assistente consulta somente dados que a pessoa pode acessar. Conversas são privadas
 por pessoa e organização. A configuração das conexões pertence ao Administrador da

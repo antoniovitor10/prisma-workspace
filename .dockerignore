@@ -30,10 +30,6 @@ tmp
 **/*secrets*.json
 **/Properties/launchSettings.json
 
-tools/context-explorer/model.json
-tools/context-explorer/web/public/model.json
-docs/context-explorer.html
-tools/context-explorer/web/vite-output*.txt
 
 *.log
 *.bak
@@ -46,7 +42,6 @@ Thumbs.db
 remote_*
 .codex-remote-stage
 output
-tools/context-explorer/web/screenshots
 
 # Recuperação privada e isolamento local
 /.local/
