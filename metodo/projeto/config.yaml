@@ -6,7 +6,7 @@ projeto: "Prisma WorkSpace"
 
 # Caminho absoluto do repositório central do método (o que tem INSTALAR.md e template/).
 # Usado por "atualiza o método" para achar a versão nova. Ex.: C:\Users\voce\Desktop\claude-organization\metodo
-metodo_origem: 'C:UsersVitorDesktopclaude-organizationmetodo'
+metodo_origem: 'C:\Users\Vitor\Desktop\claude-organization\metodo'
 
 # Onde ficam os status das tasks.
 #   local  → no frontmatter de cada task em docs/trabalho/ (padrão)
