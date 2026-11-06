@@ -110,6 +110,8 @@ describe('relatório por pessoa', () => {
 
 it.each([1, 2, 3, 4])('mantém velocidade nos relatórios para valor interno %s', async methodology => {
  vi.spyOn(api, 'getProject').mockResolvedValue({id:'project-1',methodology,teams:[]});
+ // O painel do projeto não é o alvo deste teste: sem dublê, a chamada ia para a rede e, no CI, o erro vencia a corrida com o título.
+ vi.spyOn(api, 'getProjectDashboard').mockReturnValue(new Promise(() => {}) as never);
  renderHub('project-1');
  expect(await screen.findByRole('heading',{name:'Velocidade das sprints'})).toBeInTheDocument();
 });
