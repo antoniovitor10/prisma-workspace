@@ -79,6 +79,9 @@ describe('TaskDetailDrawer', () => {
 
     const title = await screen.findByRole('textbox', { name: 'Título' });
     await waitFor(() => expect(title).toHaveValue('Título original'));
+    expect(screen.getByText('#42', { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText('TESTE-42', { exact: true })).not.toBeInTheDocument();
+    expect(details.reference).toBe('TESTE-42');
     expect(screen.getByLabelText('Coluna atual')).toHaveTextContent('Desenvolvimento');
     expect(screen.getByLabelText('Coluna atual')).not.toHaveTextContent('Em andamento');
     fireEvent.change(title, { target: { value: 'Título otimista' } });

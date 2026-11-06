@@ -40,6 +40,34 @@ public class ProjectFeatureTests
     }
 
     [Fact]
+    public async Task CreateProject_GeneratesKeysAndIgnoresLegacyClientValuesWithoutChangingExistingKeys()
+    {
+        var organizationId = Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"project-key-{Guid.NewGuid()}").Options;
+        await using var context = new AppDbContext(options, new OrganizationContextStub(organizationId));
+        var existing = Project.Criar("ESTAVEL", "Existente", "owner-1", WorkNature.Project, WorkType.Development);
+        existing.OrganizationId = organizationId;
+        context.Projects.Add(existing);
+        await context.SaveChangesAsync();
+        var handler = new CreateProjectCommandHandler(new ProjectRepository(context));
+        var validator = new CreateProjectCommandValidator();
+        var command = new CreateProjectCommand("IGNORAR-CLIENTE", "Projeto novo", null, "owner-1",
+            WorkNature.Project, WorkType.Development);
+        var firstId = await handler.Handle(command, default);
+        var secondId = await handler.Handle(command with { Key = "* valor legado inválido com mais de vinte caracteres *" }, default);
+        Assert.True((await validator.ValidateAsync(command with { Key = "***" })).IsValid);
+        var first = await context.Projects.SingleAsync(project => project.Id == firstId);
+        var second = await context.Projects.SingleAsync(project => project.Id == secondId);
+        Assert.NotEmpty(first.Key);
+        Assert.NotEqual(command.Key, first.Key);
+        Assert.Matches("^[A-Z][A-Z0-9-]*$", first.Key);
+        Assert.NotEqual(first.Key, second.Key);
+        Assert.Equal("ESTAVEL", (await context.Projects.SingleAsync(project => project.Id == existing.Id)).Key);
+        Assert.Equal(3, await context.Projects.CountAsync());
+    }
+
+    [Fact]
     public async Task CreateProject_Kanban_DoesNotCreateSprintAutomatically()
     {
         var organizationId = Guid.NewGuid();

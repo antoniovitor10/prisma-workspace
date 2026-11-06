@@ -154,7 +154,6 @@ export function ProjectWorkspace() {
             <h1>{project.name}</h1>
             <p>{project.description || 'Workspace integrado do projeto.'}</p>
           </div>
-          <b>{project.key}</b>
         </MobileTitle>
         <MobileTabs aria-label="Áreas do projeto">
           {projectNavEntries.map(({ segment, label, end }) => (
