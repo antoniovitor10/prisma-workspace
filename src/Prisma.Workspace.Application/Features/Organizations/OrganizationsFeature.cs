@@ -128,24 +128,25 @@ public class CreateOrganizationCommandHandler : IRequestHandler<CreateOrganizati
     public CreateOrganizationCommandHandler(IOrganizationRepository organizations) => _organizations = organizations;
 
     internal static async Task<bool> CanCreateAsync(IOrganizationRepository organizations, string userId, CancellationToken ct)
-        => (await organizations.GetForUserAsync(userId, ct)).Count == 0
+        => !await organizations.HasMembershipAsync(userId, ct)
             || await organizations.IsPlatformAdministratorAsync(userId, ct);
 
-    public async Task<OrganizationDto> Handle(CreateOrganizationCommand request, CancellationToken ct)
+    public Task<OrganizationDto> Handle(CreateOrganizationCommand request, CancellationToken ct)
+        => _organizations.ExecuteCreationAsync(request.UserId, async creationCt =>
     {
-        if (!await CanCreateAsync(_organizations, request.UserId, ct))
+        if (!await CanCreateAsync(_organizations, request.UserId, creationCt))
             throw new AcessoNegadoException("Somente o administrador da plataforma pode criar outra organização.");
         var baseSlug = Slugify(string.IsNullOrWhiteSpace(request.Slug) ? request.Name : request.Slug!);
         DomainException.Garantir(baseSlug.Length >= 2, "Identificador da organização inválido.");
         var slug = baseSlug;
         var suffix = 2;
-        while (await _organizations.SlugExistsAsync(slug, ct))
+        while (await _organizations.SlugExistsAsync(slug, creationCt))
             slug = $"{baseSlug}-{suffix++}";
 
         var organization = Organization.Create(request.Name, slug, request.UserId);
-        await _organizations.AddAsync(organization, ct);
+        await _organizations.AddAsync(organization, creationCt);
         return GetOrganizationsQueryHandler.Map(organization, organization.Members.Single());
-    }
+    }, ct);
 
     private static string Slugify(string value)
     {

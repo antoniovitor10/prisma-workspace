@@ -809,6 +809,7 @@ export function Topbar() {
       {newOrganizationOpen && (
         <NewOrganizationDialog
           onClose={() => setNewOrganizationOpen(false)}
+          restoreFocus={() => accountRef.current?.querySelector<HTMLButtonElement>('button')?.focus()}
           onCreated={(organization) => {
             setNewOrganizationOpen(false);
             queryClient.setQueryData<OrganizationSummary[]>(['organizations'],

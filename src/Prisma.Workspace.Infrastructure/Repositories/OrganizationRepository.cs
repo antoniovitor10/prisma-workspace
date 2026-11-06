@@ -3,6 +3,8 @@ using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using Prisma.Workspace.Application.Common.Exceptions;
 
 namespace Prisma.Workspace.Infrastructure.Repositories;
 
@@ -29,6 +31,34 @@ public class OrganizationRepository : IOrganizationRepository
 
     public Task<bool> IsPlatformAdministratorAsync(string userId, CancellationToken cancellationToken = default)
         => _context.Users.AnyAsync(x => x.Id == userId && EF.Property<bool>(x, "IsPlatformAdministrator"), cancellationToken);
+
+    public Task<bool> HasMembershipAsync(string userId, CancellationToken cancellationToken = default)
+        => _context.OrganizationMembers.IgnoreQueryFilters()
+            .AnyAsync(x => x.UserId == userId, cancellationToken);
+
+    public async Task<T> ExecuteCreationAsync<T>(string userId, Func<CancellationToken, Task<T>> create,
+        CancellationToken cancellationToken = default)
+    {
+        // O provider em memória serve somente aos testes de regras, sem garantia de concorrência.
+        if (!_context.Database.IsRelational()) return await create(cancellationToken);
+
+        return await _context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            _context.ChangeTracker.Clear();
+            await using var transaction = await _context.Database.BeginTransactionAsync(
+                IsolationLevel.ReadCommitted, cancellationToken);
+            // A linha Identity já existe: o lock por usuário também protege a primeira associação,
+            // quando ainda não há nenhuma linha de membership para bloquear.
+            var user = await _context.Users.FromSqlInterpolated(
+                    $"SELECT * FROM [AspNetUsers] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {userId}")
+                .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+            if (user is null) throw new AcessoNegadoException("Usuário não encontrado.");
+
+            var result = await create(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        });
+    }
 
     public async Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
     {
