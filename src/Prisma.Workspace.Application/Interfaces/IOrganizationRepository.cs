@@ -9,6 +9,9 @@ public interface IOrganizationRepository
     Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default);
     Task<bool> IsPlatformAdministratorAsync(string userId, CancellationToken cancellationToken = default);
+    Task<bool> HasMembershipAsync(string userId, CancellationToken cancellationToken = default);
+    Task<T> ExecuteCreationAsync<T>(string userId, Func<CancellationToken, Task<T>> create,
+        CancellationToken cancellationToken = default);
     Task AddAsync(Organization organization, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<OrganizationMember>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken = default);

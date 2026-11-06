@@ -73,7 +73,8 @@ describe('RichTaskDescriptionEditor', () => {
     expect(image).toHaveAttribute('data-attachment-id','attachment-url');
     expect(image).toHaveAttribute('src','/image-placeholder.svg');
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Imagem anexada e inserida');
+    // O editor insere o DOM antes de o React concluir a atualização do estado terminal.
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Imagem anexada e inserida'));
   });
 
   it('não insere imagem quebrada quando o endereço não pode ser carregado', async () => {

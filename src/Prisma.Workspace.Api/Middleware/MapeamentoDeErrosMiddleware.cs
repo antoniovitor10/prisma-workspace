@@ -8,7 +8,7 @@ namespace Prisma.Workspace.Api.Middleware;
 
 /// <summary>
 /// Converte exceções das camadas internas em respostas HTTP:
-/// DomainException e ValidationException viram 400; NaoEncontradoException vira 404.
+/// DomainException, ArgumentException e ValidationException viram 400; NaoEncontradoException vira 404.
 /// Com isso os controllers ficam sem try/catch e sem regra de negócio.
 /// </summary>
 public class MapeamentoDeErrosMiddleware
@@ -42,6 +42,11 @@ public class MapeamentoDeErrosMiddleware
             var problem = ApiErrors.Problem(ex.Status, "ai_error", "Assistente de IA", ex.Message, context.TraceIdentifier);
             if (ex.ResetsAt is not null) problem.Extensions["resetsAt"] = ex.ResetsAt;
             await WriteProblemAsync(context, problem);
+        }
+        catch (ArgumentException ex)
+        {
+            await WriteProblemAsync(context, ApiErrors.Problem(400, "invalid_argument",
+                "Dados inválidos", ex.Message, context.TraceIdentifier));
         }
         catch (ValidationException ex)
         {
@@ -80,7 +85,11 @@ public class MapeamentoDeErrosMiddleware
         if (context.Response.HasStarted) throw new InvalidOperationException("Resposta já iniciada.");
         context.Response.StatusCode = problem.Status ?? 500;
         context.Response.ContentType = "application/problem+json; charset=utf-8";
-        await context.Response.WriteAsJsonAsync(problem);
+        // Mantém os erros por campo do contrato derivado; serializar como ProblemDetails os descartava.
+        if (problem is ValidationErrorResponse validation)
+            await context.Response.WriteAsJsonAsync(validation);
+        else
+            await context.Response.WriteAsJsonAsync(problem);
     }
 
     private static string ToCamelCase(string value)

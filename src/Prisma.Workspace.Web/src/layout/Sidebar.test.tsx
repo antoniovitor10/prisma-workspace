@@ -52,13 +52,13 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('navigation', { name: 'Navegação do projeto' })).not.toBeInTheDocument();
   });
 
-  it('mostra nome, chave, descrição e abas dentro do projeto', async () => {
+  it('mostra nome e descrição sem expor chave técnica nas abas do projeto', async () => {
     vi.spyOn(api, 'getProject').mockResolvedValue(projeto as never);
     renderSidebar('/projects/proj-1/items');
 
     expect(await screen.findByRole('heading', { name: 'Produto Demo' })).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Navegação do projeto' });
-    expect(within(nav).getByText('DEMO')).toBeInTheDocument();
+    expect(within(nav).queryByText('DEMO')).not.toBeInTheDocument();
     expect(within(nav).getByText(/Exemplo genérico/)).toBeInTheDocument();
 
     const areas = within(nav).getByRole('navigation', { name: 'Áreas do projeto' });
@@ -85,6 +85,8 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Recolher menu do projeto' }));
 
     expect(nav).toHaveAttribute('data-collapsed', 'true');
+    expect(within(nav).getByTitle('Produto Demo')).toHaveTextContent('PR');
+    expect(within(nav).queryByText('DEM')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Expandir menu do projeto' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Backlog' })).toHaveAttribute('aria-current', 'page');
     expect(localStorage.getItem('project-context-menu-collapsed')).toBe('true');

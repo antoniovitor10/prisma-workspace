@@ -63,4 +63,25 @@ public sealed class OrganizationCreationTests
             .Handle(new CreateOrganizationCommand("Pessoal", null, "platform"), default);
         Assert.Equal(2, (await repository.GetForUserAsync("platform")).Count);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task InactiveMembershipOrOrganization_DoesNotReopenFirstOrganization(bool deactivateMember)
+    {
+        await using var db = await SeedAsync();
+        var organization = await db.Organizations.IgnoreQueryFilters()
+            .Include(x => x.Members).SingleAsync(x => x.Members.Any(m => m.UserId == "member"));
+        if (deactivateMember) organization.Members.Single().IsActive = false;
+        else organization.IsActive = false;
+        await db.SaveChangesAsync();
+        var repository = new OrganizationRepository(db);
+
+        Assert.Empty(await repository.GetForUserAsync("member"));
+        Assert.False((await new GetOrganizationCreationQueryHandler(repository)
+            .Handle(new GetOrganizationCreationQuery("member"), default)).CanCreate);
+        await Assert.ThrowsAsync<AcessoNegadoException>(() => new CreateOrganizationCommandHandler(repository)
+            .Handle(new CreateOrganizationCommand("Outra", null, "member"), default));
+        Assert.Single(await db.OrganizationMembers.IgnoreQueryFilters().Where(x => x.UserId == "member").ToListAsync());
+    }
 }

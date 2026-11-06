@@ -153,12 +153,12 @@ export function DependencyAutocomplete({
               <ResultButton
                 type="button"
                 onClick={() => {
-                  setInput(`${option.projectKey}-${option.number} · ${option.title}`);
+                  setInput(`#${option.number} · ${option.title}`);
                   setOpen(false);
                   onSelect(option);
                 }}
               >
-                <strong>{option.projectKey}-{option.number} · {option.title}</strong>
+                <strong>#{option.number} · {option.title}</strong>
                 <small>{option.status}</small>
               </ResultButton>
             </li>

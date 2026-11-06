@@ -30,7 +30,7 @@ const relatorioVazio = {
   hours: { planned: 0, realized: 0, variance: 0 },
 };
 
-function renderHub() {
+function renderHub(projectId?: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
@@ -39,7 +39,7 @@ function renderHub() {
           organizations: [organizacao], current: organizacao, switchOrganization: vi.fn(),
         }}>
           <MemoryRouter>
-            <ReportsHub />
+            <ReportsHub fixedProjectId={projectId} />
           </MemoryRouter>
         </OrganizationStateContext.Provider>
       </ThemeProvider>
@@ -106,4 +106,10 @@ describe('relatório por pessoa', () => {
     // O nome também aparece como <option>, então a asserção olha o resumo inteiro.
     expect(await screen.findByText(/Todos os projetos · Ana Souza ·/)).toBeInTheDocument();
   });
+});
+
+it.each([1, 2, 3, 4])('mantém velocidade nos relatórios para valor interno %s', async methodology => {
+ vi.spyOn(api, 'getProject').mockResolvedValue({id:'project-1',methodology,teams:[]});
+ renderHub('project-1');
+ expect(await screen.findByRole('heading',{name:'Velocidade das sprints'})).toBeInTheDocument();
 });

@@ -193,8 +193,8 @@ export function Projects() {
         <Overlay onMouseDown={() => setOpen(false)}>
           <Dialog onSubmit={submit} onMouseDown={(e) => e.stopPropagation()}>
             <h2>Novo projeto</h2>
-            <input required maxLength={200} placeholder="Nome do projeto" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <textarea placeholder="Objetivo e contexto" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <label>Nome do projeto<input required maxLength={200} placeholder="Nome do projeto" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+            <label>Descrição do projeto<textarea placeholder="Objetivo e contexto" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
             <label>Natureza<select required aria-label="Natureza" value={form.nature} onChange={(e) => setForm({ ...form, nature: Number(e.target.value) })}><option value={0} disabled>Selecione a natureza</option>{workNatureOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
             <label>Tipo de Trabalho<select required aria-label="Tipo de Trabalho" value={form.workType} onChange={(e) => setForm({ ...form, workType: Number(e.target.value) })}><option value={0} disabled>Selecione o tipo</option>{workTypeOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
             {/* Datas sempre foram opcionais aqui, mas nada dizia isso: ao lado de dois

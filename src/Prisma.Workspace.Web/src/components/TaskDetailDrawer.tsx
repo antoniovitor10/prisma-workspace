@@ -36,7 +36,7 @@ import styled from 'styled-components';
 import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
 import { DependencyAutocomplete } from '../features/task/DependencyAutocomplete';
 import { TaskFeed } from '../features/task/TaskFeed';
-import { TaskStateGraph } from '../features/task/TaskStateGraph';
+import { TaskTimeline } from '../features/task/TaskTimeline';
 import { TaskTaxonomyPanel } from '../features/task/TaskTaxonomyPanel';
 import { TaskTimePanel } from '../features/task/TaskTimePanel';
 import { TaskWikiPages } from '../features/task/TaskWikiPages';
@@ -58,7 +58,7 @@ interface StageOption {
 }
 interface AssignableUser { id: string; displayName?: string; email?: string; userName?: string; }
 interface Attachment { id: string; fileName: string; fileSize?: number; mimeType?: string; createdAt: string; }
-interface ProjectOption { id: string; methodology?: number; teams: Array<{id: string; name: string}>; }
+interface ProjectOption { id: string; teams: Array<{id: string; name: string}>; }
 
 interface Draft {
   title: string;
@@ -240,11 +240,12 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const titleBeforeEditRef=useRef('');
   const editingTitleRef=useRef(false);
   const [subtaskTitle,setSubtaskTitle]=useState('');
+  const [subtaskResponsibleId,setSubtaskResponsibleId]=useState('');
   const [subtaskKind,setSubtaskKind]=useState<number>(WorkItemKind.Subtask);
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
   const [publicReply,setPublicReply]=useState('');
-  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'graph'>('description');
+  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'>('description');
 
   const fallback=useMemo<WorkItemDetails|null>(()=>item?{
     id:item.id,number:item.number??0,reference:item.number?`${projectKey}-${item.number}`:`${projectKey}-${item.id.slice(-4).toUpperCase()}`,
@@ -266,10 +267,10 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
-  const showStoryPoints=Boolean(projectQuery.data)&&projectQuery.data?.methodology!==1;
+  const showStoryPoints = true;
 
   useEffect(()=>{if(details){setDraft(toDraft(details));setCustomValues(Object.fromEntries(details.customFields.map(field=>[field.fieldId,field.value??''])));}},[details]);
-  useEffect(()=>{setActiveTab('description');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
+  useEffect(()=>{setActiveTab('description');setSubtaskResponsibleId('');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
   // fecha o popover de responsaveis ao clicar fora dele
   useEffect(()=>{
     if(!assigneeOpen)return;
@@ -281,6 +282,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const invalidate=async()=>Promise.all([
     queryClient.invalidateQueries({queryKey:['work-item',item?.id]}),
     queryClient.invalidateQueries({queryKey:['project-backlog']}),
+    queryClient.invalidateQueries({queryKey:['task-timeline',item?.id]}),
   ]);
   const update=useMutation({
     mutationFn:async(next:Draft)=>{if(realMode&&details)await api.updateWorkItem(details.id,{title:next.title,description:next.description||null,kind:next.kind,stageId:next.stageId||null,priority:next.priority,responsibleId:next.responsibleId||null,teamId:next.teamId||null,origin:next.origin,requesterId:next.requesterId||null,requesterName:next.requesterName||null,requesterEmail:next.requesterEmail||null,startDate:next.startDate||null,dueDate:next.dueDate||null,estimatedHours:numberOrNull(next.estimatedHours),remainingHours:numberOrNull(next.remainingHours),points:numberOrNull(next.points),acceptanceCriteria:next.acceptanceCriteria||null});return next;},
@@ -322,7 +324,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
   const assignees=useMutation({mutationFn:({userId,add}:{userId:string;add:boolean})=>add?api.assignUser(details!.id,userId):api.removeAssignee(details!.id,userId),onMutate:()=>setAssigneeFeedback(''),onSuccess:async(_result,variables)=>{setAssigneeId('');setAssigneeFeedback(variables.add?'Responsável adicionado.':'Responsável removido.');await invalidate();}});
   const subtask=useMutation({
-    mutationFn:async()=>({result:await api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),title:subtaskTitle}),
+    mutationFn:async()=>({result:await api.createWorkItem({boardId:details!.boardId,stageId:details!.stageId,parentId:details!.id,projectId:details!.projectId,responsibleId:subtaskResponsibleId,title:subtaskTitle,kind:subtaskKind,priority:1,position:(details!.subtasks.length+1)*100}),title:subtaskTitle}),
     onSuccess:async({result,title})=>{
       setSubtaskTitle('');setSubtaskKind(WorkItemKind.Subtask);await invalidate();
       const workItemId=typeof result==='string'?result:(result as {id?:string})?.id;
@@ -363,7 +365,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
     return {attachmentId:attachment.id,alt:attachment.fileName||normalized.name};
   },[details,queryClient,upload]);
   const downloadAttachment=async(attachment:Attachment)=>{const blob=await api.downloadAttachment(details!.id,attachment.id);const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=attachment.fileName;anchor.click();URL.revokeObjectURL(url);};
-  const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&realMode)subtask.mutate();};
+  const submitSubtask=(event:FormEvent)=>{event.preventDefault();if(subtaskTitle.trim()&&subtaskResponsibleId&&realMode)subtask.mutate();};
   const submitLink=(event:FormEvent)=>{event.preventDefault();if(linkForm.targetWorkItemId&&realMode)link.mutate();};
   const availableUsers=usersQuery.data?.filter(user=>!details?.participants.some(person=>person.userId===user.id))??[];
   const currentResponsibleIsEligible=Boolean(draft?.responsibleId&&usersQuery.data?.some(user=>user.id===draft.responsibleId));
@@ -433,7 +435,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
     </Header>
     {(update.error||assignees.error||link.error||customFields.error)&&<TaskError>{((update.error||assignees.error||link.error||customFields.error) as Error).message}</TaskError>}
     {!details||!draft?<Progress>{detailsQuery.isLoading?'Carregando detalhes...':'Preparando tarefa...'}</Progress>:<Body>
-      <TypeLine><TypeBadge $kind={draft.kind} title={kindMeta(draft.kind).description}>{kindMeta(draft.kind).label}</TypeBadge><ItemCode>{details.reference}</ItemCode><OriginBadge $external={draft.origin===2}>{originNames[draft.origin]??'Origem não informada'}</OriginBadge>{details.isArchived&&<OriginBadge>Arquivada</OriginBadge>}</TypeLine>
+      <TypeLine><TypeBadge $kind={draft.kind} title={kindMeta(draft.kind).description}>{kindMeta(draft.kind).label}</TypeBadge><ItemCode>{details.number ? `#${details.number}` : 'Item'}</ItemCode><OriginBadge $external={draft.origin===2}>{originNames[draft.origin]??'Origem não informada'}</OriginBadge>{details.isArchived&&<OriginBadge>Arquivada</OriginBadge>}</TypeLine>
       {editingTitle
         ?<><Dialog.Title style={{position:'absolute',width:1,height:1,overflow:'hidden'}}>{draft.title}</Dialog.Title><TitleInput autoFocus aria-label="Editar título" maxLength={500} value={draft.title} onChange={e=>change('title',e.target.value)} onBlur={finishTitleEdit} onKeyDown={onTitleKeyDown} onFocus={e=>e.currentTarget.select()}/></>
         :<Title title="Clique duas vezes para editar o título" onDoubleClick={startTitleEdit}>{draft.title}</Title>}
@@ -466,7 +468,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
         <Tab $active={activeTab==='subtasks'} onClick={()=>setActiveTab('subtasks')}>Subtarefas</Tab>
         <Tab $active={activeTab==='attachments'} onClick={()=>setActiveTab('attachments')}>Anexos</Tab>
         <Tab $active={activeTab==='history'} onClick={()=>setActiveTab('history')}>Histórico</Tab>
-        <Tab $active={activeTab==='graph'} onClick={()=>setActiveTab('graph')}>Grafo de estados</Tab>
+        <Tab $active={activeTab==='timeline'} onClick={()=>setActiveTab('timeline')}>Linha do tempo</Tab>
       </Tabs>
 
       {activeTab==='description'&&<>
@@ -502,12 +504,12 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
 
       {realMode&&<Section><h2><TagsIcon/>Classificação</h2><TaskTaxonomyPanel workItemId={details.id} taskTypeId={details.taskTypeId} points={details.points} tagIds={details.tags.map(tag=>tag.id)} showPoints={showStoryPoints} onChanged={invalidate}/></Section>}
       </>}
-      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa. Selecione uma subtarefa para abrir todos os detalhes.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id} role='button' tabIndex={0} aria-label={'Abrir detalhes da subtarefa ' + child.title} onClick={()=>onOpenSubtask?.(child.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenSubtask?.(child.id);}}} style={{cursor:onOpenSubtask?'pointer':'default'}}><div><strong>{child.number?`${projectKey}-${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Button disabled={!subtaskTitle.trim()||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
+      {activeTab==='subtasks'&&<Section><h2><CheckCircle2 size={14}/>Checklist e subtarefas</h2><SectionHelp>Use o checklist para passos simples e o seletor abaixo para criar uma subtarefa ligada a esta tarefa. Selecione uma subtarefa para abrir todos os detalhes.</SectionHelp>{realMode?<TaskChecklistPanel workItemId={details.id} onChanged={invalidate}/>:<Empty>Checklist disponível com dados reais.</Empty>}<List>{details.subtasks.map(child=><Row key={child.id} role='button' tabIndex={0} aria-label={'Abrir detalhes da subtarefa ' + child.title} onClick={()=>onOpenSubtask?.(child.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenSubtask?.(child.id);}}} style={{cursor:onOpenSubtask?'pointer':'default'}}><div><strong>{child.number?`#${child.number} · `:''}{child.title}</strong><small>{child.completedAt?'Concluída':'Em andamento'}</small></div></Row>)}{details.subtasks.length===0&&<Empty>Nenhuma subtarefa.</Empty>}</List>{realMode&&<InlineForm onSubmit={submitSubtask}><WorkItemKindSelector className="kind-selector" ariaLabel="Tipo da subtarefa" value={subtaskKind} onChange={setSubtaskKind} allowedKinds={[WorkItemKind.Subtask, WorkItemKind.Task, WorkItemKind.Bug, WorkItemKind.UserStory]}/><input value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} placeholder="Nova subtarefa (somente título)"/><Field>Responsável da subtarefa<select aria-label="Responsável da subtarefa" required value={subtaskResponsibleId} onChange={event=>setSubtaskResponsibleId(event.target.value)}><option value="">Selecionar pessoa...</option>{usersQuery.data?.map(user=><option key={user.id} value={user.id}>{userDisplayLabel(user)}</option>)}</select></Field><Button disabled={!subtaskTitle.trim()||!subtaskResponsibleId||subtask.isPending}><Plus size={12}/>Adicionar</Button></InlineForm>}</Section>}
 
       {activeTab==='attachments'&&<Section><h2><Paperclip size={14}/>Anexos</h2><List>{attachmentsQuery.data?.map(attachment=><Row key={attachment.id}><div><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)} · {attachment.mimeType||'arquivo'}</small></div><div style={{display:'flex',gap:4}}><IconButton aria-label={`Baixar ${attachment.fileName}`} onClick={()=>downloadAttachment(attachment)}><Download size={14}/></IconButton>{realMode&&<IconButton $danger aria-label={`Remover ${attachment.fileName}`} disabled={removeAttachment.isPending} onClick={()=>{if(window.confirm(`Remover o anexo "${attachment.fileName}"?`))removeAttachment.mutate(attachment.id);}}><Trash2 size={14}/></IconButton>}</div></Row>)}{!attachmentsQuery.data?.length&&<Empty>Nenhum anexo.</Empty>}</List>{realMode&&<label style={{display:'inline-flex',marginTop:9}}><input type="file" hidden onChange={onUpload}/><Button as="span"><FileUp size={12}/>{upload.isPending?'Enviando...':'Adicionar anexo'}</Button></label>}</Section>}
 
       {activeTab==='description'&&<>
-      <Section><h2><Link2 size={14}/>Dependências e bloqueios</h2><List>{details.links.map(current=><Row key={current.id}><div><strong>{current.isIncoming?'Recebido: ':''}{linkTypeNames[current.type]??'Relacionado'} · {current.relatedProjectKey&&current.relatedNumber?`${current.relatedProjectKey}-${current.relatedNumber} · `:''}{current.relatedTitle}</strong><small>{current.relatedWorkItemId}</small></div>{realMode&&<IconButton $danger aria-label="Remover relacionamento" onClick={()=>removeLink.mutate(current.id)}><Trash2 size={13}/></IconButton>}</Row>)}{details.links.length===0&&<Empty>Nenhuma dependência ou bloqueio.</Empty>}</List>{realMode&&details.projectId&&<InlineForm onSubmit={submitLink}><DependencyAutocomplete projectId={details.projectId} excludeWorkItemId={details.id} disabled={link.isPending} onSelect={selected=>setLinkForm({...linkForm,targetWorkItemId:selected?.id??''})}/><select value={linkForm.type} onChange={e=>setLinkForm({...linkForm,type:Number(e.target.value)})}>{Object.entries(linkTypeNames).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><Button disabled={!linkForm.targetWorkItemId||link.isPending}><Link2 size={12}/>Vincular</Button></InlineForm>}</Section>
+      <Section><h2><Link2 size={14}/>Dependências e bloqueios</h2><List>{details.links.map(current=><Row key={current.id}><div><strong>{current.isIncoming?'Recebido: ':''}{linkTypeNames[current.type]??'Relacionado'} · {current.relatedNumber?`#${current.relatedNumber} · `:''}{current.relatedTitle}</strong><small>{current.relatedWorkItemId}</small></div>{realMode&&<IconButton $danger aria-label="Remover relacionamento" onClick={()=>removeLink.mutate(current.id)}><Trash2 size={13}/></IconButton>}</Row>)}{details.links.length===0&&<Empty>Nenhuma dependência ou bloqueio.</Empty>}</List>{realMode&&details.projectId&&<InlineForm onSubmit={submitLink}><DependencyAutocomplete projectId={details.projectId} excludeWorkItemId={details.id} disabled={link.isPending} onSelect={selected=>setLinkForm({...linkForm,targetWorkItemId:selected?.id??''})}/><select value={linkForm.type} onChange={e=>setLinkForm({...linkForm,type:Number(e.target.value)})}>{Object.entries(linkTypeNames).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select><Button disabled={!linkForm.targetWorkItemId||link.isPending}><Link2 size={12}/>Vincular</Button></InlineForm>}</Section>
 
       {details.customFields.length>0&&<Section><h2><FolderKanban size={14}/>Campos personalizados</h2><FormGrid>{details.customFields.map(field=><CustomFieldInput key={field.fieldId} field={field} value={customValues[field.fieldId]??''} users={usersQuery.data??[]} teams={projectQuery.data?.teams??[]} onChange={value=>setCustomValues(current=>({...current,[field.fieldId]:value}))}/>)}</FormGrid><div style={{display:'flex',justifyContent:'flex-end',marginTop:9}}><Button onClick={()=>customFields.mutate()} disabled={!realMode||customFields.isPending}><Save size={12}/>Salvar campos</Button></div></Section>}
 
@@ -520,8 +522,8 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       <Section><h2><Clock3 size={14}/>Auditoria</h2><Meta><MetaChip>Criada em {new Date(details.createdAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>Atualizada em {new Date(details.updatedAt).toLocaleString('pt-BR')}</MetaChip><MetaChip>{details.commentsCount} comentário(s)</MetaChip><MetaChip>{details.attachmentsCount} anexo(s)</MetaChip></Meta></Section>
       </>}
       {activeTab==='comments'&&<Section><h2><MessageSquareText size={14}/>Comentários internos</h2><VisibilityNote>Visível somente para a equipe interna. Este conteúdo não é enviado nem exibido ao solicitante.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="comments"/>:<Empty>Entre com dados reais para comentar.</Empty>}</Section>}
-      {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações e movimentações desta tarefa.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
-      {activeTab==='graph'&&<Section><h2><GitBranch size={14}/>Grafo de estados</h2><VisibilityNote>Caminho real percorrido pela tarefa entre etapas, com responsáveis e datas de cada transição.</VisibilityNote>{realMode?<TaskStateGraph workItemId={details.id} createdAt={details.createdAt} createdByName={details.requesterName || details.responsibleName}/>:<Empty>Grafo disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações desta tarefa. As movimentações ficam na Linha do Tempo.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='timeline'&&<Section><h2>Linha do tempo</h2><VisibilityNote>Criação e movimentações entre colunas, da mais recente para a mais antiga.</VisibilityNote>{realMode?<TaskTimeline key={details.id} workItemId={details.id} createdAt={details.createdAt}/>:<Empty>Linha do tempo disponível com dados reais.</Empty>}</Section>}
     </Body>}
   </Sheet>}</Dialog.Portal></Dialog.Root>;
 }

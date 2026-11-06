@@ -152,23 +152,23 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
       <Kpi><span>Horas realizadas</span><strong>{report.hours.realized.toLocaleString('pt-BR')}h</strong></Kpi>
     </Kpis>
     <Grid>
-      <Card><h3>Tarefas por status</h3><DonutChart data={report.tasksByStatus} /></Card>
-      <Card><h3>Tarefas por prioridade</h3><DonutChart data={report.tasksByPriority} /></Card>
-      <Card><h3>Tarefas por origem</h3><DonutChart data={report.tasksByOrigin} /></Card>
-      <Card><h3>Tarefas por responsável</h3><BarsChart data={report.tasksByResponsible} color="#06B6D4" /></Card>
-      <Card><h3>Tarefas por equipe</h3><BarsChart data={report.tasksByTeam} color="#2563EB" /></Card>
-      <Card><h3>Tarefas por projeto</h3><BarsChart data={report.tasksByProject} color="#7A5CC6" /></Card>
-      <Card><h3>Solicitações por categoria</h3><BarsChart data={report.externalRequests.byCategory} color="#E8833A" /></Card>
-      <Card><h3>Solicitações por solicitante</h3><BarsChart data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
+      <Card><h3>Tarefas por status</h3><DonutChart title="Tarefas por status" data={report.tasksByStatus} /></Card>
+      <Card><h3>Tarefas por prioridade</h3><DonutChart title="Tarefas por prioridade" data={report.tasksByPriority} /></Card>
+      <Card><h3>Tarefas por origem</h3><DonutChart title="Tarefas por origem" data={report.tasksByOrigin} /></Card>
+      <Card><h3>Tarefas por responsável</h3><BarsChart title="Tarefas por responsável" data={report.tasksByResponsible} color="#06B6D4" /></Card>
+      <Card><h3>Tarefas por equipe</h3><BarsChart title="Tarefas por equipe" data={report.tasksByTeam} color="#2563EB" /></Card>
+      <Card><h3>Tarefas por projeto</h3><BarsChart title="Tarefas por projeto" data={report.tasksByProject} color="#7A5CC6" /></Card>
+      <Card><h3>Solicitações por categoria</h3><BarsChart title="Solicitações por categoria" data={report.externalRequests.byCategory} color="#E8833A" /></Card>
+      <Card><h3>Solicitações por solicitante</h3><BarsChart title="Solicitações por solicitante" data={report.externalRequests.byRequester} color="#00A9A5" /></Card>
     </Grid>
     <Grid>
-      {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
-      <Card><h3>Previsto versus realizado (horas)</h3><GroupedBars
+      {showPoints&&<Card><h3>Velocidade das sprints</h3><BarsChart title="Velocidade das sprints" data={report.sprintVelocity.map(sprint => ({ key: sprint.id, label: sprint.name, value: sprint.velocity }))} color="#10B981" /></Card>}
+      <Card><h3>Previsto versus realizado (horas)</h3><GroupedBars title="Previsto versus realizado (horas)"
         data={[{ label: 'Horas', planned: report.hours.planned, realized: report.hours.realized }]}
         keys={[{ key: 'planned', label: 'Previsto', color: '#06B6D4' }, { key: 'realized', label: 'Realizado', color: '#10B981' }]}
       /></Card>
-      <Card><h3>Volume de trabalho por período</h3><AreaTrend points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
-      <Card><h3>Burndown da sprint atual</h3><AreaTrend points={report.burndown} color="#D92D20" label="Restante" /></Card>
+      <Card><h3>Volume de trabalho por período</h3><AreaTrend title="Volume de trabalho por período" points={report.workloadByPeriod} color="#2563EB" label="Tarefas" /></Card>
+      <Card><h3>Burndown da sprint atual</h3><AreaTrend title="Burndown da sprint atual" points={report.burndown} color="#D92D20" label="Restante" /></Card>
     </Grid>
   </>;
 }
@@ -177,7 +177,7 @@ function PreparedView({ report, dashboard, showPoints }: { report?: PreparedRepo
 function CustomFieldsView({ report }: { report?: CustomFieldReport }) {
   if (!report) return <Empty>Selecione um projeto para analisar campos personalizados.</Empty>;
   if (!report.fields.length) return <Empty>O projeto ainda não possui campos personalizados ativos.</Empty>;
-  return <TableWrap><table><thead><tr><th>Tarefa</th><th>Status</th>{report.fields.map(field => <th key={field.id}>{field.name}</th>)}</tr></thead><tbody>{report.rows.map(row => <tr key={row.workItemId}><td>{row.reference} · {row.title}</td><td>{row.status}</td>{report.fields.map(field => <td key={field.id}>{row.values[field.id] || '—'}</td>)}</tr>)}</tbody></table></TableWrap>;
+  return <TableWrap><table><thead><tr><th>Tarefa</th><th>Status</th>{report.fields.map(field => <th key={field.id}>{field.name}</th>)}</tr></thead><tbody>{report.rows.map(row => <tr key={row.workItemId}><td>#{row.reference.match(/(?:^#|[-])([0-9]+)$/)?.[1] ?? '—'} · {row.title}</td><td>{row.status}</td>{report.fields.map(field => <td key={field.id}>{row.values[field.id] || '—'}</td>)}</tr>)}</tbody></table></TableWrap>;
 }
 
 export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
@@ -198,18 +198,10 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
   const peopleQuery = useQuery<Array<{ userId: string; name: string; isActive: boolean }>>({
     queryKey: ['organization', 'members'], queryFn: () => api.getOrganizationMembers(),
   });
-  const projectsQuery = useQuery<ProjectSummary[]>({
+  const projectsQuery = useQuery<Array<Pick<ProjectSummary, 'id' | 'key' | 'name'>>>({
     queryKey: ['projects', false], queryFn: () => api.getProjects(false), enabled: !fixedProjectId,
   });
-  const fixedProjectQuery = useQuery<ProjectSummary>({
-    queryKey: ['project', fixedProjectId],
-    queryFn: () => api.getProject(fixedProjectId!),
-    enabled: Boolean(fixedProjectId),
-  });
-  const selectedProject = fixedProjectId
-    ? fixedProjectQuery.data
-    : projectsQuery.data?.find(item => item.id === projectId);
-  const showPoints = projectId ? Boolean(selectedProject) && selectedProject?.methodology !== 1 : true;
+  const showPoints = true;
   const preparedQuery = useQuery<PreparedReports>({
     queryKey: ['prepared-reports', projectId, priority, from, to, userId],
     queryFn: () => api.getPreparedReports({
@@ -271,7 +263,7 @@ export function ReportsHub({ fixedProjectId }: { fixedProjectId?: string }) {
 
   return <>
     <Filters>
-      {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.key} · {project.name}</option>)}</select></label>}
+      {!fixedProjectId && <label>Projeto<select value={selectedProjectId} onChange={event => setSelectedProjectId(event.target.value)}><option value="">Todos os projetos</option>{projectsQuery.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>}
       <label>Prioridade<select value={priority} onChange={event => setPriority(event.target.value === '' ? '' : Number(event.target.value))}><option value="">Todas</option><option value={0}>Baixa</option><option value={1}>Média</option><option value={2}>Alta</option><option value={3}>Crítica</option></select></label>
       <label>Pessoa<select aria-label="Pessoa" value={userId} onChange={event => setUserId(event.target.value)}><option value="">Todas as pessoas</option>{(peopleQuery.data ?? []).filter(person => person.isActive).map(person => <option key={person.userId} value={person.userId}>{person.name}</option>)}</select></label>
       <label>Período inicial<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>

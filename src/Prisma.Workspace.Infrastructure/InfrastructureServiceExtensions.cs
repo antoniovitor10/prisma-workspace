@@ -31,6 +31,7 @@ public static class InfrastructureServiceExtensions
                     typeof(AppDbContext).Assembly.FullName)));
 
         // ─── Repositórios ─────────────────────────────────────────────────
+        services.AddScoped<IUserRegistrationService, Services.UserRegistrationService>();
         services.AddScoped<IBoardRepository, BoardRepository>();
         services.AddScoped<IBoardStructureRepository, BoardStructureRepository>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();

@@ -115,9 +115,7 @@ public class CreateProjectCommandValidator : AbstractValidator<CreateProjectComm
 {
     public CreateProjectCommandValidator()
     {
-        // Chave é opcional: quando vazia, o handler gera uma a partir do nome.
-        RuleFor(x => x.Key!).MaximumLength(20).Matches("^[A-Za-z][A-Za-z0-9-]*$")
-            .When(x => !string.IsNullOrWhiteSpace(x.Key));
+        // D56: Key legado é aceito por compatibilidade, mas não participa da validação funcional.
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Description).MaximumLength(2000);
         RuleFor(x => x.Methodology).IsInEnum();
@@ -144,16 +142,8 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
         if (_permissions is not null)
             await _permissions.EnsureAsync(request.OwnerId, PlatformPermission.Create,
                 PermissionScope.Project, cancellationToken: ct);
-        string key;
-        if (string.IsNullOrWhiteSpace(request.Key))
-        {
-            key = await GerarChaveDisponivelAsync(request.Name, ct);
-        }
-        else
-        {
-            key = request.Key.Trim().ToUpperInvariant();
-            DomainException.Garantir(!await _projects.KeyExistsAsync(key, ct), "Já existe um projeto com esta chave.");
-        }
+        // A chave técnica é sempre gerada no servidor; clientes legados não escolhem seu valor.
+        var key = await GerarChaveDisponivelAsync(request.Name, ct);
         var project = Project.Criar(
             key, request.Name, request.OwnerId, request.Nature, request.WorkType, request.Description,
             request.Methodology, request.StartDate, request.DueDate);

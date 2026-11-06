@@ -133,7 +133,7 @@ export function DashboardView({ dashboard }: { dashboard: Dashboard }) {
       <h3>{series.title}</h3><SeriesChart points={series.points} visualization={series.visualization} />
     </ChartCard>)}</ChartGrid>}
     {dashboard.items.length > 0 && <TaskList><h3>Itens que exigem atenção</h3>{dashboard.items.map(item => <Task key={item.id}>
-      <span>{item.projectKey ? `${item.projectKey}-${item.number}` : `#${item.number}`}</span>
+      <span>{`#${item.number}`}</span>
       <b>{item.title}</b><span>{item.dueDate ? new Date(`${item.dueDate}T12:00:00`).toLocaleDateString('pt-BR') : item.status}</span>
     </Task>)}</TaskList>}
   </>;

@@ -79,6 +79,9 @@ describe('TaskDetailDrawer', () => {
 
     const title = await screen.findByRole('textbox', { name: 'Título' });
     await waitFor(() => expect(title).toHaveValue('Título original'));
+    expect(screen.getByText('#42', { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText('TESTE-42', { exact: true })).not.toBeInTheDocument();
+    expect(details.reference).toBe('TESTE-42');
     expect(screen.getByLabelText('Coluna atual')).toHaveTextContent('Desenvolvimento');
     expect(screen.getByLabelText('Coluna atual')).not.toHaveTextContent('Em andamento');
     fireEvent.change(title, { target: { value: 'Título otimista' } });
@@ -92,7 +95,7 @@ describe('TaskDetailDrawer', () => {
     await waitFor(() => expect(title).toHaveValue('Título original'));
   });
 
-  it('usa seis abas e oculta Story Points em projetos Kanban', async () => {
+  it.each([1, 2, 3, 4])('usa seis abas e mantém pontos para valor interno %s', async (methodology) => {
     const details: WorkItemDetails = {
       id: 'kanban-item', number: 9, reference: 'KAN-9', projectId: 'project-1', projectKey: 'KAN',
       boardId: 'board', boardName: 'Operação', kind: 5, origin: 1, title: 'Atender demanda', priority: 1, responsibleId: 'revoked-user', responsibleName: 'Pessoa revogada',
@@ -103,7 +106,7 @@ describe('TaskDetailDrawer', () => {
     };
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
-    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology, teams: [] });
     vi.spyOn(api, 'getBoards').mockResolvedValue([
       { id:'board', name:'Operação', projectId:'project-1' },
       { id:'board-2', name:'Entrega', projectId:'project-1' },
@@ -123,7 +126,7 @@ describe('TaskDetailDrawer', () => {
 
     await screen.findByRole('textbox', { name: 'Título' });
     await waitFor(() => expect(api.getProject).toHaveBeenCalled());
-    expect(screen.queryByText('Story points')).not.toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: 'Story points' })).toHaveValue(8);
     const responsible = screen.getByRole('combobox', { name: 'Responsável principal' });
     expect(responsible).toHaveValue('revoked-user');
     expect(screen.getByRole('option', { name: 'Pessoa revogada (sem acesso atual)' })).toBeDisabled();
@@ -133,7 +136,7 @@ describe('TaskDetailDrawer', () => {
     fireEvent.change(screen.getByRole('combobox', { name:'Quadro de destino' }), { target:{ value:'board-2' } });
     expect(screen.getByLabelText('Rota da transferência')).toHaveTextContent('Entrega');
     await waitFor(()=>expect(screen.getByRole('combobox', { name:'Coluna de destino' })).not.toBeDisabled());
-    for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Grafo de estados']) {
+    for (const tab of ['Descrição', 'Comentários', 'Subtarefas', 'Anexos', 'Histórico', 'Linha do tempo']) {
       expect(screen.getByRole('button', { name: tab })).toBeInTheDocument();
     }
     fireEvent.click(screen.getByRole('button', { name: 'Comentários' }));
@@ -309,6 +312,29 @@ describe('TaskDetailDrawer', () => {
     const sprintSelect = await screen.findByRole('combobox', { name: 'Sprint da tarefa' });
     fireEvent.change(sprintSelect, { target: { value: 'sprint-2' } });
     await waitFor(() => expect(planSprint).toHaveBeenCalledWith('project-1', 'sprint-2', ['sprint-item']));
+  });
+
+  it('exige responsável elegível ao criar subtarefa pelo detalhe', async () => {
+    const details: WorkItemDetails = {
+      id: 'parent-item', number: 22, reference: 'KAN-22', projectId: 'project-1', projectKey: 'KAN', boardId: 'board', boardName: 'Produto', kind: 5, origin: 1, title: 'Tarefa pai', responsibleId: 'person-1', priority: 1, participants: [], createdAt: '2026-09-22T10:00:00Z', updatedAt: '2026-09-22T10:00:00Z', realizedHours: 0, tags: [], isArchived: false, checklist: [], subtasks: [{ id: 'child-item', number: 23, title: 'Subtarefa com detalhes', isArchived: false }], attachmentsCount: 0, commentsCount: 0, followerIds: [], isFollowing: false, links: [], customFields: [], version: 'v1',
+    };
+    vi.spyOn(api, 'getToken').mockReturnValue('jwt'); vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] }); vi.spyOn(api, 'getProjectSprints').mockResolvedValue([]);
+    vi.spyOn(api, 'getStages').mockResolvedValue([]); vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([{ id: 'person-1', displayName: 'Pessoa Elegível', email: 'person@example.test' }]); vi.spyOn(api, 'getAttachments').mockResolvedValue([]); vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]); vi.spyOn(api, 'getTags').mockResolvedValue([]); vi.spyOn(api, 'getComments').mockResolvedValue([]); vi.spyOn(api, 'getTaskEvents').mockResolvedValue([]);
+    const create = vi.spyOn(api, 'createWorkItem').mockResolvedValue('new-child');
+    const onOpenSubtask = vi.fn(); const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><ThemeProvider theme={theme}><TaskDetailDrawer projectKey='KAN' item={{ id: details.id, boardId: details.boardId, boardName: details.boardName, kind: details.kind, title: details.title, priority: details.priority, rank: 1 }} onOpenChange={vi.fn()} onOpenSubtask={onOpenSubtask} /></ThemeProvider></QueryClientProvider></MemoryRouter>);
+    await screen.findByRole('textbox', { name: 'Título' });
+    fireEvent.click(screen.getByRole('button', { name: 'Subtarefas' }));
+    fireEvent.change(screen.getByPlaceholderText('Nova subtarefa (somente título)'), { target: { value: 'Nova filha' } });
+    expect(screen.getByRole('button', { name: 'Adicionar' })).toBeDisabled();
+    await screen.findByRole('option', { name: 'Pessoa Elegível' });
+    fireEvent.change(screen.getByLabelText('Responsável da subtarefa'), { target: { value: 'person-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Nova filha', parentId: 'parent-item', projectId: 'project-1', responsibleId: 'person-1',
+    })));
+    await waitFor(() => expect(onOpenSubtask).toHaveBeenCalledWith('new-child'));
   });
 
   it('abre uma subtarefa no mesmo detalhe completo da WorkItem', async () => {
