@@ -19,6 +19,13 @@ public interface IMethodGitStore
     Task<TaskGitLinkDto> LinkInferredAsync(Guid integrationId, Guid workItemId, Guid? observationId, string? branchName, string source, CancellationToken cancellationToken = default);
     // Operação atômica para vínculo, campo PR e comentário; autoria vem do contexto validado.
     Task<TaskGitLinkDto> LinkExplicitAsync(Guid integrationId, Guid workItemId, Guid observationId, string reason, CancellationToken cancellationToken = default);
+    // Vínculo de branch antes do push (BranchState = local); valida nome, repositório e permissão; grava git_branch_linked.
+    Task<TaskGitLinkDto> LinkBranchAsync(Guid integrationId, Guid workItemId, string branchName, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+    // Marca a branch vista no GitHub (BranchState = remote) e grava git_branch_pushed; NotLinked quando não há vínculo da branch.
+    Task<GitBranchPushResult> MarkBranchPushedAsync(Guid integrationId, string branchName, string? observedGitActorId = null,
+        string? observedGitActorName = null, CancellationToken cancellationToken = default)
+        => Task.FromResult(GitBranchPushResult.NotLinked);
     Task<GitPullRequestPage> ListPullRequestsAsync(Guid projectId, bool? linked, int page, int pageSize, CancellationToken cancellationToken = default);
     // Busca pontual no tenant para vínculo explícito; não percorrer todas as páginas para achar um ID.
     Task<GitPullRequestObservationDto?> GetPullRequestObservationAsync(Guid projectId, Guid observationId,

@@ -82,7 +82,8 @@ public sealed record MethodTaskDto(
     string? FilePath, IReadOnlyList<string> Covers, string? Risk, string? Pr,
     IReadOnlyList<string> DependsOn, bool Authorized, bool CanResume,
     Guid? CycleId = null, Guid? BlockingEventId = null, Guid? BlockingPrincipalId = null,
-    string? BlockingOriginStatus = null, Guid? ResumeApprovalEventId = null);
+    string? BlockingOriginStatus = null, Guid? ResumeApprovalEventId = null,
+    IReadOnlyList<TaskGitLinkDto>? GitLinks = null);
 public sealed record CreateMethodTaskRequest(
     string Id, string Title, string Hu, string FilePath, IReadOnlyList<string> Covers,
     string Risk, string Status = MethodStatusCodes.Backlog);

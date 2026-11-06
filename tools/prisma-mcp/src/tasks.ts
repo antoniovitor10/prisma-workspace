@@ -1,9 +1,16 @@
-import { PrismaApi, type MethodTaskDto } from './api.js';
+import { PrismaApi, type MethodGitLinkDto, type MethodTaskDto } from './api.js';
 import { assertCreationStatus, getProjectRules, isTaskStatus, type TaskStatus } from './rules.js';
 
 export interface MethodTask {
   id: string; titulo: string; status: TaskStatus; hu: string | null; arquivo: string | null;
   cobre: string[]; risco: string | null; pr: string | null; prisma_id: string;
+  /** Vínculos Git (branch e PR); só em obter_task. */
+  git?: MethodGitLink[];
+}
+export interface MethodGitLink {
+  repositorio: string | null; branch: string | null; estado_branch: string;
+  pr: number | null; pr_url: string | null; pr_estado: string | null;
+  origem: string; criado_em: string; visto_em: string | null;
 }
 export interface CreateTaskInput {
   id: string; titulo: string; hu: string; arquivo: string; cobre: string[] | string;
@@ -17,13 +24,19 @@ function requireTaskId(id: string): string {
   if (!/^T-\d{4,}$/.test(id)) throw new Error('ID da task inválido. Use T-0001.');
   return id;
 }
+function toGitLink(link: MethodGitLinkDto): MethodGitLink {
+  return { repositorio: link.repositoryFullName, branch: link.branchName, estado_branch: link.branchState,
+    pr: link.pullRequestNumber, pr_url: link.url, pr_estado: link.pullRequestState,
+    origem: link.source, criado_em: link.createdAtUtc, visto_em: link.lastSeenAtUtc };
+}
 export function toMethodTask(item: MethodTaskDto): MethodTask {
   requireTaskId(item.id);
   if (!isTaskStatus(item.status)) throw new Error('A API retornou uma task fora dos status do método. Pare e avise.');
   const prefix = `${item.id} · `;
   return { id: item.id, titulo: item.title.startsWith(prefix) ? item.title.slice(prefix.length) : item.title,
     status: item.status, hu: item.hu, arquivo: item.filePath, cobre: item.covers,
-    risco: item.risk, pr: item.pr, prisma_id: item.workItemId };
+    risco: item.risk, pr: item.pr, prisma_id: item.workItemId,
+    ...(item.gitLinks ? { git: item.gitLinks.map(toGitLink) } : {}) };
 }
 export class TaskService {
   constructor(readonly api: PrismaApi = PrismaApi.fromEnv()) {}
@@ -75,6 +88,16 @@ export class TaskService {
       throw new Error('URL do PR deve usar HTTPS, sem credenciais, parâmetros ou fragmentos.');
     }
     await this.api.linkMethodPullRequest(id, parsed.href);
+    return this.obterTask(id);
+  }
+  async vincularBranch(id: string, repository: string, branch: string): Promise<MethodTask> {
+    requireTaskId(id);
+    const repo = requireText(repository, 'Repositório');
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error('Repositório inválido. Use dono/repositório, como detranse/canais-mobile.');
+    const name = requireText(branch, 'Branch');
+    if (name.length > 255) throw new Error('Nome da branch com mais de 255 caracteres.');
+    // A API valida o nome pelas regras de ref do Git, o repositório do projeto e o escopo do token.
+    await this.api.linkMethodBranch(id, repo, name);
     return this.obterTask(id);
   }
 }

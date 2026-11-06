@@ -61,7 +61,13 @@ public sealed record GitPullRequestPage(IReadOnlyList<GitPullRequestObservationD
 public sealed record LinkObservedPullRequestRequest(Guid WorkItemId, string Reason);
 public sealed record TaskGitLinkDto(
     Guid Id, Guid IntegrationId, Guid WorkItemId, Guid? ObservationId, string? BranchName,
-    string Source, string? Url, Guid? CreatedByPrincipalId, string? CreatedByUserId, DateTimeOffset CreatedAtUtc);
+    string Source, string? Url, Guid? CreatedByPrincipalId, string? CreatedByUserId, DateTimeOffset CreatedAtUtc,
+    string BranchState = "remote", DateTimeOffset? LastSeenAtUtc = null, string? RepositoryFullName = null,
+    int? PullRequestNumber = null, string? PullRequestState = null);
+/// <summary>Resultado de ver uma branch no GitHub: sem vínculo, registrada, ou vínculo cuja task está indisponível (nada gravado).</summary>
+public enum GitBranchPushResult { NotLinked, Recorded, TaskUnavailable }
+/// <summary>Vínculo de branch antes do push; o repositório é o nome completo de um repositório do projeto.</summary>
+public sealed record LinkMethodBranchRequest(string Repository, string Branch);
 public sealed record GitTaskResolution(MethodTaskSnapshot? Task, string Source, string? Reason, bool Conflict = false);
 
 /// <summary>Prova produzida pelo provedor/processador interno. Não é um contrato de entrada HTTP.</summary>

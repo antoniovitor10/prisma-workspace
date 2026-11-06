@@ -27,7 +27,7 @@ const FIXTURE = join(ROOT, 'test', 'fixtures', 'trabalho');
 const ATIVO = process.env.PRISMA_IT === '1';
 const URL_API = (process.env.PRISMA_URL ?? '').replace(/\/+$/, '');
 const PROJETO = process.env.PRISMA_IT_PROJECT ?? `metodo-mcp-it-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
-const OITO = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr'];
+const NOVE = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr', 'vincular_branch'];
 
 let uiHeaders: Record<string, string> = {};
 let projectId = '';
@@ -134,11 +134,11 @@ describe('integração 2a com o Prisma (token opaco)', { skip: !ATIVO && 'defina
       [['T-9001', 'concluida', 'HU-9001'], ['T-9002', 'backlog', 'HU-9001'], ['T-9003', 'backlog', 'HU-9001']]);
   });
 
-  test('MCP por stdio só com o token: 8 operações, papel e projeto vindos da API', async () => {
+  test('MCP por stdio só com o token: 9 operações, papel e projeto vindos da API', async () => {
     const transport = new StdioClientTransport({ command: process.execPath, args: ['--import', 'tsx', 'src/server.ts'], cwd: ROOT, env: envAgente(), stderr: 'pipe' });
     client = new Client({ name: 'prisma-mcp-it', version: '0.0.0' });
     await client.connect(transport);
-    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), [...OITO].sort());
+    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), [...NOVE].sort());
     const r = await ok('regras_do_projeto');
     assert.match(r.texto, /agente/);
     assert.ok(r.texto.includes(PROJETO), r.texto);

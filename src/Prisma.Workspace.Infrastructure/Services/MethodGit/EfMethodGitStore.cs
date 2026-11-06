@@ -29,8 +29,9 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     private IQueryable<GitPullRequestObservation> Observations => db.Set<GitPullRequestObservation>().Where(x => x.Integration.OrganizationId == Tenant);
     private IQueryable<TaskGitLink> Links => db.Set<TaskGitLink>().Where(x => x.Integration.OrganizationId == Tenant);
     private static GitRepositoryDescriptor Descriptor(GitRepositoryIntegration r) => new(r.Id, r.OrganizationId, r.ProjectId, r.Provider, r.Host,
-        r.RepositoryId, r.RepositoryFullName, r.DefaultBranch, r.AppId, r.InstallationId, r.AppPrivateKeySecretRef,
-        r.WebhookSecretRef, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion);
+        // Integração em modo consulta não tem App: 0/vazio nunca autenticam no provedor nem no webhook.
+        r.RepositoryId, r.RepositoryFullName, r.DefaultBranch, r.AppId ?? 0, r.InstallationId ?? 0, r.AppPrivateKeySecretRef ?? string.Empty,
+        r.WebhookSecretRef ?? string.Empty, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion);
 
     public async Task<GitRepositoryDescriptor?> GetRepositoryForIngressAsync(Guid integrationId, CancellationToken ct = default)
     {

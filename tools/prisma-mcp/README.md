@@ -11,7 +11,7 @@ adaptador só repetem a recusa para dar uma mensagem rápida; tirá-las não dá
 
 O pacote tem dois executáveis:
 
-- `prisma-mcp` (`dist/server.js`): servidor MCP com as 8 operações do contrato.
+- `prisma-mcp` (`dist/server.js`): servidor MCP com as 9 operações do contrato.
 - `prisma-metodo-import` (`dist/import.js`): importa `docs/trabalho/HU-*` para o projeto.
 
 ## Operações do MCP
@@ -19,13 +19,14 @@ O pacote tem dois executáveis:
 | Ferramenta | Parâmetros | Para quê |
 |---|---|---|
 | `regras_do_projeto` | nenhum | papel, escopo, validade do token, matriz efetiva e convenções, vindos da API; chamar no início da sessão |
-| `obter_task` | `id` | status, título, arquivo, HU e PR de uma task |
+| `obter_task` | `id` | status, título, arquivo, HU, PR e vínculos Git (repositório, branch local ou enviada, PR) de uma task |
 | `listar_tasks` | `status?` | tasks do projeto, opcionalmente filtradas por status |
 | `proximas_tasks` | nenhum | tasks autorizadas em `em-desenvolvimento` com todas as dependências concluídas |
 | `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task no quadro, marcada com a HU |
 | `mover_status` | `id, novo_status, motivo` | muda a coluna, se a matriz da API permitir ao papel do token |
 | `comentar` | `id, texto` | relatório de execução, bloqueio, handoff |
 | `vincular_pr` | `id, url` | registra o vínculo explícito do PR com a task (também aparece no campo **PR**) |
+| `vincular_branch` | `id, repositorio, branch` | registra a branch da task antes do push (`local`); vira enviada quando o GitHub a vê. `repositorio` é `dono/repositório` de um repositório do projeto |
 
 Status (uma coluna para cada, nesta ordem): `backlog` (Backlog), `pronta` (Pronta),
 `em-desenvolvimento` (Em desenvolvimento), `em-revisao` (Em revisão), `em-teste` (Em teste),
