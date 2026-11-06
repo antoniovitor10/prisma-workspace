@@ -35,9 +35,17 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
         if (e.EventName == "create")
         {
             if (e.Action != "branch" || e.BranchName is null) return await Finish(delivery, GitDeliveryStates.Ignored, "unsupported_reference", ct);
+            // Branch já vinculada (inclusive local, antes do push): só passa a "remote"; branch não move card.
+            var pushed = await store.MarkBranchPushedAsync(repository.Id, e.BranchName, e.ObservedGitActorId, e.ObservedGitActorName, ct);
+            if (pushed != GitBranchPushResult.NotLinked)
+                return await Finish(delivery, GitDeliveryStates.Ignored,
+                    pushed == GitBranchPushResult.Recorded ? "branch_recorded" : "branch_link_task_unavailable", ct);
             var branchTask = await resolver.ResolveAsync(repository, null, e.BranchName, null, ct);
             if (branchTask.Task is not null)
+            {
                 await store.LinkInferredAsync(repository.Id, branchTask.Task.WorkItemId, null, e.BranchName, "branch", ct);
+                await store.MarkBranchPushedAsync(repository.Id, e.BranchName, e.ObservedGitActorId, e.ObservedGitActorName, ct);
+            }
             return await Finish(delivery, GitDeliveryStates.Ignored, branchTask.Task is null ? branchTask.Reason ?? "task_not_identified" : "branch_recorded", ct);
         }
         var legacyCandidate = e.EventName == LegacyCandidateEvent && delivery.DeliveryId.StartsWith("legacy:", StringComparison.Ordinal);

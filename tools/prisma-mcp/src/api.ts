@@ -54,6 +54,13 @@ export interface MethodTaskDto {
   dependsOn: string[]; authorized: boolean; canResume: boolean;
   cycleId?: string | null; blockingEventId?: string | null;
   blockingPrincipalId?: string | null; blockingOriginStatus?: string | null;
+  /** Só vem na consulta de uma task (GET .../tasks/{id}). */
+  gitLinks?: MethodGitLinkDto[] | null;
+}
+export interface MethodGitLinkDto {
+  id: string; integrationId: string; workItemId: string; observationId: string | null; branchName: string | null;
+  source: string; url: string | null; createdAtUtc: string; branchState: string; lastSeenAtUtc: string | null;
+  repositoryFullName: string | null; pullRequestNumber: number | null; pullRequestState: string | null;
 }
 export interface CreateMethodTaskDto {
   id: string; title: string; hu: string; filePath: string; covers: string[]; risk: string; status: string;
@@ -199,6 +206,10 @@ export class PrismaApi {
   }
   async linkMethodPullRequest(id: string, url: string): Promise<MethodPullRequestLinkDto> {
     return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-requests`), 'POST', { url, reason: 'Vínculo explícito do PR pelo MCP.' });
+  }
+
+  async linkMethodBranch(id: string, repository: string, branch: string): Promise<MethodGitLinkDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/branches`), 'POST', { repository, branch });
   }
 
   // Somente dependências ainda usam as rotas legadas, sempre com escopo e permissão da API.
