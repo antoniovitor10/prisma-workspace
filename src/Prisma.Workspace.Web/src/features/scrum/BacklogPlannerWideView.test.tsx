@@ -40,13 +40,14 @@ const items: BacklogItem[] = [
   { id: 'story-1', number: 11, boardId: 'board', boardName: 'Produto', kind: 3, title: 'Abrir solicitação', priority: 2, rank: 1 },
 ];
 
-function renderPlanner() {
+function renderPlanner(methodology = project.methodology) {
+  const displayProject = { ...project, methodology };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <MemoryRouter>
-          <BacklogPlanner project={project} />
+          <BacklogPlanner project={displayProject} />
         </MemoryRouter>
       </ThemeProvider>
     </QueryClientProvider>,
@@ -159,4 +160,10 @@ describe('faixa de filtros recolhida', () => {
     expect(screen.getByText(/1 ativo/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Limpar filtros' })).toBeInTheDocument();
   });
+});
+
+// A estimativa permanece disponível sem tornar o valor técnico uma regra visual.
+it.each([1, 2, 3, 4])('mantém pontos no backlog para valor interno %s', async methodology => {
+ renderPlanner(methodology);
+ expect(await screen.findByRole('spinbutton', {name: 'Story points de Abrir solicitação'})).toBeInTheDocument();
 });

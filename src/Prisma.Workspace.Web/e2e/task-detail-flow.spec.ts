@@ -54,7 +54,7 @@ test('gaveta da tarefa integra seis abas, busca de dependência e regras Kanban'
   await page.keyboard.press('Escape');
   await expect(richEditor.getByRole('button', { name: 'Expandir editor' })).toBeVisible();
 
-  await expect(dialog.getByText('Story points', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('spinbutton', { name: 'Story points', exact: true })).toBeVisible();
   const dependencySearch = dialog.getByRole('combobox', { name: 'Buscar tarefa relacionada' });
   await expect(dependencySearch).toBeVisible();
   await expect(dependencySearch).toHaveAttribute('placeholder', /Código ou título/);

@@ -92,7 +92,7 @@ describe('TaskDetailDrawer', () => {
     await waitFor(() => expect(title).toHaveValue('Título original'));
   });
 
-  it('usa seis abas e oculta Story Points em projetos Kanban', async () => {
+  it.each([1, 2, 3, 4])('usa seis abas e mantém pontos para valor interno %s', async (methodology) => {
     const details: WorkItemDetails = {
       id: 'kanban-item', number: 9, reference: 'KAN-9', projectId: 'project-1', projectKey: 'KAN',
       boardId: 'board', boardName: 'Operação', kind: 5, origin: 1, title: 'Atender demanda', priority: 1, responsibleId: 'revoked-user', responsibleName: 'Pessoa revogada',
@@ -103,7 +103,7 @@ describe('TaskDetailDrawer', () => {
     };
     vi.spyOn(api, 'getToken').mockReturnValue('jwt');
     vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
-    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology, teams: [] });
     vi.spyOn(api, 'getBoards').mockResolvedValue([
       { id:'board', name:'Operação', projectId:'project-1' },
       { id:'board-2', name:'Entrega', projectId:'project-1' },
@@ -123,7 +123,7 @@ describe('TaskDetailDrawer', () => {
 
     await screen.findByRole('textbox', { name: 'Título' });
     await waitFor(() => expect(api.getProject).toHaveBeenCalled());
-    expect(screen.queryByText('Story points')).not.toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: 'Story points' })).toHaveValue(8);
     const responsible = screen.getByRole('combobox', { name: 'Responsável principal' });
     expect(responsible).toHaveValue('revoked-user');
     expect(screen.getByRole('option', { name: 'Pessoa revogada (sem acesso atual)' })).toBeDisabled();

@@ -279,3 +279,11 @@ describe('Kanban do projeto abre direto', () => {
     await waitFor(() => expect(startTimer).toHaveBeenCalledWith('item-1'));
   });
 });
+
+it.each([1,2,3,4])('mantém estimativa do cartão para valor interno %s',async methodology=>{
+ localStorage.clear();
+ vi.mocked(api.getProject).mockResolvedValue({id:PROJETO,key:'DEMO',methodology,teams:[]});
+ vi.mocked(api.getWorkItems).mockResolvedValue([{...cartoes[0],points:8}]);
+ await renderRota('/boards/board-1');
+ expect(await screen.findByText('8 pts',{exact:true})).toBeInTheDocument();
+});
