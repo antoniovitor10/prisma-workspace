@@ -102,6 +102,7 @@ public sealed class InvitationOnboardingService(AppDbContext db, UserManager<Ide
             DomainException.Garantir(updated.Succeeded, "Não foi possível confirmar a conta.");
         }
         invite.AcceptedAt = DateTimeOffset.UtcNow;
+        await PendingRegistrationName.ApplyAsync(db, [member], ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return new(user.Id, invite.OrganizationId);

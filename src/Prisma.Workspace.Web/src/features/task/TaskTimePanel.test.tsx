@@ -53,3 +53,17 @@ it('resume o tempo por responsavel e deixa cada intervalo no log', async () => {
   fireEvent.click(screen.getByText('Log de apontamentos (3)'));
   expect(log).toHaveAttribute('open');
 });
+
+it('identifica visualmente o início e o fim do apontamento manual', async () => {
+  vi.spyOn(api, 'getTimeEntriesByWorkItem').mockResolvedValue([]);
+  vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
+  vi.spyOn(api, 'getRunningTimeEntry').mockResolvedValue(null);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><ThemeProvider theme={theme}><TaskTimePanel workItemId="atual" realizedHours={0}/></ThemeProvider></QueryClientProvider>);
+  for (const [name, text] of [['Início do apontamento', 'Início'], ['Fim do apontamento', 'Fim']]) {
+    const input = screen.getByLabelText(name) as HTMLInputElement;
+    expect(Array.from(input.labels ?? []).map(label => label.textContent?.trim())).toContain(text);
+    expect(screen.getByText(text, { exact: true })).toBeVisible();
+  }
+  await screen.findByText('Nenhum cronômetro ativo nesta sessão.');
+});

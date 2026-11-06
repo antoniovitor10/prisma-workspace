@@ -153,7 +153,8 @@ const Spacer = styled.div`flex: 1;`;
 const SearchButton = styled.button`
   display: flex;
   width: min(360px, 36vw);
-  min-width: 140px;
+  flex: 0 1 360px;
+  min-width: 34px;
   align-items: center;
   gap: 8px;
   min-height: 38px;
@@ -176,11 +177,12 @@ const SearchButton = styled.button`
   }
 
   &:hover { border-color: ${({ theme }) => theme.color.borderStrong}; box-shadow: ${({ theme }) => theme.shadow.sm}; }
-  @media (max-width: 1320px) { width: 34px; min-width: 34px; span, kbd { display: none; } }
+  @media (max-width: 1320px) { width: 34px; min-width: 34px; flex: 0 0 34px; span, kbd { display: none; } }
 `;
 
 const OrganizationPicker = styled.label`
   display: flex;
+  flex: 0 0 auto;
   min-width: 0;
   align-items: center;
   gap: 6px;
@@ -540,6 +542,17 @@ export function Topbar() {
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [kindMenuOpen]);
+
+  useEffect(() => {
+    if (!kindMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setKindMenuOpen(false);
+      createRef.current?.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')?.focus();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
   }, [kindMenuOpen]);
 
   /* Ctrl/Cmd+K → search */

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { Send, ArrowRightLeft, UserPlus, UserMinus } from 'lucide-react';
 import { api } from '../../services/api';
@@ -230,7 +230,7 @@ export const TaskFeed: React.FC<{ workItemId: string; mode?: 'comments' | 'histo
       ]);
       const merged: FeedEntry[] = [
         ...comments.map(c => ({ type: 'comment' as const, at: c.createdAt, data: c })),
-        ...events.map(e => ({ type: 'event' as const, at: e.createdAt, data: e }))
+        ...events.filter(e => e.kind !== 'stage_changed').map(e => ({ type: 'event' as const, at: e.createdAt, data: e }))
       ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
       setEntries(merged);
     } catch (e) {

@@ -102,7 +102,7 @@ public class TimeEntryRepository : ITimeEntryRepository
     {
         return await _context.TimeEntries
             .AsNoTracking()
-            .Where(t => t.UserId == userId && t.StartedAt >= fromInclusive && t.StartedAt < toExclusive)
+            .Where(t => t.UserId == userId && t.StartedAt < toExclusive && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);
     }
 
@@ -115,7 +115,7 @@ public class TimeEntryRepository : ITimeEntryRepository
         return await _context.TimeEntries
             .AsNoTracking()
             .Include(t => t.WorkItem)
-            .Where(t => t.UserId == userId && t.StartedAt >= fromInclusive && t.StartedAt < toExclusive)
+            .Where(t => t.UserId == userId && t.StartedAt < toExclusive && (t.EndedAt == null || t.EndedAt > fromInclusive))
             .ToListAsync(cancellationToken);
     }
 

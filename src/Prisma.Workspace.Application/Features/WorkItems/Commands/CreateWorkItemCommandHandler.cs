@@ -171,6 +171,9 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
                 AssignedAt = now
             });
 
+        var creatorName = request.CreatedBy is null ? null
+            : (await _users.GetDisplayNamesAsync([request.CreatedBy], cancellationToken)).GetValueOrDefault(request.CreatedBy);
+
         // Registro de histórico para lead time (D5)
         if (selectedStage?.Id != null)
         {
@@ -179,7 +182,9 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
                 Id = Guid.NewGuid(),
                 WorkItemId = workItem.Id,
                 StageId = selectedStage.Id,
-                EnteredAt = now
+                EnteredAt = now,
+                ActorId = request.CreatedBy,
+                ActorName = creatorName
             });
         }
 

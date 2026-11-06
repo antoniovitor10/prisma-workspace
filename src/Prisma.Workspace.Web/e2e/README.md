@@ -90,3 +90,24 @@ Com a API e o frontend rodando:
 - Sem sleeps fixos (page.waitForTimeout). Use waitForLoadState ou expect com retry.
 - Nunca execute contra producao.
 - Chromium em cada PR. Firefox/WebKit em execucao noturna ou pre-release.
+
+## Fixtures dos lotes de expansão
+
+`fixtures/boards.ts` cria projetos, quadros, colunas, itens e membros exclusivos com UUID;
+`withBoardFactory` arquiva o projeto e remove/desativa os vínculos criados em `finally`.
+
+`fixtures/time.ts` reaproveita essa factory e cria um usuário próprio para cada cenário de horas.
+O usuário começa sem cronômetro; não herda totais do seed. `withTimeFactory` encerra somente
+cronômetros das tarefas que criou, remove as justificativas dos dias registrados com `trackDay`
+e então executa a limpeza do projeto. `withRestrictedTime` cria o controle positivo de horas
+com outro usuário e projeto próprios para verificar negação e isolamento de relatórios.
+
+Em `time-tracking-l08.spec.ts`, cada caso tem orçamento de 20 segundos. Sincronize pela resposta,
+pelo estado da UI ou pelo total da API; nunca espere um minuto para o contador visual mudar.
+Defeitos de produto ficam em casos separados com `test.fail` e referência ao contrato; faça a
+preparação, os controles positivos e a limpeza antes da marcação para não mascarar suas falhas.
+
+Os specs L06/L08 optam por `fixtures/functional.ts`: a folha Google Fonts é substituída por CSS
+vazio no headless (tipografia fica no QA visual), e `navigateWithApi` aguarda respostas completas
+iniciadas após o documento novo. Não intercepta API nem ativos locais; evita confundir refetch
+cancelado anterior com a hidratação da recarga. Outros specs mantêm a fixture original.

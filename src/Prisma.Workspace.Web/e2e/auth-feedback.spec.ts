@@ -4,7 +4,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 test('regras de senha retornam mensagens em português sem criar conta', async ({ request }) => {
   const response = await request.post(`${process.env.E2E_API_URL ?? 'http://127.0.0.1:5400'}/api/auth/register`, {
-    data: { email: `validation-${Date.now()}@example.test`, password: 'abcdefghij' },
+    data: { fullName: 'Pessoa Validação', email: `validation-${Date.now()}@example.test`, password: 'abcdefghij' },
   });
   expect(response.status()).toBe(400);
   const body = JSON.stringify(await response.json());

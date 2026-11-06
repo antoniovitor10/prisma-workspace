@@ -41,10 +41,10 @@ interface Member {
 interface Access { role: number; allowedPermissions: number[]; }
 interface Grant { id: string; userId: string; scope: number; scopeId?: string; permission: number; isAllowed: boolean; }
 
-const SettingsPage = styled(Page)`max-width:1280px;`;
-const Grid = styled.div`display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:18px;@media(max-width:900px){grid-template-columns:1fr;}`;
+const SettingsPage = styled(Page)`max-width:1280px;min-width:0;`;
+const Grid = styled.div`display:grid;min-width:0;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:18px;@media(max-width:900px){grid-template-columns:minmax(0,1fr);}`;
 const Section = styled.section`
-  align-self:start;overflow:hidden;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.card};background:${({theme})=>theme.color.surface};box-shadow:${({theme})=>theme.shadow.sm};
+  min-width:0;align-self:start;overflow:hidden;border:1px solid ${({theme})=>theme.color.border};border-radius:${({theme})=>theme.radius.card};background:${({theme})=>theme.color.surface};box-shadow:${({theme})=>theme.shadow.sm};
   > header { display:flex;align-items:center;gap:9px;min-height:56px;padding:14px 18px;border-bottom:1px solid ${({theme})=>theme.color.border};background:${({theme})=>theme.color.surfaceSubtle};h2{font-size:14px;letter-spacing:-.01em;}p{margin-left:auto;color:${({theme})=>theme.color.textMuted};font-size:12px;}svg{color:${({theme})=>theme.color.brand};}
 `;
 const Form = styled.form`
@@ -72,10 +72,10 @@ const MemberIdentity = styled.div`
   button { min-height: 32px; padding: 0 9px; border-radius: ${({theme}) => theme.radius.md}; background: ${({theme}) => theme.color.neutral[100]}; color: ${({theme}) => theme.color.text}; font-size: 12px; font-weight: 800; }
   button:disabled { opacity: .5; }
 `;
-const Invite = styled(Form)`grid-template-columns: 1fr 170px; border-top: 1px solid ${({theme}) => theme.color.border}; label:first-child { grid-column: auto; }`;
+const Invite = styled(Form)`grid-template-columns: minmax(0,1fr) 170px; label, input, select{min-width:0;max-width:100%;} @media(max-width:600px){grid-template-columns:minmax(0,1fr);} border-top: 1px solid ${({theme}) => theme.color.border}; label:first-child { grid-column: auto; }`;
 const InviteResult = styled.div`grid-column: 1/-1; display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: ${({theme}) => theme.radius.md}; background: ${({theme}) => theme.color.neutral[50]}; code { flex:1; overflow:hidden; text-overflow:ellipsis; font-size:13px; }`;
 const Wide = styled(Section)`grid-column: 1/-1;`;
-const GrantForm = styled(Form)`grid-template-columns: 1fr 150px 1fr 190px 120px auto; label:first-child {grid-column:auto;} @media(max-width:1000px){grid-template-columns:1fr 1fr;}`;
+const GrantForm = styled(Form)`grid-template-columns: minmax(0,1fr) 150px minmax(0,1fr) 190px 120px auto; label:first-child {grid-column:auto;} label, input, select {min-width:0;max-width:100%;} @media(max-width:1000px){grid-template-columns:repeat(2,minmax(0,1fr));} @media(max-width:600px){grid-template-columns:minmax(0,1fr);}`;
 const GrantRow = styled.div`display:grid; grid-template-columns:1fr 130px 1fr 110px 32px; gap:10px; align-items:center; padding:10px 18px; border-top:1px solid ${({theme}) => theme.color.neutral[100]}; font-size:13px;`;
 const Empty = styled.p`padding: 22px; color: ${({theme}) => theme.color.textMuted}; font-size: 13.5px; text-align: center;`;
 

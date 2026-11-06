@@ -32,6 +32,7 @@ public class OrganizationRepository : IOrganizationRepository
 
     public async Task AddAsync(Organization organization, CancellationToken cancellationToken = default)
     {
+        await Services.PendingRegistrationName.ApplyAsync(_context, organization.Members, cancellationToken);
         await _context.Organizations.AddAsync(organization, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
     }

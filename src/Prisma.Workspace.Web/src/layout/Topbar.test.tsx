@@ -167,3 +167,14 @@ describe('Topbar', () => {
     await waitFor(() => expect(document.activeElement).toBe(hamburger));
   });
 });
+
+it('fecha o menu Novo item por Escape e devolve foco ao acionador', async () => {
+  vi.spyOn(api, 'getOrganizationAccess').mockResolvedValue({ role: 1, allowedPermissions: [] });
+  renderTopbar();
+  const trigger = await screen.findByRole('button', { name: 'Novo item' });
+  fireEvent.click(trigger);
+  expect(screen.getByRole('menu', { name: 'Selecione o tipo de item' })).toBeVisible();
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('menu', { name: 'Selecione o tipo de item' })).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+});

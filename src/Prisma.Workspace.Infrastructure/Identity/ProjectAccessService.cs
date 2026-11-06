@@ -100,12 +100,38 @@ public class ProjectAccessService : IProjectAccessService
         var ids = projectIds.Where(x => x != Guid.Empty).Distinct().ToArray();
         if (ids.Length == 0) return new HashSet<Guid>();
 
-        var accessible = new HashSet<Guid>();
-        foreach (var projectId in ids)
+        if (_method?.Current is { AuthenticationKind: MethodAuthenticationKind.MethodToken or MethodAuthenticationKind.IntegrationWorker } methodActor)
         {
-            if (await GetRoleAsync(projectId, userId, cancellationToken) is not null)
-                accessible.Add(projectId);
+            // GetRoleAsync conserva a matriz do método; o escopo limita a consulta a um projeto.
+            return methodActor.ProjectId is { } projectId && ids.Contains(projectId)
+                && await GetRoleAsync(projectId, userId, cancellationToken) is not null
+                ? new HashSet<Guid> { projectId } : new HashSet<Guid>();
         }
-        return accessible;
+        var globalAdmin = await (from userRole in _context.UserRoles
+                                 join role in _context.Roles on userRole.RoleId equals role.Id
+                                 where userRole.UserId == userId && (role.Name == "GlobalAdmin" || role.Name == "Administrator")
+                                 select userRole.UserId).AnyAsync(cancellationToken);
+        if (globalAdmin) return ids.ToHashSet();
+
+        var allowed = await _permissions.GetAllowedProjectIdsAsync(
+            userId, PlatformPermission.View, ids, cancellationToken);
+        if (allowed.Count == 0) return new HashSet<Guid>();
+        var candidates = allowed.ToArray();
+        var projects = await _context.Projects.AsNoTracking()
+            .Where(project => candidates.Contains(project.Id))
+            .Select(project => new
+            {
+                project.Id,
+                project.OwnerId,
+                OrganizationRole = _context.OrganizationMembers
+                    .Where(member => member.OrganizationId == project.OrganizationId && member.UserId == userId && member.IsActive)
+                    .Select(member => (OrganizationRole?)member.Role).FirstOrDefault(),
+                IsMember = project.Members.Any(member => member.UserId == userId),
+                HasTeamAccess = project.Teams.Any(link => link.Team.IsActive && link.Team.Members.Any(member => member.UserId == userId))
+            }).ToListAsync(cancellationToken);
+        return projects.Where(project => project.OrganizationRole is not null
+                && (project.OrganizationRole is OrganizationRole.Administrator or OrganizationRole.Manager or OrganizationRole.ProjectManager
+                    || project.OwnerId == userId || project.IsMember || project.HasTeamAccess))
+            .Select(project => project.Id).ToHashSet();
     }
 }

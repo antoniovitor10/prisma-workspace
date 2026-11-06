@@ -11,7 +11,7 @@ namespace Prisma.Workspace.Application.Features.TimeEntries.Queries;
 public class GetMyWeeklyTimeQueryHandler : IRequestHandler<GetMyWeeklyTimeQuery, WeeklyTimeDto>
 {
     // O produto é usado só no Brasil; o fuso fica fixo até precisarmos de outro.
-    private static readonly TimeSpan FusoSaoPaulo = TimeSpan.FromHours(-3);
+
 
     private readonly ITimeEntryRepository _timeEntries;
 
@@ -25,8 +25,8 @@ public class GetMyWeeklyTimeQueryHandler : IRequestHandler<GetMyWeeklyTimeQuery,
         var startDate = request.WeekStart?.ToDateTime(TimeOnly.MinValue).Date
             ?? InicioDaSemanaCorrente();
 
-        var startLocal = new DateTimeOffset(startDate, FusoSaoPaulo);
-        var endLocal = startLocal.AddDays(7);
+        var startLocal = TimeTrackingDay.Start(DateOnly.FromDateTime(startDate));
+        var endLocal = TimeTrackingDay.Start(DateOnly.FromDateTime(startDate).AddDays(7));
 
         var entries = await _timeEntries.GetByUserInRangeAsync(
             request.UserId, startLocal.ToUniversalTime(), endLocal.ToUniversalTime(), cancellationToken);
@@ -35,12 +35,11 @@ public class GetMyWeeklyTimeQueryHandler : IRequestHandler<GetMyWeeklyTimeQuery,
         var buckets = new Dictionary<DateTime, int>();
         for (var i = 0; i < 7; i++) buckets[startDate.AddDays(i)] = 0;
 
-        foreach (var entry in entries)
+        foreach (var day in buckets.Keys.ToArray())
         {
-            var dayKey = entry.StartedAt.ToOffset(FusoSaoPaulo).Date;
-            var endedAt = entry.EndedAt ?? now;
-            var secs = Math.Max(0, (int)(endedAt - entry.StartedAt).TotalSeconds);
-            if (buckets.ContainsKey(dayKey)) buckets[dayKey] += secs;
+            var date = DateOnly.FromDateTime(day);
+            buckets[day] = entries.Sum(entry => TimeTrackingDay.SecondsInRange(
+                entry.StartedAt, entry.EndedAt ?? now, TimeTrackingDay.Start(date), TimeTrackingDay.Start(date.AddDays(1))));
         }
 
         return new WeeklyTimeDto
@@ -60,7 +59,7 @@ public class GetMyWeeklyTimeQueryHandler : IRequestHandler<GetMyWeeklyTimeQuery,
 
     private static DateTime InicioDaSemanaCorrente()
     {
-        var todayLocal = DateTimeOffset.UtcNow.ToOffset(FusoSaoPaulo).Date;
+        var todayLocal = TimeTrackingDay.Date(DateTimeOffset.UtcNow).ToDateTime(TimeOnly.MinValue);
         var diff = ((int)todayLocal.DayOfWeek + 6) % 7; // segunda-feira = 0
         return todayLocal.AddDays(-diff);
     }
