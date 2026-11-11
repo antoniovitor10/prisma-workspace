@@ -3112,7 +3112,8 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("BranchName")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(255)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<string>("BranchState")
                         .IsRequired()

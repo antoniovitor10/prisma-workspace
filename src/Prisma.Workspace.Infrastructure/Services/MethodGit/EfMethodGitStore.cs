@@ -315,9 +315,11 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         }
         catch (JsonException) { return false; }
     }
-    private async Task TouchTaskVersionAsync(Guid workItemId, Guid projectId, CancellationToken ct)
+    private async Task TouchTaskVersionAsync(Guid workItemId, Guid projectId, CancellationToken ct, byte[]? expectedRowVersion = null)
     {
         var state = await db.Set<MethodTaskState>().SingleAsync(x => x.WorkItemId == workItemId && x.ProjectId == projectId && x.OrganizationId == Tenant, ct);
+        // Com a versão do snapshot validado, a gravação falha se a task mudou (ex.: ID trocado) depois da validação.
+        if (expectedRowVersion is not null) db.Entry(state).Property(x => x.RowVersion).OriginalValue = expectedRowVersion;
         // Mesmo valor: invalida a leitura concorrente de PRs sem criar outra identidade/status.
         db.Entry(state).Property(x => x.MethodTaskId).IsModified = true;
     }

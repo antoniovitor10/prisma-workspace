@@ -187,6 +187,41 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                 principalTable: "GitReadCredentials",
                 principalColumns: new[] { "ProjectId", "Id" },
                 onDelete: ReferentialAction.Restrict);
+
+            // Refs do Git diferenciam maiúsculas. Sem dados reescritos: o índice único atual (sem diferenciar) já impede
+            // feature/Foo e feature/foo juntas, então o índice recriado com collation binária não encontra duplicatas.
+            // O índice e a check constraint citam a coluna e precisam sair antes de trocar a collation.
+            migrationBuilder.DropIndex(
+                name: "IX_TaskGitLinks_IntegrationId_BranchName",
+                table: "TaskGitLinks");
+
+            migrationBuilder.DropCheckConstraint(
+                name: "CK_TaskGitLinks_Target",
+                table: "TaskGitLinks");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "BranchName",
+                table: "TaskGitLinks",
+                type: "nvarchar(255)",
+                maxLength: 255,
+                nullable: true,
+                collation: "Latin1_General_100_BIN2",
+                oldClrType: typeof(string),
+                oldType: "nvarchar(255)",
+                oldMaxLength: 255,
+                oldNullable: true);
+
+            migrationBuilder.AddCheckConstraint(
+                name: "CK_TaskGitLinks_Target",
+                table: "TaskGitLinks",
+                sql: "[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TaskGitLinks_IntegrationId_BranchName",
+                table: "TaskGitLinks",
+                columns: new[] { "IntegrationId", "BranchName" },
+                unique: true,
+                filter: "[PullRequestObservationId] IS NULL AND [BranchName] IS NOT NULL");
         }
 
         /// <inheritdoc />
@@ -194,6 +229,40 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
         {
             // Integração em modo consulta não tem App: reverter apagaria a configuração. Remova-as antes, de forma explícita.
             migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM [GitRepositoryIntegrations] WHERE [Mode] = 'poll') THROW 50001, 'Existem integrações Git em modo consulta; remova-as antes de reverter esta migration.', 1;");
+            // Voltar à collation padrão (sem diferenciar maiúsculas) violaria o índice único com feature/Foo e feature/foo na mesma integração.
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM [TaskGitLinks] WHERE [PullRequestObservationId] IS NULL AND [BranchName] IS NOT NULL GROUP BY [IntegrationId], [BranchName] COLLATE DATABASE_DEFAULT HAVING COUNT(*) > 1) THROW 50002, 'Existem branches que só diferem por maiúsculas na mesma integração; resolva os vínculos antes de reverter esta migration.', 1;");
+
+            migrationBuilder.DropIndex(
+                name: "IX_TaskGitLinks_IntegrationId_BranchName",
+                table: "TaskGitLinks");
+
+            migrationBuilder.DropCheckConstraint(
+                name: "CK_TaskGitLinks_Target",
+                table: "TaskGitLinks");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "BranchName",
+                table: "TaskGitLinks",
+                type: "nvarchar(255)",
+                maxLength: 255,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(255)",
+                oldMaxLength: 255,
+                oldNullable: true,
+                oldCollation: "Latin1_General_100_BIN2");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "CK_TaskGitLinks_Target",
+                table: "TaskGitLinks",
+                sql: "[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TaskGitLinks_IntegrationId_BranchName",
+                table: "TaskGitLinks",
+                columns: new[] { "IntegrationId", "BranchName" },
+                unique: true,
+                filter: "[PullRequestObservationId] IS NULL AND [BranchName] IS NOT NULL");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_GitRepositoryIntegrations_GitReadCredentials_ProjectId_ReadCredentialId",

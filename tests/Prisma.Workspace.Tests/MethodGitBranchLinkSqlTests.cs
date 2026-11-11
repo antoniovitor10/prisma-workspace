@@ -113,6 +113,112 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
     }
 
     [MethodGitSqlFact]
+    public async Task CA8_task_changed_after_validation_is_concurrency_conflict_without_writing()
+    {
+        await using var c = await _fixture.CaseAsync();
+        await c.UseAgentAsync();
+        // Entre a validação do ID (ReferencesOtherTask) e a gravação, uma sessão humana troca o ID da task.
+        var permissions = new ChangeTaskOnFirstCheck(async () =>
+        {
+            await using var human = c.NewContext();
+            await human.Set<MethodTaskState>().Where(x => x.WorkItemId == c.ItemId).ExecuteUpdateAsync(set => set.SetProperty(x => x.MethodTaskId, "T-0002"));
+        });
+        var store = new EfMethodGitStore(c.Context, new Tenant(c.Repository.OrganizationId), c.Access, permissions, c.Clock);
+        var error = await Assert.ThrowsAsync<MethodOperationException>(() => store.LinkBranchAsync(c.Repository.Id, c.ItemId, Branch));
+        Assert.Equal(409, error.StatusCode); Assert.Equal("git_concurrency", error.Code);
+        c.Context.ChangeTracker.Clear();
+        Assert.Empty(await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId).ToListAsync());
+        Assert.Empty(await c.Context.TaskEvents.AsNoTracking().Where(x => x.WorkItemId == c.ItemId && x.Kind == "git_branch_linked").ToListAsync());
+    }
+
+    [MethodGitSqlFact]
+    public async Task CA8_branch_names_differing_only_by_case_are_distinct_links()
+    {
+        await using var c = await _fixture.CaseAsync();
+        var second = await c.AddTaskAsync("T-0002");
+        await c.UseAgentAsync();
+        await Operations(c).LinkBranchAsync(c.ProjectId, "T-0001", new("qa/metodo", "feature/Foo"), c.Actor!.ActorId, default);
+        // Refs do Git diferenciam maiúsculas: feature/foo é outra branch e pode ir para outra task (sem 409).
+        var other = await Operations(c).LinkBranchAsync(c.ProjectId, "T-0002", new("qa/metodo", "feature/foo"), c.Actor!.ActorId, default);
+        Assert.Equal("feature/foo", other.BranchName);
+        c.Context.ChangeTracker.Clear();
+        var links = await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId).ToListAsync();
+        Assert.Equal(2, links.Count);
+        Assert.Equal(c.ItemId, Assert.Single(links, x => x.BranchName == "feature/Foo").WorkItemId);
+        Assert.Equal(second, Assert.Single(links, x => x.BranchName == "feature/foo").WorkItemId);
+        // Repetir o nome exato continua idempotente.
+        await Operations(c).LinkBranchAsync(c.ProjectId, "T-0001", new("qa/metodo", "feature/Foo"), c.Actor!.ActorId, default);
+        Assert.Equal(2, await c.Context.Set<TaskGitLink>().AsNoTracking().CountAsync(x => x.ProjectId == c.ProjectId));
+    }
+
+    [MethodGitSqlFact]
+    public async Task CA8b_webhook_create_of_case_variant_does_not_mark_original_branch_remote()
+    {
+        await using var c = await _fixture.CaseAsync();
+        await c.UseAgentAsync();
+        await Operations(c).LinkBranchAsync(c.ProjectId, "T-0001", new("qa/metodo", "feature/Foo"), c.Actor!.ActorId, default);
+        c.UseActor(Worker(c));
+        var outcome = await ProcessCreateAsync(c, "feature/foo", new NoMovement());
+        // Sem vínculo com a grafia exata, o create cai na resolução pelo nome, que não acha task (feature/foo não cita ID).
+        Assert.Equal("task_not_identified", outcome.Code);
+        c.Context.ChangeTracker.Clear();
+        var link = Assert.Single(await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId).ToListAsync());
+        Assert.Equal("feature/Foo", link.BranchName); Assert.Equal(GitBranchStates.Local, link.BranchState); Assert.Null(link.LastSeenAtUtc);
+        Assert.Empty(await c.Context.TaskEvents.AsNoTracking().Where(x => x.WorkItemId == c.ItemId && x.Kind == "git_branch_pushed").ToListAsync());
+        // Com o nome exato, o mesmo create marca a branch como remote.
+        Assert.Equal("branch_recorded", (await ProcessCreateAsync(c, "feature/Foo", new NoMovement())).Code);
+    }
+
+    [MethodGitSqlFact]
+    public async Task CA8b_task_changed_before_webhook_marks_branch_is_retryable_concurrency_without_writing()
+    {
+        await using var c = await _fixture.CaseAsync();
+        await c.UseAgentAsync();
+        await Operations(c).LinkBranchAsync(c.ProjectId, "T-0001", new("qa/metodo", Branch), c.Actor!.ActorId, default);
+        c.UseActor(Worker(c));
+        c.Context.ChangeTracker.Clear();
+        // A task muda (ID trocado) depois de validada pelo create e antes da gravação.
+        var clock = new ChangeTaskOnFirstClockRead(c.Clock.Now, () =>
+        {
+            using var human = c.NewContext();
+            human.Set<MethodTaskState>().Where(x => x.WorkItemId == c.ItemId).ExecuteUpdate(set => set.SetProperty(x => x.MethodTaskId, "T-0002"));
+        });
+        var store = new EfMethodGitStore(c.Context, new Tenant(c.Repository.OrganizationId), c.Access, new AllowAll(), clock);
+        var error = await Assert.ThrowsAsync<MethodOperationException>(() => store.MarkBranchPushedAsync(c.Repository.Id, Branch, "4242", "dev-git"));
+        // O worker trata git_concurrency como falha retentável (GitDeliveryWorker): a reentrega relê a task.
+        Assert.Equal(409, error.StatusCode); Assert.Equal("git_concurrency", error.Code);
+        c.Context.ChangeTracker.Clear();
+        var link = Assert.Single(await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId).ToListAsync());
+        Assert.Equal(GitBranchStates.Local, link.BranchState); Assert.Null(link.LastSeenAtUtc);
+        Assert.Empty(await c.Context.TaskEvents.AsNoTracking().Where(x => x.WorkItemId == c.ItemId && x.Kind == "git_branch_pushed").ToListAsync());
+    }
+
+    [MethodGitSqlFact]
+    public async Task CA8b_task_changed_before_inferred_link_is_saved_is_retryable_concurrency_without_writing()
+    {
+        await using var c = await _fixture.CaseAsync();
+        c.UseActor(Worker(c));
+        c.Context.ChangeTracker.Clear();
+        // D-4: LinkInferredAsync (create/PR do webhook) valida a task e, antes de gravar, a task muda (ID trocado).
+        var clock = new ChangeTaskOnFirstClockRead(c.Clock.Now, () =>
+        {
+            using var human = c.NewContext();
+            human.Set<MethodTaskState>().Where(x => x.WorkItemId == c.ItemId).ExecuteUpdate(set => set.SetProperty(x => x.MethodTaskId, "T-0002"));
+        });
+        var store = new EfMethodGitStore(c.Context, new Tenant(c.Repository.OrganizationId), c.Access, new AllowAll(), clock);
+        var error = await Assert.ThrowsAsync<MethodOperationException>(() => store.LinkInferredAsync(c.Repository.Id, c.ItemId, null, Branch, "branch"));
+        Assert.Equal(409, error.StatusCode); Assert.Equal("git_concurrency", error.Code);
+        c.Context.ChangeTracker.Clear();
+        Assert.Equal("T-0002", await c.Context.Set<MethodTaskState>().AsNoTracking().Where(x => x.WorkItemId == c.ItemId).Select(x => x.MethodTaskId).SingleAsync());
+        Assert.Empty(await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId).ToListAsync());
+        // A reentrega relê a task: com o ID de volta e sem troca concorrente, o mesmo vínculo inferido grava normalmente.
+        await using (var human = c.NewContext())
+            await human.Set<MethodTaskState>().Where(x => x.WorkItemId == c.ItemId).ExecuteUpdateAsync(set => set.SetProperty(x => x.MethodTaskId, "T-0001"));
+        await c.Store(c.NewContext()).LinkInferredAsync(c.Repository.Id, c.ItemId, null, Branch, "branch");
+        Assert.Single(await c.Context.Set<TaskGitLink>().AsNoTracking().Where(x => x.ProjectId == c.ProjectId && x.BranchName == Branch).ToListAsync());
+    }
+
+    [MethodGitSqlFact]
     public async Task CA8b_webhook_create_turns_local_branch_remote_and_records_git_branch_pushed_once()
     {
         await using var c = await _fixture.CaseAsync();
@@ -185,11 +291,20 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
             Assert.Equal("424242|1|test-app-key|test-webhook-secret", await ScalarAsync(db,
                 $"SELECT CONCAT([AppId],'|',[InstallationId],'|',[AppPrivateKeySecretRef],'|',[WebhookSecretRef]) FROM [GitRepositoryIntegrations] WHERE [Id]='{c.Repository.Id}'"));
             Assert.Equal("1", await ScalarAsync(db, $"SELECT COUNT(*) FROM [TaskGitLinks] WHERE [WorkItemId]='{c.ItemId}'"));
+            // Down devolve BranchName à collation padrão do banco, com o índice único filtrado de volta.
+            Assert.Equal(await ScalarAsync(db, "SELECT CONVERT(nvarchar(128), DATABASEPROPERTYEX(DB_NAME(), 'Collation'))"), await BranchCollationAsync(db));
+            Assert.Equal(BranchIndexShape, await BranchIndexAsync(db));
+            Assert.Equal(BranchTargetCheck, await BranchCheckAsync(db));
             // Reaplica sobre o banco com dados: integrações existentes ficam no modo app; vínculos existentes, remote.
             await migrator.MigrateAsync();
             Assert.Equal("app", await ScalarAsync(db, $"SELECT [Mode] FROM [GitRepositoryIntegrations] WHERE [Id]='{c.Repository.Id}'"));
             Assert.Equal("remote|", await ScalarAsync(db, $"SELECT CONCAT([BranchState],'|',[LastSeenAtUtc]) FROM [TaskGitLinks] WHERE [WorkItemId]='{c.ItemId}'"));
             Assert.True(await TableExistsAsync(db, "GitReadCredentials"));
+            // Up troca a collation de BranchName para binária, mantendo o vínculo, o índice único filtrado e a check constraint.
+            Assert.Equal("Latin1_General_100_BIN2", await BranchCollationAsync(db));
+            Assert.Equal(BranchIndexShape, await BranchIndexAsync(db));
+            Assert.Equal("nvarchar|510|1", await ScalarAsync(db, "SELECT CONCAT(TYPE_NAME(c.user_type_id),'|',c.max_length,'|',CONVERT(int, c.is_nullable)) FROM sys.columns c WHERE c.object_id = OBJECT_ID('TaskGitLinks') AND c.name = 'BranchName'"));
+            Assert.Equal(BranchTargetCheck, await BranchCheckAsync(db));
             // Modo app sem App continua proibido; só o modo consulta dispensa App, instalação e segredos.
             await using (var check = new AppDbContext(options))
             {
@@ -215,6 +330,16 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
             var outcome = await processor.ProcessAsync(await ClaimAsync(c, store, e));
             Assert.True(outcome.Moved, outcome.Code);
             Assert.Equal(c.InReviewStageId, (await c.NewContext().WorkItems.AsNoTracking().SingleAsync(x => x.Id == c.ItemId)).StageId);
+            // Reverter com branches que só diferem por maiúsculas é recusado (o índice sem diferenciar quebraria).
+            await using (var variant = c.NewContext())
+                await c.Store(variant).LinkInferredAsync(c.Repository.Id, c.ItemId, null, "task/T-0001-LEGADO", "branch");
+            Assert.Equal("2", await ScalarAsync(db, $"SELECT COUNT(*) FROM [TaskGitLinks] WHERE [WorkItemId]='{c.ItemId}' AND [PullRequestObservationId] IS NULL"));
+            var caseRefused = await Assert.ThrowsAsync<SqlException>(() => db.GetService<IMigrator>().MigrateAsync(previous));
+            Assert.Equal(50002, caseRefused.Number);
+            Assert.Equal("Latin1_General_100_BIN2", await BranchCollationAsync(db));
+            Assert.Equal(BranchIndexShape, await BranchIndexAsync(db));
+            Assert.Equal(BranchTargetCheck, await BranchCheckAsync(db));
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM [TaskGitLinks] WHERE [BranchName] = N'task/T-0001-LEGADO'");
             // Reverter com integração em modo consulta é recusado (não apaga a configuração em silêncio).
             await using (var poll = new AppDbContext(options))
             {
@@ -317,6 +442,20 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
     }
     private static async Task<bool> ColumnExistsAsync(AppDbContext db, string table, string column)
         => await ScalarAsync(db, $"SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('{table}') AND name = '{column}'") == "1";
+    private static Task<string?> BranchCollationAsync(AppDbContext db)
+        => ScalarAsync(db, "SELECT collation_name FROM sys.columns WHERE object_id = OBJECT_ID('TaskGitLinks') AND name = 'BranchName'");
+    // Forma do índice único filtrado como o SQL Server a guarda: único|filtrado|filtro normalizado|colunas-chave na ordem.
+    private const string BranchIndexShape = "1|1|([PullRequestObservationId] IS NULL AND [BranchName] IS NOT NULL)|IntegrationId,BranchName";
+    // Mesma regra da migração 20261016110439 ("[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL"), normalizada pelo SQL Server.
+    private const string BranchTargetCheck = "([PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL)";
+    private static Task<string?> BranchIndexAsync(AppDbContext db)
+        => ScalarAsync(db, "SELECT CONCAT(CONVERT(int, i.is_unique),'|',CONVERT(int, i.has_filter),'|',i.filter_definition,'|',"
+            + "(SELECT STRING_AGG(col.name, ',') WITHIN GROUP (ORDER BY ic.key_ordinal) FROM sys.index_columns ic "
+            + "JOIN sys.columns col ON col.object_id = ic.object_id AND col.column_id = ic.column_id "
+            + "WHERE ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.is_included_column = 0)) "
+            + "FROM sys.indexes i WHERE i.object_id = OBJECT_ID('TaskGitLinks') AND i.name = 'IX_TaskGitLinks_IntegrationId_BranchName'");
+    private static Task<string?> BranchCheckAsync(AppDbContext db)
+        => ScalarAsync(db, "SELECT definition FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('TaskGitLinks') AND name = 'CK_TaskGitLinks_Target'");
     private static async Task<bool> TableExistsAsync(AppDbContext db, string table)
         => await ScalarAsync(db, $"SELECT COUNT(*) FROM sys.tables WHERE name = '{table}'") == "1";
 
@@ -324,6 +463,26 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
     {
         public Task<bool> HasAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.FromResult(true);
         public Task EnsureAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.CompletedTask;
+    }
+    private sealed class ChangeTaskOnFirstClockRead(DateTimeOffset now, Action change) : TimeProvider
+    {
+        private bool _changed;
+        public override DateTimeOffset GetUtcNow()
+        {
+            if (!_changed) { _changed = true; change(); }
+            return now;
+        }
+    }
+    private sealed class Tenant(Guid id) : IOrganizationContext { public Guid? OrganizationId => id; }
+    private sealed class ChangeTaskOnFirstCheck(Func<Task> change) : IPermissionService
+    {
+        private bool _changed;
+        public Task<bool> HasAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.FromResult(true);
+        public async Task EnsureAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default)
+        {
+            if (_changed) return;
+            _changed = true; await change();
+        }
     }
     private sealed class NoMovement : IMethodMoveService
     {

@@ -79,8 +79,9 @@ public sealed partial class EfMethodGitStore
             Source = source, CreatedAtUtc = _clock.GetUtcNow(), CreatedByPrincipalId = actor.PrincipalId,
             CreatedByUserId = actor.Role == MethodRole.Human ? actor.ActorId : null };
         db.Add(row);
-        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct);
+        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct, task.RowVersion);
         try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
         catch (DbUpdateException exception) when (UniqueViolation(exception))
         {
             db.Entry(row).State = EntityState.Detached;
@@ -193,8 +194,10 @@ public sealed partial class EfMethodGitStore
                 authenticationKind = actor.AuthenticationKind == MethodAuthenticationKind.UiSession ? "uiSession" : "methodToken",
                 channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, linkId = row.Id,
                 repositoryFullName = repository.RepositoryFullName, branch = branchName, branchState = GitBranchStates.Local }, JsonOptions) });
-        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct);
+        // A versão validada acima (ID, projeto, arquivamento) precisa ser a mesma na gravação.
+        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct, task.RowVersion);
         try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
         catch (DbUpdateException exception) when (UniqueViolation(exception))
         {
             db.ChangeTracker.Clear();
@@ -225,11 +228,20 @@ public sealed partial class EfMethodGitStore
                     channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, linkId = link.Id,
                     repositoryFullName = repository.RepositoryFullName, branch = branchName, previousBranchState = previousState,
                     gitActorId = observedGitActorId, gitActorName = observedGitActorName }, JsonOptions) });
-            await TouchTaskVersionAsync(link.WorkItemId, task.ProjectId, ct);
+            await TouchTaskVersionAsync(link.WorkItemId, task.ProjectId, ct, task.RowVersion);
         }
-        await db.SaveChangesAsync(ct);
+        // No webhook, o worker trata git_concurrency como falha retentável: a reentrega relê a task e decide de novo.
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
         return GitBranchPushResult.Recorded;
     }
+    // A task mudou entre a validação e a gravação (ex.: ID trocado): nada é gravado.
+    private MethodOperationException TaskChangedConflict()
+    {
+        db.ChangeTracker.Clear();
+        return new(409, "git_concurrency", "A tarefa mudou após a leitura; consulte a task e tente de novo.");
+    }
+    // BranchName usa collation binária (Latin1_General_100_BIN2): a comparação diferencia maiúsculas, como as refs do Git.
     private Task<TaskGitLink?> BranchLinkAsync(Guid integrationId, string branchName, CancellationToken ct)
         => Links.Include(x => x.Integration).SingleOrDefaultAsync(x => x.IntegrationId == integrationId
             && x.PullRequestObservationId == null && x.BranchName == branchName, ct);

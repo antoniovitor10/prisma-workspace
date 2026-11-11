@@ -101,7 +101,8 @@ public sealed class TaskGitLinkConfiguration : IEntityTypeConfiguration<TaskGitL
             t.HasCheckConstraint("CK_TaskGitLinks_BranchState", "[BranchState] IN ('local','remote')");
         });
         b.HasKey(x => x.Id);
-        b.Property(x => x.BranchName).HasMaxLength(255);
+        // Refs do Git diferenciam maiúsculas: feature/Foo e feature/foo são branches distintas (comparação e índice único).
+        b.Property(x => x.BranchName).HasMaxLength(255).UseCollation("Latin1_General_100_BIN2");
         // Linhas existentes já vieram do GitHub: nascem "remote".
         b.Property(x => x.BranchState).HasColumnType("varchar(16)").IsRequired().HasDefaultValue(GitBranchStates.Remote);
         b.Property(x => x.Source).HasColumnType("varchar(16)").IsRequired();
