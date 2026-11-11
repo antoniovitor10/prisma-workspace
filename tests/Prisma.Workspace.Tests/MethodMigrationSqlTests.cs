@@ -25,9 +25,13 @@ public sealed class MethodMigrationSqlTests
         try
         {
             var migrations = db.Database.GetMigrations().ToArray();
-            Assert.EndsWith("Add_MethodGit_Security_And_Webhook_Tables", migrations[^1]);
+            // Localiza pelo nome: migrações posteriores (ex.: HU-0002) não mudam o ponto de antes do método.
+            var methodMigration = Array.FindIndex(migrations, x => x.EndsWith("_Add_MethodGit_Security_And_Webhook_Tables", StringComparison.Ordinal));
+            Assert.True(methodMigration > 0, "Migration Add_MethodGit_Security_And_Webhook_Tables não encontrada.");
+            Assert.Single(migrations, x => x.EndsWith("_Add_MethodGit_Security_And_Webhook_Tables", StringComparison.Ordinal));
+            var beforeMethod = migrations[methodMigration - 1];
             var migrator = db.GetService<IMigrator>();
-            await migrator.MigrateAsync(migrations[^2]);
+            await migrator.MigrateAsync(beforeMethod);
             var before = await LegacyColumns(db);
             var human = "migration-human-" + Guid.NewGuid().ToString("N");
             var org = new Organization { Id = Guid.NewGuid(), Name = "Cópia própria", Slug = "migration-" + Guid.NewGuid().ToString("N") };
@@ -40,15 +44,15 @@ public sealed class MethodMigrationSqlTests
             await db.SaveChangesAsync(); db.ChangeTracker.Clear();
             await migrator.MigrateAsync();
             Assert.Equal(before, await LegacyColumns(db));
-            Assert.Equal(11, await CountMethodTables(db));
+            Assert.Equal(12, await CountMethodTables(db));
             var stored = await db.WorkItems.IgnoreQueryFilters().AsNoTracking().SingleAsync(x => x.Id == item.Id);
             Assert.Equal(stage.Id, stored.StageId); Assert.Equal("Card humano preservado", stored.Title); Assert.Equal(123, stored.Position);
             Assert.Empty(await db.Set<MethodTaskState>().IgnoreQueryFilters().ToArrayAsync());
             Assert.Empty(await db.Set<MethodAuthorizationEvent>().IgnoreQueryFilters().ToArrayAsync());
-            await migrator.MigrateAsync(migrations[^2]);
+            await migrator.MigrateAsync(beforeMethod);
             Assert.Equal(0, await CountMethodTables(db)); Assert.Equal(before, await LegacyColumns(db));
             await migrator.MigrateAsync();
-            Assert.Equal(11, await CountMethodTables(db)); Assert.Equal(before, await LegacyColumns(db));
+            Assert.Equal(12, await CountMethodTables(db)); Assert.Equal(before, await LegacyColumns(db));
             Assert.True(await db.WorkItems.IgnoreQueryFilters().AnyAsync(x => x.Id == item.Id && x.StageId == stage.Id));
         }
         finally { await db.Database.EnsureDeletedAsync(); }
@@ -58,7 +62,7 @@ public sealed class MethodMigrationSqlTests
     {
         await db.Database.OpenConnectionAsync();
         await using var command = db.Database.GetDbConnection().CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM sys.tables WHERE name IN ('MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks')";
+        command.CommandText = "SELECT COUNT(*) FROM sys.tables WHERE name IN ('MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks','GitReadCredentials')";
         return Convert.ToInt32(await command.ExecuteScalarAsync());
     }
     private static async Task<string> LegacyColumns(AppDbContext db)
@@ -68,7 +72,7 @@ public sealed class MethodMigrationSqlTests
         command.CommandText = """
             SELECT t.name, c.name, ty.name, c.max_length, c.is_nullable, c.is_identity, c.is_computed
             FROM sys.tables t JOIN sys.columns c ON t.object_id=c.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id
-            WHERE t.name NOT IN ('__EFMigrationsHistory','MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks')
+            WHERE t.name NOT IN ('__EFMigrationsHistory','MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks','GitReadCredentials')
             ORDER BY t.name,c.column_id
             """;
         var rows = new List<object?[]>();

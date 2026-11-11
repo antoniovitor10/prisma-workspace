@@ -64,7 +64,7 @@ public sealed partial class GitRepositoryOperations(IMethodGitStore store, IGitP
         var actor = access.Current;
         if (actor is null || actor.ActorId != actorId || (!actor.IsInteractiveHuman && actor.ProjectId != projectId)
             || (admin && !actor.IsInteractiveHuman))
-            throw new MethodOperationException(403, "git_project_permission", "Operação não autorizada no projeto; configuração exige sessão humana administrativa.");
+            throw new MethodOperationException(403, "git_project_permission", admin ? "Operação não autorizada no projeto; configuração exige sessão humana administrativa." : "Operação não autorizada neste projeto para a credencial atual.");
         await permissions.EnsureAsync(actorId, admin ? PlatformPermission.ManagePermissions : PlatformPermission.View, PermissionScope.Project, projectId, ct);
         return await store.GetProjectAsync(projectId, ct) ?? throw new MethodOperationException(404, "method_not_provisioned", "Método não provisionado neste projeto.");
     }

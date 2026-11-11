@@ -29,8 +29,9 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     private IQueryable<GitPullRequestObservation> Observations => db.Set<GitPullRequestObservation>().Where(x => x.Integration.OrganizationId == Tenant);
     private IQueryable<TaskGitLink> Links => db.Set<TaskGitLink>().Where(x => x.Integration.OrganizationId == Tenant);
     private static GitRepositoryDescriptor Descriptor(GitRepositoryIntegration r) => new(r.Id, r.OrganizationId, r.ProjectId, r.Provider, r.Host,
-        r.RepositoryId, r.RepositoryFullName, r.DefaultBranch, r.AppId, r.InstallationId, r.AppPrivateKeySecretRef,
-        r.WebhookSecretRef, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion);
+        // Integração em modo consulta não tem App: 0/vazio nunca autenticam no provedor nem no webhook.
+        r.RepositoryId, r.RepositoryFullName, r.DefaultBranch, r.AppId ?? 0, r.InstallationId ?? 0, r.AppPrivateKeySecretRef ?? string.Empty,
+        r.WebhookSecretRef ?? string.Empty, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion);
 
     public async Task<GitRepositoryDescriptor?> GetRepositoryForIngressAsync(Guid integrationId, CancellationToken ct = default)
     {
@@ -314,9 +315,11 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         }
         catch (JsonException) { return false; }
     }
-    private async Task TouchTaskVersionAsync(Guid workItemId, Guid projectId, CancellationToken ct)
+    private async Task TouchTaskVersionAsync(Guid workItemId, Guid projectId, CancellationToken ct, byte[]? expectedRowVersion = null)
     {
         var state = await db.Set<MethodTaskState>().SingleAsync(x => x.WorkItemId == workItemId && x.ProjectId == projectId && x.OrganizationId == Tenant, ct);
+        // Com a versão do snapshot validado, a gravação falha se a task mudou (ex.: ID trocado) depois da validação.
+        if (expectedRowVersion is not null) db.Entry(state).Property(x => x.RowVersion).OriginalValue = expectedRowVersion;
         // Mesmo valor: invalida a leitura concorrente de PRs sem criar outra identidade/status.
         db.Entry(state).Property(x => x.MethodTaskId).IsModified = true;
     }

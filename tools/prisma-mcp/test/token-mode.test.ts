@@ -14,7 +14,7 @@ const PROJECT = '11111111-2222-4333-8444-555555555555';
 const BOARD = '66666666-7777-4888-8999-aaaaaaaaaaaa';
 const TOKEN = `pmt_${'A'.repeat(43)}`;
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.c2lnbmF0dXJh';
-const OITO = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr'];
+const NOVE = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr', 'vincular_branch'];
 
 function identity(role = 'agente', projectName = 'canais-mobile') {
   return {
@@ -98,12 +98,12 @@ describe('MCP com token opaco do método (fase 2a)', () => {
     assert.equal(fake.escritas().length, 0);
   });
 
-  test('expõe as 8 operações e usa o papel do servidor (sem PRISMA_ROLE)', async () => {
+  test('expõe as 9 operações e usa o papel do servidor (sem PRISMA_ROLE)', async () => {
     rotasPadrao('agente');
     const s = await conectar(envToken());
     assert.ok(s.client, `conectou: ${s.erroConexao?.message ?? ''}`);
     const { tools } = await s.client!.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), [...OITO].sort());
+    assert.deepEqual(tools.map(t => t.name).sort(), [...NOVE].sort());
     const r = await s.chamar!('regras_do_projeto');
     assert.equal(r.erro, false, r.texto);
     assert.match(r.texto, /agente/);
@@ -185,6 +185,59 @@ describe('MCP com token opaco do método (fase 2a)', () => {
     const r = await s.chamar!('mover_status', { id: 'T-0003', novo_status: 'em-revisao', motivo: 'nível 0' });
     assert.equal(r.erro, true);
     assert.match(r.texto, /recusad|pare e avise/i);
+    await s.client!.close();
+  });
+
+  test('CA-8: vincular_branch chama POST .../tasks/{id}/branches e obter_task mostra a branch local', async () => {
+    rotasPadrao();
+    const link = { id: '00000000-0000-4000-8000-0000000000f1', integrationId: '00000000-0000-4000-8000-0000000000e1',
+      workItemId: task('T-0003', 'x').workItemId, observationId: null, branchName: 'task/T-0003-dados', source: 'explicit', url: null,
+      createdByPrincipalId: identity().principalId, createdByUserId: null, createdAtUtc: new Date().toISOString(),
+      branchState: 'local', lastSeenAtUtc: null, repositoryFullName: 'qa/metodo', pullRequestNumber: null, pullRequestState: null };
+    fake.on('POST', new RegExp(`^/api/projects/${PROJECT}/method/tasks/T-0003/branches$`), { json: link });
+    fake.on('GET', `/api/projects/${PROJECT}/method/tasks/T-0003`, { json: task('T-0003', 'em-desenvolvimento', { gitLinks: [link] }) });
+    const s = await conectar(envToken());
+    const r = await s.chamar!('vincular_branch', { id: 'T-0003', repositorio: 'qa/metodo', branch: 'task/T-0003-dados' });
+    assert.equal(r.erro, false, r.texto);
+    const post = fake.escritas().filter(x => x.path === `/api/projects/${PROJECT}/method/tasks/T-0003/branches`);
+    assert.equal(post.length, 1, 'uma única escrita na rota de branches');
+    assert.equal(post[0].method, 'POST');
+    assert.deepEqual(JSON.parse(post[0].body), { repository: 'qa/metodo', branch: 'task/T-0003-dados' });
+    assert.match(r.texto, /Branch vinculada/);
+    assert.match(r.texto, /qa\/metodo · branch task\/T-0003-dados \(local\)/);
+    assert.equal(r.dados.task.git[0].estado_branch, 'local');
+    const o = await s.chamar!('obter_task', { id: 'T-0003' });
+    assert.match(o.texto, /branch task\/T-0003-dados \(local\)/);
+    await s.client!.close();
+  });
+
+  for (const status of [401, 403]) {
+    test(`CA-8: vincular_branch com ${status} manda parar e avisar, sem nova tentativa`, async () => {
+      rotasPadrao();
+      fake.on('POST', new RegExp(`^/api/projects/${PROJECT}/method/tasks/T-0003/branches$`), { status, json: { title: 'Token sem escopo neste projeto.' } });
+      const s = await conectar(envToken());
+      fake.requisicoes.length = 0;
+      const r = await s.chamar!('vincular_branch', { id: 'T-0003', repositorio: 'qa/metodo', branch: 'task/T-0003-dados' });
+      assert.equal(r.erro, true);
+      assert.match(r.texto, /pare e avise/i);
+      assert.equal(fake.requisicoes.filter(x => x.path.endsWith('/tasks/T-0003/branches')).length, 1, 'sem nova tentativa');
+      assert.equal(fake.requisicoes.filter(x => x.path.startsWith('/api/auth')).length, 0, 'sem login de fallback');
+      await s.client!.close();
+    });
+  }
+
+  test('CA-8: vincular_branch recusa repositório fora do formato e 400 da API sem escrita extra', async () => {
+    rotasPadrao();
+    fake.on('POST', new RegExp(`^/api/projects/${PROJECT}/method/tasks/T-0003/branches$`), { status: 400, json: { title: 'Repositório não cadastrado ou desabilitado neste projeto.' } });
+    const s = await conectar(envToken());
+    fake.requisicoes.length = 0;
+    const local = await s.chamar!('vincular_branch', { id: 'T-0003', repositorio: 'https://github.com/qa/metodo', branch: 'x' });
+    assert.equal(local.erro, true);
+    assert.equal(fake.escritas().length, 0, 'formato inválido não chega à API');
+    const api = await s.chamar!('vincular_branch', { id: 'T-0003', repositorio: 'qa/alheio', branch: 'task/T-0003-x' });
+    assert.equal(api.erro, true);
+    assert.match(api.texto, /não cadastrado/);
+    assert.equal(fake.escritas().length, 1);
     await s.client!.close();
   });
 

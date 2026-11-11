@@ -44,7 +44,8 @@ public sealed class MethodTaskOperations(AppDbContext db, IMethodAccessContext a
     {
         var project = await ProjectAsync(projectId, ct);
         var (item, state) = await TaskAsync(project, id, ct);
-        return await DtoAsync(project, item, state, ct);
+        // Só a consulta de uma task traz os vínculos Git; as listas continuam sem a leitura extra.
+        return await DtoAsync(project, item, state, ct) with { GitLinks = await store.GetTaskLinksAsync(item.Id, ct) };
     }
 
     public async Task<MethodTaskDto> CreateAsync(Guid projectId, CreateMethodTaskRequest request, CancellationToken ct)

@@ -11,7 +11,12 @@ public sealed class GitRepositoryIntegrationConfiguration : IEntityTypeConfigura
         b.ToTable("GitRepositoryIntegrations", t =>
         {
             t.HasCheckConstraint("CK_GitRepositoryIntegrations_Provider", "[Provider] = 'github'");
-            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Ids", "[RepositoryId] > 0 AND [AppId] > 0 AND [InstallationId] > 0");
+            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Mode", "[Mode] IN ('app','poll')");
+            // App, instalação e segredos só podem faltar no modo consulta (sem App nem webhook).
+            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Ids", "[RepositoryId] > 0 AND ([Mode] = 'poll' OR ([AppId] IS NOT NULL AND [AppId] > 0 AND [InstallationId] IS NOT NULL AND [InstallationId] > 0 AND [AppPrivateKeySecretRef] IS NOT NULL AND [WebhookSecretRef] IS NOT NULL))");
+            // Modo consulta sempre aponta para a credencial de leitura da organização GitHub.
+            t.HasCheckConstraint("CK_GitRepositoryIntegrations_PollCredential", "[Mode] = 'app' OR [ReadCredentialId] IS NOT NULL");
+            t.HasCheckConstraint("CK_GitRepositoryIntegrations_PollIds", "([AppId] IS NULL OR [AppId] > 0) AND ([InstallationId] IS NULL OR [InstallationId] > 0)");
             t.HasCheckConstraint("CK_GitRepositoryIntegrations_Rotation", "([PreviousWebhookSecretRef] IS NULL AND [PreviousSecretValidUntilUtc] IS NULL) OR ([PreviousWebhookSecretRef] IS NOT NULL AND [PreviousSecretValidUntilUtc] IS NOT NULL)");
         });
         b.HasKey(x => x.Id);
@@ -20,9 +25,11 @@ public sealed class GitRepositoryIntegrationConfiguration : IEntityTypeConfigura
         b.Property(x => x.Host).HasMaxLength(255).IsRequired();
         b.Property(x => x.RepositoryFullName).HasMaxLength(300).IsRequired();
         b.Property(x => x.DefaultBranch).HasMaxLength(255).IsRequired();
-        b.Property(x => x.AppPrivateKeySecretRef).HasMaxLength(512).IsRequired();
-        b.Property(x => x.WebhookSecretRef).HasMaxLength(512).IsRequired();
+        b.Property(x => x.Mode).HasColumnType("varchar(16)").IsRequired().HasDefaultValue(GitIntegrationModes.App);
+        b.Property(x => x.AppPrivateKeySecretRef).HasMaxLength(512);
+        b.Property(x => x.WebhookSecretRef).HasMaxLength(512);
         b.Property(x => x.PreviousWebhookSecretRef).HasMaxLength(512);
+        b.Property(x => x.LastPollStatus).HasColumnType("varchar(64)");
         b.Property(x => x.RowVersion).IsRowVersion();
         b.HasIndex(x => new { x.Provider, x.Host, x.RepositoryId }).IsUnique();
         b.HasIndex(x => new { x.ProjectId, x.Enabled });
@@ -30,6 +37,31 @@ public sealed class GitRepositoryIntegrationConfiguration : IEntityTypeConfigura
         b.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.SystemPrincipal).WithMany().HasForeignKey(x => new { x.ProjectId, x.SystemPrincipalId })
             .HasPrincipalKey(x => new { x.ProjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        // A credencial precisa ser do mesmo projeto da integração.
+        b.HasOne<GitReadCredential>().WithMany().HasForeignKey(x => new { x.ProjectId, x.ReadCredentialId })
+            .HasPrincipalKey(x => new { x.ProjectId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class GitReadCredentialConfiguration : IEntityTypeConfiguration<GitReadCredential>
+{
+    public void Configure(EntityTypeBuilder<GitReadCredential> b)
+    {
+        b.ToTable("GitReadCredentials", t => t.HasCheckConstraint("CK_GitReadCredentials_Revocation",
+            "([RevokedAtUtc] IS NULL AND [RevokedByUserId] IS NULL) OR ([RevokedAtUtc] IS NOT NULL AND [RevokedByUserId] IS NOT NULL)"));
+        b.HasKey(x => x.Id);
+        b.HasAlternateKey(x => new { x.ProjectId, x.Id });
+        b.Property(x => x.GitHubOwner).HasMaxLength(100).IsRequired();
+        b.Property(x => x.ProtectedValue).HasMaxLength(4000).IsRequired();
+        // Só "github_pat_" + 5 caracteres: o suficiente para reconhecer o token, nunca para reconstruí-lo.
+        b.Property(x => x.TokenPrefix).HasColumnType("varchar(16)").HasMaxLength(16).IsRequired();
+        b.Property(x => x.CreatedByUserId).HasMaxLength(450).IsRequired();
+        b.Property(x => x.RevokedByUserId).HasMaxLength(450);
+        b.Property(x => x.RowVersion).IsRowVersion();
+        // Uma credencial ativa por dono GitHub no projeto; as revogadas ficam como histórico.
+        b.HasIndex(x => new { x.ProjectId, x.GitHubOwner }).IsUnique().HasFilter("[RevokedAtUtc] IS NULL");
+        b.HasOne<MethodProjectSettings>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -66,9 +98,13 @@ public sealed class TaskGitLinkConfiguration : IEntityTypeConfiguration<TaskGitL
         {
             t.HasCheckConstraint("CK_TaskGitLinks_Target", "[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL");
             t.HasCheckConstraint("CK_TaskGitLinks_Source", "[Source] IN ('explicit','branch','title')");
+            t.HasCheckConstraint("CK_TaskGitLinks_BranchState", "[BranchState] IN ('local','remote')");
         });
         b.HasKey(x => x.Id);
-        b.Property(x => x.BranchName).HasMaxLength(255);
+        // Refs do Git diferenciam maiúsculas: feature/Foo e feature/foo são branches distintas (comparação e índice único).
+        b.Property(x => x.BranchName).HasMaxLength(255).UseCollation("Latin1_General_100_BIN2");
+        // Linhas existentes já vieram do GitHub: nascem "remote".
+        b.Property(x => x.BranchState).HasColumnType("varchar(16)").IsRequired().HasDefaultValue(GitBranchStates.Remote);
         b.Property(x => x.Source).HasColumnType("varchar(16)").IsRequired();
         b.Property(x => x.CreatedByUserId).HasMaxLength(450);
         b.Property(x => x.RowVersion).IsRowVersion();

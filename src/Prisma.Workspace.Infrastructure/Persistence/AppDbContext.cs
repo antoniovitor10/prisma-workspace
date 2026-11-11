@@ -255,6 +255,7 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<ExternalForm>().HasQueryFilter(x => x.ExternalPortal.OrganizationId == CurrentOrganizationId && (CurrentMethodProjectId == null || x.ExternalPortal.ProjectId == CurrentMethodProjectId));
         builder.Entity<ExternalRequestTriageEvent>().HasQueryFilter(x => x.ExternalRequest.ExternalPortal.OrganizationId == CurrentOrganizationId && (CurrentMethodProjectId == null || x.ExternalRequest.ExternalPortal.ProjectId == CurrentMethodProjectId));
         builder.Entity<SavedReport>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId && (CurrentMethodProjectId == null || x.ProjectId == CurrentMethodProjectId));
+        builder.Entity<GitReadCredential>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId && (CurrentMethodProjectId == null || x.ProjectId == CurrentMethodProjectId));
         builder.Entity<Notification>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<NotificationPreference>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<AuditLog>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);

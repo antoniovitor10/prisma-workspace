@@ -1283,10 +1283,16 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("ApprovalsCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("BaseBranch")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("ChangesRequested")
+                        .HasColumnType("bit");
 
                     b.Property<string>("HeadBranch")
                         .IsRequired()
@@ -1365,17 +1371,78 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitReadCredential", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("GitHubOwner")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProtectedValue")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RevokedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TokenPrefix")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ProjectId", "GitHubOwner")
+                        .IsUnique()
+                        .HasFilter("[RevokedAtUtc] IS NULL");
+
+                    b.ToTable("GitReadCredentials", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_GitReadCredentials_Revocation", "([RevokedAtUtc] IS NULL AND [RevokedByUserId] IS NULL) OR ([RevokedAtUtc] IS NOT NULL AND [RevokedByUserId] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<long>("AppId")
+                    b.Property<long?>("AppId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("AppPrivateKeySecretRef")
-                        .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
@@ -1395,8 +1462,20 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<long>("InstallationId")
+                    b.Property<long?>("InstallationId")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("LastPollStatus")
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTimeOffset?>("LastPolledAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(16)")
+                        .HasDefaultValue("app");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
@@ -1414,6 +1493,9 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasColumnType("varchar(16)");
+
+                    b.Property<Guid?>("ReadCredentialId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("RepositoryFullName")
                         .IsRequired()
@@ -1436,7 +1518,6 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("WebhookSecretRef")
-                        .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
@@ -1446,6 +1527,8 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProjectId", "Enabled");
 
+                    b.HasIndex("ProjectId", "ReadCredentialId");
+
                     b.HasIndex("ProjectId", "SystemPrincipalId");
 
                     b.HasIndex("Provider", "Host", "RepositoryId")
@@ -1453,7 +1536,13 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.ToTable("GitRepositoryIntegrations", null, t =>
                         {
-                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Ids", "[RepositoryId] > 0 AND [AppId] > 0 AND [InstallationId] > 0");
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Ids", "[RepositoryId] > 0 AND ([Mode] = 'poll' OR ([AppId] IS NOT NULL AND [AppId] > 0 AND [InstallationId] IS NOT NULL AND [InstallationId] > 0 AND [AppPrivateKeySecretRef] IS NOT NULL AND [WebhookSecretRef] IS NOT NULL))");
+
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_Mode", "[Mode] IN ('app','poll')");
+
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_PollCredential", "[Mode] = 'app' OR [ReadCredentialId] IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_GitRepositoryIntegrations_PollIds", "([AppId] IS NULL OR [AppId] > 0) AND ([InstallationId] IS NULL OR [InstallationId] > 0)");
 
                             t.HasCheckConstraint("CK_GitRepositoryIntegrations_Provider", "[Provider] = 'github'");
 
@@ -3020,7 +3109,14 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("BranchName")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(255)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("BranchState")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(16)")
+                        .HasDefaultValue("remote");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -3034,6 +3130,9 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("IntegrationId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("LastSeenAtUtc")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
@@ -3072,6 +3171,8 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
 
                     b.ToTable("TaskGitLinks", null, t =>
                         {
+                            t.HasCheckConstraint("CK_TaskGitLinks_BranchState", "[BranchState] IN ('local','remote')");
+
                             t.HasCheckConstraint("CK_TaskGitLinks_Source", "[Source] IN ('explicit','branch','title')");
 
                             t.HasCheckConstraint("CK_TaskGitLinks_Target", "[PullRequestObservationId] IS NOT NULL OR [BranchName] IS NOT NULL");
@@ -4064,6 +4165,21 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("Integration");
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitReadCredential", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodProjectSettings", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.GitRepositoryIntegration", b =>
                 {
                     b.HasOne("Prisma.Workspace.Domain.Entities.Organization", null)
@@ -4077,6 +4193,12 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.GitReadCredential", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "ReadCredentialId")
+                        .HasPrincipalKey("ProjectId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Prisma.Workspace.Domain.Entities.MethodPrincipal", "SystemPrincipal")
                         .WithMany()

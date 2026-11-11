@@ -379,6 +379,9 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
         public Guid ProjectId { get; private set; }
         public Guid ItemId { get; private set; }
         public Guid PrFieldId { get; private set; }
+        public Guid InDevelopmentStageId { get; private set; }
+        public Guid InReviewStageId { get; private set; }
+        private Guid _boardId, _idFieldId;
         public AppDbContext Context { get; }
         public GitRepositoryDescriptor Repository { get; private set; } = null!;
         public FailBeforeCommit Failure { get; }
@@ -390,6 +393,10 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
         }
         public AppDbContext NewContext() => new(_options(null), new SqlTenant(_organization), _audit);
         public EfMethodGitStore Store(AppDbContext context, GitWebhookIngressLimiter? limiter = null) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock, limiter);
+        /// <summary>Contexto de identidade do caso, para montar operações da aplicação sobre o mesmo ator do store.</summary>
+        public IMethodAccessContext Access => _actor;
+        public MethodActorIdentity? Actor => _actor.Current;
+        public void UseActor(MethodActorIdentity actor) => _actor.Current = actor;
         public void UseMethodCredential(Guid projectId)
         {
             var principal = Guid.NewGuid();
@@ -412,6 +419,8 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
             var principal = new MethodPrincipal { Id = Guid.NewGuid(), OrganizationId = _organization, ProjectId = ProjectId, Role = MethodRole.System,
                 DisplayName = "Integração SQL", DelegatedByUserId = _human, PermissionCeilingJson = "[1,3,6,7]", CreatedAtUtc = Now };
             var item = new WorkItem { Id = Guid.NewGuid(), BoardId = board.Id, StageId = stages[MethodStatusCodes.InDevelopment].Id, Title = "T-0001 · SQL", CreatedAt = Now, UpdatedAt = Now }; ItemId = item.Id;
+            InDevelopmentStageId = stages[MethodStatusCodes.InDevelopment].Id; InReviewStageId = stages[MethodStatusCodes.InReview].Id;
+            _boardId = board.Id; _idFieldId = idField.Id;
             var state = new MethodTaskState { WorkItemId = ItemId, OrganizationId = _organization, ProjectId = ProjectId, MethodTaskId = "T-0001", CycleId = Guid.NewGuid() };
             var integration = new GitRepositoryIntegration { Id = Guid.NewGuid(), ProjectId = ProjectId, OrganizationId = _organization, Provider = "github", Host = "github.com",
                 RepositoryId = Random.Shared.NextInt64(1000000, long.MaxValue), RepositoryFullName = "qa/metodo", DefaultBranch = "main", AppId = 424242, InstallationId = 1,
@@ -432,6 +441,25 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
             Context.AddRange(grantEvent, grant); await Context.SaveChangesAsync(); state.ActiveAuthorizationEventId = grant.Id; await Context.SaveChangesAsync();
             Repository = new(integration.Id, _organization, ProjectId, "github", "github.com", integration.RepositoryId, "qa/metodo", "main", 424242, 1,
                 "test-app-key", "test-webhook-secret", null, null, principal.Id, true);
+        }
+        /// <summary>Agente do método com principal gravado (como um token emitido), no projeto deste caso.</summary>
+        public async Task<MethodActorIdentity> UseAgentAsync()
+        {
+            var principal = new MethodPrincipal { Id = Guid.NewGuid(), OrganizationId = _organization, ProjectId = ProjectId, Role = MethodRole.Agent,
+                DisplayName = "Agente SQL", DelegatedByUserId = _human, PermissionCeilingJson = "[1,3,6,7]", CreatedAtUtc = Now };
+            Context.Add(principal); await Context.SaveChangesAsync(); Context.ChangeTracker.Clear();
+            _actor.Current = new(MethodAuthenticationKind.MethodToken, MethodRole.Agent, principal.Id, $"method:{principal.Id:D}", "Agente SQL",
+                _organization, ProjectId, Guid.NewGuid(), Now.AddHours(1), Enum.GetValues<PlatformPermission>().ToHashSet(), MethodChannels.Mcp, "sql-correlation");
+            return _actor.Current;
+        }
+        /// <summary>Outra task do método no mesmo quadro (sem autorização), para casos de conflito.</summary>
+        public async Task<Guid> AddTaskAsync(string methodId)
+        {
+            var item = new WorkItem { Id = Guid.NewGuid(), BoardId = _boardId, StageId = InDevelopmentStageId, Title = methodId + " · SQL", CreatedAt = Now, UpdatedAt = Now };
+            Context.AddRange(item, new MethodTaskState { WorkItemId = item.Id, OrganizationId = _organization, ProjectId = ProjectId, MethodTaskId = methodId, CycleId = Guid.NewGuid() },
+                new WorkItemCustomFieldValue { WorkItemId = item.Id, FieldDefinitionId = _idFieldId, Value = methodId, UpdatedBy = _human, UpdatedAt = Now });
+            await Context.SaveChangesAsync(); Context.ChangeTracker.Clear();
+            return item.Id;
         }
         public async ValueTask DisposeAsync()
         {

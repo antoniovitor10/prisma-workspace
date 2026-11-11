@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Prisma.Workspace.Application.Features.MethodGit.Contracts;
+using Prisma.Workspace.Application.Features.MethodGit.Repositories;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 
@@ -12,7 +13,8 @@ namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 public sealed partial class EfMethodGitStore
 {
     private static TaskGitLinkDto LinkDto(TaskGitLink row) => new(row.Id, row.IntegrationId, row.WorkItemId,
-        row.PullRequestObservationId, row.BranchName, row.Source, row.Observation?.Url, row.CreatedByPrincipalId, row.CreatedByUserId, row.CreatedAtUtc);
+        row.PullRequestObservationId, row.BranchName, row.Source, row.Observation?.Url, row.CreatedByPrincipalId, row.CreatedByUserId, row.CreatedAtUtc,
+        row.BranchState, row.LastSeenAtUtc, row.Integration?.RepositoryFullName, row.Observation?.PullRequestNumber, row.Observation?.State);
     public async Task<TaskGitLinkDto?> GetExplicitPullRequestLinkAsync(Guid integrationId, int number, CancellationToken ct = default)
     {
         var repository = await GetRepositoryAsync(integrationId, ct); if (repository is null) return null;
@@ -23,7 +25,7 @@ public sealed partial class EfMethodGitStore
     public async Task<IReadOnlyList<TaskGitLinkDto>> GetTaskLinksAsync(Guid workItemId, CancellationToken ct = default)
     {
         var task = await GetTaskAsync(workItemId, ct); if (task is null) return [];
-        return (await Links.AsNoTracking().Include(x => x.Observation).Where(x => x.WorkItemId == workItemId && x.ProjectId == task.ProjectId)
+        return (await Links.AsNoTracking().Include(x => x.Observation).Include(x => x.Integration).Where(x => x.WorkItemId == workItemId && x.ProjectId == task.ProjectId)
             .OrderBy(x => x.CreatedAtUtc).ToListAsync(ct)).Select(LinkDto).ToArray();
     }
     public async Task<GitPullRequestObservationDto> UpsertObservationAsync(Guid integrationId, GitPullRequestSnapshot pr, string? reason, CancellationToken ct = default)
@@ -77,8 +79,9 @@ public sealed partial class EfMethodGitStore
             Source = source, CreatedAtUtc = _clock.GetUtcNow(), CreatedByPrincipalId = actor.PrincipalId,
             CreatedByUserId = actor.Role == MethodRole.Human ? actor.ActorId : null };
         db.Add(row);
-        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct);
+        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct, task.RowVersion);
         try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
         catch (DbUpdateException exception) when (UniqueViolation(exception))
         {
             db.Entry(row).State = EntityState.Detached;
@@ -162,6 +165,86 @@ public sealed partial class EfMethodGitStore
             return LinkDto(row);
         });
     }
+    public async Task<TaskGitLinkDto> LinkBranchAsync(Guid integrationId, Guid workItemId, string branchName, CancellationToken ct = default)
+    {
+        var actor = access.Current ?? throw Forbidden();
+        if (actor.AuthenticationKind is not (MethodAuthenticationKind.UiSession or MethodAuthenticationKind.MethodToken)
+            || actor.Role == MethodRole.System) throw Forbidden();
+        if (!GitBranchName.IsValid(branchName)) throw GitBranchName.InvalidError();
+        var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
+        if (!repository.Enabled) throw new MethodOperationException(409, "git_repository_unavailable", "Integração do repositório indisponível.");
+        var task = await GetTaskAsync(workItemId, ct) ?? throw Missing();
+        if (task.ProjectId != repository.ProjectId || !task.IsTopLevel || task.IsArchived || task.OrganizationId != repository.OrganizationId) throw Forbidden();
+        if (GitBranchName.ReferencesOtherTask(branchName, task.MethodTaskId)) throw GitBranchName.OtherTaskError(task.MethodTaskId);
+        await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Edit, PermissionScope.WorkItem, workItemId, ct);
+        await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Comment, PermissionScope.WorkItem, workItemId, ct);
+        var existing = await BranchLinkAsync(integrationId, branchName, ct);
+        if (existing is not null)
+        {
+            if (existing.WorkItemId != workItemId) throw new MethodOperationException(409, "git_link_conflict", "Branch já associada a outra task. Solicite resolução humana.");
+            return LinkDto(existing);
+        }
+        var now = _clock.GetUtcNow();
+        var row = new TaskGitLink { Id = Guid.NewGuid(), ProjectId = task.ProjectId, IntegrationId = integrationId, WorkItemId = workItemId,
+            BranchName = branchName, BranchState = GitBranchStates.Local, Source = "explicit", CreatedAtUtc = now,
+            CreatedByPrincipalId = actor.PrincipalId, CreatedByUserId = actor.Role == MethodRole.Human ? actor.ActorId : null };
+        db.Add(row);
+        db.Add(new TaskEvent { Id = Guid.NewGuid(), WorkItemId = workItemId, ActorId = actor.ActorId, Kind = "git_branch_linked", CreatedAt = now,
+            Payload = JsonSerializer.Serialize(new { principalId = actor.PrincipalId, actorName = actor.DisplayName, methodRole = actor.Role.ToCode(),
+                authenticationKind = actor.AuthenticationKind == MethodAuthenticationKind.UiSession ? "uiSession" : "methodToken",
+                channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, linkId = row.Id,
+                repositoryFullName = repository.RepositoryFullName, branch = branchName, branchState = GitBranchStates.Local }, JsonOptions) });
+        // A versão validada acima (ID, projeto, arquivamento) precisa ser a mesma na gravação.
+        await TouchTaskVersionAsync(workItemId, task.ProjectId, ct, task.RowVersion);
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
+        catch (DbUpdateException exception) when (UniqueViolation(exception))
+        {
+            db.ChangeTracker.Clear();
+            existing = await BranchLinkAsync(integrationId, branchName, ct);
+            if (existing is null || existing.WorkItemId != workItemId) throw new MethodOperationException(409, "git_link_conflict", "Vínculo alterado concorrentemente. Atualize os dados.");
+            return LinkDto(existing);
+        }
+        return LinkDto(row) with { RepositoryFullName = repository.RepositoryFullName };
+    }
+    public async Task<GitBranchPushResult> MarkBranchPushedAsync(Guid integrationId, string branchName, string? observedGitActorId = null,
+        string? observedGitActorName = null, CancellationToken ct = default)
+    {
+        var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
+        var link = await BranchLinkAsync(integrationId, branchName, ct);
+        if (link is null) return GitBranchPushResult.NotLinked;
+        var task = await GetTaskAsync(link.WorkItemId, ct);
+        // O vínculo existe: não grava nada nem infere outra task pelo nome enquanto a task estiver indisponível.
+        if (task is null || task.ProjectId != repository.ProjectId || task.IsArchived) return GitBranchPushResult.TaskUnavailable;
+        var firstSighting = link.BranchState != GitBranchStates.Remote || link.LastSeenAtUtc is null;
+        var previousState = link.BranchState;
+        var now = _clock.GetUtcNow();
+        link.BranchState = GitBranchStates.Remote; link.LastSeenAtUtc = now;
+        if (firstSighting)
+        {
+            var actor = access.Current ?? throw Forbidden();
+            db.Add(new TaskEvent { Id = Guid.NewGuid(), WorkItemId = link.WorkItemId, ActorId = actor.ActorId, Kind = "git_branch_pushed", CreatedAt = now,
+                Payload = JsonSerializer.Serialize(new { principalId = actor.PrincipalId, actorName = actor.DisplayName, methodRole = actor.Role.ToCode(),
+                    channel = actor.Channel, correlationId = actor.CorrelationId, integrationId, linkId = link.Id,
+                    repositoryFullName = repository.RepositoryFullName, branch = branchName, previousBranchState = previousState,
+                    gitActorId = observedGitActorId, gitActorName = observedGitActorName }, JsonOptions) });
+            await TouchTaskVersionAsync(link.WorkItemId, task.ProjectId, ct, task.RowVersion);
+        }
+        // No webhook, o worker trata git_concurrency como falha retentável: a reentrega relê a task e decide de novo.
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw TaskChangedConflict(); }
+        return GitBranchPushResult.Recorded;
+    }
+    // A task mudou entre a validação e a gravação (ex.: ID trocado): nada é gravado.
+    private MethodOperationException TaskChangedConflict()
+    {
+        db.ChangeTracker.Clear();
+        return new(409, "git_concurrency", "A tarefa mudou após a leitura; consulte a task e tente de novo.");
+    }
+    // BranchName usa collation binária (Latin1_General_100_BIN2): a comparação diferencia maiúsculas, como as refs do Git.
+    private Task<TaskGitLink?> BranchLinkAsync(Guid integrationId, string branchName, CancellationToken ct)
+        => Links.Include(x => x.Integration).SingleOrDefaultAsync(x => x.IntegrationId == integrationId
+            && x.PullRequestObservationId == null && x.BranchName == branchName, ct);
     public async Task<GitPullRequestPage> ListPullRequestsAsync(Guid projectId, bool? linked, int page, int pageSize, CancellationToken ct = default)
     {
         Scope(projectId);

@@ -13,7 +13,12 @@ const status = z.enum(METHOD_STATUSES);
 const text = z.string().trim().min(1, 'Informe um texto não vazio.');
 
 function taskSummary(task: MethodTask): string {
-  return `${task.id} · ${task.titulo} · ${task.status}\nArquivo: ${task.arquivo ?? 'não informado'} · HU: ${task.hu ?? 'não informada'} · PR: ${task.pr ?? 'não vinculado'}`;
+  const base = `${task.id} · ${task.titulo} · ${task.status}\nArquivo: ${task.arquivo ?? 'não informado'} · HU: ${task.hu ?? 'não informada'} · PR: ${task.pr ?? 'não vinculado'}`;
+  if (!task.git?.length) return base;
+  const links = task.git.map(link => `Git: ${link.repositorio ?? 'repositório não informado'} · `
+    + `${link.branch ? `branch ${link.branch} (${link.estado_branch})` : 'sem branch'}`
+    + `${link.pr ? ` · PR #${link.pr}${link.pr_estado ? ` (${link.pr_estado})` : ''}` : ''}`);
+  return [base, ...links].join('\n');
 }
 
 function listSummary(tasks: MethodTask[], empty: string): string {
@@ -57,7 +62,7 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }));
 
   server.registerTool('obter_task', {
-    description: 'Consulta uma task pela chave T-XXXX no campo ID do metodo: status, título, arquivo, HU e PR.',
+    description: 'Consulta uma task pela chave T-XXXX no campo ID do metodo: status, título, arquivo, HU, PR e vínculos Git (branch e PR por repositório).',
     inputSchema: { id: taskId }, annotations: readOnly,
   }, ({ id }) => execute(async () => {
     const task = await service.obterTask(id);
@@ -114,6 +119,18 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }, ({ id, url }) => execute(async () => {
     const task = await service.vincularPr(id, url);
     return { summary: `PR vinculado.\n${taskSummary(task)}`, data: { task } };
+  }));
+
+  server.registerTool('vincular_branch', {
+    description: 'Vincula à task a branch criada para ela, antes do push (fica local até o GitHub ver a branch). O repositório precisa ser do projeto.',
+    inputSchema: {
+      id: taskId,
+      repositorio: z.string().trim().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, 'Use dono/repositório, como detranse/canais-mobile.'),
+      branch: z.string().trim().min(1, 'Informe o nome da branch.').max(255, 'Nome da branch com mais de 255 caracteres.'),
+    }, annotations: write,
+  }, ({ id, repositorio, branch }) => execute(async () => {
+    const task = await service.vincularBranch(id, repositorio, branch);
+    return { summary: `Branch vinculada.\n${taskSummary(task)}`, data: { task } };
   }));
   return server;
 }
