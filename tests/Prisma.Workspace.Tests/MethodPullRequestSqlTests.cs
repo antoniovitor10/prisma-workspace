@@ -195,7 +195,54 @@ public sealed class MethodPullRequestSqlTests : IClassFixture<GitDeliverySqlFixt
         Assert.Equal(0, provider.Finds); Assert.Empty(provider.Created);
     }
 
+    // ---------- T-0029 · link de comparação ----------
+
+    [MethodGitSqlFact]
+    public async Task CA9_compare_url_on_poll_repository_uses_default_branch_and_writes_nothing()
+    {
+        await using var c = await _fixture.CaseAsync();
+        var link = await RemoteBranchAsync(c);
+        var credential = Guid.NewGuid();
+        await c.Context.Database.ExecuteSqlRawAsync("INSERT INTO [GitReadCredentials] ([Id],[OrganizationId],[ProjectId],[GitHubOwner],[ProtectedValue],[TokenPrefix],[CreatedAtUtc],[CreatedByUserId]) " +
+            "VALUES ({0},{1},{2},'qa','valor-cifrado-de-teste','github_pat_ABCDE',SYSDATETIMEOFFSET(),'qa-humano')", credential, c.Repository.OrganizationId, c.ProjectId);
+        await c.Context.Database.ExecuteSqlRawAsync("UPDATE [GitRepositoryIntegrations] SET [Mode]='poll', [DefaultBranch]='prod', [ReadCredentialId]={1}, [AppPrivateKeySecretRef]=NULL, [WebhookSecretRef]=NULL WHERE [Id]={0}",
+            c.Repository.Id, credential);
+        try
+        {
+            await using var counts = c.NewContext();
+            async Task<(int Events, int Links, int Observations)> CountAsync() => (
+                await counts.TaskEvents.AsNoTracking().CountAsync(x => x.WorkItemId == c.ItemId),
+                await counts.Set<TaskGitLink>().AsNoTracking().CountAsync(x => x.WorkItemId == c.ItemId),
+                await counts.Set<GitPullRequestObservation>().IgnoreQueryFilters().AsNoTracking().CountAsync(x => x.IntegrationId == c.Repository.Id));
+            var before = await CountAsync();
+            await using var work = c.MethodContext();
+            var result = await CompareLinks(c, work).BuildAsync(c.ProjectId, "T-0001", new(link.Id, "Corrige consulta", "Corpo"), c.Actor!.ActorId, default);
+            Assert.StartsWith($"https://github.com/qa/metodo/compare/prod...task/T-0001-abrir-pr?quick_pull=1&title={Uri.EscapeDataString("[T-0001] Corrige consulta")}&body=", result.Url);
+            Assert.False(result.Truncated);
+            Assert.Equal(before, await CountAsync());
+            Assert.Equal(c.InDevelopmentStageId, (await counts.WorkItems.AsNoTracking().SingleAsync(x => x.Id == c.ItemId)).StageId);
+            // O botão Abrir PR (App) recusa o mesmo repositório em modo consulta.
+            var provider = Provider(c);
+            var error = await Assert.ThrowsAsync<MethodOperationException>(() =>
+                Opening(c, work, provider).OpenAsync(c.ProjectId, "T-0001", new(link.Id, "Corrige X", "Corpo"), c.Actor!.ActorId, default));
+            Assert.Equal((409, "git_repository_not_app"), (error.StatusCode, error.Code));
+            Assert.Equal(0, provider.Finds);
+        }
+        finally
+        {
+            await c.Context.Database.ExecuteSqlRawAsync("UPDATE [GitRepositoryIntegrations] SET [Mode]='app', [DefaultBranch]='main', [ReadCredentialId]=NULL, [AppPrivateKeySecretRef]='test-app-key', [WebhookSecretRef]='test-webhook-secret' WHERE [Id]={0}",
+                c.Repository.Id);
+        }
+    }
+
     // ---------- montagem ----------
+
+    private static GitPullRequestCompareLinks CompareLinks(GitDeliverySqlFixture.SqlCase c, AppDbContext db)
+    {
+        var store = c.Store(db); var provider = new TestGitProvider(); var permissions = new AllowAll();
+        var projects = new GitRepositoryOperations(store, provider, new TestGitSecrets(), c.Access, permissions, c.Clock);
+        return new(store, projects, new GitPullRequestOperations(store, provider, projects, c.Access, permissions), c.Access, permissions, new PullRequestTestCardLinks());
+    }
 
     private static PullRequestTestProvider Provider(GitDeliverySqlFixture.SqlCase c)
         => new() { HeadRepositoryId = c.Repository.RepositoryId, Time = c.Now.AddSeconds(1) };

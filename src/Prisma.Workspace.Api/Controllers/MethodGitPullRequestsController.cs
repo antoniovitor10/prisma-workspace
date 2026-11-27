@@ -43,4 +43,7 @@ public sealed class MethodGitPullRequestsController(IMediator mediator) : Contro
     [HttpPost("tasks/{id}/pull-requests/open")]
     public async Task<IActionResult> Open(Guid projectId, string id, OpenMethodPullRequestRequest request, CancellationToken ct)
         => Ok(await mediator.Send(new OpenMethodPullRequestCommand(projectId, id, request, ActorId), ct));
+    [HttpPost("tasks/{id}/pull-requests/compare-url")]
+    public async Task<IActionResult> CompareUrl(Guid projectId, string id, MethodPullRequestCompareUrlRequest request, CancellationToken ct)
+        => Ok(await mediator.Send(new BuildMethodPullRequestCompareUrlQuery(projectId, id, request, ActorId), ct));
 }

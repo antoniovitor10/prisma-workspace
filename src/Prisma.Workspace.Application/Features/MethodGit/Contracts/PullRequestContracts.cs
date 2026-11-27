@@ -60,3 +60,9 @@ public static class GitPullRequestErrorCodes
     public const string Timeout = "git_timeout";
     public const string Unavailable = "git_api_unavailable";
 }
+
+/// <summary>Pedido do link de comparação do GitHub (repositório em modo consulta, sem App): o corpo vai no body, nunca na URL do Prisma.</summary>
+public sealed record MethodPullRequestCompareUrlRequest(Guid LinkId, string Title, string? Body);
+
+/// <summary>Link de comparação montado pelo servidor; <see cref="Truncated"/> indica que o corpo foi cortado para caber na URL.</summary>
+public sealed record MethodPullRequestCompareUrlDto(string Url, bool Truncated);

@@ -163,5 +163,6 @@ internal sealed class PullRequestTestHarness
     public GitPullRequestDrafts Drafts() => new(Store, Projects(), Tasks(), Access, Permissions);
     public GitPullRequestOpening Opening() => new(Store, Provider, Projects(), Tasks(), Access, Permissions, Movement,
         new PullRequestTestCardLinks(), Automation, new GitTestClock(DateTimeOffset.Parse("2026-11-27T12:00:00Z")));
+    public GitPullRequestCompareLinks CompareLinks() => new(Store, Projects(), Tasks(), Access, Permissions, new PullRequestTestCardLinks());
     public string ActorId => Access.Current?.ActorId ?? HumanId;
 }
