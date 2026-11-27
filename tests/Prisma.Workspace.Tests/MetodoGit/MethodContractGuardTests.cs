@@ -72,6 +72,14 @@ public class MethodContractGuardTests
                 || name.Contains("Password", StringComparison.OrdinalIgnoreCase)
                 || name.EndsWith("Token", StringComparison.OrdinalIgnoreCase);
             if (!looksSecret) continue;
+            // Única exceção, decidida no PRD da HU-0002 (D2): o token de leitura entra uma vez pela tela, é cifrado ao gravar
+            // (Data Protection) e nunca volta. O registro não o imprime (ToString próprio) e a resposta só traz o prefixo.
+            if (request == typeof(SaveGitReadCredentialRequest) && name == nameof(SaveGitReadCredentialRequest.Token))
+            {
+                Assert.DoesNotContain("github_pat_segredo", new SaveGitReadCredentialRequest("org", "github_pat_segredo").ToString());
+                Assert.DoesNotContain(typeof(GitReadCredentialDto).GetProperties(), x => x.Name.Contains("Token", StringComparison.Ordinal) && x.Name != nameof(GitReadCredentialDto.TokenPrefix));
+                continue;
+            }
             Assert.True(name.EndsWith("SecretRef", StringComparison.Ordinal) || name == nameof(RegisterGitRepositoryRequest.PreviousSecretValidUntilUtc)
                     || name == nameof(UpdateGitRepositoryRequest.PreviousSecretValidUntilUtc),
                 $"{request.Name}.{name} parece segredo em claro; o contrato só admite referência (*SecretRef).");

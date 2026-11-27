@@ -48,6 +48,8 @@ import { WorkItemKind, kindDisplayOrder, kindMeta, workItemKinds } from '../feat
 import { WorkItemKindSelector } from './WorkItemKindSelector';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { RichTaskDescriptionEditor } from './RichTaskDescriptionEditor';
+import { TaskGitTab } from '../features/method-git/TaskGitTab';
+import { useTaskGit } from '../features/method-git/taskGit';
 import { ActionButton } from './ActionButton';
 import { useMethodDocumentTabs } from '../features/method-docs/useMethodDocuments';
 
@@ -250,7 +252,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
   const [publicReply,setPublicReply]=useState('');
-  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'|`method:${string}`>('description');
+  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'|'git'|`method:${string}`>('description');
 
   const fallback=useMemo<WorkItemDetails|null>(()=>item?{
     id:item.id,number:item.number??0,reference:item.number?`${projectKey}-${item.number}`:`${projectKey}-${item.id.slice(-4).toUpperCase()}`,
@@ -272,6 +274,8 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const projectQuery=useQuery<ProjectOption>({queryKey:['project',details?.projectId],queryFn:()=>api.getProject(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
+  // Aba Git (HU-0002): só aparece quando a tarefa é do método; 404 apenas a esconde.
+  const gitQuery=useTaskGit(details?.projectId,details?.id,realMode);
   const showStoryPoints = true;
   // Abas do método (HU-0008): Documento, PRD e Corpo da task; itens fora do método não ganham aba.
   const methodTabs=useMethodDocumentTabs(realMode?details?.projectId:undefined,realMode?details?.id:undefined);
@@ -478,6 +482,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
         <Tab $active={activeTab==='attachments'} onClick={()=>setActiveTab('attachments')}>Anexos</Tab>
         <Tab $active={activeTab==='history'} onClick={()=>setActiveTab('history')}>Histórico</Tab>
         <Tab $active={activeTab==='timeline'} onClick={()=>setActiveTab('timeline')}>Linha do tempo</Tab>
+        {gitQuery.data&&<Tab $active={activeTab==='git'} onClick={()=>setActiveTab('git')}><GitBranch size={13} aria-hidden="true" style={{verticalAlign:'-2px',marginRight:4}}/>Git</Tab>}
       </Tabs>
 
       {activeTab==='description'&&<>
@@ -532,6 +537,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </>}
       {activeTab==='comments'&&<Section><h2><MessageSquareText size={14}/>Comentários internos</h2><VisibilityNote>Visível somente para a equipe interna. Este conteúdo não é enviado nem exibido ao solicitante.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="comments"/>:<Empty>Entre com dados reais para comentar.</Empty>}</Section>}
       {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações desta tarefa. As movimentações ficam na Linha do Tempo.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
+      {activeTab==='git'&&gitQuery.data&&details?.projectId&&<Section><h2><GitBranch size={14}/>Git</h2><TaskGitTab projectId={details.projectId} workItemId={details.id} onLinked={()=>{void invalidate();if(item)onItemUpdated?.(item);}}/></Section>}
       {activeMethodTab&&details.projectId&&<Suspense fallback={<Progress>Carregando documento...</Progress>}><MethodDocumentTab key={activeMethodTab.key} projectId={details.projectId} workItemId={details.id} documentKey={activeMethodTab.key} kind={activeMethodTab.kind}/></Suspense>}
       {activeTab==='timeline'&&<Section><h2>Linha do tempo</h2><VisibilityNote>Criação e movimentações entre colunas, da mais recente para a mais antiga.</VisibilityNote>{realMode?<TaskTimeline key={details.id} workItemId={details.id} createdAt={details.createdAt}/>:<Empty>Linha do tempo disponível com dados reais.</Empty>}</Section>}
     </Body>}

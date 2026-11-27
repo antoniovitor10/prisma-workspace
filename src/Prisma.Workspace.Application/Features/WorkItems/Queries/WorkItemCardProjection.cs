@@ -19,7 +19,8 @@ public static class WorkItemCardProjection
     /// </param>
     public static IReadOnlyList<WorkItemDto> ToCards(
         IEnumerable<WorkItem> items,
-        string? currentUserId)
+        string? currentUserId,
+        IReadOnlyDictionary<Guid, WorkItemGitSummaryDto>? git = null)
     {
         return items.Select(w =>
         {
@@ -96,7 +97,8 @@ public static class WorkItemCardProjection
                     && x.SourceWorkItem.CompletedAt == null),
             CustomFields = w.CustomFieldValues
                 .Select(x => new WorkItemCustomValueDto(x.FieldDefinitionId, x.Value)).ToList(),
-            BoardIds = new List<Guid> { w.BoardId }.AsReadOnly()
+            BoardIds = new List<Guid> { w.BoardId }.AsReadOnly(),
+            Git = git?.GetValueOrDefault(w.Id)
             };
         }).ToList().AsReadOnly();
     }

@@ -16,6 +16,12 @@ public interface IGitProvider
     Task<GitPullRequestReadSet> ListPullRequestsForCycleAsync(GitRepositoryDescriptor repository,
         DateTimeOffset authorizedAtUtc, CancellationToken cancellationToken = default)
         => ListPullRequestsAsync(repository, "all", cancellationToken);
+    // Modo consulta (HU-0002): confere o repositório com o token de leitura e devolve o ID estável; só GET.
+    Task<GitRepositoryIdentity> GetRepositoryIdentityAsync(GitRepositoryDescriptor repository, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+    // Modo consulta: a branch já existe no GitHub? (vínculo local vira enviado). Só GET.
+    Task<bool> BranchExistsAsync(GitRepositoryDescriptor repository, string branch, CancellationToken cancellationToken = default)
+        => Task.FromResult(false);
 }
 
 /// <summary>Referências resolvidas apenas no namespace externo MethodGit:Secrets; valores nunca saem em DTO/log.</summary>

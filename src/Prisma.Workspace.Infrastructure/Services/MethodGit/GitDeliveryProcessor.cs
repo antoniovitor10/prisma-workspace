@@ -18,6 +18,8 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     public const string LegacyCandidateEvent = "prisma_legacy_candidate";
     public const string LinkEvaluationEvent = "prisma_link_confirmation";
+    /// <summary>Reavaliação criada pela consulta do modo sem admin (D1): mesmas guardas do webhook, canal "consulta".</summary>
+    public const string PollEvaluationEvent = "prisma_poll_evaluation";
     private sealed record Candidate(string Type, string Destination, DateTimeOffset OccurredAt, string EntityId, string Revision, long? ReviewId = null);
 
     public async Task<GitProcessingOutcome> ProcessAsync(GitDeliverySnapshot delivery, CancellationToken ct = default)
@@ -56,7 +58,8 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
             if (candidateObservation.WorkItemId.HasValue) await store.UpsertObservationAsync(repository.Id, candidatePr, null, ct);
             return await Finish(delivery, GitDeliveryStates.Processed, "legacy_confirmation_required", ct);
         }
-        var internalEvaluation = e.EventName == LinkEvaluationEvent && delivery.DeliveryId.StartsWith("link:", StringComparison.Ordinal);
+        var internalEvaluation = (e.EventName == LinkEvaluationEvent && delivery.DeliveryId.StartsWith("link:", StringComparison.Ordinal))
+            || (e.EventName == PollEvaluationEvent && delivery.DeliveryId.StartsWith("poll:", StringComparison.Ordinal) && repository.IsPoll);
         if (e.EventName is not ("pull_request" or "pull_request_review") && !internalEvaluation)
             return await Finish(delivery, GitDeliveryStates.Ignored, "unsupported_event", ct);
         if (e.PullRequestNumber is not { } number) return await Finish(delivery, GitDeliveryStates.PermanentFailure, "missing_pull_request", ct);
@@ -76,6 +79,9 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
         var reviews = pr.State == "open" || pr.IsMerged || e.EventName == "pull_request_review"
             ? EffectiveReviews(await provider.GetReviewsAsync(repository, number, ct), pr.HeadSha) : [];
         var changesRequested = reviews.Any(review => review.State.Equals("changes_requested", StringComparison.OrdinalIgnoreCase));
+        if (pr.State == "open" || pr.IsMerged || e.EventName == "pull_request_review")
+            await store.UpdateObservationReviewsAsync(repository.Id, number, pr.HeadSha,
+                reviews.Count(review => review.State.Equals("approved", StringComparison.OrdinalIgnoreCase)), changesRequested, ct);
         var candidate = SelectCandidate(e, pr, reviews, internalEvaluation);
         if (candidate is null) return await Finish(delivery, GitDeliveryStates.Ignored, "observation_only", ct);
         if (candidate.Type == MethodGitFactCodes.PullRequestMerged && pr.BaseBranch != repository.DefaultBranch)
@@ -176,7 +182,9 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
             foreach (var candidate in read.PullRequests)
             {
                 if (repository.Id == currentRepository.Id && candidate.Number == merged.Number) continue;
-                var known = knownLinks.Any(link => link.IntegrationId == repository.Id && PullRequestNumber(link.Url) == candidate.Number);
+                // PR de uma branch vinculada (mesmo sem ID no nome) também é da task.
+                var known = knownLinks.Any(link => link.IntegrationId == repository.Id && (PullRequestNumber(link.Url) == candidate.Number
+                    || (link.ObservationId is null && link.BranchName == candidate.HeadBranch)));
                 if (!known && !MayIdentify(candidate, task.MethodTaskId)) continue;
                 var resolution = await resolver.ResolveAsync(repository, candidate.Number, candidate.HeadBranch, candidate.Title, ct,
                     allowInference: candidate.HeadRepositoryId == repository.RepositoryId);

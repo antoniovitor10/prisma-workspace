@@ -12,13 +12,16 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
 {
     private readonly IWorkItemRepository _workItemRepository;
     private readonly IBoardAccessService _access;
+    private readonly IWorkItemGitSummaryReader _git;
 
     public GetWorkItemsByBoardIdQueryHandler(
         IWorkItemRepository workItemRepository,
-        IBoardAccessService access)
+        IBoardAccessService access,
+        IWorkItemGitSummaryReader git)
     {
         _workItemRepository = workItemRepository;
         _access = access;
+        _git = git;
     }
 
     public async Task<IReadOnlyList<WorkItemDto>> Handle(
@@ -29,6 +32,7 @@ public class GetWorkItemsByBoardIdQueryHandler : IRequestHandler<GetWorkItemsByB
             PlatformPermission.View, ProjectRole.Viewer, cancellationToken);
         var items = await _workItemRepository.GetByBoardIdAsync(request.BoardId, cancellationToken);
 
-        return WorkItemCardProjection.ToCards(items, request.CurrentUserId);
+        var git = await _git.GetAsync(items.Select(x => x.Id).ToArray(), cancellationToken);
+        return WorkItemCardProjection.ToCards(items, request.CurrentUserId, git);
     }
 }

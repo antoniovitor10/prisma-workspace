@@ -62,6 +62,23 @@ public sealed class GitPullRequestOperations(IMethodGitStore store, IGitProvider
         await store.UpsertObservationAsync(repository.Id, pr, "explicit_confirmation_pending", ct);
         return await store.LinkExplicitAsync(repository.Id, request.WorkItemId, observation.Id, request.Reason, ct);
     }
+    /// <summary>Aba Git da tarefa (T-0006): quem lê a tarefa vê os vínculos e a linha do tempo; CanLink diz se pode vincular.</summary>
+    public async Task<TaskGitViewDto> GetTaskGitAsync(Guid projectId, Guid workItemId, string actor, CancellationToken ct)
+    {
+        await projects.EnsureAccessAsync(projectId, actor, false, ct);
+        var view = await store.GetTaskGitViewAsync(workItemId, ct);
+        var task = view is null ? null : await store.GetTaskAsync(workItemId, ct);
+        if (view is null || task is null || task.ProjectId != projectId)
+            throw new MethodOperationException(404, "method_task_not_found", "Task do método não encontrada neste projeto.");
+        await permissions.EnsureAsync(actor, PlatformPermission.View, PermissionScope.WorkItem, workItemId, ct);
+        // Mesmas regras do vínculo explícito (EnsureLinkPermission): sessão UI ou token, nunca o principal de sistema.
+        var current = access.Current;
+        var canLink = current is not null && current.ActorId == actor && current.Role != MethodRole.System
+            && current.AuthenticationKind is MethodAuthenticationKind.UiSession or MethodAuthenticationKind.MethodToken
+            && await permissions.HasAsync(actor, PlatformPermission.Edit, PermissionScope.WorkItem, workItemId, ct)
+            && await permissions.HasAsync(actor, PlatformPermission.Comment, PermissionScope.WorkItem, workItemId, ct);
+        return view with { CanLink = canLink };
+    }
     private async Task<MethodTaskSnapshot> SingleTaskAsync(Guid projectId, string methodId, CancellationToken ct)
     {
         if (methodId.Length is < 6 or > 32 || !methodId.StartsWith("T-", StringComparison.Ordinal)
@@ -100,6 +117,9 @@ public sealed class LinkMethodGitPullRequestHandler(GitPullRequestOperations ope
 public sealed record LinkObservedMethodGitPullRequestCommand(Guid ProjectId, Guid ObservationId, LinkObservedPullRequestRequest Data, string ActorId) : IRequest<TaskGitLinkDto>;
 public sealed class LinkObservedMethodGitPullRequestHandler(GitPullRequestOperations operations) : IRequestHandler<LinkObservedMethodGitPullRequestCommand, TaskGitLinkDto>
 { public Task<TaskGitLinkDto> Handle(LinkObservedMethodGitPullRequestCommand r, CancellationToken ct) => operations.LinkObservedAsync(r.ProjectId, r.ObservationId, r.Data, r.ActorId, ct); }
+public sealed record GetMethodTaskGitQuery(Guid ProjectId, Guid WorkItemId, string ActorId) : IRequest<TaskGitViewDto>;
+public sealed class GetMethodTaskGitHandler(GitPullRequestOperations operations) : IRequestHandler<GetMethodTaskGitQuery, TaskGitViewDto>
+{ public Task<TaskGitViewDto> Handle(GetMethodTaskGitQuery r, CancellationToken ct) => operations.GetTaskGitAsync(r.ProjectId, r.WorkItemId, r.ActorId, ct); }
 public sealed record LinkMethodGitBranchCommand(Guid ProjectId, string MethodId, LinkMethodBranchRequest Data, string ActorId) : IRequest<TaskGitLinkDto>;
 public sealed class LinkMethodGitBranchHandler(GitPullRequestOperations operations) : IRequestHandler<LinkMethodGitBranchCommand, TaskGitLinkDto>
 { public Task<TaskGitLinkDto> Handle(LinkMethodGitBranchCommand r, CancellationToken ct) => operations.LinkBranchAsync(r.ProjectId, r.MethodId, r.Data, r.ActorId, ct); }

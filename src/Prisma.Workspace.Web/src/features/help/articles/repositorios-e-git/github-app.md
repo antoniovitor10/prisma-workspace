@@ -1,6 +1,6 @@
 ---
 titulo: Conectar um repositório do GitHub
-resumo: GitHub App, onde achar o App ID e o Installation ID, as referências da chave e do segredo, o webhook e o que fazer sem acesso de administrador.
+resumo: GitHub App, onde achar o App ID e o Installation ID, as referências da chave e do segredo, o webhook e o modo consulta com token de leitura, para repositórios sem acesso de administrador.
 ordem: 1
 atualizado_em: 2026-11-27
 revisar_ate: 2027-02-27
@@ -10,7 +10,7 @@ relacionados:
   - administracao/instalacao-e-configuracao
 ---
 
-Conectar um repositório faz o Prisma acompanhar as branches e os pull requests das tasks e mover o card sozinho nos momentos certos. A conexão usa uma GitHub App (para ler o repositório) e um webhook do repositório (para avisar o Prisma).
+Conectar um repositório faz o Prisma acompanhar as branches e os pull requests das tasks e mover o card sozinho nos momentos certos. Há dois jeitos: **GitHub App + webhook** (o GitHub avisa o Prisma na hora; exige administrador do repositório) ou **Consulta com token de leitura** (o Prisma lê o GitHub de hora em hora; não exige administrador, veja [Sem acesso de administrador](#sem-admin)).
 
 ## O que você precisa {#o-que-voce-precisa}
 
@@ -87,6 +87,28 @@ O Prisma confere a assinatura de cada entrega com o segredo; entregas sem assina
 
 Cada repositório conectado tem **Pausar integração** e **Reativar integração**. Pausado, o Prisma ignora os eventos desse repositório. Ao reativar, a conexão é conferida de novo no GitHub.
 
-## Sem acesso de administrador no GitHub {#sem-admin}
+## Sem acesso de administrador no GitHub (modo consulta) {#sem-admin}
 
-Hoje a conexão exige alguém com acesso de administrador ao repositório, para instalar a App e criar o webhook. Um modo só de leitura, que acompanha os PRs sem webhook e sem administrador, ainda não está disponível nesta versão. Enquanto isso, peça a um administrador do repositório para instalar a App e criar o webhook uma única vez; depois disso, abrir branches e PRs no dia a dia não exige acesso de administrador.
+Quando você não é administrador do repositório (não dá para instalar a App nem criar o webhook), conecte no modo **Consulta com token de leitura**. O Prisma lê o GitHub com um token de leitura da organização, de hora em hora, e move o card pelas mesmas regras do webhook.
+
+### Criar o token de leitura {#token-de-leitura}
+
+1. No GitHub: **Settings** > **Developer settings** > **Personal access tokens** > **Fine-grained tokens** > **Generate new token**.
+2. Em **Resource owner**, escolha a organização dona dos repositórios (ou o seu usuário).
+3. Em **Repository access**, escolha só os repositórios que terão task.
+4. Em permissões do repositório, marque só **Pull requests: Read-only** e **Contents: Read-only**.
+5. A organização pode exigir que um administrador dela aprove o token. Sem a aprovação, o GitHub recusa o acesso e o Prisma mostra: "O GitHub recusou o acesso: falta a aprovação do token pela organização ou a leitura deste repositório."
+
+### Cadastrar o token e conectar o repositório {#conectar-modo-consulta}
+
+1. Projeto > **Configurações** > **Integrações** > aba **Repositórios**.
+2. Em **Tokens de leitura por organização**, informe a **Organização GitHub** (a parte antes da barra, como `minha-organizacao`) e cole o **Token de leitura**. Clique em **Salvar token**. O token é guardado cifrado e nunca mais aparece: a tela mostra só o começo dele (`github_pat_` e mais cinco caracteres), quem cadastrou e quando. Um token por organização vale para todos os repositórios dela no projeto.
+3. Em **Como o Prisma lê este repositório**, escolha **Consulta com token de leitura**. O formulário passa a pedir só **Repositório**, **Branch principal** e **Sistema de integração** (sem App ID, Installation ID nem webhook).
+4. Clique em **Conectar repositório**. O Prisma lê o repositório com o token para confirmar o acesso. Deu certo: "Repositório conectado no modo consulta."
+
+### Consultar agora e erros {#consultar-agora}
+
+- O Prisma consulta cada repositório no modo consulta **de hora em hora**. Para não esperar, use **Consultar agora** no repositório (aba **Repositórios**) ou na aba **Git** da tarefa. É uma consulta por minuto por repositório; um segundo clique dentro de 1 minuto recebe "Uma consulta deste repositório acabou de rodar. Tente de novo em 1 minuto."
+- A linha do repositório mostra a **última consulta com sucesso** e, se a última falhou, o motivo, sem o texto do GitHub: token inválido, vencido ou revogado; falta de aprovação da organização; repositório fora do token. Com erro, nenhum card se move.
+- Para trocar o token, salve um novo para a mesma organização. **Revogar token** apaga o token no Prisma e os repositórios dela param de ser consultados até um novo token. Revogue também no GitHub se ele vazou.
+- Nos repositórios sem ID da task no nome da branch, o agente vincula a branch pelo MCP (`vincular_branch`) ou você vincula pela aba **Git** da tarefa; o PR dessa branch é ligado à task pela consulta.

@@ -15,6 +15,17 @@ using Xunit;
 
 namespace Prisma.Workspace.Tests;
 
+/// <summary>
+/// SQL descartável do método: só no loopback e na porta isolada (3132 por padrão; outra frente de trabalho
+/// define PRISMA_METHOD_GIT_SQL_PORT com a porta do seu próprio contêiner). Nunca usa ambiente implícito.
+/// </summary>
+public static class MethodGitSqlServer
+{
+    public static string Port => Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL_PORT") is { Length: > 0 } port
+        && int.TryParse(port, out var value) && value is > 1024 and < 65536 ? value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "3132";
+    public static bool IsIsolated(string dataSource) => dataSource == $"127.0.0.1,{Port}" || dataSource == $"localhost,{Port}";
+}
+
 [CollectionDefinition("MethodGit SQL", DisableParallelization = true)]
 public sealed class MethodGitSqlCollection { }
 public sealed class MethodGitSqlFactAttribute : FactAttribute
@@ -326,7 +337,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
     {
         var value = Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL"); if (string.IsNullOrWhiteSpace(value)) return;
         var builder = new SqlConnectionStringBuilder(value);
-        if (builder.DataSource is not ("127.0.0.1,3132" or "localhost,3132")) throw new InvalidOperationException("SQL do método deve ser o servidor isolado3132.");
+        if (!MethodGitSqlServer.IsIsolated(builder.DataSource)) throw new InvalidOperationException("SQL do método deve ser o servidor isolado3132.");
         builder.InitialCatalog = "Prisma_MethodGit_Ponte_" + Guid.NewGuid().ToString("N");
         _connection = builder.ConnectionString;
         await using var context = new AppDbContext(Options());
@@ -346,7 +357,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
     {
         if (_connection is null) return;
         var target = new SqlConnectionStringBuilder(_connection);
-        if (target.DataSource is not ("127.0.0.1,3132" or "localhost,3132") || !target.InitialCatalog.StartsWith("Prisma_MethodGit_Ponte_", StringComparison.Ordinal))
+        if (!MethodGitSqlServer.IsIsolated(target.DataSource) || !target.InitialCatalog.StartsWith("Prisma_MethodGit_Ponte_", StringComparison.Ordinal))
             throw new InvalidOperationException("Limpeza recusada fora do banco descartável próprio.");
         await using var context = new AppDbContext(Options()); await context.Database.EnsureDeletedAsync();
     }
@@ -382,6 +393,8 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
         public Guid InDevelopmentStageId { get; private set; }
         public Guid InReviewStageId { get; private set; }
         private Guid _boardId, _idFieldId;
+        private Dictionary<string, Guid> _stages = [];
+        public Guid StageOf(string status) => _stages[status];
         public AppDbContext Context { get; }
         public GitRepositoryDescriptor Repository { get; private set; } = null!;
         public FailBeforeCommit Failure { get; }
@@ -392,6 +405,9 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
             Context = new(_options(failure), new SqlTenant(_organization), _audit);
         }
         public AppDbContext NewContext() => new(_options(null), new SqlTenant(_organization), _audit);
+        /// <summary>Opções do banco descartável do caso, para montar um contêiner de DI próprio (consulta agendada).</summary>
+        public DbContextOptions<AppDbContext> Options() => _options(null);
+        public Guid OrganizationId => _organization;
         public EfMethodGitStore Store(AppDbContext context, GitWebhookIngressLimiter? limiter = null) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock, limiter);
         /// <summary>Contexto de identidade do caso, para montar operações da aplicação sobre o mesmo ator do store.</summary>
         public IMethodAccessContext Access => _actor;
@@ -420,6 +436,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
                 DisplayName = "Integração SQL", DelegatedByUserId = _human, PermissionCeilingJson = "[1,3,6,7]", CreatedAtUtc = Now };
             var item = new WorkItem { Id = Guid.NewGuid(), BoardId = board.Id, StageId = stages[MethodStatusCodes.InDevelopment].Id, Title = "T-0001 · SQL", CreatedAt = Now, UpdatedAt = Now }; ItemId = item.Id;
             InDevelopmentStageId = stages[MethodStatusCodes.InDevelopment].Id; InReviewStageId = stages[MethodStatusCodes.InReview].Id;
+            _stages = stages.ToDictionary(pair => pair.Key, pair => pair.Value.Id);
             _boardId = board.Id; _idFieldId = idField.Id;
             var state = new MethodTaskState { WorkItemId = ItemId, OrganizationId = _organization, ProjectId = ProjectId, MethodTaskId = "T-0001", CycleId = Guid.NewGuid() };
             var integration = new GitRepositoryIntegration { Id = Guid.NewGuid(), ProjectId = ProjectId, OrganizationId = _organization, Provider = "github", Host = "github.com",

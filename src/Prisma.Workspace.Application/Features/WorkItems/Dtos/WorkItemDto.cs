@@ -59,7 +59,17 @@ public class WorkItemDto
     public IReadOnlyList<WorkItemCustomValueDto> CustomFields { get; set; } = Array.Empty<WorkItemCustomValueDto>();
     /// <summary>Quadros em que o item aparece (quadro home + placements extras).</summary>
     public IReadOnlyList<Guid>? BoardIds { get; set; }
+    /// <summary>Resumo do vínculo Git mais recente ativo (repositório, branch e PR); nulo sem vínculo.</summary>
+    public WorkItemGitSummaryDto? Git { get; set; }
 }
+
+/// <summary>
+/// Selos de Git do cartão (HU-0002, RF1 a RF3). Estados do PR: open, draft, approved,
+/// changes_requested, merged e closed. BranchState: local (não enviada) ou remote.
+/// </summary>
+public sealed record WorkItemGitSummaryDto(
+    string RepoName, string RepoFullName, string? Branch, string BranchState,
+    int? PrNumber, string? PrState, string? PrUrl);
 
 public record WorkItemCustomValueDto(Guid FieldId, string? Value);
 

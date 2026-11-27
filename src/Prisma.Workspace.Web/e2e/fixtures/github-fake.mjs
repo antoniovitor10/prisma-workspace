@@ -15,6 +15,12 @@
 //   PUT  /__fixture/pulls/{number}/reviews?repo=...    [ { id, state, commit_id, submitted_at, user } ]
 //   POST /__fixture/fail                               { match: "<regex do caminho>", status, retry_after?, times? }
 //   GET  /__fixture/calls                              chamadas recebidas (sem Authorization)
+//   PUT  /__fixture/read-token                         { token, repos: [full_name], status? } token de leitura do modo consulta
+//                                                      (HU-0002); status 401/403 faz o GitHub recusar o token em toda chamada
+//   PUT  /__fixture/branches?repo=<full_name>          [ "nome-da-branch", ... ] branches que existem no repositório
+//
+// Modo consulta (token de leitura, só GET): GET /repos/{dono}/{repo}, GET /repos/{dono}/{repo}/branches/{nome}
+// e as mesmas leituras de PR da App, com o token cadastrado em /__fixture/read-token.
 import { createServer } from 'node:http';
 import { createPublicKey, createVerify, randomBytes } from 'node:crypto';
 
@@ -25,11 +31,11 @@ const publicKey = process.env.GITHUB_FAKE_APP_PUBLIC_KEY ? createPublicKey(proce
 let state;
 function newRepo(r) {
   return { id: Number(r.id), full_name: r.full_name, default_branch: r.default_branch ?? 'main',
-    installation_id: Number(r.installation_id ?? 1), pulls: new Map(), reviews: new Map() };
+    installation_id: Number(r.installation_id ?? 1), pulls: new Map(), reviews: new Map(), branches: new Set() };
 }
 function reset() {
   const initial = newRepo({ id: 900001, full_name: 'qa/metodo', default_branch: 'main', installation_id: 1 });
-  state = { repos: new Map([[initial.full_name, initial]]), current: initial.full_name, failures: [], calls: [], tokens: new Map() };
+  state = { repos: new Map([[initial.full_name, initial]]), current: initial.full_name, failures: [], calls: [], tokens: new Map(), readTokens: new Map() };
 }
 reset();
 
@@ -62,6 +68,14 @@ function installationToken(auth) {
   const m = /^(?:Bearer|token)\s+(\S+)$/i.exec(auth ?? '');
   const t = m && state.tokens.get(m[1]);
   return t && t.expires > Date.now() ? t : null;
+}
+
+// Token de leitura (PAT fine-grained) do modo consulta: acesso só aos repositórios cadastrados, resolvidos na hora.
+function readToken(auth) {
+  const m = /^(?:Bearer|token)\s+(\S+)$/i.exec(auth ?? '');
+  const t = m && state.readTokens.get(m[1]);
+  if (!t) return null;
+  return { status: t.status, repoIds: new Set([...t.repos].map(name => state.repos.get(name)?.id).filter(Boolean)) };
 }
 
 function page(list, url) {
@@ -115,6 +129,15 @@ createServer(async (req, res) => {
         const repo = fixtureRepo(url); if (!repo) return json(res, 404, { message: 'repositório desconhecido na fixture' });
         repo.reviews.set(Number(m[1]), await body(req)); return json(res, 200, repo.reviews.get(Number(m[1])));
       }
+      if (req.method === 'PUT' && path === '/__fixture/read-token') {
+        const t = await body(req);
+        state.readTokens.set(String(t.token), { repos: new Set(t.repos ?? []), status: t.status ? Number(t.status) : null });
+        return json(res, 204);
+      }
+      if (req.method === 'PUT' && path === '/__fixture/branches') {
+        const repo = fixtureRepo(url); if (!repo) return json(res, 404, { message: 'repositório desconhecido na fixture' });
+        repo.branches = new Set(await body(req)); return json(res, 200, [...repo.branches]);
+      }
       if (req.method === 'POST' && path === '/__fixture/fail') { const f = await body(req); state.failures.push({ ...f, re: new RegExp(f.match), times: f.times ?? 1 }); return json(res, 204); }
       if (req.method === 'GET' && path === '/__fixture/calls') return json(res, 200, state.calls);
       return json(res, 404, { message: 'rota de controle desconhecida' });
@@ -148,8 +171,24 @@ createServer(async (req, res) => {
       return json(res, 201, { token, expires_at: new Date(Date.now() + 3600_000).toISOString(), permissions: perms, repository_selection: 'selected' });
     }
 
-    const tok = installationToken(req.headers.authorization);
+    const pat = readToken(req.headers.authorization);
+    if (pat?.status) return json(res, pat.status, { message: pat.status === 401 ? 'Bad credentials' : 'Resource not accessible by personal access token' });
+    if (pat && req.method !== 'GET') return json(res, 403, { message: 'token de leitura: só GET' });
+    const tok = installationToken(req.headers.authorization) ?? pat;
     if (!tok) return json(res, 401, { message: 'Bad credentials' });
+    let r = /^\/repos\/([^/]+\/[^/]+)$/.exec(path);
+    if (req.method === 'GET' && r) {
+      const repo = state.repos.get(decodeURIComponent(r[1]));
+      if (!repo || !tok.repoIds.has(repo.id)) return json(res, 404, { message: 'Not Found' });
+      return json(res, 200, { id: repo.id, full_name: repo.full_name, default_branch: repo.default_branch, private: true });
+    }
+    r = /^\/repos\/([^/]+\/[^/]+)\/branches\/(.+)$/.exec(path);
+    if (req.method === 'GET' && r) {
+      const repo = state.repos.get(decodeURIComponent(r[1]));
+      const name = r[2].split('/').map(decodeURIComponent).join('/');
+      if (!repo || !tok.repoIds.has(repo.id) || !repo.branches.has(name)) return json(res, 404, { message: 'Branch not found' });
+      return json(res, 200, { name, commit: { sha: 'e'.repeat(40) } });
+    }
 
     if (req.method === 'GET' && path === '/installation/repositories') {
       const all = [...state.repos.values()].filter(r => tok.repoIds.has(r.id))

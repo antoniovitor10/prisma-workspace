@@ -35,6 +35,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBoardRepository, BoardRepository>();
         services.AddScoped<IBoardStructureRepository, BoardStructureRepository>();
         services.AddScoped<IWorkItemRepository, WorkItemRepository>();
+        services.AddScoped<IWorkItemGitSummaryReader, Services.MethodGit.EfWorkItemGitSummaryReader>();
         services.AddScoped<IWorkItemManagementRepository, WorkItemManagementRepository>();
         services.AddScoped<IWorkItemSearchRepository, WorkItemManagementRepository>();
         services.AddScoped<IStageRepository, StageRepository>();

@@ -5,7 +5,12 @@ public sealed record GitRepositoryDescriptor(
     long RepositoryId, string RepositoryFullName, string DefaultBranch, long AppId, long InstallationId,
     string AppPrivateKeySecretRef, string WebhookSecretRef, string? PreviousWebhookSecretRef,
     DateTimeOffset? PreviousSecretValidUntilUtc, Guid SystemPrincipalId, bool Enabled, byte[]? RowVersion = null,
-    string? OperationalError = null);
+    string? OperationalError = null, string Mode = "app", Guid? ReadCredentialId = null,
+    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null)
+{
+    /// <summary>Modo consulta: sem App nem webhook; o provedor lê com o token de leitura da organização.</summary>
+    public bool IsPoll => Mode == "poll";
+}
 
 public sealed record RegisterGitRepositoryRequest(
     string Host, long RepositoryId, string RepositoryFullName, string DefaultBranch,
@@ -20,8 +25,24 @@ public sealed record UpdateGitRepositoryRequest(
 
 public sealed record GitRepositoryDto(
     Guid Id, Guid ProjectId, string Host, long RepositoryId, string RepositoryFullName,
-    string DefaultBranch, long AppId, long InstallationId, Guid SystemPrincipalId,
-    bool Enabled, string? OperationalError);
+    string DefaultBranch, long? AppId, long? InstallationId, Guid SystemPrincipalId,
+    bool Enabled, string? OperationalError, string Mode = "app", Guid? ReadCredentialId = null,
+    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null);
+
+/// <summary>Cadastro no modo consulta (sem App nem webhook): o ID do repositório vem do GitHub, lido com o token da organização.</summary>
+public sealed record RegisterPollGitRepositoryRequest(string RepositoryFullName, string DefaultBranch, Guid SystemPrincipalId, bool Enabled = true);
+
+/// <summary>Token de leitura de uma organização GitHub: só prefixo, autoria e datas; o valor nunca sai da API.</summary>
+public sealed record GitReadCredentialDto(Guid Id, string GitHubOwner, string TokenPrefix, DateTimeOffset CreatedAtUtc,
+    string? CreatedByName, DateTimeOffset? RevokedAtUtc, int RepositoriesCount);
+/// <summary>Cadastro ou troca do token da organização; o valor é cifrado ao gravar e nunca devolvido.</summary>
+public sealed record SaveGitReadCredentialRequest(string GitHubOwner, string Token)
+{
+    // Nunca imprime o token (logs, exceções com o objeto, depuração).
+    public override string ToString() => $"SaveGitReadCredentialRequest {{ GitHubOwner = {GitHubOwner} }}";
+}
+/// <summary>Repositório visto no GitHub pelo modo consulta (GET repos/{dono}/{nome}).</summary>
+public sealed record GitRepositoryIdentity(long Id, string FullName, string DefaultBranch);
 
 /// <summary>Corpo normalizado mínimo persistível; nunca contém corpo bruto, segredo ou cabeçalho Bearer.</summary>
 public sealed record NormalizedGitEvent(
@@ -79,3 +100,32 @@ public sealed record VerifiedGitFact(
     bool OpenPullRequestsReadComplete = false, bool HasOtherOpenPullRequests = false,
     bool HasEffectiveChangesRequested = false,
     string? ObservedGitActorId = null, string? ObservedGitActorName = null);
+
+/// <summary>Aba Git da tarefa (HU-0002, T-0006): vínculos, PRs com revisões, linha do tempo e quem pode vincular.</summary>
+public sealed record TaskGitViewDto(
+    Guid WorkItemId, string MethodTaskId, bool CanLink,
+    IReadOnlyList<TaskGitRepositoryOptionDto> Repositories, IReadOnlyList<TaskGitBranchDto> Branches,
+    IReadOnlyList<TaskGitPullRequestDto> PullRequests, IReadOnlyList<TaskGitTimelineEntryDto> Timeline);
+/// <summary>Repositório habilitado do projeto, para o vínculo manual (o modo e a última consulta servem ao "Consultar agora").</summary>
+public sealed record TaskGitRepositoryOptionDto(Guid Id, string RepositoryFullName, string Mode,
+    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null);
+public sealed record TaskGitBranchDto(
+    Guid? LinkId, Guid IntegrationId, string RepositoryFullName, string BranchName, string BranchState,
+    DateTimeOffset? LastSeenAtUtc, string Source, DateTimeOffset CreatedAtUtc, string Url);
+public sealed record TaskGitPullRequestDto(
+    Guid LinkId, Guid IntegrationId, string RepositoryFullName, int Number, string Title, string State,
+    bool IsDraft, bool Merged, int ApprovalsCount, bool ChangesRequested, string Url, string HeadBranch,
+    string BaseBranch, string? AuthorName, string Source, DateTimeOffset UpdatedAtUtc, DateTimeOffset LinkedAtUtc);
+/// <summary>
+/// Um fato da linha do tempo do Git. Kind: git_branch_linked, git_branch_pushed, git_pr_linked, git_pr_unlinked,
+/// git_pr_inferred, git_fact (movimento por fato Git, com FactType), git_pr_merged ou git_pr_closed (observados sem movimento).
+/// Channel: ui, mcp, webhook, consulta ou nulo (automático, sem registro do canal).
+/// </summary>
+public sealed record TaskGitTimelineEntryDto(
+    string Kind, DateTimeOffset AtUtc, string? ActorName, string? Channel, string? RepositoryFullName = null,
+    string? Branch = null, int? PullRequestNumber = null, string? Url = null, string? FactType = null,
+    string? FromStatus = null, string? ToStatus = null);
+
+/// <summary>Resultado de uma consulta do modo sem admin (HU-0002, T-0008): código sem texto do GitHub e a hora da última consulta com sucesso.</summary>
+public sealed record GitPollResultDto(Guid IntegrationId, string RepositoryFullName, string Status, bool Success,
+    DateTimeOffset? LastPolledAtUtc, int PullRequestsEvaluated, int BranchesPushed);

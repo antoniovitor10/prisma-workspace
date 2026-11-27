@@ -14,10 +14,12 @@ using Prisma.Workspace.Application.Interfaces;
 
 namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 
-public sealed class GitHubUnavailableException(string code, DateTimeOffset? retryAtUtc = null) : Exception("GitHub indisponível ou sem acesso completo. Avise o administrador.")
+public sealed class GitHubUnavailableException(string code, DateTimeOffset? retryAtUtc = null, int? statusCode = null) : Exception("GitHub indisponível ou sem acesso completo. Avise o administrador.")
 {
     public string Code { get; } = code;
     public DateTimeOffset? RetryAtUtc { get; } = retryAtUtc;
+    /// <summary>Status HTTP do GitHub (sem corpo nem texto), para o modo consulta distinguir 401, 403 e 404.</summary>
+    public int? StatusCode { get; } = statusCode;
 }
 
 public sealed partial class GitHubProvider : IGitProvider
@@ -25,6 +27,9 @@ public sealed partial class GitHubProvider : IGitProvider
     public const string HttpClientName = "MethodGit.GitHub";
     private readonly IHttpClientFactory _clients;
     private readonly IMethodGitSecretStore _secrets;
+    private readonly IGitReadTokenSource? _readTokens;
+    // Sessão do modo consulta: o token decifrado vive só em memória, por até 10 minutos (sem cache além da hora).
+    private static readonly TimeSpan PollSessionLifetime = TimeSpan.FromMinutes(10);
     private readonly TimeProvider _clock;
     private readonly Uri _baseUri;
     private readonly ConcurrentDictionary<string, InstallationSession> _sessions = new();
@@ -34,9 +39,9 @@ public sealed partial class GitHubProvider : IGitProvider
     public string Provider => "github";
 
     public GitHubProvider(IHttpClientFactory clients, IMethodGitSecretStore secrets, IConfiguration configuration,
-        IHostEnvironment environment, TimeProvider? clock = null)
+        IHostEnvironment environment, TimeProvider? clock = null, IGitReadTokenSource? readTokens = null)
     {
-        _clients = clients; _secrets = secrets; _clock = clock ?? TimeProvider.System;
+        _clients = clients; _secrets = secrets; _clock = clock ?? TimeProvider.System; _readTokens = readTokens;
         var configured = configuration["MethodGit:GitHubApiBaseUrl"] ?? "https://api.github.com/";
         if (!Uri.TryCreate(configured, UriKind.Absolute, out var uri) || uri.UserInfo.Length != 0
             || uri.Query.Length != 0 || uri.Fragment.Length != 0 || !uri.AbsolutePath.EndsWith('/'))
@@ -133,9 +138,12 @@ public sealed partial class GitHubProvider : IGitProvider
             }
             return new(result, false, "git_pull_request_pagination_incomplete");
         }
-        catch (GitHubUnavailableException exception) when (exception.Code != "git_rate_limited") { return new(result, false, exception.Code); }
+        // No modo consulta, token recusado ou repositório fora do token não é "leitura incompleta": sobe com o status (401, 403, 404).
+        catch (GitHubUnavailableException exception) when (exception.Code != "git_rate_limited"
+            && !(repository.IsPoll && exception.StatusCode is 401 or 403 or 404)) { return new(result, false, exception.Code); }
     }
-    private string InstallationKey(GitRepositoryDescriptor repository) => $"{repository.AppId}:{repository.InstallationId}";
+    // O orçamento é por credencial: no modo consulta, todos os repositórios da organização dividem o limite do token.
+    private string InstallationKey(GitRepositoryDescriptor repository) => repository.IsPoll ? $"pat:{repository.ReadCredentialId}" : $"{repository.AppId}:{repository.InstallationId}";
     private void EnsureBudget(GitRepositoryDescriptor repository)
     {
         if (_notBefore.TryGetValue(InstallationKey(repository), out var until) && until > _clock.GetUtcNow())
@@ -145,9 +153,71 @@ public sealed partial class GitHubProvider : IGitProvider
     {
         if (exception.Code == "git_rate_limited") _notBefore[InstallationKey(repository)] = exception.RetryAtUtc ?? _clock.GetUtcNow().AddMinutes(1);
     }
-    private string SessionKey(GitRepositoryDescriptor repository) => $"{repository.AppId}:{repository.InstallationId}:{repository.RepositoryId}:{repository.AppPrivateKeySecretRef}";
+    private string SessionKey(GitRepositoryDescriptor repository) => repository.IsPoll
+        ? $"poll:{repository.Id}:{repository.ReadCredentialId}:{repository.RepositoryId}:{repository.RepositoryFullName.ToLowerInvariant()}"
+        : $"{repository.AppId}:{repository.InstallationId}:{repository.RepositoryId}:{repository.AppPrivateKeySecretRef}";
+    public async Task<GitRepositoryIdentity> GetRepositoryIdentityAsync(GitRepositoryDescriptor repository, CancellationToken cancellationToken = default)
+    {
+        if (!repository.IsPoll) throw new GitHubUnavailableException("invalid_git_repository");
+        var token = await ReadTokenAsync(repository, cancellationToken);
+        return await RepositoryIdentityAsync(repository, token, cancellationToken);
+    }
+    public async Task<bool> BranchExistsAsync(GitRepositoryDescriptor repository, string branch, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(branch) || branch.Length > 255 || branch.Any(char.IsControl)) return false;
+        var session = await SessionAsync(repository, cancellationToken);
+        var path = string.Join('/', branch.Split('/').Select(Uri.EscapeDataString));
+        try
+        {
+            using var json = await GetAsync(repository, session, $"repos/{session.FullName}/branches/{path}", cancellationToken);
+            return json.RootElement.TryGetProperty("name", out var name) && name.GetString() == branch;
+        }
+        catch (GitHubUnavailableException exception) when (exception.Code == "git_not_found") { return false; }
+    }
+    private async Task<string> ReadTokenAsync(GitRepositoryDescriptor repository, CancellationToken cancellationToken)
+    {
+        if (repository.Provider != Provider || !repository.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+            || repository.ReadCredentialId is not { } credentialId || _readTokens is null)
+            throw new GitHubUnavailableException("invalid_git_repository");
+        EnsureBudget(repository);
+        var token = await _readTokens.ResolveAsync(credentialId, repository.ProjectId, repository.OrganizationId, cancellationToken);
+        if (token.Length is 0 or > 1024 || token.Any(char.IsWhiteSpace) || token.Any(char.IsControl)) throw new GitHubUnavailableException("git_credential_unreadable");
+        return token;
+    }
+    private async Task<GitRepositoryIdentity> RepositoryIdentityAsync(GitRepositoryDescriptor repository, string token, CancellationToken cancellationToken)
+    {
+        if (!RepositoryNamePattern().IsMatch(repository.RepositoryFullName) || repository.RepositoryFullName.Split('/').Any(s => s is "." or ".."))
+            throw new GitHubUnavailableException("invalid_git_repository_name");
+        try
+        {
+            using var json = await SendAsync(HttpMethod.Get, $"repos/{repository.RepositoryFullName}", token, null, cancellationToken);
+            var id = json.RootElement.GetProperty("id").GetInt64();
+            var fullName = RequiredString(json.RootElement, "full_name", 300);
+            var defaultBranch = RequiredString(json.RootElement, "default_branch", 255);
+            if (id <= 0 || !RepositoryNamePattern().IsMatch(fullName) || fullName.Split('/').Any(s => s is "." or ".."))
+                throw new GitHubUnavailableException("invalid_git_repository_name");
+            return new(id, fullName, defaultBranch);
+        }
+        catch (GitHubUnavailableException exception) { RememberLimit(repository, exception); throw; }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+        { throw new GitHubUnavailableException("invalid_git_response"); }
+    }
+    /// <summary>Modo consulta: token de leitura da organização; confere que o nome aponta para o mesmo ID estável. Só GET.</summary>
+    private async Task<InstallationSession> PollSessionAsync(GitRepositoryDescriptor repository, CancellationToken cancellationToken)
+    {
+        if (repository.RepositoryId <= 0) throw new GitHubUnavailableException("invalid_git_repository");
+        var key = SessionKey(repository);
+        if (_sessions.TryGetValue(key, out var cached) && cached.ExpiresAtUtc > _clock.GetUtcNow()) return cached;
+        var token = await ReadTokenAsync(repository, cancellationToken);
+        var identity = await RepositoryIdentityAsync(repository, token, cancellationToken);
+        if (identity.Id != repository.RepositoryId) throw new GitHubUnavailableException("git_repository_access_mismatch");
+        var session = new InstallationSession(token, _clock.GetUtcNow().Add(PollSessionLifetime), identity.FullName);
+        _sessions[key] = session;
+        return session;
+    }
     private async Task<InstallationSession> SessionAsync(GitRepositoryDescriptor repository, CancellationToken cancellationToken)
     {
+        if (repository.IsPoll) return await PollSessionAsync(repository, cancellationToken);
         if (repository.Provider != Provider || !repository.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
             || repository.AppId <= 0 || repository.InstallationId <= 0 || repository.RepositoryId <= 0)
             throw new GitHubUnavailableException("invalid_git_repository");
@@ -196,7 +266,8 @@ public sealed partial class GitHubProvider : IGitProvider
         try { return await SendAsync(HttpMethod.Get, path, session.Token, null, cancellationToken); }
         catch (GitHubUnavailableException exception)
         {
-            if (exception.Code is "git_access_unavailable" or "git_repository_moved") _sessions.TryRemove(SessionKey(repository), out _);
+            if (exception.Code is "git_access_unavailable" or "git_repository_moved" || (repository.IsPoll && exception.Code == "git_not_found"))
+                _sessions.TryRemove(SessionKey(repository), out _);
             RememberLimit(repository, exception); throw;
         }
     }
@@ -224,7 +295,8 @@ public sealed partial class GitHubProvider : IGitProvider
                     throw new GitHubUnavailableException("git_rate_limited", retry ?? _clock.GetUtcNow().AddMinutes(1));
                 }
                 throw new GitHubUnavailableException((int)response.StatusCode is >= 300 and < 400 ? "git_repository_moved"
-                    : response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden ? "git_access_unavailable" : "git_api_unavailable", retry);
+                    : response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden ? "git_access_unavailable"
+                    : response.StatusCode == HttpStatusCode.NotFound ? "git_not_found" : "git_api_unavailable", retry, (int)response.StatusCode);
             }
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var memory = new MemoryStream();

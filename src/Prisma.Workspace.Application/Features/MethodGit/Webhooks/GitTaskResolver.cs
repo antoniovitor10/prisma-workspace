@@ -19,6 +19,17 @@ public sealed partial class GitTaskResolver(IMethodGitStore store)
             }
         }
         if (!allowInference) return new(null, "none", "head_repository_requires_explicit_link");
+        if (branch is not null)
+        {
+            // Vínculo de branch (MCP ou tela) antes do nome: PR de branch sem ID, como nos repositórios sem admin (D-2 da T-0004).
+            var linked = await store.FindBranchLinkTasksAsync(repository.Id, branch, cancellationToken);
+            if (linked.Count > 1) return new(null, "branch", "ambiguous_branch_link", true);
+            if (linked.Count == 1)
+            {
+                var task = await store.GetTaskAsync(linked[0], cancellationToken);
+                return Valid(task, repository) ? new(task, "branch", null) : new(null, "branch", "branch_link_task_unavailable");
+            }
+        }
         string? id = null;
         var source = "none";
         if (branch is not null)

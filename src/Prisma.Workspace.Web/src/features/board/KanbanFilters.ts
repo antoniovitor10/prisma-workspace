@@ -5,7 +5,7 @@ export interface KanbanFilterState {
 export interface KanbanCardSettings {
   showPriority:boolean;showDueDate:boolean;showEstimate:boolean;showAssignees:boolean;
   showType:boolean;showTags:boolean;showPoints:boolean;showChecklist:boolean;
-  showAttachments:boolean;showTime:boolean;
+  showAttachments:boolean;showTime:boolean;showGit:boolean;
 }
 export interface FilterableWorkItem {
   id:string;title:string;subtitle?:string;description?:string;priority:number;origin?:number;
@@ -17,7 +17,7 @@ export interface FilterableWorkItem {
 export interface SavedFilterOption {id:string;name:string;filterJson:string;}
 
 export const defaultKanbanFilters:KanbanFilterState={search:'',assigneeId:'',teamId:'',priority:'',taskTypeId:'',tagId:'',due:'',origin:'',blocked:'',requester:'',customField:''};
-export const defaultCardSettings:KanbanCardSettings={showPriority:true,showDueDate:true,showEstimate:true,showAssignees:true,showType:true,showTags:true,showPoints:true,showChecklist:true,showAttachments:true,showTime:true};
+export const defaultCardSettings:KanbanCardSettings={showPriority:true,showDueDate:true,showEstimate:true,showAssignees:true,showType:true,showTags:true,showPoints:true,showChecklist:true,showAttachments:true,showTime:true,showGit:true};
 
 const localDate=(date=new Date())=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 export function applyKanbanFilters<T extends FilterableWorkItem>(items:T[],filter:KanbanFilterState):T[]{
