@@ -37,13 +37,14 @@ describe('ExternalPortalSettings',()=>{
 
     const openLink=await screen.findByRole('link',{name:'Abrir portal público'});
     expect(openLink).toHaveAttribute('href',`${window.location.origin}/portal/teste`);
-    expect(screen.getByText('Publicado')).toBeInTheDocument();
+    // O formulário sincroniza com o portal salvo num efeito: espera o render em que isso acontece.
+    expect(await screen.findByText('Publicado')).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Endereço público'),{target:{value:'novo-endereco'}});
 
     expect(screen.getByRole('link',{name:'Abrir portal público'})).toHaveAttribute('href',`${window.location.origin}/portal/teste`);
     expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Salve as alterações');
+    expect(screen.getByText(/^Salve as alterações/)).toHaveAttribute('role', 'status');
   });
 
   it('não oferece um link inexistente antes da primeira publicação ser salva',async()=>{
@@ -57,6 +58,6 @@ describe('ExternalPortalSettings',()=>{
 
     expect(screen.queryByRole('link',{name:'Abrir portal público'})).not.toBeInTheDocument();
     expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Salve as alterações');
+    expect(screen.getByText(/^Salve as alterações/)).toHaveAttribute('role', 'status');
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { Send, ArrowRightLeft, UserPlus, UserMinus } from 'lucide-react';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 import { resolveUserDisplayLabel, userDisplayLabel } from '../../utils/userDisplayName';
 
@@ -244,7 +245,7 @@ export const TaskFeed: React.FC<{ workItemId: string; mode?: 'comments' | 'histo
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || sending) return;
     setSending(true);
     try {
       const ids = Array.from(new Set(mentions.filter(m => text.includes(m.token)).map(m => m.userId)));
@@ -310,7 +311,7 @@ export const TaskFeed: React.FC<{ workItemId: string; mode?: 'comments' | 'histo
           onChange={onType}
           onKeyDown={e => { if (e.key === 'Escape') setMenu(null); }}
         />
-        <SendBtn type="submit" disabled={sending || !text.trim()}>
+        <SendBtn as={ActionButton} type="submit" disabled={!text.trim()} loading={sending} loadingLabel="Enviando comentário">
           <Send size={14} />
           <span>Enviar</span>
         </SendBtn>

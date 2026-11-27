@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { Archive, ArrowRight, FolderKanban, Plus, Search, Users } from 'lucide-react';
+import { ActionButton } from '../components/ActionButton';
 import { api } from '../services/api';
 import { previewMode, previewProject } from '../preview';
 import { useOrganization } from '../features/organizations/OrganizationState';
@@ -81,6 +82,7 @@ export function Projects() {
   const [workTypeFilter, setWorkTypeFilter] = useState(0);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ key: '', name: '', description: '', nature: 0, workType: 0, startDate: '', dueDate: '' });
 
   useEffect(() => {
@@ -116,7 +118,9 @@ export function Projects() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (creating) return;
     setError('');
+    setCreating(true);
     try {
       const id = await api.createProject({
         ...form,
@@ -128,6 +132,8 @@ export function Projects() {
       navigate(`/projects/${id}/backlog`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível criar o projeto.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -204,7 +210,7 @@ export function Projects() {
             {error && <ErrorText>{error}</ErrorText>}
             <footer>
               <Secondary type="button" onClick={() => setOpen(false)}>Cancelar</Secondary>
-              <PrimaryAction type="submit">Criar projeto</PrimaryAction>
+              <PrimaryAction as={ActionButton} type="submit" loading={creating} loadingLabel="Criando projeto">Criar projeto</PrimaryAction>
             </footer>
           </Dialog>
         </Overlay>

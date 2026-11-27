@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
+import { ActionButton } from '../../components/ActionButton';
 import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 const initial = { repositoryFullName: '', repositoryId: '', defaultBranch: '', appId: '', installationId: '',
@@ -49,16 +50,17 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
         <Field>Referência da chave privada<input required maxLength={128} pattern="[A-Za-z0-9_-]{1,128}" placeholder="github-app-key" autoComplete="off" {...field('appPrivateKeySecretRef')} />
           <small>Nome da configuração já cadastrada no servidor.</small></Field>
         <Field>Referência do segredo do webhook<input required maxLength={128} pattern="[A-Za-z0-9_-]{1,128}" placeholder="github-webhook-secret" autoComplete="off" {...field('webhookSecretRef')} /></Field>
-        <Actions><Button $primary type="submit">{action.pending === 'register' ? 'Conectando...' : 'Conectar repositório'}</Button></Actions>
+        <Actions><Button as={ActionButton} $primary type="submit" loading={action.pending === 'register'} loadingLabel="Conectando repositório">Conectar repositório</Button></Actions>
       </fieldset>
     </Form>
     {repositories.isPending ? <Hint role="status">Carregando repositórios...</Hint> : repositories.isError ? <Feedback role="alert">
-      {repositories.error.message} <Button type="button" onClick={() => void repositories.refetch()}>Tentar novamente</Button>
+      {repositories.error.message} <Button as={ActionButton} type="button" loadingLabel="Carregando repositórios" onClick={() => repositories.refetch()}>Tentar novamente</Button>
     </Feedback> : repositories.data.length === 0 ? <Hint>Nenhum repositório conectado.</Hint> : <List>
       {repositories.data.map(repository => <Row key={repository.id}>
         <div><div><strong>{repository.repositoryFullName}</strong><small>{repository.enabled ? 'Ativo' : 'Pausado'} · Principal: {repository.defaultBranch}</small>
           <small>App {repository.appId} · Instalação {repository.installationId}</small></div>
-          <Button type="button" disabled={action.pending !== null} onClick={() => void action.run(repository.id,
+          <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== repository.id} loading={action.pending === repository.id}
+            loadingLabel={repository.enabled ? 'Pausando integração' : 'Reativando integração'} onClick={() => action.run(repository.id,
             () => methodApi.updateRepository(projectId, repository.id, !repository.enabled), repository.enabled ? 'Integração pausada.' : 'Integração reativada.')}>
             {repository.enabled ? 'Pausar integração' : 'Reativar integração'}</Button>
         </div>

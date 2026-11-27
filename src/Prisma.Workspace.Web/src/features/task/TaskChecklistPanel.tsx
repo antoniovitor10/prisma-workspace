@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from 'react';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 
 interface ChecklistItem { id: string; text: string; done: boolean; position: number; }
@@ -13,6 +14,7 @@ const label: React.CSSProperties = { fontSize: 14, fontWeight: 700, color: '#647
 export const TaskChecklistPanel: React.FC<Props> = ({ workItemId, onChanged }) => {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [text, setText] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     try { setItems(await api.getChecklist(workItemId)); } catch { /* silencioso */ }
@@ -22,11 +24,16 @@ export const TaskChecklistPanel: React.FC<Props> = ({ workItemId, onChanged }) =
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
-    await api.addChecklistItem(workItemId, text.trim());
-    setText('');
-    await load();
-    onChanged?.();
+    if (!text.trim() || adding) return;
+    setAdding(true);
+    try {
+      await api.addChecklistItem(workItemId, text.trim());
+      setText('');
+      await load();
+      onChanged?.();
+    } finally {
+      setAdding(false);
+    }
   };
 
   const toggle = async (item: ChecklistItem) => {
@@ -54,14 +61,14 @@ export const TaskChecklistPanel: React.FC<Props> = ({ workItemId, onChanged }) =
           <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={item.done} onChange={() => toggle(item)} />
             <span style={{ flex: 1, fontSize: 15, textDecoration: item.done ? 'line-through' : 'none', color: item.done ? '#94A3B8' : '#334155' }}>{item.text}</span>
-            <button type="button" onClick={() => remove(item)} style={{ color: '#CBD5E1', fontSize: 15, lineHeight: 1 }}>×</button>
+            <ActionButton type="button" loadingLabel="Removendo item do checklist" onClick={() => remove(item)} style={{ color: '#CBD5E1', fontSize: 15, lineHeight: 1 }}>×</ActionButton>
           </div>
         ))}
         {items.length === 0 && <span style={{ fontSize: 14, color: '#94A3B8' }}>Nenhum item ainda.</span>}
       </div>
       <form onSubmit={add} style={{ display: 'flex', gap: 6, marginTop: 10 }}>
         <input style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 15 }} placeholder="Novo item..." value={text} onChange={e => setText(e.target.value)} />
-        <button type="submit" style={{ padding: '7px 12px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Add</button>
+        <ActionButton type="submit" loading={adding} loadingLabel="Adicionando item ao checklist" style={{ padding: '7px 12px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Add</ActionButton>
       </form>
     </div>
   );

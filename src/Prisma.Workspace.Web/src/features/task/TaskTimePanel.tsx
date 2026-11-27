@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock3, FileClock, Play, Plus, Square } from 'lucide-react';
 import styled from 'styled-components';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 import { userDisplayLabel } from '../../utils/userDisplayName';
 
@@ -76,9 +77,9 @@ export function TaskTimePanel({workItemId,realizedHours}:{workItemId:string;real
     return [...grouped.values()].sort((left,right)=>right.totalSeconds-left.totalSeconds||left.name.localeCompare(right.name,'pt-BR'));
   },[elapsed,entries.data,names,running.data?.id]);
   return <div>
-    <Actions><Button type="button" $running={currentHere} disabled={toggle.isPending||running.isLoading||running.isError} onClick={()=>toggle.mutate()}>{currentHere?<><Square size={11}/>Parar cronômetro</>:<><Play size={11}/>Iniciar cronômetro</>}</Button><Summary><Clock3 size={11}/> {realizedHours.toFixed(2)} h realizadas</Summary></Actions>
+    <Actions><Button as={ActionButton} type="button" $running={currentHere} disabled={running.isLoading||running.isError} loading={toggle.isPending} loadingLabel={currentHere?'Parando cronômetro':'Iniciando cronômetro'} onClick={()=>toggle.mutate()}>{currentHere?<><Square size={11}/>Parar cronômetro</>:<><Play size={11}/>Iniciar cronômetro</>}</Button><Summary><Clock3 size={11}/> {realizedHours.toFixed(2)} h realizadas</Summary></Actions>
     <TimerStatus role="status" aria-live="polite" $active={currentHere}>{currentHere?`Cronômetro desta tarefa em andamento — ${formatSeconds(elapsed)} desde o início.`:anotherRunning?'Há um cronômetro em outra tarefa. Ao iniciar aqui, ele será encerrado automaticamente.':'Nenhum cronômetro ativo nesta sessão.'}</TimerStatus>
-    <Manual onSubmit={event=>{event.preventDefault();add.mutate();}}><label>Início<input aria-label="Início do apontamento" type="datetime-local" required value={manual.startedAt} onChange={event=>setManual({...manual,startedAt:event.target.value})}/></label><label>Fim<input aria-label="Fim do apontamento" type="datetime-local" required min={manual.startedAt} value={manual.endedAt} onChange={event=>setManual({...manual,endedAt:event.target.value})}/></label><input className="wide" maxLength={2000} placeholder="Observação do apontamento (opcional)" value={manual.note} onChange={event=>setManual({...manual,note:event.target.value})}/><Button className="submit" disabled={add.isPending}><Plus size={11}/>Registrar manualmente</Button></Manual>
+    <Manual onSubmit={event=>{event.preventDefault();add.mutate();}}><label>Início<input aria-label="Início do apontamento" type="datetime-local" required value={manual.startedAt} onChange={event=>setManual({...manual,startedAt:event.target.value})}/></label><label>Fim<input aria-label="Fim do apontamento" type="datetime-local" required min={manual.startedAt} value={manual.endedAt} onChange={event=>setManual({...manual,endedAt:event.target.value})}/></label><input className="wide" maxLength={2000} placeholder="Observação do apontamento (opcional)" value={manual.note} onChange={event=>setManual({...manual,note:event.target.value})}/><Button as={ActionButton} type="submit" className="submit" loading={add.isPending} loadingLabel="Registrando apontamento"><Plus size={11}/>Registrar manualmente</Button></Manual>
     {(toggle.error||add.error||entries.error||running.error)&&<Error role="alert">{((toggle.error||add.error||entries.error||running.error) as Error).message}</Error>}
     <PeopleSummary aria-label="Tempo geral por responsável">
       <h3><Clock3 size={14}/>Tempo geral por responsável</h3>

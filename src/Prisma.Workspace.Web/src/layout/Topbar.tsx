@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { ActionButton } from '../components/ActionButton';
 import { BrandMark } from '../components/BrandMark';
 import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActions';
 import { DEFAULT_CREATE_KINDS, KIND_COLORS, KIND_ICONS } from '../components/WorkItemKindSelector';
@@ -647,7 +648,8 @@ export function Topbar() {
     }
   }, []);
 
-  const logout = () => { setAccountOpen(false); void api.logout(); };
+  // O menu fica aberto até o servidor responder, para o "Sair" mostrar o loading padrão (HU-0001).
+  const logout = async () => { try { await api.logout(); } finally { setAccountOpen(false); } };
 
   return (
     <>
@@ -710,6 +712,9 @@ export function Topbar() {
         {/* active timer */}
         {timer && (
           <ActiveTimer
+            as={ActionButton}
+            loading={stopTimer.isPending}
+            loadingLabel="Parando apontamento"
             onClick={() => stopTimer.mutate(timer.workItemId)}
             title="Parar apontamento"
           >
@@ -809,7 +814,7 @@ export function Topbar() {
                 <CircleHelp size={14} />Central de ajuda
               </DropItem>
               <DropDivider />
-              <DropItem role="menuitem" onClick={logout}>
+              <DropItem as={ActionButton} role="menuitem" loadingLabel="Saindo" onClick={logout}>
                 <LogOut size={14} />Sair
               </DropItem>
             </AccountDropdown>

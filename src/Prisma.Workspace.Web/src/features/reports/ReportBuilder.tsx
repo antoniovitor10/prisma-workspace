@@ -11,6 +11,7 @@ import type {
   ReportMetric,
   SavedReport,
 } from '../../types/reports';
+import { ActionButton } from '../../components/ActionButton';
 
 const Layout = styled.div`
   display: grid;
@@ -471,18 +472,18 @@ export function ReportBuilder({ projectId }: { projectId?: string }) {
         <Toggle><input type="checkbox" checked={isShared} onChange={event => setIsShared(event.target.checked)} />Compartilhar com gestores autorizados</Toggle>
         <Actions>
           <Action type="button" onClick={newReport}><Plus size={13} />Novo</Action>
-          <Action type="button" disabled={!canRun || previewMutation.isPending} onClick={() => previewMutation.mutate()}><Eye size={13} />Pré-visualizar</Action>
-          <Action $primary type="button" disabled={!canRun || !name.trim() || saveMutation.isPending} onClick={() => saveMutation.mutate()}><Save size={13} />Salvar</Action>
+          <Action as={ActionButton} type="button" disabled={!canRun} loading={previewMutation.isPending} loadingLabel="Gerando pré-visualização" onClick={() => previewMutation.mutate()}><Eye size={13} />Pré-visualizar</Action>
+          <Action as={ActionButton} $primary type="button" disabled={!canRun || !name.trim()} loading={saveMutation.isPending} loadingLabel="Salvando relatório" onClick={() => saveMutation.mutate()}><Save size={13} />Salvar</Action>
         </Actions>
         {mutationError && <Message $error role="alert">{(mutationError as Error).message}</Message>}
       </Panel>
 
       <Panel style={{ marginTop: 12 }}><h3>Relatórios salvos</h3><p>Abra, duplique, compartilhe ou exporte definições existentes.</p>
         <SavedList>{savedQuery.data?.map(saved => <Saved key={saved.id}><div><b>{saved.name}</b><span>{saved.isShared ? 'Compartilhado' : 'Privado'} · {new Date(saved.updatedAt).toLocaleDateString('pt-BR')}</span></div><div>
-          <button type="button" title="Abrir" onClick={() => { openSaved(saved); runMutation.mutate(saved.id); }}><Eye size={13} /></button>
-          <button type="button" title="Duplicar" onClick={() => duplicateMutation.mutate(saved.id)}><Copy size={13} /></button>
-          <button type="button" title="Exportar CSV" onClick={() => void exportSaved(saved.id)}><Download size={13} /></button>
-          <button type="button" title="Excluir" onClick={() => deleteMutation.mutate(saved.id)}><Trash2 size={13} /></button>
+          <ActionButton type="button" title="Abrir" loading={runMutation.isPending && runMutation.variables === saved.id} loadingLabel={`Abrindo ${saved.name}`} onClick={() => { openSaved(saved); runMutation.mutate(saved.id); }}><Eye size={13} /></ActionButton>
+          <ActionButton type="button" title="Duplicar" loading={duplicateMutation.isPending && duplicateMutation.variables === saved.id} loadingLabel={`Duplicando ${saved.name}`} onClick={() => duplicateMutation.mutate(saved.id)}><Copy size={13} /></ActionButton>
+          <ActionButton type="button" title="Exportar CSV" loadingLabel={`Exportando ${saved.name}`} onClick={() => exportSaved(saved.id)}><Download size={13} /></ActionButton>
+          <ActionButton type="button" title="Excluir" loading={deleteMutation.isPending && deleteMutation.variables === saved.id} loadingLabel={`Excluindo ${saved.name}`} onClick={() => deleteMutation.mutate(saved.id)}><Trash2 size={13} /></ActionButton>
         </div></Saved>)}</SavedList>
         {!savedQuery.isLoading && !savedQuery.data?.length && <Message>Nenhum relatório salvo neste escopo.</Message>}
       </Panel>

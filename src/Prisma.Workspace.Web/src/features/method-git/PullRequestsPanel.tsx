@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
+import { ActionButton } from '../../components/ActionButton';
 import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 function externalUrl(value: string): string | undefined {
@@ -39,7 +40,7 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
     {action.success && <Feedback role="status">{action.success}</Feedback>}
     {tasks.isError && <Feedback role="alert">{tasks.error.message}</Feedback>}
     {requests.isPending ? <Hint role="status">Carregando PRs...</Hint> : requests.isError ? <Feedback role="alert">
-      {requests.error.message} <Button type="button" onClick={() => void requests.refetch()}>Tentar novamente</Button>
+      {requests.error.message} <Button as={ActionButton} type="button" loadingLabel="Carregando PRs" onClick={() => requests.refetch()}>Tentar novamente</Button>
     </Feedback> : <>
       {requests.data.items.length === 0 ? <Hint>Nenhum PR aguardando vínculo.</Hint> : <List>
         {requests.data.items.map(request => <Row key={request.id}>
@@ -60,8 +61,8 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
             </select></Field>
             <Field>Motivo do vínculo do PR #{request.pullRequestNumber}<input required maxLength={1000} value={reasons[request.id] ?? ''}
               onChange={event => setReasons(current => ({ ...current, [request.id]: event.target.value }))} /></Field>
-            <Actions><Button $primary type="submit" disabled={action.pending !== null || !selection[request.id] || !reasons[request.id]?.trim()}>
-              {action.pending === request.id ? 'Vinculando...' : `Vincular PR #${request.pullRequestNumber}`}</Button></Actions>
+            <Actions><Button as={ActionButton} $primary type="submit" disabled={(action.pending !== null && action.pending !== request.id) || !selection[request.id] || !reasons[request.id]?.trim()}
+              loading={action.pending === request.id} loadingLabel={`Vinculando PR #${request.pullRequestNumber}`}>{`Vincular PR #${request.pullRequestNumber}`}</Button></Actions>
           </Form>}
         </Row>)}
       </List>}

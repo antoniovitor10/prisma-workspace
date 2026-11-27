@@ -144,6 +144,47 @@ describe('TaskDetailDrawer', () => {
     expect(screen.queryByRole('textbox', { name: 'Título' })).not.toBeInTheDocument();
   });
 
+  it('mostra o loading padrão em "Duplicar" e não duplica duas vezes (HU-0001)', async () => {
+    const details: WorkItemDetails = {
+      id: 'dup-item', number: 7, reference: 'KAN-7', projectId: 'project-1', projectKey: 'KAN',
+      boardId: 'board', boardName: 'Produto', kind: 5, origin: 1, title: 'Tarefa a duplicar', priority: 1,
+      participants: [], createdAt: '2026-09-21T10:00:00Z', updatedAt: '2026-09-21T10:00:00Z',
+      realizedHours: 0, tags: [], isArchived: false, checklist: [], subtasks: [], attachmentsCount: 0,
+      commentsCount: 0, followerIds: [], isFollowing: false, links: [], customFields: [], version: 'v1',
+    };
+    vi.spyOn(api, 'getToken').mockReturnValue('jwt');
+    vi.spyOn(api, 'getWorkItemDetails').mockResolvedValue(details);
+    vi.spyOn(api, 'getProject').mockResolvedValue({ id: 'project-1', methodology: 1, teams: [] });
+    vi.spyOn(api, 'getBoardStages').mockResolvedValue([]);
+    vi.spyOn(api, 'getAssignableUsers').mockResolvedValue([]);
+    vi.spyOn(api, 'getAttachments').mockResolvedValue([]);
+    vi.spyOn(api, 'getTaskTypes').mockResolvedValue([]);
+    vi.spyOn(api, 'getTags').mockResolvedValue([]);
+    vi.spyOn(api, 'getComments').mockResolvedValue([]);
+    vi.spyOn(api, 'getTaskEvents').mockResolvedValue([]);
+    let finish!: () => void;
+    const duplicate = vi.spyOn(api, 'duplicateWorkItem').mockImplementation(() => new Promise(resolve => { finish = () => resolve(undefined as never); }) as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><ThemeProvider theme={theme}>
+      <TaskDetailDrawer projectKey="KAN" item={{ id: details.id, boardId: details.boardId, boardName: details.boardName, kind: 5, title: details.title, priority: 1, rank: 1 }} onOpenChange={vi.fn()} />
+    </ThemeProvider></QueryClientProvider></MemoryRouter>);
+
+    const button = await screen.findByRole('button', { name: 'Duplicar' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button.querySelector('[data-action-spinner]')).toHaveAttribute('aria-hidden', 'true');
+    expect(button).toHaveTextContent('Duplicar');
+    await waitFor(() => expect(duplicate).toHaveBeenCalledTimes(1));
+    fireEvent.click(button);
+    expect(duplicate).toHaveBeenCalledTimes(1);
+    finish();
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'));
+    expect(button.querySelector('[data-action-spinner]')).toBeNull();
+  });
+
   it('adiciona vários responsáveis sem substituir os já alocados', async () => {
     const people = [
       { id: 'ana', displayName: 'Ana Silva' },

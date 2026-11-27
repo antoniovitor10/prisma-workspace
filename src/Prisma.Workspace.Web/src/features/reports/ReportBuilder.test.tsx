@@ -96,4 +96,27 @@ describe('editor de filtros e métricas do relatório', () => {
     const metric = screen.getByRole('group', { name: 'Métrica 1' });
     expect(within(metric).getByRole('button', { name: 'Remover métrica' })).toBeInTheDocument();
   });
+
+  it('mostra o loading padrão em "Pré-visualizar" e não repete a requisição (HU-0001)', async () => {
+    let finish!: (value: Awaited<ReturnType<typeof api.previewReport>>) => void;
+    const preview = vi.spyOn(api, 'previewReport').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    await renderBuilder();
+    await screen.findByRole('option', { name: 'Tarefas' });
+    const button = screen.getByRole('button', { name: 'Pré-visualizar' });
+
+    fireEvent.click(button);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveTextContent('Pré-visualizar');
+    expect(button.querySelector('[data-action-spinner]')).toHaveAttribute('aria-hidden', 'true');
+    expect(preview).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finish({ columns: [], rows: [], visualization: 1, sourceRowCount: 0, resultRowCount: 0 });
+    });
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(button.querySelector('[data-action-spinner]')).toBeNull();
+  });
 });
