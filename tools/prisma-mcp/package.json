@@ -6,12 +6,15 @@
   "engines": { "node": ">=22" },
   "bin": {
     "prisma-mcp": "dist/server.js",
-    "prisma-metodo-import": "dist/import.js"
+    "prisma-metodo-import": "dist/import.js",
+    "prisma-metodo-sync": "dist/sync-cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "import": "tsx src/import.ts",
+    "sync": "tsx src/sync-cli.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {

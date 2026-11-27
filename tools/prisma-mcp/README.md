@@ -9,10 +9,12 @@ pelo administrador do projeto na UI do Prisma. A API é a autoridade: ela confer
 token, o escopo do projeto e a matriz de transições em toda operação. As regras locais do
 adaptador só repetem a recusa para dar uma mensagem rápida; tirá-las não dá mais poder ao token.
 
-O pacote tem dois executáveis:
+O pacote tem três executáveis:
 
-- `prisma-mcp` (`dist/server.js`): servidor MCP com as 9 operações do contrato.
-- `prisma-metodo-import` (`dist/import.js`): importa `docs/trabalho/HU-*` para o projeto.
+- `prisma-mcp` (`dist/server.js`): servidor MCP com as operações de task e as de documento.
+- `prisma-metodo-import` (`dist/import.js`): importa `docs/trabalho/HU-*` (e `avulsas/`) para o projeto.
+- `prisma-metodo-sync` (`dist/sync-cli.js`): a mesma sincronização de documentos do MCP, fora dele
+  (seção [Sincronizar documentos](#sincronizar-documentos)).
 
 ## Operações do MCP
 
@@ -22,11 +24,23 @@ O pacote tem dois executáveis:
 | `obter_task` | `id` | status, título, arquivo, HU, PR e vínculos Git (repositório, branch local ou enviada, PR) de uma task |
 | `listar_tasks` | `status?` | tasks do projeto, opcionalmente filtradas por status |
 | `proximas_tasks` | nenhum | tasks autorizadas em `em-desenvolvimento` com todas as dependências concluídas |
-| `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task no quadro, marcada com a HU |
+| `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task no quadro, marcada com a HU; fica sob a História da HU quando ela existe no Prisma. `hu` é `HU-0001` ou `avulsa` (vai para a História **Avulsas**) |
 | `mover_status` | `id, novo_status, motivo` | muda a coluna, se a matriz da API permitir ao papel do token |
 | `comentar` | `id, texto` | relatório de execução, bloqueio, handoff |
 | `vincular_pr` | `id, url` | registra o vínculo explícito do PR com a task (também aparece no campo **PR**) |
 | `vincular_branch` | `id, repositorio, branch` | registra a branch da task antes do push (`local`); vira enviada quando o GitHub a vê. `repositorio` é `dono/repositório` de um repositório do projeto |
+
+Documentos do método (épico, HU, PRD e corpo da task), sincronizados com `PRISMA_METODO_DIR`:
+
+| Ferramenta | Parâmetros | Para quê |
+|---|---|---|
+| `obter_documento` | `chave` | texto, versão, hash, autor, canal e status da HU. `chave`: `EPIC-0001`, `HU-0001`, `HU-0001/prd`, `AVULSAS` ou `T-0001` |
+| `listar_mudancas` | `desde?` | metadados (sem texto) dos documentos do projeto; marca os que mudaram no Prisma desde o `.prisma-sync.json` (ou desde a data) |
+| `enviar_documento` | `caminho` | lê o arquivo e cria ou atualiza no Prisma (cria Épico/História na primeira vez, cria a task do método se faltar e põe a task sob a História). Nunca grava o arquivo |
+| `sincronizar` | `escopo?, ensaio?, criar_no_prisma?, criar_no_repo?` | aplica a regra abaixo a um arquivo, a uma HU com PRD e tasks (`HU-0001`), às avulsas (`AVULSAS`) ou a tudo; `ensaio: true` só mostra |
+| `resolver_conflito` | `chave, escolhas` | grava nos dois lados a resolução de um conflito: por seção, `"repo"`, `"prisma"` ou `{ "juntar": "<texto da seção>" }` |
+| `revisoes_documento` | `chave, versao?` | lista as versões (autor, data, canal); com `versao`, devolve o texto dela |
+| `vincular_hu` | `id_task, chave_hu` | religa uma task existente à História (`HU-0001` ou `AVULSAS`), sem trocar a identidade nem o status |
 
 Status (uma coluna para cada, nesta ordem): `backlog` (Backlog), `pronta` (Pronta),
 `em-desenvolvimento` (Em desenvolvimento), `em-revisao` (Em revisão), `em-teste` (Em teste),
@@ -66,6 +80,7 @@ A configuração vem só de variáveis de ambiente. Não grave o token em arquiv
 | `PRISMA_PROJECT` | sim | nome ou ID do projeto; precisa ser o mesmo do escopo do token |
 | `PRISMA_BOARD` | não | nome ou ID do quadro, só para conferir com o escopo do token |
 | `PRISMA_ROLE` | não | papel esperado (`agente`, `humano` ou `sistema`); se diferir do papel do token, o adaptador para |
+| `PRISMA_METODO_DIR` | não | pasta dos arquivos do método, padrão `./docs/trabalho`, relativa ao diretório de trabalho do MCP. Se o MCP não roda na raiz do espaço (`C:\repos\main`), configure com o caminho absoluto |
 
 O adaptador não escreve o token nem cabeçalho de autorização em log ou em mensagem de erro.
 Com 401 (token inválido, expirado ou revogado) ou 403 (sem permissão), ele responde
@@ -76,6 +91,56 @@ Com 401 (token inválido, expirado ou revogado) ou 403 (sem permissão), ele res
 O administrador revoga na mesma tela; a revogação vale na requisição seguinte. Para trocar
 (rotação), emita um token novo para o mesmo agente, atualize a variável `PRISMA_TOKEN` e revogue o
 antigo. A autoria do agente no histórico continua a mesma depois da troca.
+
+## Sincronizar documentos
+
+O MCP lê e grava os arquivos de `PRISMA_METODO_DIR` e os compara com os documentos do Prisma; o
+texto nunca é redigitado pelo modelo de IA (o agente decide, o MCP copia).
+
+- **Arquivos:** `epicos/EPIC-XXXX-*.md` (`id`, `titulo`, `status`), `HU-*/hu.md` (opcional
+  `epico: EPIC-XXXX`), `HU-*/prd.md`, `HU-*/tasks/T-*.md` e `avulsas/tasks/T-*.md` (`hu: avulsa`,
+  sob a História **Avulsas**, que não tem arquivo). Outros arquivos são ignorados.
+- **Guarda de caminho:** só `.md` dentro da pasta (e o `.prisma-sync.json`); recusa `..`, link
+  simbólico ou junção, outra extensão e caminho fora da pasta, sem ler nem gravar.
+- **Estado:** `.prisma-sync.json` na pasta, gravado só pelo MCP (arquivo temporário + renomear): por
+  documento, `{ chave, tipo, workItemId, versao, hash }` da última sincronização. Os `.md` não ganham
+  campo nenhum.
+- **Regra** (`Hl` = hash do arquivo com LF, `S` = estado, `R` = Prisma):
+
+  | Repo mudou | Prisma mudou | Ação |
+  |---|---|---|
+  | não | não | nada |
+  | sim | não | envia com `baseVersion = S.versao` |
+  | não | sim | grava o arquivo com o texto do Prisma |
+  | sim | sim, mesmo texto | só atualiza `S` |
+  | sim | sim, textos diferentes | conflito: nada é gravado; devolve a diferença por seção |
+  | sem `S`, só num lado | | lista (com `criar_no_prisma`/`criar_no_repo`, cria no outro lado) |
+  | sem `S`, nos dois | | texto igual cria `S`; senão, conflito |
+
+  409 no envio é tratado como "o Prisma mudou" e a comparação é refeita. Arquivo que some do
+  repositório só gera aviso: nada é apagado no Prisma.
+- **Ordem:** épicos → HUs (e Avulsas) → PRDs → tasks. HU com `epico:` vai com `parentKey`. Task local
+  que já existe no Prisma em outro lugar (por exemplo no topo do quadro) é religada à História da
+  pasta (`vincular_hu`), nunca recriada.
+- **Fim de linha:** o Prisma guarda LF; ao gravar, o arquivo mantém o fim de linha (CRLF, se era CRLF)
+  e o BOM que usava. Arquivo novo sai com LF.
+- **Conflito:** o texto é cortado nos títulos `## ` (antes do primeiro fica a seção `cabeçalho`) e cada
+  seção sai como igual, mudou só no repo, mudou só no Prisma, mudou nos dois, nova ou removida, contra
+  a revisão da última sincronização. Nada é juntado sozinho: `resolver_conflito` recebe a escolha de
+  cada seção que não é igual.
+- O conteúdo dos documentos não vai para stderr nem para log.
+
+### CLI
+
+```
+node dist/sync-cli.js [escopo] [--dry-run] [--criar-no-prisma] [--criar-no-repo] [--json]
+node dist/sync-cli.js --snapshot <arquivo.json|arquivo.md>
+```
+
+Usa as mesmas variáveis do MCP. `--dry-run` imprime o plano (Histórias, PRDs, Avulsas, tasks a religar
+e a criar, envios, conflitos, só no Prisma) sem gravar nada. `--snapshot` só lê e grava o retrato das
+tasks (id, status, pai, HU, autorizada, comentários, PR), para comparar antes e depois. Código de saída:
+0 ok, 1 erro em algum documento, 2 conflito.
 
 ## Compilar
 
@@ -223,7 +288,12 @@ Roda, sem precisar de um Prisma de verdade:
   senha, que o papel vem da API, que leituras não gravam nada, que 401 manda parar sem nova tentativa
   e que o token não vaza em erro;
 - `import-token`: a importação valida o lote antes de gravar, não cria estrutura, não autoriza nada e
-  é idempotente.
+  é idempotente;
+- documentos (T-0023): `sections` e `sync-rule` (unitários: corte por seção, as seis classes, a
+  montagem da resolução e cada linha da regra), `sync` (cada linha da regra com o estado antes e
+  depois, ordem épico → HU → PRD → task, ensaio sem gravação, 409, religação, avulsas, resolução),
+  `roundtrip` (byte a byte com acentos, tabela, emoji, BOM, CRLF e 1 MB; `git status` limpo),
+  `files` (guarda de caminho), `document-tools` (as ferramentas pelo MCP) e `sync-cli`.
 
 O teste de integração (`test/integration.test.ts`) fala com um Prisma de verdade, num projeto
 próprio criado para o teste (nunca um projeto real), e só roda com `PRISMA_IT=1`. Ver o cabeçalho

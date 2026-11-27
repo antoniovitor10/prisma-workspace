@@ -7,6 +7,10 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { METHOD_STATUSES } from './rules.js';
 import { TaskService, type MethodTask } from './tasks.js';
+import { registerDocumentTools } from './document-tools.js';
+import { MethodDocumentService } from './sync.js';
+
+export type ToolExecutor = (operation: () => Promise<{ summary: string; data: Record<string, unknown> }>) => Promise<CallToolResult>;
 
 const taskId = z.string().regex(/^T-\d{4,}$/, 'Use o ID do método, como T-0001.');
 const status = z.enum(METHOD_STATUSES);
@@ -34,11 +38,12 @@ function safeError(error: unknown, service: TaskService): string {
   return message.replace(/Bearer\s+\S+/gi, 'Bearer [removido]');
 }
 
-export function createMcpServer(service: TaskService = new TaskService()): McpServer {
+export function createMcpServer(service: TaskService = new TaskService(),
+  documents: MethodDocumentService = new MethodDocumentService(service.api)): McpServer {
   const server = new McpServer({ name: 'prisma-metodo', version: '0.1.0' }, {
     instructions: 'Leia regras_do_projeto no início da sessão. O Prisma é a verdade do status. Se o MCP não responder, pare e avise.',
   });
-  const execute = async (operation: () => Promise<{ summary: string; data: Record<string, unknown> }>): Promise<CallToolResult> => {
+  const execute: ToolExecutor = async operation => {
     try {
       const { summary, data } = await operation();
       return { content: [{ type: 'text', text: `${summary}\n\n${JSON.stringify(data)}` }], structuredContent: data };
@@ -86,9 +91,9 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
   }));
 
   server.registerTool('criar_task', {
-    description: 'Cria uma task de topo no quadro, com HU em campo personalizado e tag de mesmo nome. Agente pode criar em backlog (padrão) ou concluida (atalho/incidente).',
+    description: 'Cria uma task no quadro, com HU em campo personalizado e tag de mesmo nome; fica sob a História da HU quando ela existe no Prisma (hu: avulsa vai para a História Avulsas). Agente pode criar em backlog (padrão) ou concluida (atalho/incidente).',
     inputSchema: {
-      id: taskId, titulo: text, hu: z.string().regex(/^HU-\d{4,}$/, 'Use HU-0001.'),
+      id: taskId, titulo: text, hu: z.string().regex(/^(HU-\d{4,}|avulsa)$/, 'Use HU-0001 ou avulsa.'),
       arquivo: text, cobre: z.union([z.array(text), text]), risco: z.enum(['normal', 'alto']),
       status: status.optional(),
     }, annotations: write,
@@ -132,6 +137,9 @@ export function createMcpServer(service: TaskService = new TaskService()): McpSe
     const task = await service.vincularBranch(id, repositorio, branch);
     return { summary: `Branch vinculada.\n${taskSummary(task)}`, data: { task } };
   }));
+
+  // Documentos do método e sincronização com docs/trabalho (T-0023).
+  registerDocumentTools(server, execute, documents);
   return server;
 }
 
