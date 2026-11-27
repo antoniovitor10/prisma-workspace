@@ -21,6 +21,8 @@ Cada projeto tem as abas **Itens**, **Backlog**, **Sprints**, **Kanban**, **Rela
 
 A aba **Kanban** abre o quadro do projeto. Use **Selecionar quadro** quando o projeto tiver mais de um.
 
+![Quadro Kanban do projeto de demonstração, com as colunas Ideias, Em andamento, Revisão e Concluído](./imagens/kanban.png)
+
 - **Novo Quadro** abre **Criar Novo Quadro**: informe o **Nome do Quadro**, a **Equipe do quadro** (opcional) e a **Estrutura de colunas** (estrutura básica ou cópia das colunas de outro quadro). Exige ser administrador do projeto.
 - **Excluir Quadro** só aparece quando o projeto tem mais de um quadro. Antes de excluir, escolha em **Mover tarefas para:** o quadro e a coluna que recebem as tarefas. Esta ação não pode ser desfeita.
 

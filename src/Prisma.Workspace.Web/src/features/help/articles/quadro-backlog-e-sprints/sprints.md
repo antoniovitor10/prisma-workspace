@@ -15,6 +15,8 @@ relacionados:
 
 A aba **Sprints** do projeto mostra as sprints, os indicadores (itens concluídos, pontos entregues, horas previstas, trabalho restante e capacidade líquida) e as visões **Planejamento**, **Quadro**, **Métricas** (burndown e velocidade) e **Histórico**.
 
+![Aba Sprints do projeto de demonstração](./imagens/sprints.png)
+
 Gerenciar sprints exige a permissão de gerenciar sprint e pelo menos o papel Membro no projeto.
 
 ## Criar uma sprint {#criar-uma-sprint}

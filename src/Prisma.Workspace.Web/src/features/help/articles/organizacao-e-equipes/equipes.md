@@ -19,6 +19,8 @@ Uma equipe reúne pessoas da organização. Ela serve para dar acesso a projetos
 2. Preencha **Nome da nova equipe** (até 150 caracteres).
 3. Clique em **Criar equipe**. A capacidade padrão começa em 40 horas por semana.
 
+![Página Equipes, com o campo Nome da nova equipe e o botão Criar equipe](./imagens/equipes.png)
+
 Dois nomes iguais não são aceitos: "Já existe uma equipe com este nome."
 
 ## Configurar a equipe {#configurar-a-equipe}

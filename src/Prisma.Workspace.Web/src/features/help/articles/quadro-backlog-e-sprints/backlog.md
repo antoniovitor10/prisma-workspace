@@ -16,6 +16,8 @@ relacionados:
 
 A aba **Backlog** do projeto abre o **Planejamento do backlog**: o **Product backlog** de um lado e, ao lado, a sprint em planejamento. **Ampliar backlog** esconde a sprint para ver só o backlog; **Ver sprint ao lado** traz de volta.
 
+![Planejamento do backlog no projeto de demonstração](./imagens/backlog.png)
+
 ## Criar itens {#criar-itens}
 
 - **Adição rápida no backlog**: clique em **Novo item** no topo do backlog, escolha o tipo, digite só o título no campo "Digite somente o título e pressione Enter" e tecle Enter (ou clique em **Adicionar**). O item entra no primeiro quadro do projeto, com prioridade Média. Sem nenhum quadro, o Prisma pede: "Crie um quadro antes de adicionar itens."

@@ -47,6 +47,8 @@ Uma pessoa enxerga um projeto quando acontece pelo menos uma destas situações:
 
 Para adicionar alguém: **Configurações do projeto** > **Pessoas e equipes** > **Membros e papéis**. Escolha a pessoa em **Adicionar membro...**, o papel e clique em **Adicionar**. Para vincular uma equipe inteira, marque **Usar no projeto** na lista **Equipes** (salva na hora). Só o administrador do projeto faz essas mudanças.
 
+![Seção Pessoas e equipes das configurações do projeto](./imagens/pessoas-do-projeto.png)
+
 ### Atribuir não dá acesso {#atribuir-nao-da-acesso}
 
 Atribuir uma tarefa a alguém não dá acesso ao projeto. Se a pessoa ainda não tem acesso, o Prisma recusa com "Conceda acesso ao projeto antes de atribuir a tarefa." A lista de responsáveis só mostra quem já tem acesso.
