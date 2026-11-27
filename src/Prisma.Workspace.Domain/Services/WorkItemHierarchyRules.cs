@@ -14,4 +14,11 @@ public static class WorkItemHierarchyRules
             (WorkItemKind.Task, WorkItemKind.Subtask) => true,
             _ => false
         };
+
+    /// <summary>
+    /// Tipo efetivo de um item pedido como <paramref name="requested"/> sob um pai do tipo <paramref name="parent"/>.
+    /// Tarefa só vira Subtarefa quando o pai também é Tarefa (regra única de criação e edição, T-0019).
+    /// </summary>
+    public static WorkItemKind EffectiveKind(WorkItemKind requested, WorkItemKind? parent)
+        => requested == WorkItemKind.Task && parent == WorkItemKind.Task ? WorkItemKind.Subtask : requested;
 }
