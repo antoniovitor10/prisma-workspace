@@ -31,7 +31,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import { TaskChecklistPanel } from '../features/task/TaskChecklistPanel';
 import { DependencyAutocomplete } from '../features/task/DependencyAutocomplete';
@@ -49,6 +49,10 @@ import { WorkItemKindSelector } from './WorkItemKindSelector';
 import { userDisplayLabel } from '../utils/userDisplayName';
 import { RichTaskDescriptionEditor } from './RichTaskDescriptionEditor';
 import { ActionButton } from './ActionButton';
+import { useMethodDocumentTabs } from '../features/method-docs/useMethodDocuments';
+
+// O markdown (react-markdown + remark-gfm) só carrega quando uma aba de documento do método abre.
+const MethodDocumentTab = lazy(() => import('../features/method-docs/MethodDocumentTab').then(module => ({ default: module.MethodDocumentTab })));
 
 interface StageOption {
   id: string;
@@ -246,7 +250,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const [linkForm,setLinkForm]=useState({targetWorkItemId:'',type:1});
   const [customValues,setCustomValues]=useState<Record<string,string>>({});
   const [publicReply,setPublicReply]=useState('');
-  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'>('description');
+  const [activeTab,setActiveTab]=useState<'description'|'comments'|'subtasks'|'attachments'|'history'|'timeline'|`method:${string}`>('description');
 
   const fallback=useMemo<WorkItemDetails|null>(()=>item?{
     id:item.id,number:item.number??0,reference:item.number?`${projectKey}-${item.number}`:`${projectKey}-${item.id.slice(-4).toUpperCase()}`,
@@ -269,6 +273,9 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
   const sprintsQuery=useQuery<Array<{id:string;name:string;status:number}>>({queryKey:['project-sprints',details?.projectId],queryFn:()=>api.getProjectSprints(details!.projectId!),enabled:Boolean(details?.projectId)&&realMode});
   const attachmentsQuery=useQuery<Attachment[]>({queryKey:['work-item-attachments',details?.id],queryFn:()=>api.getAttachments(details!.id),enabled:Boolean(details)&&realMode});
   const showStoryPoints = true;
+  // Abas do método (HU-0008): Documento, PRD e Corpo da task; itens fora do método não ganham aba.
+  const methodTabs=useMethodDocumentTabs(realMode?details?.projectId:undefined,realMode?details?.id:undefined);
+  const activeMethodTab=methodTabs.find(tab=>tab.id===activeTab);
 
   useEffect(()=>{if(details){setDraft(toDraft(details));setCustomValues(Object.fromEntries(details.customFields.map(field=>[field.fieldId,field.value??''])));}},[details]);
   useEffect(()=>{setActiveTab('description');setSubtaskResponsibleId('');setAssigneeOpen(false);setAssigneeSearch('');setEditingTitle(false);},[item?.id]);
@@ -465,6 +472,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </TransferPanel>}
       <Tabs aria-label="Seções da tarefa">
         <Tab $active={activeTab==='description'} onClick={()=>setActiveTab('description')}>Descrição</Tab>
+        {methodTabs.map(tab=><Tab key={tab.id} type="button" $active={activeTab===tab.id} aria-current={activeTab===tab.id?'true':undefined} onClick={()=>setActiveTab(tab.id)}>{tab.label}</Tab>)}
         <Tab $active={activeTab==='comments'} onClick={()=>setActiveTab('comments')}>Comentários</Tab>
         <Tab $active={activeTab==='subtasks'} onClick={()=>setActiveTab('subtasks')}>Subtarefas</Tab>
         <Tab $active={activeTab==='attachments'} onClick={()=>setActiveTab('attachments')}>Anexos</Tab>
@@ -524,6 +532,7 @@ export function TaskDetailDrawer({item,projectKey,sprintName,onOpenChange,onItem
       </>}
       {activeTab==='comments'&&<Section><h2><MessageSquareText size={14}/>Comentários internos</h2><VisibilityNote>Visível somente para a equipe interna. Este conteúdo não é enviado nem exibido ao solicitante.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="comments"/>:<Empty>Entre com dados reais para comentar.</Empty>}</Section>}
       {activeTab==='history'&&<Section><h2><Clock3 size={14}/>Histórico imutável</h2><VisibilityNote>Registro cronológico das alterações desta tarefa. As movimentações ficam na Linha do Tempo.</VisibilityNote>{realMode?<TaskFeed workItemId={details.id} mode="history"/>:<Empty>Histórico disponível com dados reais.</Empty>}</Section>}
+      {activeMethodTab&&details.projectId&&<Suspense fallback={<Progress>Carregando documento...</Progress>}><MethodDocumentTab key={activeMethodTab.key} projectId={details.projectId} workItemId={details.id} documentKey={activeMethodTab.key} kind={activeMethodTab.kind}/></Suspense>}
       {activeTab==='timeline'&&<Section><h2>Linha do tempo</h2><VisibilityNote>Criação e movimentações entre colunas, da mais recente para a mais antiga.</VisibilityNote>{realMode?<TaskTimeline key={details.id} workItemId={details.id} createdAt={details.createdAt}/>:<Empty>Linha do tempo disponível com dados reais.</Empty>}</Section>}
     </Body>}
   </Sheet>}</Dialog.Portal></Dialog.Root>;

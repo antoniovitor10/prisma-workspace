@@ -6,6 +6,7 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Domain.Exceptions;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Application.Features.Workflow;
 using Prisma.Workspace.Application.Features.ExternalPortal;
 using FluentValidation;
@@ -323,6 +324,23 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
                 });
         }
 
+        // T-0019: o tipo efetivo segue a mesma regra da criação (Subtarefa só sob Tarefa) e, quando muda,
+        // respeita a hierarquia com o pai e com os filhos ativos. Sem mudança de tipo não há validação (D-1).
+        var effectiveKind = WorkItemHierarchyRules.EffectiveKind(request.Kind, item.ParentId.HasValue
+            ? item.Parent?.Kind ?? throw new InvalidOperationException("O pai da tarefa não foi carregado.")
+            : null);
+        if (effectiveKind != item.Kind)
+        {
+            DomainException.Garantir(item.Parent is not null || effectiveKind != WorkItemKind.Subtask,
+                "Uma subtarefa precisa estar sob uma tarefa.");
+            if (item.Parent is not null)
+                DomainException.Garantir(WorkItemHierarchyRules.IsAllowed(item.Parent.Kind, effectiveKind),
+                    $"A relação {item.Parent.Kind} → {effectiveKind} não pertence à hierarquia de trabalho permitida.");
+            foreach (var child in item.SubItems.Where(x => !x.IsArchived))
+                DomainException.Garantir(WorkItemHierarchyRules.IsAllowed(effectiveKind, child.Kind),
+                    $"A relação {effectiveKind} → {child.Kind} não pertence à hierarquia de trabalho permitida.");
+        }
+
         var previous = new
         {
             item.Title,
@@ -363,8 +381,7 @@ public class UpdateWorkItemCommandHandler : IRequestHandler<UpdateWorkItemComman
         item.Title = request.Title.Trim();
         var description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
         item.Description = description is null ? null : (_htmlSanitizer?.Sanitize(description) ?? description);
-        item.Kind = item.ParentId.HasValue && request.Kind == WorkItemKind.Task
-            ? WorkItemKind.Subtask : request.Kind;
+        item.Kind = effectiveKind;
         item.Priority = request.Priority;
         item.ResponsibleId = string.IsNullOrWhiteSpace(request.ResponsibleId) ? null : request.ResponsibleId;
         item.TeamId = request.TeamId;

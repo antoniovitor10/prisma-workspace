@@ -33,6 +33,8 @@ export interface BacklogItem {
   links?: BacklogLink[];
   isBlocked?: boolean;
   isArchived?: boolean;
+  /** Calculado pelo servidor com a regra única do quadro: Épico, Funcionalidade e História não são card. */
+  isBoardCard?: boolean;
   version?: string;
 }
 

@@ -55,6 +55,9 @@ public class WorkItemManagementRepository : IWorkItemManagementRepository, IWork
             .Include(x => x.ChecklistItems)
             .Include(x => x.StageHistories)
             .Include(x => x.CustomFieldValues)
+            // T-0019: a edição valida o tipo contra o pai e os filhos ativos.
+            .Include(x => x.Parent)
+            .Include(x => x.SubItems.Where(child => !child.IsArchived))
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<WorkItemLink?> GetLinkAsync(

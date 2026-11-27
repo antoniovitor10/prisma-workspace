@@ -69,6 +69,14 @@ export const BoardHelp = styled.p`
   line-height: 1.45;
 `;
 
+/** Dica abaixo do seletor de tipo do "Novo card": planejamento nasce no backlog. */
+export const NewCardKindHint = styled.p`
+  margin: 6px 0 0;
+  color: ${({ theme }) => theme.color.textMutedAccessible};
+  font-size: 13px;
+  line-height: 1.45;
+`;
+
 export const BoardActions = styled.div`
   display: flex;
   flex-wrap: wrap;

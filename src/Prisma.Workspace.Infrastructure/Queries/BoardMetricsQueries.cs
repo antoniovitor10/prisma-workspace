@@ -1,5 +1,6 @@
 using Prisma.Workspace.Application.Features.BoardMetrics;
 using Prisma.Workspace.Application.Interfaces;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,7 +33,8 @@ public class BoardMetricsQueries : IBoardMetricsQueries
         var items = await _context.WorkItems.AsNoTracking()
             .Include(w => w.TaskType)
             .Include(w => w.StageHistories)
-            .Where(w => w.BoardId == boardId && w.ParentId == null)
+            .Where(w => w.BoardId == boardId)
+            .Where(WorkItemBoardVisibility.IsBoardCardExpression)
             .ToListAsync(ct);
 
         var entries = await _context.TimeEntries.AsNoTracking()

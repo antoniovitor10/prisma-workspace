@@ -138,7 +138,9 @@ describe('integração 2a com o Prisma (token opaco)', { skip: !ATIVO && 'defina
     const transport = new StdioClientTransport({ command: process.execPath, args: ['--import', 'tsx', 'src/server.ts'], cwd: ROOT, env: envAgente(), stderr: 'pipe' });
     client = new Client({ name: 'prisma-mcp-it', version: '0.0.0' });
     await client.connect(transport);
-    assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), [...NOVE].sort());
+    // Pelo nome, não pela contagem: a T-0023 acrescenta as ferramentas de documento e a T-0026, preparar_pr.
+    const nomes = (await client.listTools()).tools.map(t => t.name);
+    for (const nome of NOVE) assert.ok(nomes.includes(nome), `${nome} continua exposta`);
     const r = await ok('regras_do_projeto');
     assert.match(r.texto, /agente/);
     assert.ok(r.texto.includes(PROJETO), r.texto);

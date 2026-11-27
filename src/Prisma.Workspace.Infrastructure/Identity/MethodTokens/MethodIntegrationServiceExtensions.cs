@@ -31,6 +31,7 @@ public static class MethodIntegrationServiceExtensions
         services.AddScoped<IMethodProjectProvisioner, MethodProjectProvisioner>();
         services.AddScoped<IMethodProjectOperations, MethodProjectOperations>();
         services.AddScoped<IMethodTaskOperations, MethodTaskOperations>();
+        services.AddScoped<Application.Features.MethodDocuments.IMethodDocumentOperations, Services.MethodDocuments.MethodDocumentOperations>();
         services.AddScoped<IMethodMoveService, MethodMoveService>();
         services.AddHostedService<GitDeliveryWorker>();
         return services;

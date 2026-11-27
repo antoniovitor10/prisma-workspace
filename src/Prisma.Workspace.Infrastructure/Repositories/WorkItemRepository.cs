@@ -1,5 +1,6 @@
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,7 +57,8 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.CustomFieldValues)
             .Include(w => w.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(w => w.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
-            .Where(w => w.BoardId == boardId && w.ParentId == null && !w.IsArchived)
+            .Where(w => w.BoardId == boardId && !w.IsArchived)
+            .Where(WorkItemBoardVisibility.IsBoardCardExpression)
             .OrderBy(w => w.Position)
             .ToListAsync(cancellationToken);
     }
@@ -77,7 +79,8 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.CustomFieldValues)
             .Include(w => w.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(w => w.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
-            .Where(w => w.Board.ProjectId == projectId && w.ParentId == null && !w.IsArchived)
+            .Where(w => w.Board.ProjectId == projectId && !w.IsArchived)
+            .Where(WorkItemBoardVisibility.IsBoardCardExpression)
             .OrderBy(w => w.Position)
             .ToListAsync(cancellationToken);
     }
@@ -184,8 +187,9 @@ public class WorkItemRepository : IWorkItemRepository
             .Include(w => w.Stage)
             .Include(w => w.Assignees)
             .Include(w => w.TimeEntries)
-            .Where(w => w.ParentId == null && !w.IsArchived
+            .Where(w => !w.IsArchived
                 && (w.ResponsibleId == userId || w.Assignees.Any(a => a.UserId == userId)))
+            .Where(WorkItemBoardVisibility.IsBoardCardExpression)
             .ToListAsync(cancellationToken);
     }
 

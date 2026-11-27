@@ -40,7 +40,7 @@ public sealed partial class GitTaskResolver(IMethodGitStore store)
         return Valid(matches[0], repository) ? new(matches[0], source, null) : new(null, source, "task_outside_project");
     }
     private static bool Valid(MethodTaskSnapshot? task, GitRepositoryDescriptor repository) => task is not null
-        && task.ProjectId == repository.ProjectId && task.OrganizationId == repository.OrganizationId && task.IsTopLevel && !task.IsArchived;
+        && task.ProjectId == repository.ProjectId && task.OrganizationId == repository.OrganizationId && task.IsMethodEligible && !task.IsArchived;
     [GeneratedRegex("^task/(T-[0-9]{4,})-[^\\s]+$", RegexOptions.CultureInvariant)] private static partial Regex BranchPattern();
     [GeneratedRegex("\\[(T-[0-9]{4,})\\]", RegexOptions.CultureInvariant)] private static partial Regex TitlePattern();
 }

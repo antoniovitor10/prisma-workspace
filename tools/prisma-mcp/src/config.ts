@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 export type PrismaRole = 'agente' | 'humano' | 'sistema';
 export interface PrismaConfig {
   url: string;
@@ -25,4 +27,12 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): PrismaConfig {
   }
   return { url: url.replace(/\/+$/, ''), project, board: env.PRISMA_BOARD?.trim() || undefined,
     role: role as PrismaRole | undefined, token };
+}
+
+/**
+ * Pasta dos arquivos do método (T-0023): `PRISMA_METODO_DIR`, padrão `./docs/trabalho`, relativa ao
+ * diretório de trabalho do MCP. O MCP só lê e grava `.md` (e o `.prisma-sync.json`) dentro dela.
+ */
+export function readMetodoDir(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): string {
+  return resolve(cwd, env.PRISMA_METODO_DIR?.trim() || './docs/trabalho');
 }

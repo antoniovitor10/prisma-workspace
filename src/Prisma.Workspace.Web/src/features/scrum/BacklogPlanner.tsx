@@ -61,6 +61,8 @@ import {
   type BacklogGroupBy,
 } from './BacklogFilters';
 import { flattenBacklogHierarchy, includeBacklogAncestors } from './BacklogHierarchy';
+import { MethodStatusTag } from '../method-docs/MethodStatusTag';
+import { useProjectMethodStatuses, type MethodItemStatus } from '../method-docs/useMethodDocuments';
 import { useBacklogUrlState } from './useBacklogUrlState';
 import { useUrlDraft } from './useUrlDraft';
 import { subscribeBacklogScroll } from './BacklogScroll';
@@ -573,6 +575,7 @@ interface SortableWorkItemProps {
   collapsed: boolean;
   contextOnly: boolean;
   showPoints: boolean;
+  methodStatus?: MethodItemStatus;
   onToggleCollapsed: (itemId: string) => void;
   onToggle: (itemId: string) => void;
   onOpen: (item: BacklogItem) => void;
@@ -592,6 +595,7 @@ function SortableWorkItem({
   collapsed,
   contextOnly,
   showPoints,
+  methodStatus,
   onToggleCollapsed,
   onToggle,
   onOpen,
@@ -654,7 +658,7 @@ function SortableWorkItem({
         {item.isArchived && <> <ArchivedTag>Arquivada</ArchivedTag></>}
       </Kind>
       <InlineTitle className="item-title">
-        <small>#{item.number ?? '—'} · {saving ? 'Salvando...' : item.boardName}</small>
+        <small>#{item.number ?? '—'} · {saving ? 'Salvando...' : item.boardName}<MethodStatusTag status={methodStatus} /></small>
         <input
           aria-label={`Título de ${item.title}`}
           value={title}
@@ -762,6 +766,8 @@ interface DroppablePanelProps {
   onToggleCollapsed: (itemId: string) => void;
   matchedIds: Set<string>;
   showPoints: boolean;
+  /** Status da HU/épico do método por item (etiqueta na linha); vazio fora do método. */
+  methodStatuses?: ReadonlyMap<string, MethodItemStatus>;
 }
 
 function DroppablePanel({
@@ -785,6 +791,7 @@ function DroppablePanel({
   onToggleCollapsed,
   matchedIds,
   showPoints,
+  methodStatuses,
 }: DroppablePanelProps) {
   const { isOver, setNodeRef } = useDroppable({ id });
   const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
@@ -826,6 +833,7 @@ function DroppablePanel({
                   collapsed={collapsedIds.has(item.id)}
                   contextOnly={!matchedIds.has(item.id)}
                   showPoints={showPoints}
+                  methodStatus={methodStatuses?.get(item.id)}
                   onToggleCollapsed={onToggleCollapsed}
                   onToggle={onToggle}
                   onOpen={onOpen}
@@ -889,6 +897,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       catch { return previewMode ? previewBacklog : []; }
     },
   });
+  const methodStatuses = useProjectMethodStatuses(previewMode ? undefined : project.id);
   const sprintQuery = useQuery<Sprint[]>({
     queryKey: ['project-sprints', project.id],
     retry: false,
@@ -1237,6 +1246,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
             onToggleCollapsed={toggleCollapsed}
             matchedIds={matchedIds}
             showPoints={showPoints}
+            methodStatuses={methodStatuses}
           />
           {!backlogAmplo && <DroppablePanel
             id="sprint-drop"
@@ -1257,6 +1267,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
             onToggleCollapsed={toggleCollapsed}
             matchedIds={matchedIds}
             showPoints={showPoints}
+            methodStatuses={methodStatuses}
             headerAction={(
               <SprintSelect>
                 <select aria-label="Sprint de planejamento" value={selectedSprintId} onChange={(event) => setSelectedSprintId(event.target.value)}>

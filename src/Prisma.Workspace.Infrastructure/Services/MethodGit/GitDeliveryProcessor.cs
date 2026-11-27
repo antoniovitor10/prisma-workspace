@@ -70,7 +70,7 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
         else
             logger.LogInformation("PR {PullRequestNumber} da integração {IntegrationId} resolvido pelo vínculo explícito para {MethodTaskId}; branch/título permanecem na observação para conferência.", number, repository.Id, resolution.Task.MethodTaskId);
         var task = await store.GetTaskAsync(resolution.Task.WorkItemId, ct);
-        if (task is null || !task.IsTopLevel || task.IsArchived || task.BoardId != project.BoardId)
+        if (task is null || !task.IsMethodEligible || task.IsArchived || task.BoardId != project.BoardId)
             return await Finish(delivery, GitDeliveryStates.Ignored, "method_task_unavailable", ct);
         if (pr.IsDraft && pr.State == "open") return await Finish(delivery, GitDeliveryStates.Ignored, "draft_recorded", ct);
         var reviews = pr.State == "open" || pr.IsMerged || e.EventName == "pull_request_review"

@@ -42,7 +42,7 @@ export ConnectionStrings__DefaultConnection="Server=$database,1433;Database=Detr
 export Seed__DemoPassword=$E2E_TEST_USER_PASSWORD
 docker run -d --name "$app" --network "$network" \
   -e ConnectionStrings__DefaultConnection -e Jwt__Key -e Seed__DemoPassword \
-  -e ASPNETCORE_ENVIRONMENT=Development -e Seed__DemoEnabled=true -e Setup__Enabled=false \
+  -e ASPNETCORE_ENVIRONMENT=Development -e Seed__DemoEnabled=true -e Setup__Enabled=false -e MethodGit__Enabled=true \
   -e RateLimiting__GlobalPermitLimit=10000 -e RateLimiting__AuthPermitLimit=10000 -e Serilog__MinimumLevel__Default=Warning \
   -e Ai__BridgeToken=E2E-only-cli-bridge -e Ai__BridgeUrl="http://$runner:18747/v1" -e FrontendBaseUrl=https://prisma.example.invalid \
   -e Serilog__MinimumLevel__Override__Microsoft=Warning \

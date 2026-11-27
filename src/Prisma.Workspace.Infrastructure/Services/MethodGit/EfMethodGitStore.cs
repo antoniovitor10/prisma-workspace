@@ -9,6 +9,7 @@ using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
 using Prisma.Workspace.Infrastructure.Persistence;
+using Prisma.Workspace.Infrastructure.Services.MethodSecurity;
 
 namespace Prisma.Workspace.Infrastructure.Services.MethodGit;
 
@@ -176,7 +177,8 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         return new(Tenant, state.ProjectId, item.BoardId, item.Id, state.MethodTaskId, item.StageId,
             project.StageMappings.FirstOrDefault(pair => pair.Value == item.StageId).Key ?? string.Empty,
             state.CycleId, grant?.Id, grant?.CreatedAtUtc, lastInteractive, state.BlockingEventId,
-            state.BlockingPrincipalId, origin, approval?.Id, item.ParentId is null, item.IsArchived, state.RowVersion, LastManualChangeAtUtc: lastManual);
+            state.BlockingPrincipalId, origin, approval?.Id,
+            await MethodEligibility.HasEligibleParentAsync(db, item.ParentId, item.BoardId, ct), item.IsArchived, state.RowVersion, LastManualChangeAtUtc: lastManual);
     }
     public async Task<IReadOnlyList<MethodTaskSnapshot>> FindTasksAsync(Guid projectId, string methodTaskId, CancellationToken ct = default)
     {
@@ -279,9 +281,12 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     }
     private async Task ScheduleLegacyCandidatesAsync(GitRepositoryDescriptor repository, Guid prFieldId, CancellationToken ct)
     {
-        var values = await db.Set<WorkItemCustomFieldValue>().AsNoTracking().Where(x => x.FieldDefinitionId == prFieldId && x.Value != null
-            && x.WorkItem.Board.ProjectId == repository.ProjectId && x.WorkItem.Board.OrganizationId == Tenant
-            && x.WorkItem.ParentId == null && !x.WorkItem.IsArchived).Select(x => x.Value!).Distinct().ToListAsync(ct);
+        // Tasks elegíveis: de topo ou filhas de História do método (HU-0008, D7).
+        var values = await db.WorkItems.AsNoTracking()
+            .Where(w => w.Board.ProjectId == repository.ProjectId && w.Board.OrganizationId == Tenant && !w.IsArchived)
+            .Where(MethodEligibility.HasEligibleParent(db))
+            .SelectMany(w => w.CustomFieldValues.Where(v => v.FieldDefinitionId == prFieldId && v.Value != null))
+            .Select(v => v.Value!).Distinct().ToListAsync(ct);
         var numbers = new HashSet<int>();
         foreach (var value in values)
         {

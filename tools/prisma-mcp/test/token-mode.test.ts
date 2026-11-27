@@ -103,7 +103,9 @@ describe('MCP com token opaco do método (fase 2a)', () => {
     const s = await conectar(envToken());
     assert.ok(s.client, `conectou: ${s.erroConexao?.message ?? ''}`);
     const { tools } = await s.client!.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), [...NOVE].sort());
+    // Pelo nome, não pela contagem total: a T-0023 acrescenta as ferramentas de documento e a T-0026, preparar_pr.
+    const nomes = tools.map(t => t.name);
+    for (const nome of NOVE) assert.ok(nomes.includes(nome), `${nome} continua exposta`);
     const r = await s.chamar!('regras_do_projeto');
     assert.equal(r.erro, false, r.texto);
     assert.match(r.texto, /agente/);

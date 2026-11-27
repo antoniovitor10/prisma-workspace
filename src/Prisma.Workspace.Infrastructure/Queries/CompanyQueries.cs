@@ -1,5 +1,6 @@
 using Prisma.Workspace.Application.Features.Company;
 using Prisma.Workspace.Application.Interfaces;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +27,7 @@ public class CompanyQueries : ICompanyQueries
                 b.ClientId,
                 ClientName = b.Client != null ? b.Client.Name : null,
                 Stages = b.Project.Stages.OrderBy(s => s.Position).Select(s => s.Id).ToList(),
-                Items = b.WorkItems.Where(w => w.ParentId == null)
+                Items = b.WorkItems.AsQueryable().Where(WorkItemBoardVisibility.IsBoardCardExpression)
                     .Select(w => new { w.StageId }).ToList(),
                 TotalSeconds = b.WorkItems
                     .SelectMany(w => w.TimeEntries)

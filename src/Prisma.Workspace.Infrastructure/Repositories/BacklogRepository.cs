@@ -14,6 +14,7 @@ public class BacklogRepository : IBacklogRepository
         Guid projectId, bool includeArchived = false, CancellationToken cancellationToken = default)
         => await _context.WorkItems.AsNoTracking().AsSplitQuery()
             .Include(x => x.Board).Include(x => x.Stage).Include(x => x.Assignees)
+            .Include(x => x.Parent)
             .Include(x => x.WorkItemTags).ThenInclude(x => x.Tag)
             .Include(x => x.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(x => x.IncomingLinks).ThenInclude(x => x.SourceWorkItem)

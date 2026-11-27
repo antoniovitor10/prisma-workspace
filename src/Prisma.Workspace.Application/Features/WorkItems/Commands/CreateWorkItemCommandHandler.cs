@@ -95,11 +95,7 @@ public class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkItemComman
                     "A tarefa pai não compartilha nenhum quadro com o item sendo criado.");
         }
 
-        var effectiveKind = request.ParentId.HasValue
-            && request.Kind == WorkItemKind.Task
-            && parent?.Kind == WorkItemKind.Task
-                ? WorkItemKind.Subtask
-                : request.Kind;
+        var effectiveKind = WorkItemHierarchyRules.EffectiveKind(request.Kind, parent?.Kind);
         if (parent is not null)
             DomainException.Garantir(WorkItemHierarchyRules.IsAllowed(parent.Kind, effectiveKind),
                 $"A relação {parent.Kind} → {effectiveKind} não pertence à hierarquia de trabalho permitida.");

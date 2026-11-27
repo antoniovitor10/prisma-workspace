@@ -24,4 +24,16 @@ describe('SprintKanbanBoard', () => {
     expect(groups.find((group) => group.boardId === 'board-b')?.items.map((entry) => entry.id)).toEqual(['a', 'c']);
     expect(groups.find((group) => group.boardId === 'board-a')?.items.map((entry) => entry.id)).toEqual(['b']);
   });
+
+  it('mostra só os cards do quadro: Épico, Funcionalidade e História ficam fora (T-0022)', () => {
+    const groups = groupSprintItemsByBoard([
+      { ...item('historia', 'board-a', 'Operação'), kind: 3, isBoardCard: false },
+      { ...item('tarefa-da-historia', 'board-a', 'Operação'), parentId: 'historia', isBoardCard: true },
+      { ...item('epico', 'board-b', 'Planejamento'), kind: 1, isBoardCard: false },
+      item('sem-marca', 'board-a', 'Operação'),
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].items.map((entry) => entry.id)).toEqual(['tarefa-da-historia', 'sem-marca']);
+  });
 });

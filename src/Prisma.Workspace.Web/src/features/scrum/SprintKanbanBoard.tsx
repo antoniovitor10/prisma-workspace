@@ -36,6 +36,8 @@ interface BoardGroup {
 export function groupSprintItemsByBoard(items: BacklogItem[]): BoardGroup[] {
   const groups = new Map<string, BoardGroup>();
   for (const item of items) {
+    // Mesmos cards do Kanban: o servidor marca Épico, Funcionalidade e História como fora do quadro.
+    if (item.isBoardCard === false) continue;
     const current = groups.get(item.boardId) ?? { boardId: item.boardId, boardName: item.boardName, items: [] };
     current.items.push(item);
     groups.set(item.boardId, current);

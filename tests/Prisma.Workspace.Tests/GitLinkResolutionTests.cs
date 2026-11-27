@@ -57,7 +57,7 @@ public class GitLinkResolutionTests
     {
         var store = new GitTestStore(); var task = store.AddTask("T-0001"); var resolver = new GitTaskResolver(store);
         Assert.Equal(task.WorkItemId, (await resolver.ResolveAsync(store.Repository, 1, "feature/x", "[T-0001] título")).Task?.WorkItemId);
-        store.Tasks[0] = task with { IsTopLevel = false };
+        store.Tasks[0] = task with { IsMethodEligible = false };
         Assert.Null((await resolver.ResolveAsync(store.Repository, 1, "feature/x", "[T-0001] título")).Task);
     }
 }
