@@ -68,7 +68,7 @@ export const TaskChecklistPanel: React.FC<Props> = ({ workItemId, onChanged }) =
       </div>
       <form onSubmit={add} style={{ display: 'flex', gap: 6, marginTop: 10 }}>
         <input style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 15 }} placeholder="Novo item..." value={text} onChange={e => setText(e.target.value)} />
-        <ActionButton type="submit" loading={adding} loadingLabel="Adicionando item ao checklist" style={{ padding: '7px 12px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Add</ActionButton>
+        <ActionButton type="submit" loading={adding} loadingLabel="Adicionando item ao checklist" style={{ padding: '7px 12px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Adicionar</ActionButton>
       </form>
     </div>
   );

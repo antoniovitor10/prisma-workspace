@@ -600,7 +600,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
         {(sprintQuery.data ?? []).map((sprint) => (
           <SprintTab key={sprint.id} $active={sprint.id === selectedSprintId} onClick={() => setSelectedSprintId(sprint.id)}>
             <strong><StatusDot $status={sprint.status} />{sprint.name}</strong>
-            <small>{sprintStatusNames[sprint.status]} · {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)} · {sprint.teamName}</small>
+            <small>{sprintStatusNames[sprint.status]} · {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}{sprint.teamName ? ` · ${sprint.teamName}` : ''}</small>
           </SprintTab>
         ))}
       </SprintRail>

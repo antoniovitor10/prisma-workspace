@@ -306,7 +306,7 @@ export const TaskFeed: React.FC<{ workItemId: string; mode?: 'comments' | 'histo
         )}
         <Box
           ref={boxRef}
-          placeholder="Escreva um comentario... use @ para mencionar"
+          placeholder="Escreva um comentário... use @ para mencionar"
           value={text}
           onChange={onType}
           onKeyDown={e => { if (e.key === 'Escape') setMenu(null); }}

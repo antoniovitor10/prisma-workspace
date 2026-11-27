@@ -192,7 +192,7 @@ test('L07 checklist e campos próprios da tarefa adicionam, marcam e removem val
     const text = f.name('checklist');
     await dialog(page).getByPlaceholder('Novo item...', { exact: true }).fill(text);
     const added = responseTo(page, 'POST', `/api/WorkItems/${original.id}/checklist`);
-    await dialog(page).getByRole('button', { name: '+ Add', exact: true }).click();
+    await dialog(page).getByRole('button', { name: '+ Adicionar', exact: true }).click();
     const response = await added; expect(response.status()).toBe(200); const entry: Checklist = await response.json();
     const row = dialog(page).getByText(text, { exact: true }).locator('..');
     const marked = responseTo(page, 'PUT', `/api/WorkItems/${original.id}/checklist/${entry.id}`);
