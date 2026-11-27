@@ -88,4 +88,30 @@ describe('Projects', () => {
     expect(enviado.dueDate).toBeUndefined();
     expect(enviado.startDate).toBeUndefined();
   });
+
+  it('mostra o loading padrão em "Criar projeto" e não cria duas vezes (HU-0001)', async () => {
+    const org = organization('org-a', 'Organização A');
+    vi.spyOn(api, 'getProjects').mockResolvedValue([]);
+    let finish!: (value: string) => void;
+    const createProject = vi.spyOn(api, 'createProject').mockImplementation(() => new Promise(resolve => { finish = resolve; }) as never);
+
+    render(view(org, [org]));
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo projeto' }));
+    fireEvent.change(screen.getByPlaceholderText('Nome do projeto'), { target: { value: 'Com loading' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Natureza' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Tipo de Trabalho' }), { target: { value: '1' } });
+    const button = screen.getByRole('button', { name: 'Criar projeto' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button.querySelector('[data-action-spinner]')).toHaveAttribute('aria-hidden', 'true');
+    expect(button).toHaveTextContent('Criar projeto');
+    expect(screen.getByRole('status')).toHaveTextContent('Criando projeto');
+    await waitFor(() => expect(createProject).toHaveBeenCalledTimes(1));
+    finish('novo');
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Criar projeto' })).not.toBeInTheDocument());
+    expect(createProject).toHaveBeenCalledTimes(1);
+  });
 });

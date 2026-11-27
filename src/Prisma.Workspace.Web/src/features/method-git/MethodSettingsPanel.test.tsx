@@ -105,6 +105,24 @@ describe('Configuração do método', () => {
     expect(screen.queryByLabelText('Token emitido')).not.toBeInTheDocument();
   });
 
+  it('mostra o loading padrão em "Emitir token" e emite uma vez só (HU-0001)', async () => {
+    let finish!: (value: { metadata: MethodToken; token: string }) => void;
+    vi.mocked(methodApi.issueToken).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    show();
+    await screen.findByRole('button', { name: 'Emitir token' });
+    fireEvent.change(screen.getByLabelText('Nome do token'), { target: { value: 'Executor' } });
+    const button = screen.getByRole('button', { name: 'Emitir token' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveTextContent('Emitir token');
+    expect(button.querySelector('[data-action-spinner]')).not.toBeNull();
+    expect(methodApi.issueToken).toHaveBeenCalledTimes(1);
+    finish({ metadata: token, token: `pmt_${'b'.repeat(43)}` });
+    await screen.findByLabelText('Token emitido');
+    expect(screen.getByRole('button', { name: 'Emitir token' })).not.toHaveAttribute('aria-busy');
+  });
+
   it('revogação pede confirmação e reflete os metadados atualizados', async () => {
     let revoked = false;
     vi.mocked(methodApi.tokens).mockImplementation(async () => [{ ...token, revokedAtUtc: revoked ? '2026-10-16T08:00:00Z' : null }]);

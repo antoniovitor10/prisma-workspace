@@ -13,6 +13,7 @@ import styled from 'styled-components';
 import { previewMode } from '../../preview';
 import { api } from '../../services/api';
 import { OrganizationStateContext, type OrganizationSummary } from './OrganizationState';
+import { ActionButton } from '../../components/ActionButton';
 
 const previewOrganization: OrganizationSummary = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -72,7 +73,7 @@ function OrganizationOnboarding({ onCreated }: { onCreated: (organization: Organ
     <header><Building2 size={24}/><div><h1>Crie sua organização</h1><p>Este será o ambiente isolado da sua equipe.</p></div></header>
     <label>Nome da organização<input autoFocus required maxLength={160} value={name} onChange={event => setName(event.target.value)} placeholder="Ex.: Acme Tecnologia"/></label>
     {create.error && <small>{create.error instanceof Error ? create.error.message : 'Não foi possível criar a organização.'}</small>}
-    <button disabled={create.isPending}><Plus size={16}/>{create.isPending ? 'Criando...' : 'Criar ambiente'}</button>
+    <ActionButton type="submit" loading={create.isPending} loadingLabel="Criando organização"><Plus size={16}/>Criar ambiente</ActionButton>
   </Card></Center>;
 }
 
@@ -150,7 +151,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   if (!previewMode && query.isLoading)
     return <Center><p>Preparando seu ambiente...</p></Center>;
   if (!previewMode && query.isError)
-    return <Center><Card as="div"><h1>Não foi possível carregar as organizações</h1><p>{query.error instanceof Error ? query.error.message : 'Tente novamente.'}</p><button onClick={() => query.refetch()}>Tentar novamente</button></Card></Center>;
+    return <Center><Card as="div"><h1>Não foi possível carregar as organizações</h1><p>{query.error instanceof Error ? query.error.message : 'Tente novamente.'}</p><ActionButton onClick={() => query.refetch()} loadingLabel="Carregando organizações">Tentar novamente</ActionButton></Card></Center>;
   if (invitationToken && (acceptInvitation.isPending || !invitationAttempted.current))
     return <Center><p>Aceitando convite...</p></Center>;
   if (invitationToken && acceptInvitation.isError) {
@@ -175,7 +176,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   if (!organizations.length && creationQuery.isPending)
     return <Center><p>Verificando seu acesso...</p></Center>;
   if (!organizations.length && creationQuery.isError)
-    return <Center><Card as="div"><h1>Não foi possível verificar seu acesso</h1><p>Tente novamente para continuar.</p><button onClick={() => creationQuery.refetch()}>Tentar novamente</button></Card></Center>;
+    return <Center><Card as="div"><h1>Não foi possível verificar seu acesso</h1><p>Tente novamente para continuar.</p><ActionButton onClick={() => creationQuery.refetch()} loadingLabel="Verificando seu acesso">Tentar novamente</ActionButton></Card></Center>;
   if (!organizations.length && creationQuery.data?.canCreate === false)
     return <Center><Card as="div"><h1>Acesso à organização indisponível</h1><p>Peça ao administrador da sua organização para verificar e reativar seu acesso.</p></Card></Center>;
   if (!organizations.length)

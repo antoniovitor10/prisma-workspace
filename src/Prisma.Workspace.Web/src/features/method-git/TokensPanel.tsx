@@ -4,6 +4,7 @@ import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import type { IssuedToken, MethodRole, MethodToken } from './types';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row, Secret } from './styles';
+import { ActionButton } from '../../components/ActionButton';
 
 const roleNames: Record<MethodRole, string> = { agente: 'Agente', humano: 'Humano pessoal', sistema: 'Sistema de integração' };
 const date = (value: string) => new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -58,11 +59,11 @@ export function TokensPanel({ projectId }: { projectId: string }) {
         </select></Field>
         <Field>Validade em dias<input required type="number" min={1} max={90} value={days} onChange={event => setDays(Number(event.target.value))} />
           <small>Entre 1 e 90 dias. Reemissões usam esta mesma validade.</small></Field>
-        <Actions><Button $primary type="submit">{action.pending === 'issue' ? 'Emitindo token...' : 'Emitir token'}</Button></Actions>
+        <Actions><Button as={ActionButton} $primary type="submit" loading={action.pending === 'issue'} loadingLabel="Emitindo token">Emitir token</Button></Actions>
       </fieldset>
     </Form>
     {tokens.isPending ? <Hint role="status">Carregando tokens...</Hint> : tokens.isError ? <Feedback role="alert">
-      {tokens.error.message} <Button type="button" onClick={() => void tokens.refetch()}>Tentar novamente</Button>
+      {tokens.error.message} <Button as={ActionButton} type="button" onClick={() => tokens.refetch()} loadingLabel="Carregando tokens">Tentar novamente</Button>
     </Feedback> : tokens.data.length === 0 ? <Hint>Nenhum token emitido neste projeto.</Hint> : <List>
       {tokens.data.map(token => <Row key={token.id}>
         <div><div><strong>{token.name}</strong><small>{roleNames[token.role]} · {token.principalDisplayName}</small>
@@ -70,13 +71,13 @@ export function TokensPanel({ projectId }: { projectId: string }) {
           <small>Validade: <time dateTime={token.expiresAtUtc}>{date(token.expiresAtUtc)}</time></small>
           <small>Último uso: {token.lastUsedAtUtc ? date(token.lastUsedAtUtc) : 'ainda não utilizado'}</small></div>
           {!token.revokedAtUtc && <Actions>
-            {token.role !== 'humano' && <Button type="button" disabled={action.pending !== null} onClick={() => void rotate(token)}>Reemitir {token.name}</Button>}
+            {token.role !== 'humano' && <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== `rotate-${token.id}`} loading={action.pending === `rotate-${token.id}`} loadingLabel={`Reemitindo ${token.name}`} onClick={() => rotate(token)}>Reemitir {token.name}</Button>}
             <Button type="button" disabled={action.pending !== null} onClick={() => setRevoke(token)}>Revogar {token.name}</Button>
           </Actions>}
         </div>
         {revoke?.id === token.id && <Feedback>
           <p>Revogar {token.name}? A integração que usa este token perderá o acesso.</p>
-          <Actions><Button type="button" disabled={action.pending !== null} onClick={() => void action.run(`revoke-${token.id}`,
+          <Actions><Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== `revoke-${token.id}`} loading={action.pending === `revoke-${token.id}`} loadingLabel={`Revogando ${token.name}`} onClick={() => action.run(`revoke-${token.id}`,
             async () => { await methodApi.revokeToken(projectId, token.id); setRevoke(null); }, 'Token revogado.')}>
             Confirmar revogação</Button><Button type="button" disabled={action.pending !== null} onClick={() => setRevoke(null)}>Cancelar</Button></Actions>
         </Feedback>}
