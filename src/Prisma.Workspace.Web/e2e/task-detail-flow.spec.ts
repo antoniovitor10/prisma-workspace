@@ -162,7 +162,7 @@ test('subtarefa abre o detalhe completo com planejamento, anexos e horas', async
   const title = 'Subtarefa E2E ' + Date.now();
   await dialog.getByPlaceholder('Nova subtarefa (somente título)').fill(title);
   await dialog.getByLabel('Responsável da subtarefa', { exact: true }).selectOption({ index: 1 });
-  await dialog.getByRole('button', { name: 'Adicionar' }).click();
+  await dialog.getByRole('button', { name: 'Adicionar', exact: true }).click();
 
   await expect(dialog.getByTitle('Clique duas vezes para editar o título')).toHaveText(title);
   await expect(dialog.getByRole('button', { name: 'Anexos' ,exact:true})).toBeVisible();
