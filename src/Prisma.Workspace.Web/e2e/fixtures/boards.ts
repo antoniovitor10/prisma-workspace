@@ -5,7 +5,7 @@ import { expect } from './test';
 export type BoardStage = { id: string; name: string; category: number };
 export type BoardItem = { id: string; boardId: string; stageId: string; completedAt: string | null; version: string };
 export type BoardSession = { accessToken: string; organizationId: string };
-export type ItemOptions = { parentId?: string; kind?: number; description?: string; priority?: number;
+export type ItemOptions = { title?: string; parentId?: string; kind?: number; description?: string; priority?: number;
   startDate?: string; dueDate?: string; estimatedHours?: number; responsibleId?: string };
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const userId = (token: string): string => {
@@ -57,7 +57,7 @@ export class BoardFactory {
   }
 
   async item(boardId: string, stageId: string, options: ItemOptions = {}) {
-    const title = this.name('tarefa');
+    const title = options.title ?? this.name('tarefa');
     const id = await this.create('/api/WorkItems', {
       boardId, stageId, title, responsibleId: userId(this.admin.accessToken), priority: 1, position: 100,
       ...options,

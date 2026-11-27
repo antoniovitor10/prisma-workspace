@@ -37,7 +37,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
@@ -62,6 +62,7 @@ import {
 } from './BacklogFilters';
 import { flattenBacklogHierarchy, includeBacklogAncestors } from './BacklogHierarchy';
 import { useBacklogUrlState } from './useBacklogUrlState';
+import { useUrlDraft } from './useUrlDraft';
 import { subscribeBacklogScroll } from './BacklogScroll';
 
 const Page = styled.section`
@@ -858,6 +859,9 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
   const setGroupBy = (value: React.SetStateAction<BacklogGroupBy>) => updateUrl('groupBy', value);
   const setSelectedIds = (value: React.SetStateAction<Set<string>>) => updateUrl('selectedIds', value);
   const setCollapsedIds = (value: React.SetStateAction<Set<string>>) => updateUrl('collapsedIds', value);
+  const commitSearch = useCallback((search: string) => updateUrl('filters', (current) => ({ ...current, search })), [updateUrl]);
+  const searchField = useUrlDraft(filters.search, commitSearch);
+  const clearFilters = () => { searchField.replace(''); setFilters(defaultBacklogFilters); setGroupBy('none'); };
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   // Visao ampla do backlog, pedido dos devs: da a largura inteira a lista e esconde o
   // painel da sprint. Planejar continua possivel sem arrastar — selecionar itens abre a
@@ -1135,7 +1139,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
       <Toolbar>
         <div><h2>Planejamento do backlog</h2><p>{backlogItems.length} itens visíveis{showPoints?` · ${backlogPoints} pontos não planejados`:''}</p></div>
         <ToolbarActions>
-          <SearchBox><Search size={14} /><input aria-label="Pesquisar backlog" placeholder="Número, título, quadro ou solicitante" value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} /></SearchBox>
+          <SearchBox><Search size={14} /><input aria-label="Pesquisar backlog" placeholder="Número, título, quadro ou solicitante" value={searchField.value} onChange={(event) => searchField.change(event.target.value)} onBlur={searchField.flush} /></SearchBox>
           <Button
             $secondary
             aria-pressed={backlogAmplo}
@@ -1178,7 +1182,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
           <FiltroAtivoSelo>{activeFilterCount} ativo{activeFilterCount > 1 ? 's' : ''}</FiltroAtivoSelo>
         )}
         {!filtrosAbertos && activeFilterCount > 0 && (
-          <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }}>
+          <Button $secondary onClick={clearFilters}>
             <RotateCcw size={13} />Limpar filtros
           </Button>
         )}
@@ -1189,7 +1193,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
         <SelectField>Arquivadas<select aria-label="Mostrar tarefas arquivadas" value={filters.includeArchived ? 'yes' : 'no'} onChange={(event) => setFilters((current) => ({ ...current, includeArchived: event.target.value === 'yes' }))}><option value="no">Ocultar</option><option value="yes">Mostrar</option></select></SelectField>
         <SelectField>Relações<select value={filters.relation} onChange={(event) => setFilters((current) => ({ ...current, relation: event.target.value as BacklogFilterState['relation'] }))}><option value="all">Todas</option><option value="blocked">Bloqueados</option><option value="dependencies">Com dependências</option><option value="unparented">Sem épico</option></select></SelectField>
         <SelectField>Agrupar por<select value={groupBy} onChange={(event) => setGroupBy(event.target.value as BacklogGroupBy)}><option value="none">Sem agrupamento</option><option value="epic">Épico</option><option value="kind">Tipo</option><option value="priority">Prioridade</option><option value="board">Quadro</option></select></SelectField>
-        <Button $secondary onClick={() => { setFilters(defaultBacklogFilters); setGroupBy('none'); }} disabled={activeFilterCount === 0 && groupBy === 'none'}><RotateCcw size={12} />Limpar</Button>
+        <Button $secondary onClick={clearFilters} disabled={activeFilterCount === 0 && groupBy === 'none'}><RotateCcw size={12} />Limpar</Button>
         </>}
       </FilterBar>
 
