@@ -1,6 +1,7 @@
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
 using Prisma.Workspace.Domain.Enums;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +26,8 @@ public sealed class MyWorkRepository : IMyWorkRepository
             .Include(x => x.TimeEntries)
             .Include(x => x.OutgoingLinks).ThenInclude(x => x.TargetWorkItem)
             .Include(x => x.IncomingLinks).ThenInclude(x => x.SourceWorkItem)
-            .Where(x => !x.IsArchived && x.ParentId == null
+            .Where(WorkItemBoardVisibility.IsPersonalListItemExpression)
+            .Where(x => !x.IsArchived
                 && (x.ResponsibleId == userId
                     || x.Assignees.Any(a => a.UserId == userId)
                     || x.CreatedBy == userId

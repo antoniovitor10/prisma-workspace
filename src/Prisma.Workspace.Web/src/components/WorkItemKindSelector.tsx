@@ -75,6 +75,8 @@ export interface WorkItemKindSelectorProps {
   onChange: (kind: number) => void;
   allowedKinds?: number[];
   ariaLabel?: string;
+  /** Id de um texto de ajuda ligado ao seletor (aria-describedby). */
+  ariaDescribedBy?: string;
   id?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -86,6 +88,7 @@ export function WorkItemKindSelector({
   onChange,
   allowedKinds = DEFAULT_CREATE_KINDS,
   ariaLabel = 'Tipo de item',
+  ariaDescribedBy,
   id,
   className,
   style,
@@ -103,6 +106,7 @@ export function WorkItemKindSelector({
       <StyledSelect
         id={id}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}

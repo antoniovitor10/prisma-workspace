@@ -41,6 +41,7 @@ import {
   MainContent,
   BoardHeader,
   BoardHelp,
+  NewCardKindHint,
   SelectorContainer,
   BoardActions,
   ViewSwitcher,
@@ -149,6 +150,12 @@ import { StageCategory, stageCategoryOptions, type StageCategoryValue } from '..
 
 
 
+
+/**
+ * Tipos oferecidos no "Novo card" do quadro. Épico, Funcionalidade e História não são card
+ * (regra única WorkItemBoardVisibility no servidor): nascem no backlog. A API continua aceitando.
+ */
+const BOARD_CARD_KINDS: number[] = [WorkItemKind.Task, WorkItemKind.Bug];
 
 interface Board {
   id: string;
@@ -1985,11 +1992,16 @@ export const Kanban: React.FC = () => {
                 onChange={e => setNewItemDesc(e.target.value)}
               />
               <div>
-                <label style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Tipo do Card</label>
+                <label htmlFor="new-card-kind" style={{ fontSize: '14px', display: 'block', marginBottom: 4 }}>Tipo do Card</label>
                 <WorkItemKindSelector
+                  id="new-card-kind"
+                  ariaLabel="Tipo do Card"
+                  ariaDescribedBy="new-card-kind-hint"
                   value={newItemKind}
                   onChange={setNewItemKind}
+                  allowedKinds={BOARD_CARD_KINDS}
                 />
+                <NewCardKindHint id="new-card-kind-hint" role="note">Épicos e Histórias são criados no backlog</NewCardKindHint>
               </div>
               <FormRow>
                 <div>

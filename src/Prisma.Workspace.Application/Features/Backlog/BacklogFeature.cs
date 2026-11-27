@@ -19,7 +19,7 @@ public record BacklogItemDto(Guid Id, Guid BoardId, string BoardName, Guid? Stag
     long Number, Guid? TeamId, string? ResponsibleId, WorkItemOrigin Origin,
     string? RequesterId, string? RequesterName, string? RequesterEmail,
     DateOnly? StartDate, string? AcceptanceCriteria, IReadOnlyList<BacklogLinkDto> Links, bool IsBlocked,
-    bool IsArchived);
+    bool IsArchived, bool IsBoardCard);
 
 public record GetProjectBacklogQuery(Guid ProjectId, string UserId, bool IncludeArchived = false)
     : IRequest<IReadOnlyList<BacklogItemDto>>;
@@ -61,7 +61,9 @@ public class GetProjectBacklogQueryHandler : IRequestHandler<GetProjectBacklogQu
             item.RowVersion.Length == 0 ? string.Empty : Convert.ToBase64String(item.RowVersion),
             item.Number, item.TeamId, item.ResponsibleId, item.Origin,
             item.RequesterId, item.RequesterName, item.RequesterEmail,
-            item.StartDate, item.AcceptanceCriteria, links, blocked, item.IsArchived);
+            item.StartDate, item.AcceptanceCriteria, links, blocked, item.IsArchived,
+            // O quadro da sprint mostra os mesmos cards que o Kanban (regra única de visibilidade).
+            WorkItemBoardVisibility.IsBoardCard(item.Kind, item.Parent?.Kind));
     }
 }
 
