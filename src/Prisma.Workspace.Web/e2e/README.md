@@ -2,6 +2,8 @@
 
 Testes end-to-end do frontend com Playwright.
 
+> A suíte que roda contra produção é outra, com pasta, configuração e comando próprios: `../e2e-producao/README.md` (`npm run e2e:producao`). Esta suíte continua proibida contra produção.
+
 ## Pre-requisitos
 
 ### Opção A: Usar banco de dados dedicado (recomendado)

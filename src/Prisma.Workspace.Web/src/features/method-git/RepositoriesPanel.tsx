@@ -4,6 +4,7 @@ import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
 import { ActionButton } from '../../components/ActionButton';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 const initial = { repositoryFullName: '', repositoryId: '', defaultBranch: '', appId: '', installationId: '',
   host: 'github.com', appPrivateKeySecretRef: '', webhookSecretRef: '', systemPrincipalId: '' };
@@ -28,7 +29,7 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
   }
 
   return <section aria-labelledby="method-repositories-title">
-    <h3 id="method-repositories-title">Repositórios GitHub</h3>
+    <HelpTitleRow><h3 id="method-repositories-title">Repositórios GitHub</h3><HelpButton target="integrationRepositories" label="Ajuda sobre repositórios GitHub" /></HelpTitleRow>
     <Hint>Conecte a instalação da GitHub App ao repositório e ao sistema que registrará os movimentos.</Hint>
     <Hint>No webhook do GitHub, selecione somente os eventos pull_request, pull_request_review e create.</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}

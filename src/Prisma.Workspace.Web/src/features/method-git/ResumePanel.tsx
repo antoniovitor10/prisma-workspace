@@ -4,6 +4,7 @@ import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
 import { ActionButton } from '../../components/ActionButton';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 export function ResumePanel({ projectId, enabled }: { projectId: string; enabled: boolean }) {
   const tasks = useQuery({ queryKey: [...methodKey(projectId), 'tasks'], queryFn: () => methodApi.tasks(projectId), retry: false });
@@ -14,7 +15,7 @@ export function ResumePanel({ projectId, enabled }: { projectId: string; enabled
     && task.blockingEventId && task.cycleId && task.blockingOriginStatus === 'em-desenvolvimento') ?? [];
 
   return <section aria-labelledby="method-resume-title">
-    <h3 id="method-resume-title">Liberação de retomada</h3>
+    <HelpTitleRow><h3 id="method-resume-title">Liberação de retomada</h3><HelpButton target="integrationResume" label="Ajuda sobre retomadas" /></HelpTitleRow>
     <Hint>Libere o agente para retomar o próprio bloqueio de uma execução autorizada. A liberação mantém a task bloqueada até o agente retomar.</Hint>
     {!enabled && <Hint>Reative o método para liberar retomadas para o agente.</Hint>}
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
