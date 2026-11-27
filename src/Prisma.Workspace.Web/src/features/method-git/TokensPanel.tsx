@@ -4,6 +4,7 @@ import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import type { IssuedToken, MethodRole, MethodToken } from './types';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row, Secret } from './styles';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 const roleNames: Record<MethodRole, string> = { agente: 'Agente', humano: 'Humano pessoal', sistema: 'Sistema de integração' };
 const date = (value: string) => new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -32,7 +33,7 @@ export function TokensPanel({ projectId }: { projectId: string }) {
   }
 
   return <section aria-labelledby="method-tokens-title">
-    <h3 id="method-tokens-title">Tokens do projeto</h3>
+    <HelpTitleRow><h3 id="method-tokens-title">Tokens do projeto</h3><HelpButton target="integrationAccess" label="Ajuda sobre tokens" /></HelpTitleRow>
     <Hint>Emita um token de agente para o MCP. Tokens humanos são pessoais e também precisam da autorização pela UI para iniciar uma task.</Hint>
     <Hint>Reemitir preserva a identidade e pode reduzir as permissões de todos os tokens desse agente ou sistema, conforme o acesso atual do emissor.</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}

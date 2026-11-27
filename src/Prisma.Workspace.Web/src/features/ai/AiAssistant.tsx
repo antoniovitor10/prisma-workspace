@@ -5,6 +5,8 @@ import { api } from '../../services/api';
 import { OrganizationStateContext } from '../organizations/OrganizationState';
 import { useAiStatus, readAiEvents, type AiSource } from './aiClient';
 import { AiConversationControls, type AiChoice } from './AiConversationControls';
+import { buildAssistantHelp, helpReferencePattern, isHelpQuestion } from '../help/helpAssistant';
+import { helpPath, resolveHelpRef } from '../help/helpIndex';
 
 type Conversation = { id: string; title: string };
 type Message = { role: string; content: string; sourcesJson?: string; sources?: AiSource[] };
@@ -54,8 +56,17 @@ const Feed = styled.div`
   article { max-width: 70ch; margin-left: auto; margin-right: auto; } article[data-role=user] { padding: 12px 16px; background: ${({ theme }) => theme.color.bg}; border-radius: ${({ theme }) => theme.radius.md}; }
 `;
 
+/** Referência `[A:assunto/artigo#ancora]` da ajuda: só vira link se o artigo existir no bundle (CA-4). */
+function HelpReference({ value }: { value: string }) {
+  const ref = helpReferencePattern.exec(value)?.[1] ?? '';
+  const target = resolveHelpRef(ref) ?? resolveHelpRef(ref.split('#')[0]);
+  if (!target) return <>[artigo de ajuda indisponível]</>;
+  return <Link to={helpPath(target.article.ref, target.anchor)} title={target.article.title}>Abrir na ajuda: {target.article.title}</Link>;
+}
+
 export function AiAnswer({ text, sources = [] }: { text: string; sources?: AiSource[] }) {
-  return <>{text.split(/(\[(?:T:\d+|P:[\w-]+)\])/g).map((part, i) => {
+  return <>{text.split(/(\[(?:T:\d+|P:[\w-]+|A:[a-z0-9-]+\/[a-z0-9-]+(?:#[a-z0-9-]+)?)\])/g).map((part, i) => {
+    if (part.startsWith('[A:')) return <HelpReference key={i} value={part} />;
     const source = sources.find(s => `[${s.reference}]` === part);
     return source ? <Link key={i} to={source.path} title={source.title}>{part}</Link> : part;
   })}</>;
@@ -147,8 +158,10 @@ export function AiAssistant() {
       const projectId = location.pathname.match(/\/projects\/([\da-f-]{36})/i)?.[1];
       const boardId = location.pathname.match(/\/boards\/([\da-f-]{36})/i)?.[1];
       const workItemId = new URLSearchParams(location.search).get('item') ?? undefined;
+      // Pergunta de uso do produto leva o artigo da página atual (e os relacionados) para o servidor.
+      const help = isHelpQuestion(question) ? buildAssistantHelp(location.pathname, location.search, question) : undefined;
       const response = await fetch(`${api.baseUrl}/api/ai/conversations/${conversation}/messages`, { method: 'POST', credentials: 'include', headers: api.headers(),
-        body: JSON.stringify({ text: question, context: { projectId, boardId, workItemId } }), signal: controller.signal });
+        body: JSON.stringify({ text: question, context: { projectId, boardId, workItemId }, ...(help ? { help } : {}) }), signal: controller.signal });
       // Só limpa o rascunho e cria as bolhas depois da validação HTTP do servidor.
       if (response.ok && !controller.signal.aborted) { setText(''); setMessages(m => [...m, { role: 'user', content: question }, { role: 'assistant', content: '' }]); }
       await readAiEvents(response, (name, data) => {
@@ -170,7 +183,7 @@ export function AiAssistant() {
         {id && <><button disabled={busy || savingChoice || loadingConversation} onClick={async () => { const title = window.prompt('Título da conversa'); if (!title?.trim()) return; try { await api.request(`/api/ai/conversations/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }); await refresh(); } catch (e) { setError((e as Error).message); } }}>Renomear</button>
           <button disabled={busy || savingChoice || loadingConversation} onClick={async () => { if (!window.confirm('Excluir esta conversa e suas mensagens?')) return; try { await api.request(`/api/ai/conversations/${id}`, { method: 'DELETE' }); await select(''); await refresh(); } catch (e) { setError((e as Error).message); } }}>Excluir</button></>}
         </div></div></nav><div className="conversation-main"><p className="context">Contexto: {location.pathname.includes('/projects/') ? 'projeto atual' : location.pathname.includes('/boards/') ? 'quadro atual' : 'sua organização'}. Somente dados que você pode acessar.</p>
-      <Feed ref={feed}>{loadingConversation ? <p role="status">Carregando conversa…</p> : messages.length === 0 && <div className="welcome"><h3>Converse sobre seu trabalho.</h3><p>Consulte projetos, tarefas e prazos com o contexto desta tela.</p><p>Experimente: “O que está atrasado neste projeto?”</p></div>}
+      <Feed ref={feed}>{loadingConversation ? <p role="status">Carregando conversa…</p> : messages.length === 0 && <div className="welcome"><h3>Converse sobre seu trabalho.</h3><p>Consulte projetos, tarefas e prazos com o contexto desta tela.</p><p>Experimente: “O que está atrasado neste projeto?”</p><p>Dúvida de uso? Pergunte “Como faço…?” e a resposta vem da <Link to="/ajuda">central de ajuda</Link>.</p></div>}
         {messages.map((m, i) => <article key={i} data-role={m.role}><strong>{m.role === 'user' ? 'Você' : 'Prisma'}</strong><p><AiAnswer text={m.content} sources={m.sources}/></p></article>)}
         {busy && <p role="status">{step}</p>}{error && <p role="alert">{error}</p>}</Feed>
       <form onSubmit={submit}><label htmlFor="ai-question">Pergunte ao workspace</label><div className="compose-row"><textarea id="ai-question" ref={input} value={text} disabled={busy || savingChoice || loadingConversation} maxLength={8000} placeholder="O que precisa da sua atenção?" onChange={e => setText(e.target.value)}/>

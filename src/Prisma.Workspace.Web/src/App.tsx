@@ -30,6 +30,7 @@ const ProjectSettings = lazy(() => import('./pages/ProjectSettings').then((modul
 const ProjectWiki = lazy(() => import('./pages/ProjectWiki').then((module) => ({ default: module.ProjectWiki })));
 const OrganizationSettings = lazy(() => import('./pages/OrganizationSettings').then((module) => ({ default: module.OrganizationSettings })));
 const PublicPortal = lazy(() => import('./pages/PublicPortal').then((module) => ({ default: module.PublicPortal })));
+const HelpCenter = lazy(() => import('./pages/HelpCenter').then((module) => ({ default: module.HelpCenter })));
 
 function OrganizationStart() {
   const { current } = useOrganization();
@@ -121,6 +122,9 @@ function App() {
                   <Route path="/me/tasks" element={<MinhasTarefas />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/settings" element={<OrganizationSettings />} />
+                  {/* Central de ajuda (HU-0003): artigos empacotados no front, sem banco. */}
+                  <Route path="/ajuda" element={<HelpCenter />} />
+                  <Route path="/ajuda/:subject/:slug" element={<HelpCenter />} />
                   <Route path="*" element={<Navigate to="/projects" replace />} />
                 </Route>
               </Routes>

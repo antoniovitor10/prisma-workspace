@@ -5,6 +5,7 @@ import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
 import { formatDateTime, gitPollStatusMessage } from './gitLabels';
 import type { GitRepository } from './types';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 const initial = { repositoryFullName: '', repositoryId: '', defaultBranch: '', appId: '', installationId: '',
   host: 'github.com', appPrivateKeySecretRef: '', webhookSecretRef: '', systemPrincipalId: '' };
@@ -51,7 +52,7 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
   }
 
   return <section aria-labelledby="method-repositories-title">
-    <h3 id="method-repositories-title">Repositórios GitHub</h3>
+    <HelpTitleRow><h3 id="method-repositories-title">Repositórios GitHub</h3><HelpButton target="integrationRepositories" label="Ajuda sobre repositórios GitHub" /></HelpTitleRow>
     <Hint>Conecte cada repositório de um jeito: pela GitHub App com webhook (quando você é admin do repositório) ou pela consulta com o token de leitura da organização (sem App nem webhook).</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
     {action.success && <Feedback role="status">{action.success}</Feedback>}

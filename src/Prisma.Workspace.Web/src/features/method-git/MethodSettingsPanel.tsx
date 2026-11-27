@@ -6,6 +6,7 @@ import { TokensPanel } from './TokensPanel';
 import { RepositoriesPanel } from './RepositoriesPanel';
 import { PullRequestsPanel } from './PullRequestsPanel';
 import { ResumePanel } from './ResumePanel';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 import { Actions, Button, Feedback, Field, Form, Header, Hint, Navigation, Surface } from './styles';
 
 type View = 'tokens' | 'repositories' | 'unlinked' | 'resume';
@@ -36,7 +37,7 @@ export function MethodSettingsPanel({ projectId, boards = [] }: Props) {
   const currentView = tabs.find(tab => tab.id === view && tab.visible)?.id ?? 'unlinked';
 
   return <Surface aria-labelledby="method-settings-title">
-    <Header><div><h2 id="method-settings-title">Método de trabalho</h2>
+    <Header><div><HelpTitleRow><h2 id="method-settings-title">Método de trabalho</h2><HelpButton target="integrations" label="Ajuda sobre integrações" /></HelpTitleRow>
       <Hint>Acompanhe as tasks com agentes e evidências do GitHub. As pessoas continuam movimentando os cards pelo quadro.</Hint></div>
       {settings.data && canManage && <Button type="button" disabled={action.pending !== null} onClick={() => void action.run('toggle',
         () => methodApi.updateSettings(projectId, !settings.data!.enabled, settings.data!.autonomyLevel),
