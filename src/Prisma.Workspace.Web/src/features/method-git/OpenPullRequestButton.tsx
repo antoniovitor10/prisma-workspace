@@ -34,24 +34,28 @@ export interface OpenPullRequestButtonProps {
  * A regra de exibição (branch enviada, sem PR aberto, pessoa que pode editar) vem pronta em `source` e `canEdit`.
  */
 export function OpenPullRequestButton({ projectId, task, source, canEdit, variant = 'tab', className, onOpened }: OpenPullRequestButtonProps) {
-  const [open, setOpen] = useState(false);
-  if (!canEdit || !source) return null;
-  const isApp = source.mode === 'app';
+  // A branch fica guardada no clique: depois do PR aberto o quadro recarrega e a branch deixa de ser elegível
+  // (o botão some), mas o modal continua aberto até a pessoa ler o resultado e fechar.
+  const [openSource, setOpenSource] = useState<PullRequestSource | null>(null);
+  const isApp = source?.mode === 'app';
   const stop = (event: MouseEvent | PointerEvent) => { if (variant === 'card') event.stopPropagation(); };
   return (
     <>
-      <Trigger type="button" className={className} $compact={variant === 'card'}
-        aria-label={isApp ? `Abrir PR da task ${task.methodTaskId}` : `Abrir PR no GitHub da task ${task.methodTaskId}`}
-        onPointerDown={stop} onClick={event => { stop(event); setOpen(true); }}>
-        {isApp ? <GitPullRequest size={variant === 'card' ? 14 : 16} aria-hidden /> : <ExternalLink size={variant === 'card' ? 14 : 16} aria-hidden />}
-        {isApp ? 'Abrir PR' : 'Abrir no GitHub'}
-      </Trigger>
-      {open && (
+      {canEdit && source && (
+        <Trigger type="button" className={className} $compact={variant === 'card'}
+          aria-label={isApp ? `Abrir PR da task ${task.methodTaskId}` : `Abrir PR no GitHub da task ${task.methodTaskId}`}
+          onPointerDown={stop} onClick={event => { stop(event); setOpenSource(source); }}>
+          {isApp ? <GitPullRequest size={variant === 'card' ? 14 : 16} aria-hidden /> : <ExternalLink size={variant === 'card' ? 14 : 16} aria-hidden />}
+          {isApp ? 'Abrir PR' : 'Abrir no GitHub'}
+        </Trigger>
+      )}
+      {openSource && (
         // O modal vai num portal, mas os eventos sobem pela árvore do React até o card: não deixa abrir o detalhe nem arrastar.
         <span style={{ display: 'contents' }} onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}
           onPointerUp={event => event.stopPropagation()} onPointerMove={event => event.stopPropagation()}
           onPointerCancel={event => event.stopPropagation()}>
-          <OpenPullRequestDialog open={open} onOpenChange={setOpen} projectId={projectId} task={task} source={source} onOpened={onOpened} />
+          <OpenPullRequestDialog open onOpenChange={next => { if (!next) setOpenSource(null); }} projectId={projectId} task={task}
+            source={openSource} onOpened={onOpened} />
         </span>
       )}
     </>

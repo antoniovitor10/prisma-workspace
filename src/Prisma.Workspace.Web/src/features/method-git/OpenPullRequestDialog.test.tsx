@@ -125,6 +125,22 @@ describe('OpenPullRequestDialog (CA-4, CA-6, CA-7, CA-10)', () => {
     expect(onOpened).not.toHaveBeenCalled();
   });
 
+  it('o modal continua aberto quando o PR aberto torna a branch inelegível (o quadro recarrega)', async () => {
+    vi.spyOn(pullRequestApi, 'draft').mockResolvedValue(draft);
+    vi.spyOn(pullRequestApi, 'open').mockResolvedValue({ outcome: 'opened', number: 7, url: 'https://github.com/qa/metodo/pull/7', moved: true, message: 'PR #7 aberto; o card foi para Em revisão.' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const ui = (source: PullRequestSource | null) => <ThemeProvider theme={theme}><QueryClientProvider client={client}>
+      <OpenPullRequestButton projectId="project-1" task={task} source={source} canEdit />
+    </QueryClientProvider></ThemeProvider>;
+    const view = render(ui(app));
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Abrir PR' }));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('PR #7 aberto; o card foi para Em revisão.');
+    view.rerender(ui(null));
+    expect(screen.queryByRole('button', { name: 'Abrir PR da task T-0028' })).toBeNull();
+    expect(screen.getByRole('dialog')).toHaveTextContent('PR #7 aberto; o card foi para Em revisão.');
+  });
+
   it('Esc fecha o modal', async () => {
     vi.spyOn(pullRequestApi, 'draft').mockResolvedValue(draft);
     show();

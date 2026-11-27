@@ -5,6 +5,7 @@ import type { OpenPullRequestResult } from './pullRequestTypes';
 import type { TaskGitView } from './types';
 
 const Bar = styled.div`
+  &[hidden] { display: none; }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 12px; border: 1px solid ${({ theme }) => theme.color.border}; border-radius: ${({ theme }) => theme.radius.lg};
   background: ${({ theme }) => theme.color.surfaceSubtle};
@@ -23,9 +24,9 @@ export function TaskGitPullRequestActions({ projectId, view, taskTitle, onOpened
   const source = sourceFromTaskGit(view);
   const canEdit = source?.mode === 'poll' ? view.canLink : view.canOpenPullRequest === true;
   const draft = view.pullRequestDraft;
-  if (!draft && !(source && canEdit)) return null;
+  // A barra fica montada mesmo vazia (oculta): o modal aberto sobrevive à releitura da aba depois do PR.
   return (
-    <Bar>
+    <Bar hidden={!draft && !(source && canEdit)}>
       <p>{draft ? <>Rascunho do PR: gravado em <time dateTime={draft.updatedAtUtc}>{dateTime(draft.updatedAtUtc)}</time> por {draft.actorName ?? 'ator não informado'}</> : 'Sem rascunho do PR.'}</p>
       <OpenPullRequestButton projectId={projectId} source={source} canEdit={canEdit} onOpened={onOpened}
         task={{ workItemId: view.workItemId, methodTaskId: view.methodTaskId, title: taskTitleWithoutId(taskTitle ?? view.methodTaskId, view.methodTaskId) }} />
