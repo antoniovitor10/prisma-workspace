@@ -5,6 +5,7 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { pullRequestApi } from './client';
 import { Button as BaseButton } from './styles';
+import { ActionButton } from '../../components/ActionButton';
 import { bodyWithCardLine, cardLink, CARD_LINE_PREFIX, hasTaskPrefix } from './pullRequestEligibility';
 import type { CompareUrlInput, OpenPullRequestInput, OpenPullRequestResult, PullRequestSource, PullRequestTask } from './pullRequestTypes';
 
@@ -215,9 +216,11 @@ export function OpenPullRequestDialog({ open, onOpenChange, projectId, task, sou
                   {compare?.truncated && <Button type="button" onClick={copyBody}>{copied ? 'Corpo copiado' : 'Copiar corpo'}</Button>}
                   <Dialog.Close asChild><Button type="button" disabled={pending}>{done ? 'Fechar' : 'Cancelar'}</Button></Dialog.Close>
                   {!done && (
-                    <Button $primary type="submit" disabled={pending || !title.trim()} aria-busy={pending}>
+                    // Loading padrão (HU-0001): spinner sem trocar o texto e nenhum clique novo durante o envio (evita PR duplo).
+                    <Button as={ActionButton} $primary type="submit" disabled={!title.trim()} loading={pending}
+                      loadingLabel={isApp ? 'Abrindo o PR' : 'Montando o link do GitHub'}>
                       {isApp ? <GitPullRequest size={16} aria-hidden /> : <ExternalLink size={16} aria-hidden />}
-                      {pending ? (isApp ? 'Abrindo PR…' : 'Abrindo…') : (isApp ? 'Abrir PR' : 'Abrir no GitHub')}
+                      {isApp ? 'Abrir PR' : 'Abrir no GitHub'}
                     </Button>
                   )}
                 </Actions>

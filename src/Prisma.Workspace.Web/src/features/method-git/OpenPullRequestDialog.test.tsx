@@ -75,7 +75,7 @@ describe('OpenPullRequestDialog (CA-4, CA-6, CA-7, CA-10)', () => {
     expect(within(dialog).queryByText('Não consegui carregar o rascunho; usei o texto padrão.')).toBeNull();
   });
 
-  it('o texto digitado e a caixa vão no POST; Confirmar fica desabilitado durante o envio; resultado e onOpened', async () => {
+  it('o texto digitado e a caixa vão no POST; Confirmar fica em espera (sem novo clique) durante o envio; resultado e onOpened', async () => {
     vi.spyOn(pullRequestApi, 'draft').mockResolvedValue(draft);
     let finish: (value: OpenPullRequestResult) => void = () => {};
     const open = vi.spyOn(pullRequestApi, 'open').mockReturnValue(new Promise(resolve => { finish = resolve; }));
@@ -85,10 +85,11 @@ describe('OpenPullRequestDialog (CA-4, CA-6, CA-7, CA-10)', () => {
     fireEvent.change(within(dialog).getByLabelText('Corpo do PR'), { target: { value: 'Corpo editado' } });
     fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Abrir como rascunho' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Abrir PR' }));
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Abrindo PR…' })).toBeDisabled());
+    const confirm = within(dialog).getByRole('button', { name: /^Abrir PR/ });
+    await waitFor(() => expect(confirm).toHaveAttribute('aria-busy', 'true'));
     expect(open).toHaveBeenCalledTimes(1);
     expect(open).toHaveBeenCalledWith('project-1', 'T-0028', { linkId: 'link-1', title: 'Título editado', body: 'Corpo editado', draft: true });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Abrindo PR…' }));
+    fireEvent.click(confirm);
     expect(open).toHaveBeenCalledTimes(1);
     finish({ outcome: 'opened', number: 7, url: 'https://github.com/qa/metodo/pull/7', moved: true, message: 'PR #7 aberto; o card foi para Em revisão.' });
     const status = await within(dialog).findByRole('status');
