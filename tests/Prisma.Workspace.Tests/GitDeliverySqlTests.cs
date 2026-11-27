@@ -373,6 +373,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
     public sealed class SqlClock(DateTimeOffset now) : TimeProvider { public DateTimeOffset Now { get; set; } = now; public override DateTimeOffset GetUtcNow() => Now; }
     private sealed class SqlTenant(Guid id) : IOrganizationContext { public Guid? OrganizationId => id; }
     private sealed class SqlActor : IMethodAccessContext { public MethodActorIdentity? Current { get; set; } }
+    private sealed class EnabledMethodFeature : Prisma.Workspace.Application.Features.MethodSecurity.IMethodFeatureConfiguration { public bool Enabled => true; }
     private sealed class SqlPermissions : IPermissionService
     {
         public Task<bool> HasAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.FromResult(true);
@@ -408,6 +409,8 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
         /// <summary>Opções do banco descartável do caso, para montar um contêiner de DI próprio (consulta agendada).</summary>
         public DbContextOptions<AppDbContext> Options() => _options(null);
         public Guid OrganizationId => _organization;
+        /// <summary>Contexto como o da API: guarda de escrita e registro de movimentos do método ligados, com o ator do caso.</summary>
+        public AppDbContext MethodContext() => new(_options(null), new SqlTenant(_organization), _audit, _actor, new EnabledMethodFeature(), Clock);
         public EfMethodGitStore Store(AppDbContext context, GitWebhookIngressLimiter? limiter = null) => new(context, new SqlTenant(_organization), _actor, new SqlPermissions(), Clock, limiter);
         /// <summary>Contexto de identidade do caso, para montar operações da aplicação sobre o mesmo ator do store.</summary>
         public IMethodAccessContext Access => _actor;

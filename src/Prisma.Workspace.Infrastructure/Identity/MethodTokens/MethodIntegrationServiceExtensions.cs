@@ -27,6 +27,9 @@ public static class MethodIntegrationServiceExtensions
         services.AddScoped<IMethodGitStore, EfMethodGitStore>();
         services.AddScoped<GitRepositoryOperations>();
         services.AddScoped<GitPullRequestOperations>();
+        services.AddScoped<GitPullRequestDrafts>();
+        services.AddScoped<GitPullRequestOpening>();
+        services.AddSingleton<IMethodCardLinks, ConfigurationMethodCardLinks>();
         services.AddScoped<GitTaskResolver>();
         services.AddScoped<GitWebhookIngress>();
         services.AddScoped<GitDeliveryProcessor>();

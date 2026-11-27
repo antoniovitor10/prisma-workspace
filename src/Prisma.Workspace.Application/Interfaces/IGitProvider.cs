@@ -22,6 +22,19 @@ public interface IGitProvider
     // Modo consulta: a branch já existe no GitHub? (vínculo local vira enviado). Só GET.
     Task<bool> BranchExistsAsync(GitRepositoryDescriptor repository, string branch, CancellationToken cancellationToken = default)
         => Task.FromResult(false);
+    // HU-0007: PR aberto cuja head é a branch (do próprio repositório). Leitura com a sessão de leitura atual.
+    // Erros do GitHub saem como GitPullRequestRejectedException, já classificados.
+    async Task<GitPullRequestSnapshot?> FindOpenPullRequestByHeadAsync(GitRepositoryDescriptor repository, string branch,
+        CancellationToken cancellationToken = default)
+    {
+        var open = await ListPullRequestsAsync(repository, "open", cancellationToken);
+        return open.PullRequests.FirstOrDefault(pr => pr.State == "open" && pr.HeadBranch == branch
+            && (pr.HeadRepositoryId is null || pr.HeadRepositoryId == repository.RepositoryId));
+    }
+    // HU-0007: abre o PR com um token de escrita (só pull_requests: write + metadata: read, um repositório, sem cache),
+    // pedido na hora e descartado depois. Erros do GitHub saem como GitPullRequestRejectedException, já classificados.
+    Task<GitPullRequestSnapshot> CreatePullRequestAsync(GitRepositoryDescriptor repository, GitPullRequestCreation pullRequest,
+        CancellationToken cancellationToken = default) => throw new NotSupportedException();
 }
 
 /// <summary>Referências resolvidas apenas no namespace externo MethodGit:Secrets; valores nunca saem em DTO/log.</summary>
