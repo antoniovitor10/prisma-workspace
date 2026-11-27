@@ -68,6 +68,17 @@ public sealed class GitHubProviderPollTests
     }
 
     [Fact]
+    public async Task CA13_token_revoked_after_the_session_was_cached_surfaces_the_status_instead_of_an_incomplete_read()
+    {
+        var github = new FakeGitHub();
+        var provider = Provider(github);
+        Assert.True((await provider.ValidateInstallationAsync(Repository())).Allowed);
+        github.FailPulls = HttpStatusCode.Unauthorized;
+        var error = await Assert.ThrowsAsync<GitHubUnavailableException>(() => provider.ListPullRequestsForCycleAsync(Repository(), Now.AddHours(-1)));
+        Assert.Equal(GitPollStatus.TokenInvalid, GitPollStatus.From(error));
+    }
+
+    [Fact]
     public async Task CA13_revoked_credential_never_calls_github()
     {
         var github = new FakeGitHub();
@@ -86,13 +97,15 @@ public sealed class GitHubProviderPollTests
     internal sealed class FakeGitHub : HttpMessageHandler, IHttpClientFactory
     {
         public HttpStatusCode? Fail { get; init; }
+        public HttpStatusCode? FailPulls { get; set; }
         public List<(HttpMethod Method, string Path, string? Bearer)> Requests { get; } = [];
         public HttpClient CreateClient(string name) => new(this, false);
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var path = request.RequestUri!.PathAndQuery;
             Requests.Add((request.Method, path, request.Headers.Authorization?.Parameter));
-            if (Fail is { } status) return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent("{\"message\":\"Bad credentials\"}") });
+            if (Fail is { } status || (FailPulls is { } pulls && path.Contains("/pulls", StringComparison.Ordinal) && (status = pulls) == pulls))
+                return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent("{\"message\":\"Bad credentials\"}") });
             object? body = path switch
             {
                 "/repos/detranse/canais-mobile" => new { id = 777001, full_name = "detranse/canais-mobile", default_branch = "main" },

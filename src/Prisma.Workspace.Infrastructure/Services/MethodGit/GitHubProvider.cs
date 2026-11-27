@@ -138,7 +138,9 @@ public sealed partial class GitHubProvider : IGitProvider
             }
             return new(result, false, "git_pull_request_pagination_incomplete");
         }
-        catch (GitHubUnavailableException exception) when (exception.Code != "git_rate_limited") { return new(result, false, exception.Code); }
+        // No modo consulta, token recusado ou repositório fora do token não é "leitura incompleta": sobe com o status (401, 403, 404).
+        catch (GitHubUnavailableException exception) when (exception.Code != "git_rate_limited"
+            && !(repository.IsPoll && exception.StatusCode is 401 or 403 or 404)) { return new(result, false, exception.Code); }
     }
     // O orçamento é por credencial: no modo consulta, todos os repositórios da organização dividem o limite do token.
     private string InstallationKey(GitRepositoryDescriptor repository) => repository.IsPoll ? $"pat:{repository.ReadCredentialId}" : $"{repository.AppId}:{repository.InstallationId}";

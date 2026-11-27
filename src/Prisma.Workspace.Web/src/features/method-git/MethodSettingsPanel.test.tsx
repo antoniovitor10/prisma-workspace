@@ -261,7 +261,7 @@ describe('Configuração do método', () => {
       const row = await screen.findByRole('listitem', { name: 'Repositório detranse/canais-mobile' });
       fireEvent.click(within(row).getByRole('button', { name: 'Consultar agora' }));
       await waitFor(() => expect(methodApi.pollRepository).toHaveBeenCalledWith('project-a', 'repository-p'));
-      expect(await screen.findByRole('status')).toHaveTextContent('Consulta de detranse/canais-mobile concluída agora.');
+      expect(await screen.findByRole('status')).toHaveTextContent(/Consulta de detranse\/canais-mobile concluída em .*: 1 PR\(s\) reavaliado\(s\)/);
       fireEvent.click(within(await screen.findByRole('listitem', { name: 'Repositório detranse/canais-mobile' })).getByRole('button', { name: 'Consultar agora' }));
       expect(await screen.findByText('Uma consulta deste repositório acabou de rodar. Tente de novo em 1 minuto.')).toBeInTheDocument();
     });

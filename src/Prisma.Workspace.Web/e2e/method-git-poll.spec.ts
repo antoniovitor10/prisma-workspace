@@ -43,7 +43,7 @@ test.describe('Git no card, aba Git e modo consulta (HU-0002)', () => {
     await connect.getByRole('radio', { name: 'Consulta com token de leitura' }).check();
     await expect(connect.getByLabel('GitHub App ID')).toHaveCount(0);
     await expect(connect.getByLabel('Installation ID')).toHaveCount(0);
-    await connect.getByLabel('Repositório').fill(p.repositoryFullName);
+    await connect.getByLabel('Repositório', { exact: true }).fill(p.repositoryFullName);
     await connect.getByLabel('Branch principal').fill('main');
     await connect.getByLabel('Sistema de integração').selectOption(p.systemPrincipalId);
     await connect.getByRole('button', { name: 'Conectar repositório' }).click();

@@ -131,6 +131,14 @@ function RepositoryRow({ projectId, repository, action, onCopy }: {
 }) {
   const poll = repository.mode === 'poll';
   const pollError = poll ? gitPollStatusMessage(repository.lastPollStatus) : null;
+  const [pollMessage, setPollMessage] = useState('');
+  async function pollNow() {
+    setPollMessage('');
+    // A lista é recarregada mesmo quando a consulta falha: o erro aparece no próprio repositório.
+    const result = await action.run(`poll:${repository.id}`, () => methodApi.pollRepository(projectId, repository.id));
+    if (result?.value.success)
+      setPollMessage(`Consulta de ${repository.repositoryFullName} concluída em ${formatDateTime(result.value.lastPolledAtUtc ?? new Date().toISOString())}: ${result.value.pullRequestsEvaluated} PR(s) reavaliado(s). Os cards se movem em instantes, se o GitHub mudou.`);
+  }
   return <Row aria-label={`Repositório ${repository.repositoryFullName}`}>
     <div><div><strong>{repository.repositoryFullName}</strong><small>{repository.enabled ? 'Ativo' : 'Pausado'} · Principal: {repository.defaultBranch}</small>
       {poll ? <small>Consulta com token de leitura · {repository.lastPolledAtUtc
@@ -138,17 +146,14 @@ function RepositoryRow({ projectId, repository, action, onCopy }: {
         : 'nenhuma consulta com sucesso ainda'}</small>
         : <small>App {repository.appId} · Instalação {repository.installationId}</small>}</div>
       <Actions style={{ gridColumn: 'auto' }}>
-        {poll && repository.enabled && <Button type="button" disabled={action.pending !== null} onClick={() => void action.run(`poll:${repository.id}`, async () => {
-          const result = await methodApi.pollRepository(projectId, repository.id);
-          if (!result.success) throw new Error(gitPollStatusMessage(result.status) ?? 'A consulta ao GitHub falhou.');
-          return result;
-        }, `Consulta de ${repository.repositoryFullName} concluída agora. Os cards se movem em instantes, se o GitHub mudou.`)}>
+        {poll && repository.enabled && <Button type="button" disabled={action.pending !== null} onClick={() => void pollNow()}>
           {action.pending === `poll:${repository.id}` ? 'Consultando...' : 'Consultar agora'}</Button>}
         <Button type="button" disabled={action.pending !== null} onClick={() => void action.run(repository.id,
           () => methodApi.updateRepository(projectId, repository.id, !repository.enabled), repository.enabled ? 'Integração pausada.' : 'Integração reativada.')}>
           {repository.enabled ? 'Pausar integração' : 'Reativar integração'}</Button>
       </Actions>
     </div>
+    {pollMessage && <Hint role="status">{pollMessage}</Hint>}
     {pollError && <Feedback role="alert">{pollError}</Feedback>}
     {repository.operationalError && <Feedback role="alert">{repository.operationalError}</Feedback>}
     {!poll && <>
