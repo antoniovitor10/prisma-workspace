@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 import { test, expect } from './fixtures/test';
-import { humanSession, type Api } from './fixtures/method-git';
-import { createPollProject, fakePoll, pollEnabled, setPollPullRequest, startGitHubFake } from './fixtures/method-git-poll';
+import type { Api } from './fixtures/method-git';
+import { browserApi, createPollProject, fakePoll, pollEnabled, setPollPullRequest, startGitHubFake } from './fixtures/method-git-poll';
 
 /**
  * HU-0002: Git visível no card e na tarefa, com o modo sem admin (consulta com token de leitura).
@@ -13,17 +13,26 @@ test.describe('Git no card, aba Git e modo consulta (HU-0002)', () => {
   test.describe.configure({ mode: 'serial' });
 
   let fake: ChildProcess | undefined;
-  let human: Api;
 
   test.beforeAll(async () => {
     test.setTimeout(60_000);
     fake = await startGitHubFake();
-    human = (await humanSession()).api;
   });
   test.afterAll(() => { fake?.kill(); });
+  // Os projetos do teste são arquivados no fim: outros specs escolhem "o primeiro projeto" da organização
+  // e não podem cair num projeto do método criado aqui.
+  const created: Array<{ api: Api; projectId: string }> = [];
+  test.afterEach(async () => {
+    for (const { api, projectId } of created.splice(0)) {
+      const response = await api.post(`/api/projects/${projectId}/archive`);
+      expect(response.ok(), `arquivar o projeto do teste: ${response.status()}`).toBeTruthy();
+    }
+  });
 
   test('T-0007: cadastra o token da organização e conecta o repositório sem App (CA-9, CA-13b)', async ({ page, authenticatedGoto }) => {
+    const human = await browserApi(page);
     const p = await createPollProject(human, 'cadastro', false);
+    created.push({ api: human, projectId: p.projectId });
     await authenticatedGoto(`/projects/${p.projectId}/settings?secao=metodo`);
     await page.getByRole('button', { name: 'Repositórios' }).click();
 
@@ -58,7 +67,9 @@ test.describe('Git no card, aba Git e modo consulta (HU-0002)', () => {
   });
 
   test('T-0007/T-0008: token recusado pelo GitHub aparece na tela de Repositórios e nada se move (CA-13)', async ({ page, authenticatedGoto }) => {
+    const human = await browserApi(page);
     const p = await createPollProject(human, 'erro', true);
+    created.push({ api: human, projectId: p.projectId });
     await fakePoll('PUT', '/__fixture/read-token', { token: p.token, repos: [p.repositoryFullName], status: 401 });
     await authenticatedGoto(`/projects/${p.projectId}/settings?secao=metodo`);
     await page.getByRole('button', { name: 'Repositórios' }).click();
@@ -71,7 +82,9 @@ test.describe('Git no card, aba Git e modo consulta (HU-0002)', () => {
 
   test('T-0005/T-0006/T-0008: card e aba Git mostram branch, PR e repositório; Consultar agora move o card (CA-1 a CA-7, CA-10, CA-11)', async ({ page, authenticatedGoto }) => {
     test.setTimeout(120_000);
+    const human = await browserApi(page);
     const p = await createPollProject(human, 'fluxo', true);
+    created.push({ api: human, projectId: p.projectId });
     const branch = `feat/pagamento-${Date.now().toString(36)}`;
     const id = 'T-0101';
     await human.json(human.post(`/api/projects/${p.projectId}/method/tasks`, {

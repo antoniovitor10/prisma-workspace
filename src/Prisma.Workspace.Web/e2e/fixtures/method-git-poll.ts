@@ -2,8 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, request as playwrightRequest } from '@playwright/test';
-import { STATUS, type Api, type Status } from './method-git';
+import { expect, request as playwrightRequest, type Page } from '@playwright/test';
+import { Api, STATUS, type Status } from './method-git';
 
 /**
  * Modo consulta do método Git (HU-0002): o GitHub falso (github-fake.mjs) roda dentro do próprio runner do Playwright,
@@ -26,6 +26,19 @@ export async function startGitHubFake(): Promise<ChildProcess> {
     } catch { return 0; }
   }, { timeout: 15_000, message: 'GitHub falso do modo consulta não subiu' }).toBe(200);
   return child;
+}
+
+/**
+ * Sessão da própria página (token e organização ativos no navegador). Outros specs criam e trocam de organização
+ * durante a suíte; os dados do teste precisam nascer na organização que a tela está usando.
+ */
+export async function browserApi(page: Page): Promise<Api> {
+  if (page.url() === 'about:blank') await page.goto('/projects', { waitUntil: 'domcontentloaded' });
+  const session = await page.evaluate(() => ({
+    token: localStorage.getItem('prisma_workspace_token'), organizationId: localStorage.getItem('prisma_workspace_organization'),
+  }));
+  expect(session.token && session.organizationId, 'sessão E2E autenticada no navegador').toBeTruthy();
+  return new Api(await playwrightRequest.newContext(), { Authorization: `Bearer ${session.token}`, 'X-Organization-Id': session.organizationId! });
 }
 
 export async function fakePoll(method: 'PUT' | 'POST' | 'GET', fixturePath: string, data?: unknown) {
