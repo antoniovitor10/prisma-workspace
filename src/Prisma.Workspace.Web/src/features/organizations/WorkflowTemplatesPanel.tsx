@@ -3,6 +3,7 @@ import { GitBranch, Plus, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { api } from '../../services/api';
+import { ActionButton } from '../../components/ActionButton';
 
 interface WorkflowTemplate {
   id: string; name: string; isDefault: boolean; isActive: boolean; version: number;
@@ -32,7 +33,7 @@ export function WorkflowTemplatesPanel({ organizationId, canManage }: { organiza
   const disable=useMutation({mutationFn:(id:string)=>api.disableOrganizationWorkflowTemplate(organizationId,id),onSuccess:refresh,onError:error=>setMessage((error as Error).message)});
   const submit=(event:FormEvent)=>{event.preventDefault();if(name.trim())create.mutate();};
   return <Shell><header><GitBranch size={16}/><h2>Templates de workflow</h2><p>Herança dinâmica para novos projetos</p></header><List>
-    {(query.data??[]).filter(template=>template.isActive).map(template=><Row key={template.id}><div><strong>{template.name}{template.isDefault?' · padrão':''}</strong><small>Versão {template.version} · {template.statuses.filter(status=>status.isActive).map(status=>status.name).join(' → ')}</small></div>{canManage&&<button aria-label={`Desativar ${template.name}`} title="Desativar" onClick={()=>window.confirm('Desativar este template sem projetos herdados?')&&disable.mutate(template.id)}><Trash2 size={14}/></button>}</Row>)}
+    {(query.data??[]).filter(template=>template.isActive).map(template=><Row key={template.id}><div><strong>{template.name}{template.isDefault?' · padrão':''}</strong><small>Versão {template.version} · {template.statuses.filter(status=>status.isActive).map(status=>status.name).join(' → ')}</small></div>{canManage&&<ActionButton aria-label={`Desativar ${template.name}`} title="Desativar" loading={disable.isPending&&disable.variables===template.id} loadingLabel={`Desativando ${template.name}`} onClick={()=>window.confirm('Desativar este template sem projetos herdados?')&&disable.mutate(template.id)}><Trash2 size={14}/></ActionButton>}</Row>)}
     {!query.isLoading&&!(query.data??[]).some(template=>template.isActive)&&<p>Nenhum template ativo. Crie o fluxo padrão da organização.</p>}
-  </List>{canManage&&<Form onSubmit={submit}><input required maxLength={160} placeholder="Nome do novo template" value={name} onChange={event=>setName(event.target.value)}/><button disabled={create.isPending}><Plus size={14}/>Criar fluxo padrão</button></Form>}{message&&<Message role="alert">{message}</Message>}</Shell>;
+  </List>{canManage&&<Form onSubmit={submit}><input required maxLength={160} placeholder="Nome do novo template" value={name} onChange={event=>setName(event.target.value)}/><ActionButton type="submit" loading={create.isPending} loadingLabel="Criando fluxo padrão"><Plus size={14}/>Criar fluxo padrão</ActionButton></Form>}{message&&<Message role="alert">{message}</Message>}</Shell>;
 }

@@ -126,7 +126,7 @@ export const Select = styled.select`
   }
 `;
 
-export const ActionButton = styled.button`
+export const ToolbarButton = styled.button`
   background: ${props => props.theme.color.surface};
   border: 1px solid ${props => props.theme.color.border};
   color: ${props => props.theme.color.text};

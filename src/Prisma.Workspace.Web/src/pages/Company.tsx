@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Users, Plus, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
+import { ActionButton } from '../components/ActionButton';
 
 interface Project {
   id: string;
@@ -167,6 +168,7 @@ const ClientItem = styled.div`
 export const Company: React.FC = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'projetos' | 'clientes'>('projetos');
+  const [addingClient, setAddingClient] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [newClient, setNewClient] = useState('');
@@ -187,10 +189,15 @@ export const Company: React.FC = () => {
 
   const addClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClient.trim()) return;
-    await api.createClient(newClient.trim());
-    setNewClient('');
-    await load();
+    if (!newClient.trim() || addingClient) return;
+    setAddingClient(true);
+    try {
+      await api.createClient(newClient.trim());
+      setNewClient('');
+      await load();
+    } finally {
+      setAddingClient(false);
+    }
   };
 
   const removeClient = async (id: string) => {
@@ -245,7 +252,7 @@ export const Company: React.FC = () => {
           <form onSubmit={addClient}>
             <Row>
               <Input placeholder="Nome do cliente" value={newClient} onChange={e => setNewClient(e.target.value)} />
-              <AddBtn type="submit"><Plus size={15} /> Adicionar</AddBtn>
+              <AddBtn as={ActionButton} type="submit" loading={addingClient} loadingLabel="Adicionando cliente"><Plus size={15} /> Adicionar</AddBtn>
             </Row>
           </form>
           {clients.length === 0 && <p style={{ color: '#94A3B8' }}>Nenhum cliente cadastrado.</p>}
@@ -256,7 +263,7 @@ export const Company: React.FC = () => {
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, color: '#64748B', fontSize: 15 }}>
                 {c.boardsCount} projeto(s)
-                <button type="button" onClick={() => removeClient(c.id)} title="Excluir"><Trash2 size={15} color="#CBD5E1" /></button>
+                <ActionButton type="button" onClick={() => removeClient(c.id)} title="Excluir" loadingLabel={`Excluindo ${c.name}`}><Trash2 size={15} color="#CBD5E1" /></ActionButton>
               </span>
             </ClientItem>
           ))}

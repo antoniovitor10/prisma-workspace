@@ -21,6 +21,7 @@ import {
 import { api } from '../services/api';
 import { BrandMark } from '../components/BrandMark';
 import { useThemeMode } from '../styles/ThemeMode';
+import { ActionButton } from '../components/ActionButton';
 
 const Page = styled.div`
   display: flex;
@@ -829,8 +830,14 @@ export const Auth: React.FC = () => {
                 </Row>
               )}
 
-              <PrimaryButton type="submit" disabled={loading || (hasInvite && flow === 'login' && !invite)}>
-                {loading ? 'Processando...' : flow === 'forgot' ? 'Enviar instruções' : flow === 'reset' ? 'Redefinir senha' : isRegister ? (
+              <PrimaryButton
+                as={ActionButton}
+                type="submit"
+                loading={loading}
+                loadingLabel={flow === 'forgot' ? 'Enviando instruções' : flow === 'reset' ? 'Redefinindo senha' : isRegister ? 'Criando conta' : 'Entrando'}
+                disabled={hasInvite && flow === 'login' && !invite}
+              >
+                {flow === 'forgot' ? 'Enviar instruções' : flow === 'reset' ? 'Redefinir senha' : isRegister ? (
                   <><UserPlus size={18} /><span>{hasInvite ? 'Criar conta e entrar' : 'Criar conta'}</span></>
                 ) : (
                   <><LogIn size={18} /><span>{hasInvite ? 'Entrar e aceitar convite' : 'Entrar →'}</span></>

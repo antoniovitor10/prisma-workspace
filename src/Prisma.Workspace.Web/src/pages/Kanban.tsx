@@ -46,7 +46,7 @@ import {
   ViewSwitcher,
   ViewSwitcherButton,
   Select,
-  ActionButton,
+  ToolbarButton,
   AddCardButton,
   KanbanGrid,
   Column,
@@ -97,6 +97,7 @@ import {
   TempoTodayBadge,
 } from './Kanban.styles';
 import { StageCategory, stageCategoryOptions, type StageCategoryValue } from '../features/workflow/stageCategories';
+import { ActionButton } from '../components/ActionButton';
 
 
 
@@ -417,6 +418,13 @@ export const Kanban: React.FC = () => {
   // TASK-028: estado do modal de excluir quadro
   const [showDeleteBoardModal, setShowDeleteBoardModal] = useState(false);
   const [deleteBoardPending, setDeleteBoardPending] = useState(false);
+  // Loading padrão (HU-0001) dos formulários de envio que não têm estado de espera próprio.
+  const [pendingForm, setPendingForm] = useState<string | null>(null);
+  const [deletingStage, setDeletingStage] = useState(false);
+  const trackSubmit = (key: string, handler: (event: React.FormEvent) => Promise<unknown>) => async (event: React.FormEvent) => {
+    setPendingForm(key);
+    try { await handler(event); } finally { setPendingForm(current => (current === key ? null : current)); }
+  };
   const [deleteBoardError, setDeleteBoardError] = useState('');
   const [deleteBoardDestId, setDeleteBoardDestId] = useState('');
 
@@ -590,7 +598,7 @@ export const Kanban: React.FC = () => {
     if (!weekStart) return;
     const d = new Date(`${weekStart}T12:00:00`);
     d.setDate(d.getDate() + deltaDays);
-    loadWeekly(d.toISOString().slice(0, 10));
+    return loadWeekly(d.toISOString().slice(0, 10));
   };
 
   const localDateStr = (d: Date) =>
@@ -1256,7 +1264,7 @@ export const Kanban: React.FC = () => {
               )}
             </Select>
 
-            <ActionButton onClick={() => {
+            <ToolbarButton onClick={() => {
               setShowBoardModal(true);
               setNewBoardName('');
               setCreateBoardError('');
@@ -1264,10 +1272,10 @@ export const Kanban: React.FC = () => {
             }}>
               <FolderPlus size={16} />
               <span>Novo Quadro</span>
-            </ActionButton>
+            </ToolbarButton>
 
             {canRenderBoard && visibleBoards.length > 1 && selectedBoardId && (
-              <ActionButton
+              <ToolbarButton
                 onClick={() => {
                   const others = visibleBoards.filter(b => b.id !== selectedBoardId);
                   setDeleteBoardDestId(others[0]?.id ?? '');
@@ -1278,13 +1286,13 @@ export const Kanban: React.FC = () => {
               >
                 <Trash2 size={16} />
                 <span>Excluir Quadro</span>
-              </ActionButton>
+              </ToolbarButton>
             )}
 
-            <ActionButton onClick={() => { setShowTempoModal(true); loadWeekly(); }}>
+            <ToolbarButton onClick={() => { setShowTempoModal(true); loadWeekly(); }}>
               <Clock size={16} />
               <span>Meu Tempo</span>
-            </ActionButton>
+            </ToolbarButton>
           </SelectorContainer>
 
           {canRenderBoard && (
@@ -1300,10 +1308,10 @@ export const Kanban: React.FC = () => {
                   >{label}</ViewSwitcherButton>
                 ))}
               </ViewSwitcher>
-              <ActionButton disabled={stageOrderPending} onClick={() => setShowStageModal(true)}>
+              <ToolbarButton disabled={stageOrderPending} onClick={() => setShowStageModal(true)}>
                 <Plus size={16} />
                 <span>Nova Coluna</span>
-              </ActionButton>
+              </ToolbarButton>
             </BoardActions>
           )}
         </BoardHeader>
@@ -1358,14 +1366,14 @@ export const Kanban: React.FC = () => {
         ) : boardsStatus === 'error' ? (
           <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
             <p>{boardsError}</p>
-            <button type="button" onClick={() => void fetchBoards()}>Tentar carregar os quadros novamente</button>
+            <ActionButton type="button" loadingLabel="Carregando quadros" onClick={() => fetchBoards()}>Tentar carregar os quadros novamente</ActionButton>
           </div>
         ) : boardDataStatus === 'loading' ? (
           <div role="status" aria-live="polite" style={{ padding: '48px 16px', textAlign: 'center', color: theme.color.textMuted }}>Carregando quadro...</div>
         ) : boardDataStatus === 'error' ? (
           <div role="alert" style={{ padding: '16px', border: `1px solid ${theme.color.danger}`, borderRadius: 8, background: theme.color.surface, color: theme.color.text }}>
             <p>{boardDataError}</p>
-            <button type="button" onClick={() => void loadBoardData(selectedBoardId)}>Tentar carregar o quadro novamente</button>
+            <ActionButton type="button" loadingLabel="Carregando quadro" onClick={() => loadBoardData(selectedBoardId)}>Tentar carregar o quadro novamente</ActionButton>
           </div>
         ) : canRenderBoard && boardView === 'calendario' ? (
           <BoardCalendar
@@ -1492,18 +1500,22 @@ export const Kanban: React.FC = () => {
                           <Trash2 size={13} />
                         </ColumnActionButton>
                         <ColumnActionButton
+                          as={ActionButton}
                           type="button"
                           title={`Mover coluna ${stage.name} para a esquerda`}
                           aria-label={`Mover coluna ${stage.name} para a esquerda`}
+                          loadingLabel={`Movendo coluna ${stage.name}`}
                           disabled={stageOrderPending || stages.indexOf(stage) === 0}
                           onClick={() => handleMoveStage(stage.id, 'left')}
                         >
                           <ChevronLeft size={14} />
                         </ColumnActionButton>
                         <ColumnActionButton
+                          as={ActionButton}
                           type="button"
                           title={`Mover coluna ${stage.name} para a direita`}
                           aria-label={`Mover coluna ${stage.name} para a direita`}
+                          loadingLabel={`Movendo coluna ${stage.name}`}
                           disabled={stageOrderPending || stages.indexOf(stage) === stages.length - 1}
                           onClick={() => handleMoveStage(stage.id, 'right')}
                         >
@@ -1660,22 +1672,26 @@ export const Kanban: React.FC = () => {
                         <CardActions>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <ActionIcon
+                              as={ActionButton}
                               aria-label="Mover tarefa para a coluna anterior"
                               title="Mover tarefa para a coluna anterior"
+                              loadingLabel="Movendo tarefa"
                               onClick={event => {
                                 event.stopPropagation();
-                                handleMoveItem(item, 'left');
+                                return handleMoveItem(item, 'left');
                               }}
                               disabled={stageOrderPending || stages.indexOf(stage) === 0}
                             >
                               <ChevronLeft size={16} />
                             </ActionIcon>
                             <ActionIcon
+                              as={ActionButton}
                               aria-label="Mover tarefa para a próxima coluna"
                               title="Mover tarefa para a próxima coluna"
+                              loadingLabel="Movendo tarefa"
                               onClick={event => {
                                 event.stopPropagation();
-                                handleMoveItem(item, 'right');
+                                return handleMoveItem(item, 'right');
                               }}
                               disabled={stageOrderPending || stages.indexOf(stage) === stages.length - 1}
                             >
@@ -1684,12 +1700,14 @@ export const Kanban: React.FC = () => {
                           </div>
 
                           <ActionIcon
+                            as={ActionButton}
                             aria-label={runningItemId === item.id ? 'Parar cronômetro da tarefa' : 'Iniciar cronômetro da tarefa'}
                             title={runningItemId === item.id ? 'Parar cronômetro' : 'Iniciar cronômetro'}
+                            loadingLabel={runningItemId === item.id ? 'Parando cronômetro' : 'Iniciando cronômetro'}
                             $color={runningItemId === item.id ? '#EF4444' : '#10B981'}
                             onClick={event => {
                               event.stopPropagation();
-                              toggleTimer(item.id);
+                              return toggleTimer(item.id);
                             }}
                           >
                             {runningItemId === item.id ? <Square size={16} fill="#EF4444" /> : <PlayIcon size={16} />}
@@ -1800,8 +1818,8 @@ export const Kanban: React.FC = () => {
                 )}
                 <ModalActions>
                   <CancelButton type="button" onClick={() => setShowBoardModal(false)} disabled={createBoardPending}>Cancelar</CancelButton>
-                  <SubmitButton type="submit" disabled={createBoardPending || !newBoardName.trim()}>
-                    {createBoardPending ? 'Criando…' : 'Criar'}
+                  <SubmitButton as={ActionButton} type="submit" disabled={!newBoardName.trim()} loading={createBoardPending} loadingLabel="Criando quadro">
+                    Criar
                   </SubmitButton>
                 </ModalActions>
               </ModalForm>
@@ -1847,12 +1865,14 @@ export const Kanban: React.FC = () => {
             <ModalActions>
               <CancelButton type="button" onClick={() => setShowDeleteBoardModal(false)} disabled={deleteBoardPending}>Cancelar</CancelButton>
               <SubmitButton
+                as={ActionButton}
                 type="button"
                 onClick={handleDeleteBoard}
-                disabled={deleteBoardPending}
+                loading={deleteBoardPending}
+                loadingLabel="Excluindo quadro"
                 style={{ background: '#D92D20' }}
               >
-                {deleteBoardPending ? 'Excluindo…' : 'Excluir Quadro'}
+                Excluir Quadro
               </SubmitButton>
             </ModalActions>
           </Modal>
@@ -1863,7 +1883,7 @@ export const Kanban: React.FC = () => {
         <ModalOverlay>
           <Modal>
             <ModalTitle>Criar Nova Coluna</ModalTitle>
-            <ModalForm onSubmit={handleCreateStage}>
+            <ModalForm onSubmit={trackSubmit('stage', handleCreateStage)}>
               <Input
                 type="text"
                 placeholder="Nome da Coluna"
@@ -1874,7 +1894,7 @@ export const Kanban: React.FC = () => {
               />
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowStageModal(false)}>Cancelar</CancelButton>
-                <SubmitButton type="submit">Adicionar</SubmitButton>
+                <SubmitButton as={ActionButton} type="submit" loading={pendingForm === 'stage'} loadingLabel="Criando coluna">Adicionar</SubmitButton>
               </ModalActions>
             </ModalForm>
           </Modal>
@@ -1922,8 +1942,11 @@ export const Kanban: React.FC = () => {
               )}
               <StageModalActions role="group" aria-label="Ações da coluna">
               <DangerButton
+                as={ActionButton}
                 type="button"
-                disabled={editStagePending}
+                disabled={editStagePending && !deletingStage}
+                loading={deletingStage}
+                loadingLabel="Excluindo coluna"
                 onClick={async()=>{
                 const affectedItems=workItems.filter(item=>item.stageId===editingStage.id);
                 const destination=stages.find(stage=>stage.id===deleteStageDestination);
@@ -1936,10 +1959,10 @@ export const Kanban: React.FC = () => {
                   ? `Excluir a coluna "${editingStage.name}"? ${affectedItems.length} tarefa(s) serão transferidas para "${destination!.name}".`
                   : `Excluir a coluna vazia "${editingStage.name}"? Esta ação não pode ser desfeita.`);
                 if(!confirmed)return;
-                setEditStagePending(true);setEditStageError('');
+                setEditStagePending(true);setDeletingStage(true);setEditStageError('');
                 try { await api.deleteStage(editingStage.id,deleteStageDestination||undefined);setShowEditStageModal(false);setEditingStage(null);setDeleteStageDestination('');await loadBoardData(selectedBoardId); }
                 catch(error) { setEditStageError((error as Error).message); }
-                finally { setEditStagePending(false); }
+                finally { setEditStagePending(false);setDeletingStage(false); }
               }}
               ><Trash2 size={15}/>Excluir coluna</DangerButton>
               <div>
@@ -1950,8 +1973,8 @@ export const Kanban: React.FC = () => {
                 >
                   Cancelar
                 </CancelButton>
-                <SubmitButton type="submit" disabled={editStagePending}>
-                  {editStagePending ? 'Salvando…' : 'Salvar'}
+                <SubmitButton as={ActionButton} type="submit" disabled={deletingStage} loading={editStagePending && !deletingStage} loadingLabel="Salvando coluna">
+                  Salvar
                 </SubmitButton>
               </div>
               </StageModalActions>
@@ -1964,7 +1987,7 @@ export const Kanban: React.FC = () => {
         <ModalOverlay>
           <Modal>
             <ModalTitle>Novo Card / Tarefa</ModalTitle>
-            <ModalForm onSubmit={handleCreateWorkItem}>
+            <ModalForm onSubmit={trackSubmit('item', handleCreateWorkItem)}>
               <Input
                 type="text"
                 placeholder="Título do Card"
@@ -2045,7 +2068,7 @@ export const Kanban: React.FC = () => {
               <p style={{ margin: '0', color: theme.color.textMutedAccessible, fontSize: '12px' }}>Somente pessoas com acesso ao projeto aparecem nesta lista.</p>
               <ModalActions>
                 <CancelButton type="button" onClick={() => setShowItemModal(false)}>Cancelar</CancelButton>
-                <SubmitButton type="submit">Criar Card</SubmitButton>
+                <SubmitButton as={ActionButton} type="submit" loading={pendingForm === 'item'} loadingLabel="Criando card">Criar Card</SubmitButton>
               </ModalActions>
             </ModalForm>
           </Modal>
@@ -2091,12 +2114,12 @@ export const Kanban: React.FC = () => {
             <ModalTitle>Meu Tempo</ModalTitle>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px' }}>
-              <SmallButton type="button" onClick={() => shiftWeek(-7)}>
+              <SmallButton as={ActionButton} type="button" loadingLabel="Carregando semana anterior" onClick={() => shiftWeek(-7)}>
                 <ChevronLeft size={14} />
                 <span>Anterior</span>
               </SmallButton>
               <strong>{weeklyTime ? formatWeekLabel(weeklyTime.weekStart) : '—'}</strong>
-              <SmallButton type="button" onClick={() => shiftWeek(7)}>
+              <SmallButton as={ActionButton} type="button" loadingLabel="Carregando próxima semana" onClick={() => shiftWeek(7)}>
                 <span>Próxima</span>
                 <ChevronRight size={14} />
               </SmallButton>
@@ -2183,7 +2206,7 @@ export const Kanban: React.FC = () => {
                 {adjustTasks.length === 0 ? (
                   <DetailText>Nenhuma tarefa encontrada.</DetailText>
                 ) : (
-                  <ModalForm onSubmit={async e => { await submitAdjust(e); if (adjustDay) await loadAdjustData(adjustDay); }}>
+                  <ModalForm onSubmit={trackSubmit('adjust', async e => { await submitAdjust(e); if (adjustDay) await loadAdjustData(adjustDay); })}>
                     <Select value={adjustTaskId} onChange={e => setAdjustTaskId(e.target.value)}>
                       <option value="">Selecionar tarefa</option>
                       {adjustTasks.map(t => (
@@ -2199,7 +2222,7 @@ export const Kanban: React.FC = () => {
                     />
                     <ModalActions>
                       <CancelButton type="button" onClick={() => setAdjustDay(null)}>Fechar</CancelButton>
-                      <SubmitButton type="submit" disabled={!adjustTaskId || !adjustMinutes}>Adicionar</SubmitButton>
+                      <SubmitButton as={ActionButton} type="submit" disabled={!adjustTaskId || !adjustMinutes} loading={pendingForm === 'adjust'} loadingLabel="Adicionando tempo">Adicionar</SubmitButton>
                     </ModalActions>
                   </ModalForm>
                 )}
@@ -2218,13 +2241,13 @@ export const Kanban: React.FC = () => {
                         <span>{j.reason}</span>
                         <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
                           <strong>{j.hours}h</strong>
-                          <button type="button" aria-label={`Remover justificativa ${j.reason}`} onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></button>
+                          <ActionButton type="button" aria-label={`Remover justificativa ${j.reason}`} loadingLabel="Removendo justificativa" onClick={() => removeJustification(j.id)} style={{ color: '#CBD5E1' }}><X size={14} /></ActionButton>
                         </span>
                       </div>
                     ))}
                   </div>
                 )}
-                <ModalForm onSubmit={submitJustification}>
+                <ModalForm onSubmit={trackSubmit('justification', submitJustification)}>
                   <Select value={justReason} onChange={e => setJustReason(e.target.value)}>
                     <option value="">Motivo</option>
                     <option value="Férias">Férias</option>
@@ -2243,7 +2266,7 @@ export const Kanban: React.FC = () => {
                   />
                   <ModalActions>
                     <CancelButton type="button" onClick={() => setAdjustDay(null)}>Fechar</CancelButton>
-                    <SubmitButton type="submit" disabled={!justReason || !justHours}>Justificar</SubmitButton>
+                    <SubmitButton as={ActionButton} type="submit" disabled={!justReason || !justHours} loading={pendingForm === 'justification'} loadingLabel="Justificando o dia">Justificar</SubmitButton>
                   </ModalActions>
                 </ModalForm>
               </>

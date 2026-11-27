@@ -64,6 +64,7 @@ import { flattenBacklogHierarchy, includeBacklogAncestors } from './BacklogHiera
 import { useBacklogUrlState } from './useBacklogUrlState';
 import { useUrlDraft } from './useUrlDraft';
 import { subscribeBacklogScroll } from './BacklogScroll';
+import { ActionButton } from '../../components/ActionButton';
 
 const Page = styled.section`
   padding: 20px 28px 40px;
@@ -1071,7 +1072,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
     }
   };
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<QuickForm>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<QuickForm>({
     resolver: zodResolver(quickSchema),
     defaultValues: { title: '', kind: WorkItemKind.Task },
   });
@@ -1163,7 +1164,7 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
             onChange={(nextKind) => setValue('kind', nextKind)}
           />
           <input autoFocus aria-label="Título do novo item" placeholder="Digite somente o título e pressione Enter" {...register('title')} />
-          <Button type="submit"><Sparkles size={14} />Adicionar</Button>
+          <Button as={ActionButton} type="submit" loading={isSubmitting} loadingLabel="Adicionando item"><Sparkles size={14} />Adicionar</Button>
           {errors.title && <p>{errors.title.message}</p>}
         </QuickAdd>
       )}
@@ -1203,8 +1204,8 @@ export function BacklogPlanner({ project }: BacklogPlannerProps) {
           <select aria-label="Sprint para ação em massa" value={selectedSprintId} onChange={(event) => setSelectedSprintId(event.target.value)}>
             {(sprintQuery.data ?? []).filter((sprint) => sprint.status < 3).map((sprint) => <option key={sprint.id} value={sprint.id}>{sprint.name}</option>)}
           </select>
-          <Button onClick={() => void planItems(selectedItems.map((item) => item.id), selectedSprintId)} disabled={!selectedSprintId}>Mover para sprint</Button>
-          <Button $secondary onClick={() => void planItems(selectedItems.map((item) => item.id), null)}>Retornar ao backlog</Button>
+          <Button as={ActionButton} loadingLabel="Movendo para a sprint" onClick={() => planItems(selectedItems.map((item) => item.id), selectedSprintId)} disabled={!selectedSprintId}>Mover para sprint</Button>
+          <Button as={ActionButton} $secondary loadingLabel="Retornando ao backlog" onClick={() => planItems(selectedItems.map((item) => item.id), null)}>Retornar ao backlog</Button>
           <Button $secondary onClick={() => setSelectedIds(new Set())} aria-label="Limpar seleção"><X size={13} />Limpar</Button>
         </BulkBar>
       )}
