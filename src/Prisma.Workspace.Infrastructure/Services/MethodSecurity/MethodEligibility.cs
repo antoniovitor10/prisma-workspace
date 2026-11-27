@@ -13,11 +13,14 @@ namespace Prisma.Workspace.Infrastructure.Services.MethodSecurity;
 /// </summary>
 internal static class MethodEligibility
 {
-    /// <summary>Expressão traduzível para SQL; lê documentos sem filtro de tenant porque o pai já está no mesmo quadro.</summary>
+    /// <summary>
+    /// Expressão traduzível para SQL. Não usa IgnoreQueryFilters: num subquery ele desligaria o filtro de tenant da consulta
+    /// inteira; o filtro de MethodDocuments (organização e projeto do token) é o mesmo da consulta externa.
+    /// </summary>
     internal static Expression<Func<WorkItem, bool>> HasEligibleParent(AppDbContext db)
         => item => item.ParentId == null
             || item.Parent!.Kind == WorkItemKind.UserStory && item.Parent.BoardId == item.BoardId && !item.Parent.IsArchived
-                && db.Set<MethodDocument>().IgnoreQueryFilters()
+                && db.Set<MethodDocument>()
                     .Any(d => d.WorkItemId == item.ParentId && d.Kind == MethodDocumentKind.Hu);
 
     /// <summary>

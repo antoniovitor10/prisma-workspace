@@ -166,6 +166,21 @@ public sealed class MethodTaskHierarchyTests
         }
     }
 
+    [Fact] // CA-4: a regra de elegibilidade é traduzida para SQL (sem avaliação no cliente)
+    public async Task Sql_EligibilityExpressionTranslatesAndRuns()
+    {
+        var value = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+        if (string.IsNullOrWhiteSpace(value)) return; // opt-in
+        Assert.StartsWith("Prisma_BoardColumns_", new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(value).InitialCatalog);
+        var tenant = new Prisma.Workspace.Infrastructure.Tenancy.CurrentOrganizationContext(); tenant.Set(Guid.NewGuid());
+        await using var db = new Prisma.Workspace.Infrastructure.Persistence.AppDbContext(
+            new DbContextOptionsBuilder<Prisma.Workspace.Infrastructure.Persistence.AppDbContext>().UseSqlServer(value).Options, tenant);
+        await db.Database.MigrateAsync();
+        var query = db.WorkItems.Where(Prisma.Workspace.Infrastructure.Services.MethodSecurity.MethodEligibility.HasEligibleParent(db));
+        Assert.Contains("MethodDocuments", query.ToQueryString());
+        Assert.Empty(await query.Take(1).ToListAsync());
+    }
+
     [Fact] // CA-11
     public async Task RelinkFromOtherProjectOrToUnknownStoryChangesNothing()
     {
