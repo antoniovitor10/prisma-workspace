@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from 'styled-components';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../../styles/theme';
 import { CardOpenPullRequest } from './CardOpenPullRequest';
 import { sourceFromCardGit, sourceFromTaskGit, taskTitleWithoutId } from './pullRequestEligibility';
@@ -61,19 +61,23 @@ describe('aba Git: rascunho e botão (CA-1, CA-2, CA-8)', () => {
 });
 
 describe('card do quadro (CA-1, CA-3, CA-8)', () => {
-  it('com branch enviada e permissão o card tem o botão', () => {
-    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="T-0028 · Botão" git={git} canEdit />);
-    expect(screen.getByRole('button', { name: 'Abrir PR da task T-0028' })).toBeInTheDocument();
+  it('com branch enviada e permissão o card tem o botão; o clique pede o modal ao quadro (fora do card)', () => {
+    const onOpenDialog = vi.fn();
+    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="T-0028 · Botão" git={git} canEdit onOpenDialog={onOpenDialog} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir PR da task T-0028' }));
+    expect(onOpenDialog).toHaveBeenCalledWith({ workItemId: 'item-1', methodTaskId: 'T-0028', title: 'Botão' },
+      { linkId: 'link-1', branch: 'task/T-0028-x', repositoryFullName: 'qa/metodo', defaultBranch: 'main', mode: 'app' });
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('sem permissão, com branch local ou com PR aberto não tem', () => {
-    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={git} canEdit={false} />);
+    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={git} canEdit={false} onOpenDialog={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /Abrir PR/ })).toBeNull();
     cleanup();
-    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={{ ...git, branchState: 'local' }} canEdit />);
+    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={{ ...git, branchState: 'local' }} canEdit onOpenDialog={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /Abrir PR/ })).toBeNull();
     cleanup();
-    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={{ ...git, prNumber: 3, prState: 'draft' }} canEdit />);
+    wrap(<CardOpenPullRequest projectId="p" workItemId="item-1" title="t" git={{ ...git, prNumber: 3, prState: 'draft' }} canEdit onOpenDialog={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /Abrir PR/ })).toBeNull();
   });
 });

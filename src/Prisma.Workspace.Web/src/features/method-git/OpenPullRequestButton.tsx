@@ -27,13 +27,18 @@ export interface OpenPullRequestButtonProps {
   variant?: 'card' | 'tab';
   className?: string;
   onOpened?: (result: OpenPullRequestResult) => void;
+  /**
+   * Quando informado, o modal fica com quem chamou (ex.: a página do quadro), fora do card: o card muda de coluna
+   * ao abrir o PR e seria remontado, fechando o modal antes do resultado.
+   */
+  onOpenDialog?: (source: PullRequestSource) => void;
 }
 
 /**
  * HU-0007: botão Abrir PR (repositório com App) ou Abrir no GitHub (modo consulta), no card do quadro e na aba Git.
  * A regra de exibição (branch enviada, sem PR aberto, pessoa que pode editar) vem pronta em `source` e `canEdit`.
  */
-export function OpenPullRequestButton({ projectId, task, source, canEdit, variant = 'tab', className, onOpened }: OpenPullRequestButtonProps) {
+export function OpenPullRequestButton({ projectId, task, source, canEdit, variant = 'tab', className, onOpened, onOpenDialog }: OpenPullRequestButtonProps) {
   // A branch fica guardada no clique: depois do PR aberto o quadro recarrega e a branch deixa de ser elegível
   // (o botão some), mas o modal continua aberto até a pessoa ler o resultado e fechar.
   const [openSource, setOpenSource] = useState<PullRequestSource | null>(null);
@@ -44,7 +49,7 @@ export function OpenPullRequestButton({ projectId, task, source, canEdit, varian
       {canEdit && source && (
         <Trigger type="button" className={className} $compact={variant === 'card'}
           aria-label={isApp ? `Abrir PR da task ${task.methodTaskId}` : `Abrir PR no GitHub da task ${task.methodTaskId}`}
-          onPointerDown={stop} onClick={event => { stop(event); setOpenSource(source); }}>
+          onPointerDown={stop} onClick={event => { stop(event); if (onOpenDialog) onOpenDialog(source); else setOpenSource(source); }}>
           {isApp ? <GitPullRequest size={variant === 'card' ? 14 : 16} aria-hidden /> : <ExternalLink size={variant === 'card' ? 14 : 16} aria-hidden />}
           {isApp ? 'Abrir PR' : 'Abrir no GitHub'}
         </Trigger>
