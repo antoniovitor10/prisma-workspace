@@ -43,6 +43,9 @@ export function gitTimelineText(entry: TaskGitTimelineEntry): string {
     case 'git_pr_inferred': return pr ? `PR ${pr} vinculado pelo nome da branch ou pelo título` : `Branch ${branch} vinculada pelo nome`;
     case 'git_pr_merged': return `PR ${pr} mergeado`;
     case 'git_pr_closed': return `PR ${pr} fechado sem merge`;
+    // HU-0007: o corpo do rascunho nunca aparece aqui, só o título.
+    case 'git_pr_draft_saved': return `Rascunho do PR gravado: ${entry.title ?? ''} (corpo atualizado)`;
+    case 'git_pr_opened': return `PR ${pr} aberto pelo Prisma por ${entry.actorName ?? 'pessoa não informada'}${entry.draft ? ' como rascunho' : ''}`;
     case 'git_fact': {
       const text = (entry.factType && factLabels[entry.factType]?.(pr)) || `Fato do Git no PR ${pr}`;
       return entry.toStatus ? `${text}; card para ${statusLabels[entry.toStatus] ?? entry.toStatus}` : text;

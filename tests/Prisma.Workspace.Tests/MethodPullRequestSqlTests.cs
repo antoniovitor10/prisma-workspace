@@ -195,6 +195,41 @@ public sealed class MethodPullRequestSqlTests : IClassFixture<GitDeliverySqlFixt
         Assert.Equal(0, provider.Finds); Assert.Empty(provider.Created);
     }
 
+    // ---------- T-0028 · leituras da tela (aba Git e card) ----------
+
+    [MethodGitSqlFact]
+    public async Task CA1_CA2_git_tab_and_card_carry_what_the_open_pr_button_needs()
+    {
+        await using var c = await _fixture.CaseAsync();
+        var link = await RemoteBranchAsync(c);
+        var ui = c.Actor!;
+        // Card: vínculo da branch, modo, principal cadastrada e ID do método, numa leitura por quadro.
+        var card = (await new EfWorkItemGitSummaryReader(c.Context, new SqlTenant(c.Repository.OrganizationId)).GetAsync([c.ItemId]))[c.ItemId];
+        Assert.Equal((link.Id, "app", "main", "T-0001", "remote"), (card.LinkId!.Value, card.IntegrationMode, card.DefaultBranch, card.MethodTaskId, card.BranchState));
+        // Aba Git: rascunho (sem o corpo), pode abrir PR, base cadastrada e eventos do PR na linha do tempo.
+        var agent = await c.UseAgentAsync();
+        await Drafts(c, c.Context).SaveAsync(c.ProjectId, "T-0001", new("Corrige consulta", "CORPO-QUE-NAO-APARECE"), agent.ActorId, default);
+        c.UseActor(ui);
+        c.Clock.Now = c.Now.AddSeconds(2);
+        await using (var work = c.MethodContext())
+            await Opening(c, work, Provider(c)).OpenAsync(c.ProjectId, "T-0001", new(link.Id, "Corrige X", "Corpo", Draft: true), ui.ActorId, default);
+        await using var read = c.NewContext();
+        var store = c.Store(read); var provider = new TestGitProvider(); var permissions = new AllowAll();
+        var projects = new GitRepositoryOperations(store, provider, new TestGitSecrets(), c.Access, permissions, c.Clock);
+        var view = await new GitPullRequestOperations(store, provider, projects, c.Access, permissions).GetTaskGitAsync(c.ProjectId, c.ItemId, ui.ActorId, default);
+        Assert.True(view.CanOpenPullRequest);
+        Assert.Equal("Agente SQL", view.PullRequestDraft!.ActorName);
+        Assert.Equal("main", Assert.Single(view.Repositories).DefaultBranch);
+        var saved = Assert.Single(view.Timeline, x => x.Kind == EfMethodGitStore.PullRequestDraftSavedEvent);
+        Assert.Equal("Corrige consulta", saved.Title);
+        Assert.DoesNotContain(view.Timeline, x => (x.Title ?? string.Empty).Contains("CORPO", StringComparison.Ordinal));
+        var opened = Assert.Single(view.Timeline, x => x.Kind == EfMethodGitStore.PullRequestOpenedEvent);
+        Assert.Equal((7, true, "Humano SQL"), (opened.PullRequestNumber!.Value, opened.Draft!.Value, opened.ActorName));
+        // Token do método vê a aba, mas não o botão de abrir PR.
+        c.UseActor(agent);
+        Assert.False((await new GitPullRequestOperations(store, provider, projects, c.Access, permissions).GetTaskGitAsync(c.ProjectId, c.ItemId, agent.ActorId, default)).CanOpenPullRequest);
+    }
+
     // ---------- T-0029 · link de comparação ----------
 
     [MethodGitSqlFact]
@@ -322,6 +357,7 @@ public sealed class MethodPullRequestSqlTests : IClassFixture<GitDeliverySqlFixt
         public Task<bool> HasAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.FromResult(true);
         public Task EnsureAsync(string actor, PlatformPermission permission, PermissionScope scope = PermissionScope.Organization, Guid? id = null, CancellationToken ct = default) => Task.CompletedTask;
     }
+    private sealed class SqlTenant(Guid id) : IOrganizationContext { public Guid? OrganizationId => id; }
     private sealed class SilentRealtime : IBoardRealtimeNotifier
     { public Task BoardChangedAsync(Guid boardId, string changeType, Guid? workItemId = null, CancellationToken ct = default) => Task.CompletedTask; }
 }

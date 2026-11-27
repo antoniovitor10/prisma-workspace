@@ -66,3 +66,6 @@ public sealed record MethodPullRequestCompareUrlRequest(Guid LinkId, string Titl
 
 /// <summary>Link de comparação montado pelo servidor; <see cref="Truncated"/> indica que o corpo foi cortado para caber na URL.</summary>
 public sealed record MethodPullRequestCompareUrlDto(string Url, bool Truncated);
+
+/// <summary>Resumo do rascunho para a aba Git: quando foi gravado e por quem (sem o corpo).</summary>
+public sealed record TaskGitPullRequestDraftDto(DateTimeOffset UpdatedAtUtc, string? ActorName);

@@ -77,7 +77,14 @@ public sealed class GitPullRequestOperations(IMethodGitStore store, IGitProvider
             && current.AuthenticationKind is MethodAuthenticationKind.UiSession or MethodAuthenticationKind.MethodToken
             && await permissions.HasAsync(actor, PlatformPermission.Edit, PermissionScope.WorkItem, workItemId, ct)
             && await permissions.HasAsync(actor, PlatformPermission.Comment, PermissionScope.WorkItem, workItemId, ct);
-        return view with { CanLink = canLink };
+        // HU-0007: botão Abrir PR (só pessoa na tela, com Editar, Comentar e Mudar status), rascunho e eventos do PR.
+        var canOpen = canLink && current!.IsInteractiveHuman
+            && await permissions.HasAsync(actor, PlatformPermission.ChangeStatus, PermissionScope.WorkItem, workItemId, ct);
+        var draft = await store.GetPullRequestDraftAsync(workItemId, ct);
+        var timeline = view.Timeline.Concat(await store.GetPullRequestTimelineAsync(workItemId, ct)).OrderBy(x => x.AtUtc).ToArray();
+        return view with { CanLink = canLink, CanOpenPullRequest = canOpen,
+            PullRequestDraft = draft is null ? null : new TaskGitPullRequestDraftDto(draft.UpdatedAtUtc, draft.ActorName),
+            Timeline = timeline };
     }
     internal async Task<MethodTaskSnapshot> SingleTaskAsync(Guid projectId, string methodId, CancellationToken ct)
     {

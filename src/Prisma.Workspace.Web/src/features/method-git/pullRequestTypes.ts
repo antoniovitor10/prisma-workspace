@@ -35,24 +35,3 @@ export interface PullRequestSource {
 
 /** Task do método vista pelo botão e pelo modal. */
 export interface PullRequestTask { workItemId: string; methodTaskId: string; title: string }
-
-/** Vínculo Git da task como a API devolve (TaskGitLinkDto). */
-export interface TaskGitLinkView {
-  id: string;
-  integrationId: string;
-  observationId?: string | null;
-  branchName: string | null;
-  branchState?: string | null;
-  repositoryFullName?: string | null;
-  pullRequestNumber?: number | null;
-  pullRequestState?: string | null;
-}
-
-/** Repositório do projeto como a tela precisa para decidir o botão. */
-export interface PullRequestRepositoryView {
-  id: string;
-  repositoryFullName: string;
-  defaultBranch: string;
-  enabled: boolean;
-  mode?: GitIntegrationMode | null;
-}

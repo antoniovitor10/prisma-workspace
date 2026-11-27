@@ -19,7 +19,7 @@ public sealed partial class EfMethodGitStore
             .Where(x => x.WorkItemId == workItemId && x.ProjectId == task.ProjectId).OrderBy(x => x.CreatedAtUtc).ToListAsync(ct);
         var repositories = await Repositories.AsNoTracking().Where(x => x.ProjectId == task.ProjectId && x.Enabled)
             .OrderBy(x => x.RepositoryFullName)
-            .Select(x => new TaskGitRepositoryOptionDto(x.Id, x.RepositoryFullName, x.Mode, x.LastPolledAtUtc, x.LastPollStatus)).ToListAsync(ct);
+            .Select(x => new TaskGitRepositoryOptionDto(x.Id, x.RepositoryFullName, x.Mode, x.LastPolledAtUtc, x.LastPollStatus, x.DefaultBranch)).ToListAsync(ct);
 
         var branches = new List<TaskGitBranchDto>();
         foreach (var link in links.Where(x => x.BranchName is not null && x.PullRequestObservationId is null))

@@ -20,6 +20,8 @@ import {
 } from '../features/board/KanbanFilters';
 import { useBoardRealtime } from '../features/board/useBoardRealtime';
 import { GitCardBadges } from '../features/board/GitCardBadges';
+import { CardOpenPullRequest } from '../features/method-git/CardOpenPullRequest';
+import { useCanOpenPullRequests } from '../features/method-git/useCanOpenPullRequests';
 import type { WorkItemGitSummary } from '../features/method-git/gitLabels';
 import {
   Plus,
@@ -320,6 +322,9 @@ export const Kanban: React.FC = () => {
   }, []);
 
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  // HU-0007: botão Abrir PR nos cards do método (uma leitura de permissão por projeto, só quando há branch vinculada).
+  const pullRequestProjectId = urlProjectId ?? boards.find(board => board.id === selectedBoardId)?.projectId ?? null;
+  const canOpenPullRequests = useCanOpenPullRequests(pullRequestProjectId, workItems.some(item => Boolean(item.git?.linkId)));
   const [boardDataStatus, setBoardDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [boardDataError, setBoardDataError] = useState('');
   const [boardView, setBoardView] = useState<'kanban' | 'lista' | 'calendario' | 'gantt' | 'dashboard'>('kanban');
@@ -1614,6 +1619,10 @@ export const Kanban: React.FC = () => {
                         )}
 
                         {cardSettings.showGit && item.git && <GitCardBadges git={item.git} />}
+                        {item.git && pullRequestProjectId && (
+                          <CardOpenPullRequest projectId={pullRequestProjectId} workItemId={item.id} title={item.title} git={item.git}
+                            canEdit={canOpenPullRequests} onOpened={() => { if (selectedBoardId) void loadBoardData(selectedBoardId); }} />
+                        )}
 
                         {((cardSettings.showType && item.taskTypeName) || (cardSettings.showTags && item.tags && item.tags.length > 0) || (showStoryPoints && cardSettings.showPoints && item.points != null)) && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>

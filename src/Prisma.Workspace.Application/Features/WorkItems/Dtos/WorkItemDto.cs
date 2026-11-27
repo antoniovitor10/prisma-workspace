@@ -69,7 +69,8 @@ public class WorkItemDto
 /// </summary>
 public sealed record WorkItemGitSummaryDto(
     string RepoName, string RepoFullName, string? Branch, string BranchState,
-    int? PrNumber, string? PrState, string? PrUrl);
+    int? PrNumber, string? PrState, string? PrUrl,
+    Guid? LinkId = null, string? IntegrationMode = null, string? DefaultBranch = null, string? MethodTaskId = null);
 
 public record WorkItemCustomValueDto(Guid FieldId, string? Value);
 

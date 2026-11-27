@@ -105,10 +105,11 @@ public sealed record VerifiedGitFact(
 public sealed record TaskGitViewDto(
     Guid WorkItemId, string MethodTaskId, bool CanLink,
     IReadOnlyList<TaskGitRepositoryOptionDto> Repositories, IReadOnlyList<TaskGitBranchDto> Branches,
-    IReadOnlyList<TaskGitPullRequestDto> PullRequests, IReadOnlyList<TaskGitTimelineEntryDto> Timeline);
+    IReadOnlyList<TaskGitPullRequestDto> PullRequests, IReadOnlyList<TaskGitTimelineEntryDto> Timeline,
+    bool CanOpenPullRequest = false, TaskGitPullRequestDraftDto? PullRequestDraft = null);
 /// <summary>Repositório habilitado do projeto, para o vínculo manual (o modo e a última consulta servem ao "Consultar agora").</summary>
 public sealed record TaskGitRepositoryOptionDto(Guid Id, string RepositoryFullName, string Mode,
-    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null);
+    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null, string? DefaultBranch = null);
 public sealed record TaskGitBranchDto(
     Guid? LinkId, Guid IntegrationId, string RepositoryFullName, string BranchName, string BranchState,
     DateTimeOffset? LastSeenAtUtc, string Source, DateTimeOffset CreatedAtUtc, string Url);
@@ -124,7 +125,7 @@ public sealed record TaskGitPullRequestDto(
 public sealed record TaskGitTimelineEntryDto(
     string Kind, DateTimeOffset AtUtc, string? ActorName, string? Channel, string? RepositoryFullName = null,
     string? Branch = null, int? PullRequestNumber = null, string? Url = null, string? FactType = null,
-    string? FromStatus = null, string? ToStatus = null);
+    string? FromStatus = null, string? ToStatus = null, string? Title = null, bool? Draft = null);
 
 /// <summary>Resultado de uma consulta do modo sem admin (HU-0002, T-0008): código sem texto do GitHub e a hora da última consulta com sucesso.</summary>
 public sealed record GitPollResultDto(Guid IntegrationId, string RepositoryFullName, string Status, bool Success,

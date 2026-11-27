@@ -50,6 +50,9 @@ public interface IMethodGitStore
     // Grava git_pr_draft_saved com o ator do contexto; texto igual ao atual não grava evento (Changed = false).
     Task<MethodPullRequestDraftDto> SavePullRequestDraftAsync(Guid workItemId, string title, string body, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+    // Eventos git_pr_draft_saved e git_pr_opened da task como entradas da linha do tempo da aba Git (sem o corpo).
+    Task<IReadOnlyList<TaskGitTimelineEntryDto>> GetPullRequestTimelineAsync(Guid workItemId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<TaskGitTimelineEntryDto>>([]);
     // Evento git_pr_opened do botão Abrir PR; nunca recebe token nem corpo do PR.
     Task RecordPullRequestOpenedAsync(Guid workItemId, GitPullRequestOpenedRecord record, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();

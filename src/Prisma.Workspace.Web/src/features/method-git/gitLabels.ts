@@ -10,6 +10,11 @@ export interface WorkItemGitSummary {
   prNumber: number | null;
   prState: GitPrState | null;
   prUrl: string | null;
+  /** HU-0007: vínculo da branch, modo do repositório, principal cadastrada e ID do método, para o botão Abrir PR. */
+  linkId?: string | null;
+  integrationMode?: string | null;
+  defaultBranch?: string | null;
+  methodTaskId?: string | null;
 }
 
 const prLabels: Record<GitPrState, string> = {

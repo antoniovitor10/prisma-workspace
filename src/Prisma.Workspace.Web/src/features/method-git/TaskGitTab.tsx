@@ -6,6 +6,7 @@ import { methodApi } from './client';
 import { formatDateTime, gitBranchStateLabel, gitPollStatusMessage, gitPrState, gitPrStateLabel } from './gitLabels';
 import { ActionButton } from '../../components/ActionButton';
 import { gitChannelLabel, gitTimelineText, taskGitQueryKey, useTaskGit } from './taskGit';
+import { TaskGitPullRequestActions } from './TaskGitPullRequestActions';
 
 const Wrap = styled.div`display:grid;gap:22px;margin-top:20px;`;
 const Block = styled.section`
@@ -65,8 +66,8 @@ const dateTime = (value: string) => new Date(value).toLocaleString('pt-BR', { da
  * e vínculo manual para quem pode editar a tarefa. `actions` recebe controles extras da aba
  * (o "Consultar agora" do modo consulta).
  */
-export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
-  projectId: string; workItemId: string; onLinked?: () => void; actions?: ReactNode;
+export function TaskGitTab({ projectId, workItemId, onLinked, actions, taskTitle }: {
+  projectId: string; workItemId: string; onLinked?: () => void; actions?: ReactNode; taskTitle?: string;
 }) {
   const queryClient = useQueryClient();
   const query = useTaskGit(projectId, workItemId);
@@ -123,6 +124,7 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
   return (
     <Wrap>
       {actions}
+      <TaskGitPullRequestActions projectId={projectId} view={view} taskTitle={taskTitle} onOpened={() => onLinked?.()} />
       {pollRepositories.length > 0 && <Block aria-labelledby="task-git-poll">
         <h3 id="task-git-poll"><RefreshCw size={14} aria-hidden="true" />Consulta ao GitHub</h3>
         <Help>Repositórios sem App são consultados de hora em hora. Use "Consultar agora" para ler o GitHub na hora (uma vez por minuto).</Help>

@@ -52,6 +52,36 @@ public sealed partial class EfMethodGitStore
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyList<TaskGitTimelineEntryDto>> GetPullRequestTimelineAsync(Guid workItemId, CancellationToken ct = default)
+    {
+        var task = await GetTaskAsync(workItemId, ct);
+        if (task is null) return [];
+        Scope(task.ProjectId);
+        var rows = await db.TaskEvents.AsNoTracking().Where(x => x.WorkItemId == workItemId
+                && (x.Kind == PullRequestDraftSavedEvent || x.Kind == PullRequestOpenedEvent))
+            .OrderBy(x => x.CreatedAt).ThenBy(x => x.Id).ToListAsync(ct);
+        var result = new List<TaskGitTimelineEntryDto>();
+        foreach (var row in rows)
+        {
+            if (row.Payload is null) continue;
+            try
+            {
+                using var json = JsonDocument.Parse(row.Payload);
+                var p = json.RootElement;
+                string? Text(string name) => p.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+                // O corpo do rascunho nunca vai para a linha do tempo: só o título.
+                if (row.Kind == PullRequestDraftSavedEvent)
+                    result.Add(new(row.Kind, row.CreatedAt, Text("actorName"), Text("channel"), Title: Text("title")));
+                else
+                    result.Add(new(row.Kind, row.CreatedAt, Text("actorName"), Text("channel"), Text("repositoryFullName"), null,
+                        p.TryGetProperty("number", out var number) && number.TryGetInt32(out var n) ? n : null, Text("url"),
+                        Draft: p.TryGetProperty("draft", out var draft) && draft.ValueKind == JsonValueKind.True));
+            }
+            catch (JsonException) { }
+        }
+        return result;
+    }
+
     // O rascunho atual é o último git_pr_draft_saved da task; empate de data desfeito pelo Id.
     private async Task<MethodPullRequestDraftDto?> LatestDraftAsync(Guid workItemId, CancellationToken ct)
     {

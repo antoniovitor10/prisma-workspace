@@ -1,26 +1,8 @@
-import type { PullRequestRepositoryView, PullRequestSource, TaskGitLinkView } from './pullRequestTypes';
+import type { WorkItemGitSummary } from './gitLabels';
+import type { GitIntegrationMode, PullRequestSource } from './pullRequestTypes';
+import type { TaskGitView } from './types';
 
 export const CARD_LINE_PREFIX = 'Task no Prisma: ';
-
-/**
- * RF3 (CA-1, CA-3): a branch da task pode virar PR quando já foi enviada ao GitHub (branchState "remote"), está num
- * repositório habilitado do projeto e não há PR aberto (nem rascunho) vinculado nesse repositório.
- * O modo do repositório decide o botão: "app" abre o PR pelo Prisma; "poll" leva à página de comparação do GitHub.
- */
-export function findPullRequestSource(links: readonly TaskGitLinkView[] | null | undefined,
-  repositories: readonly PullRequestRepositoryView[] | null | undefined): PullRequestSource | null {
-  for (const link of links ?? []) {
-    if (!link.branchName || link.observationId || link.pullRequestNumber != null || link.branchState !== 'remote') continue;
-    const repository = (repositories ?? []).find(repo => repo.id === link.integrationId && repo.enabled);
-    if (!repository) continue;
-    const hasOpenPullRequest = (links ?? []).some(other => other.integrationId === link.integrationId
-      && other.pullRequestNumber != null && other.pullRequestState === 'open');
-    if (hasOpenPullRequest) continue;
-    return { linkId: link.id, branch: link.branchName, repositoryFullName: repository.repositoryFullName,
-      defaultBranch: repository.defaultBranch, mode: repository.mode ?? 'app' };
-  }
-  return null;
-}
 
 /** Link profundo do card, no mesmo formato que a API usa no corpo do PR. */
 export function cardLink(projectId: string, workItemId: string, origin = window.location.origin): string {
@@ -37,4 +19,34 @@ export function bodyWithCardLine(body: string, link: string): string {
   const trimmed = body.trimEnd();
   if (trimmed.endsWith(line)) return trimmed;
   return trimmed ? `${trimmed}\n\n${line}` : line;
+}
+
+const OPEN_PR_STATES = new Set(['open', 'draft', 'approved', 'changes_requested']);
+const mode = (value: string | null | undefined): GitIntegrationMode => (value === 'poll' ? 'poll' : 'app');
+
+/** Card do quadro (projeção da T-0005): branch enviada, vínculo de branch conhecido e sem PR aberto (nem rascunho). */
+export function sourceFromCardGit(git: WorkItemGitSummary | null | undefined): PullRequestSource | null {
+  if (!git?.linkId || !git.branch || git.branchState !== 'remote' || !git.defaultBranch) return null;
+  if (git.prNumber != null && git.prState != null && OPEN_PR_STATES.has(git.prState)) return null;
+  return { linkId: git.linkId, branch: git.branch, repositoryFullName: git.repoFullName, defaultBranch: git.defaultBranch, mode: mode(git.integrationMode) };
+}
+
+/** Aba Git (T-0006): primeira branch enviada de repositório habilitado sem PR aberto para essa branch. */
+export function sourceFromTaskGit(view: TaskGitView | null | undefined): PullRequestSource | null {
+  for (const branch of view?.branches ?? []) {
+    if (!branch.linkId || branch.branchState !== 'remote') continue;
+    const repository = view!.repositories.find(repo => repo.id === branch.integrationId);
+    if (!repository?.defaultBranch) continue;
+    const open = view!.pullRequests.some(pr => pr.integrationId === branch.integrationId && pr.headBranch === branch.branchName && pr.state === 'open');
+    if (open) continue;
+    return { linkId: branch.linkId, branch: branch.branchName, repositoryFullName: branch.repositoryFullName,
+      defaultBranch: repository.defaultBranch, mode: mode(repository.mode) };
+  }
+  return null;
+}
+
+/** "T-0001 · Título" vira "Título" (o card do método leva o ID no título). */
+export function taskTitleWithoutId(title: string, methodTaskId: string): string {
+  const prefix = `${methodTaskId} · `;
+  return title.startsWith(prefix) ? title.slice(prefix.length) : title;
 }
