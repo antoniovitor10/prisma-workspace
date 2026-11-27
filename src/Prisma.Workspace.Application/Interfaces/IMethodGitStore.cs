@@ -44,6 +44,15 @@ public interface IMethodGitStore
     // Entrada interna "poll:" na fila do webhook (D1); falso quando o mesmo ID já existe (fato já enfileirado).
     Task<bool> EnqueuePollEvaluationAsync(Guid integrationId, GitPullRequestSnapshot pullRequest, string deliveryId, string correlationId,
         CancellationToken cancellationToken = default) => Task.FromResult(false);
+    // Rascunho do PR (HU-0007): o atual é o último evento git_pr_draft_saved da task; null quando não há.
+    Task<MethodPullRequestDraftDto?> GetPullRequestDraftAsync(Guid workItemId, CancellationToken cancellationToken = default)
+        => Task.FromResult<MethodPullRequestDraftDto?>(null);
+    // Grava git_pr_draft_saved com o ator do contexto; texto igual ao atual não grava evento (Changed = false).
+    Task<MethodPullRequestDraftDto> SavePullRequestDraftAsync(Guid workItemId, string title, string body, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+    // Evento git_pr_opened do botão Abrir PR; nunca recebe token nem corpo do PR.
+    Task RecordPullRequestOpenedAsync(Guid workItemId, GitPullRequestOpenedRecord record, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
     Task<GitPullRequestPage> ListPullRequestsAsync(Guid projectId, bool? linked, int page, int pageSize, CancellationToken cancellationToken = default);
     // Busca pontual no tenant para vínculo explícito; não percorrer todas as páginas para achar um ID.
     Task<GitPullRequestObservationDto?> GetPullRequestObservationAsync(Guid projectId, Guid observationId,

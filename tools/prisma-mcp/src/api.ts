@@ -68,6 +68,8 @@ export interface CreateMethodTaskDto {
 export type UpdateMethodTaskDto = Omit<CreateMethodTaskDto, 'id' | 'status'>;
 export interface MethodCommentDto { id: string; workItemId: string; text: string; author: string; createdAtUtc: string; }
 export interface MethodPullRequestLinkDto { id: string; workItemId: string; url: string | null; source: string; }
+/** Rascunho do PR (HU-0007); changed só vem na gravação (false = texto igual, nenhum evento novo). */
+export interface MethodPullRequestDraftDto { title: string; body: string; updatedAtUtc: string; actorName: string | null; changed?: boolean | null; }
 
 export class PrismaApiError extends Error {
   /** `code` do problem+json (ex.: method_document_version_conflict), quando a API manda. */
@@ -209,6 +211,13 @@ export class PrismaApi {
   }
   async linkMethodPullRequest(id: string, url: string): Promise<MethodPullRequestLinkDto> {
     return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-requests`), 'POST', { url, reason: 'Vínculo explícito do PR pelo MCP.' });
+  }
+
+  async getMethodPullRequestDraft(id: string): Promise<MethodPullRequestDraftDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-request-draft`));
+  }
+  async saveMethodPullRequestDraft(id: string, title: string, body: string): Promise<MethodPullRequestDraftDto> {
+    return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/pull-request-draft`), 'PUT', { title, body });
   }
 
   async linkMethodBranch(id: string, repository: string, branch: string): Promise<MethodGitLinkDto> {

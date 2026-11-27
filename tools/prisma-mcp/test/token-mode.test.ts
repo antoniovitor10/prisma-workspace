@@ -14,7 +14,7 @@ const PROJECT = '11111111-2222-4333-8444-555555555555';
 const BOARD = '66666666-7777-4888-8999-aaaaaaaaaaaa';
 const TOKEN = `pmt_${'A'.repeat(43)}`;
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.c2lnbmF0dXJh';
-const NOVE = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr', 'vincular_branch'];
+const OPERACOES = ['regras_do_projeto', 'obter_task', 'listar_tasks', 'proximas_tasks', 'criar_task', 'mover_status', 'comentar', 'vincular_pr', 'vincular_branch', 'preparar_pr'];
 
 function identity(role = 'agente', projectName = 'canais-mobile') {
   return {
@@ -98,14 +98,14 @@ describe('MCP com token opaco do método (fase 2a)', () => {
     assert.equal(fake.escritas().length, 0);
   });
 
-  test('expõe as 9 operações e usa o papel do servidor (sem PRISMA_ROLE)', async () => {
+  test('expõe as 10 operações e usa o papel do servidor (sem PRISMA_ROLE)', async () => {
     rotasPadrao('agente');
     const s = await conectar(envToken());
     assert.ok(s.client, `conectou: ${s.erroConexao?.message ?? ''}`);
     const { tools } = await s.client!.listTools();
     // Pelo nome, não pela contagem total: a T-0023 acrescenta as ferramentas de documento e a T-0026, preparar_pr.
     const nomes = tools.map(t => t.name);
-    for (const nome of NOVE) assert.ok(nomes.includes(nome), `${nome} continua exposta`);
+    for (const nome of OPERACOES) assert.ok(nomes.includes(nome), `${nome} continua exposta`);
     const r = await s.chamar!('regras_do_projeto');
     assert.equal(r.erro, false, r.texto);
     assert.match(r.texto, /agente/);

@@ -21,7 +21,7 @@ O pacote tem três executáveis:
 | Ferramenta | Parâmetros | Para quê |
 |---|---|---|
 | `regras_do_projeto` | nenhum | papel, escopo, validade do token, matriz efetiva e convenções, vindos da API; chamar no início da sessão |
-| `obter_task` | `id` | status, título, arquivo, HU, PR e vínculos Git (repositório, branch local ou enviada, PR) de uma task |
+| `obter_task` | `id` | status, título, arquivo, HU, PR, rascunho do PR e vínculos Git (repositório, branch local ou enviada, PR) de uma task |
 | `listar_tasks` | `status?` | tasks do projeto, opcionalmente filtradas por status |
 | `proximas_tasks` | nenhum | tasks autorizadas em `em-desenvolvimento` com todas as dependências concluídas |
 | `criar_task` | `id, titulo, hu, arquivo, cobre, risco, status?` | cria a task no quadro, marcada com a HU; fica sob a História da HU quando ela existe no Prisma. `hu` é `HU-0001` ou `avulsa` (vai para a História **Avulsas**) |
@@ -29,6 +29,7 @@ O pacote tem três executáveis:
 | `comentar` | `id, texto` | relatório de execução, bloqueio, handoff |
 | `vincular_pr` | `id, url` | registra o vínculo explícito do PR com a task (também aparece no campo **PR**) |
 | `vincular_branch` | `id, repositorio, branch` | registra a branch da task antes do push (`local`); vira enviada quando o GitHub a vê. `repositorio` é `dono/repositório` de um repositório do projeto |
+| `preparar_pr` | `id, titulo, corpo` | grava o rascunho de título e corpo do PR da task (o mesmo texto do relatório), antes de `mover_status em-revisao`; gravar de novo sobrescreve e a versão anterior fica no histórico. `obter_task` mostra "Rascunho de PR: gravado em … por …". Quem abre o PR é uma pessoa, pelo botão **Abrir PR** do card |
 
 Documentos do método (épico, HU, PRD e corpo da task), sincronizados com `PRISMA_METODO_DIR`:
 
