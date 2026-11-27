@@ -192,7 +192,7 @@ test('comentário interno não se mistura ao histórico automático', async ({ p
   const message = `Comentário interno E2E ${Date.now()}`;
 
   await dialog.getByRole('button', { name: 'Comentários' }).click();
-  await dialog.getByPlaceholder(/Escreva um comentario/).fill(message);
+  await dialog.getByPlaceholder(/Escreva um comentário/).fill(message);
   await dialog.getByRole('button', { name: 'Enviar' }).click();
   await expect(dialog.getByText(message, { exact: true })).toBeVisible();
   await expect(dialog.getByText(/atualizou os dados da tarefa/)).toHaveCount(0);
