@@ -24,9 +24,16 @@ public sealed class MethodWorkerContextInitializer(AppDbContext db, CurrentOrgan
             .Select(x => new { x.OrganizationId, x.ProjectId, x.SystemPrincipalId })
             .SingleOrDefaultAsync(cancellationToken);
         if (repository is null) throw Denied();
-        if (deliveryId is { } id && !await db.Set<GitWebhookDelivery>().IgnoreQueryFilters().AsNoTracking()
-            .AnyAsync(x => x.Id == id && x.IntegrationId == integrationId && x.ProjectId == repository.ProjectId, cancellationToken))
-            throw Denied();
+        string? internalId = null;
+        if (deliveryId is { } id)
+        {
+            internalId = await db.Set<GitWebhookDelivery>().IgnoreQueryFilters().AsNoTracking()
+                .Where(x => x.Id == id && x.IntegrationId == integrationId && x.ProjectId == repository.ProjectId)
+                .Select(x => x.DeliveryId).SingleOrDefaultAsync(cancellationToken);
+            if (internalId is null) throw Denied();
+        }
+        // Consulta do modo sem admin (entrada "poll:" ou execução da consulta): o histórico registra o canal "consulta".
+        var channel = (internalId ?? correlationId ?? string.Empty).StartsWith("poll:", StringComparison.Ordinal) ? MethodChannels.Poll : MethodChannels.Webhook;
         var principal = await db.Set<MethodPrincipal>().IgnoreQueryFilters().AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == repository.SystemPrincipalId && x.ProjectId == repository.ProjectId
                 && x.OrganizationId == repository.OrganizationId && x.IsActive && x.Role == MethodRole.System, cancellationToken);
@@ -36,12 +43,12 @@ public sealed class MethodWorkerContextInitializer(AppDbContext db, CurrentOrgan
         if (correlationId.Length > 100) correlationId = correlationId[..100];
         var actor = new MethodActorIdentity(MethodAuthenticationKind.IntegrationWorker, MethodRole.System,
             principal.Id, $"method:{principal.Id:D}", principal.DisplayName, repository.OrganizationId,
-            repository.ProjectId, null, null, MethodPermissionEvaluator.Ceiling(principal), MethodChannels.Webhook, correlationId);
+            repository.ProjectId, null, null, MethodPermissionEvaluator.Ceiling(principal), channel, correlationId);
         if (!await permissions.HasAsync(actor, PlatformPermission.View, PermissionScope.Project, repository.ProjectId, cancellationToken))
             throw Denied();
         // Configuração de colunas/Enabled é validada pelo processador: o ingresso assinado continua durável.
         initializer.Initialize(actor);
-        audit.Set(actor.ActorId, MethodChannels.Webhook, null, correlationId);
+        audit.Set(actor.ActorId, channel, null, correlationId);
     }
 
     private static MethodOperationException Denied() => new(403, "integration_authority_unavailable",

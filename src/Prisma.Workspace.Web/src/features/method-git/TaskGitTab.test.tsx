@@ -153,4 +153,36 @@ describe('aba Git da tarefa (HU-0002, T-0006)', () => {
     expect(screen.queryByRole('form', { name: 'Vincular PR' })).not.toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'PRs da tarefa' })).toBeInTheDocument();
   });
+
+  it('CA-10: "Consultar agora" na aba roda a consulta, mostra o resultado e a hora, e avisa a recusa dentro de 1 minuto', async () => {
+    const polled = view({ repositories: [{ id: 'repo-2', repositoryFullName: 'detranse/canais-mobile', mode: 'poll',
+      lastPolledAtUtc: '2026-11-27T09:00:00Z', lastPollStatus: 'ok' }] });
+    const taskGit = vi.spyOn(methodApi, 'taskGit').mockResolvedValue(polled);
+    const poll = vi.spyOn(methodApi, 'pollTaskGit')
+      .mockResolvedValueOnce([{ integrationId: 'repo-2', repositoryFullName: 'detranse/canais-mobile', status: 'ok', success: true,
+        lastPolledAtUtc: '2026-11-27T10:05:00Z', pullRequestsEvaluated: 2, branchesPushed: 1 }])
+      .mockRejectedValueOnce(new Error('Uma consulta deste repositório acabou de rodar. Tente de novo em 1 minuto.'));
+    renderTab();
+    const block = await screen.findByRole('list', { name: 'Repositórios consultados' });
+    expect(within(block).getByText(/última consulta com sucesso/).querySelector('time')).toHaveAttribute('dateTime', '2026-11-27T09:00:00Z');
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar agora' }));
+    await waitFor(() => expect(poll).toHaveBeenCalledWith('project-1', 'item-1'));
+    expect(await screen.findByRole('status')).toHaveTextContent(/Consulta concluída em .*: 2 PR\(s\) reavaliado\(s\) e 1 branch\(es\) enviada\(s\)/);
+    await waitFor(() => expect(taskGit).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar agora' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Uma consulta deste repositório acabou de rodar.');
+  });
+
+  it('CA-13: erro da última consulta aparece na aba, e repositório com App não mostra "Consultar agora"', async () => {
+    vi.spyOn(methodApi, 'taskGit').mockResolvedValueOnce(view({ repositories: [{ id: 'repo-2', repositoryFullName: 'detranse/canais-mobile', mode: 'poll',
+      lastPolledAtUtc: null, lastPollStatus: 'git_token_invalid' }] }));
+    renderTab();
+    expect(await screen.findByRole('alert')).toHaveTextContent('O GitHub recusou o token de leitura');
+    expect(screen.getByText(/nenhuma consulta com sucesso ainda/)).toBeInTheDocument();
+    cleanup();
+    vi.spyOn(methodApi, 'taskGit').mockResolvedValue(view({ repositories: [view().repositories[0]] }));
+    renderTab();
+    await screen.findByRole('list', { name: 'PRs da tarefa' });
+    expect(screen.queryByRole('button', { name: 'Consultar agora' })).not.toBeInTheDocument();
+  });
 });

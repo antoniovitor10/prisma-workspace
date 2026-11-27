@@ -78,7 +78,7 @@ public sealed class MethodGitTaskViewSqlTests : IClassFixture<GitDeliverySqlFixt
         var pr = Assert.Single(view.PullRequests);
         Assert.Equal(9, pr.Number); Assert.True(pr.Merged); Assert.Equal("PR 9", pr.Title); Assert.Equal("https://github.com/qa/metodo/pull/9", pr.Url);
         Assert.Equal(["git_branch_linked", "git_branch_pushed", "git_pr_linked", "git_fact", "git_pr_merged"], view.Timeline.Select(x => x.Kind).ToArray());
-        Assert.Equal([MethodChannels.Mcp, MethodChannels.Webhook, MethodChannels.Ui, MethodChannels.Poll, null], view.Timeline.Select(x => x.Channel).ToArray());
+        Assert.Equal(new string?[] { MethodChannels.Mcp, MethodChannels.Webhook, MethodChannels.Ui, MethodChannels.Poll, null }, view.Timeline.Select(x => x.Channel));
         Assert.Equal("Agente SQL", view.Timeline[0].ActorName); Assert.Equal("dev-git", view.Timeline[1].ActorName);
         Assert.Equal("Humano SQL", view.Timeline[2].ActorName); Assert.Equal(9, view.Timeline[2].PullRequestNumber);
         Assert.Equal("em-revisao", view.Timeline[3].ToStatus); Assert.Equal("qa/metodo", view.Timeline[3].RepositoryFullName);

@@ -14,6 +14,8 @@ network=prisma-ci-e2e-$suffix
 database=prisma-ci-sql-$suffix
 app=prisma-ci-app-$suffix
 runner=prisma-ci-browser-$suffix
+# GitHub falso do modo consulta do método (HU-0002): o próprio teste o sobe dentro do runner; a API o alcança pela rede.
+github_fake_port=18748
 cleanup() {
   docker rm -f "$runner" "$app" "$database" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
@@ -45,6 +47,7 @@ docker run -d --name "$app" --network "$network" \
   -e ASPNETCORE_ENVIRONMENT=Development -e Seed__DemoEnabled=true -e Setup__Enabled=false \
   -e RateLimiting__GlobalPermitLimit=10000 -e RateLimiting__AuthPermitLimit=10000 -e Serilog__MinimumLevel__Default=Warning \
   -e Ai__BridgeToken=E2E-only-cli-bridge -e Ai__BridgeUrl="http://$runner:18747/v1" -e FrontendBaseUrl=https://prisma.example.invalid \
+  -e MethodGit__Enabled=true -e MethodGit__GitHubApiBaseUrl="http://$runner:$github_fake_port/" \
   -e Serilog__MinimumLevel__Override__Microsoft=Warning \
   -e Serilog__MinimumLevel__Override__Microsoft.EntityFrameworkCore.Database.Command=Warning \
   "$image" >/dev/null
@@ -60,8 +63,9 @@ export E2E_BASE_URL="http://$app:8080"
 export E2E_API_URL=$E2E_BASE_URL
 export E2E_TEST_USER_EMAIL=admin@prisma.example.invalid
 export E2E_AI_PROVIDER_HOST=$runner
+export E2E_GITHUB_FAKE_PORT=$github_fake_port
 docker run --rm --name "$runner" --network "$network" --ipc=host \
-  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD -e E2E_AI_PROVIDER_HOST -e E2E_TEST_FILE \
+  -e CI=true -e E2E_BASE_URL -e E2E_API_URL -e E2E_TEST_USER_EMAIL -e E2E_TEST_USER_PASSWORD -e E2E_AI_PROVIDER_HOST -e E2E_GITHUB_FAKE_PORT -e E2E_TEST_FILE \
   -v "$root:/workspace" -w /workspace/src/Prisma.Workspace.Web \
   -v /workspace/src/Prisma.Workspace.Web/node_modules \
   mcr.microsoft.com/playwright:v1.62.1-noble \

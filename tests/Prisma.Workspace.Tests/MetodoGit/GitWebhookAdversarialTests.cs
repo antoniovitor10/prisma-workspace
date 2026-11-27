@@ -264,6 +264,8 @@ public class GitWebhookAdversarialTests
             nameof(IMethodGitStore.GetExplicitPullRequestLinkAsync) => System.Threading.Tasks.Task.FromResult(Explicit is null ? null
                 : new TaskGitLinkDto(Guid.NewGuid(), Integration, Explicit.WorkItemId, null, null, "explicit", null, null, "user", DateTimeOffset.UtcNow)),
             nameof(IMethodGitStore.GetTaskAsync) => System.Threading.Tasks.Task.FromResult(Explicit),
+            // Sem vínculo de branch nestes casos: o resolver segue para o nome e o título (D-2 da T-0004, HU-0002).
+            nameof(IMethodGitStore.FindBranchLinkTasksAsync) => System.Threading.Tasks.Task.FromResult<IReadOnlyList<Guid>>([]),
             nameof(IMethodGitStore.FindTasksAsync) => System.Threading.Tasks.Task.FromResult<IReadOnlyList<MethodTaskSnapshot>>(
                 ById.TryGetValue((string)args![1]!, out var l) ? l : []),
             _ => throw new InvalidOperationException($"O resolver não deveria chamar {method?.Name}."),

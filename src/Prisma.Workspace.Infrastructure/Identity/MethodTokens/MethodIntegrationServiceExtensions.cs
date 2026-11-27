@@ -20,7 +20,10 @@ public static class MethodIntegrationServiceExtensions
         services.AddHttpClient(GitHubProvider.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .RedactLoggedHeaders(["Authorization"]);
+        services.AddSingleton<IGitReadTokenSource, GitReadTokenSource>();
         services.AddSingleton<IGitProvider, GitHubProvider>();
+        services.AddScoped<IGitReadCredentialStore, EfGitReadCredentialStore>();
+        services.AddScoped<GitReadCredentialOperations>();
         services.AddScoped<IMethodGitStore, EfMethodGitStore>();
         services.AddScoped<GitRepositoryOperations>();
         services.AddScoped<GitPullRequestOperations>();
@@ -33,6 +36,13 @@ public static class MethodIntegrationServiceExtensions
         services.AddScoped<IMethodTaskOperations, MethodTaskOperations>();
         services.AddScoped<IMethodMoveService, MethodMoveService>();
         services.AddHostedService<GitDeliveryWorker>();
+        // Modo consulta (HU-0002): leitura de hora em hora e "Consultar agora", pela mesma fila do webhook.
+        services.AddSingleton<IGitPollLock, SqlGitPollLock>();
+        services.AddSingleton<GitPollRunner>();
+        services.AddSingleton<IGitPollRunner>(sp => sp.GetRequiredService<GitPollRunner>());
+        services.AddScoped<GitPollService>();
+        services.AddScoped<GitPollOperations>();
+        services.AddHostedService<GitPollingWorker>();
         return services;
     }
 }

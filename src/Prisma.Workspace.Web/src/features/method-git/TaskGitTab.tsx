@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, GitBranch, GitPullRequest, History, Link2 } from 'lucide-react';
+import { ExternalLink, GitBranch, GitPullRequest, History, Link2, RefreshCw } from 'lucide-react';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { methodApi } from './client';
-import { gitBranchStateLabel, gitPrState, gitPrStateLabel } from './gitLabels';
+import { formatDateTime, gitBranchStateLabel, gitPollStatusMessage, gitPrState, gitPrStateLabel } from './gitLabels';
 import { gitChannelLabel, gitTimelineText, taskGitQueryKey, useTaskGit } from './taskGit';
 
 const Wrap = styled.div`display:grid;gap:22px;margin-top:20px;`;
@@ -89,6 +89,21 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
     onSuccess: async () => { setFeedback({ text: `Branch ${branch.trim()} vinculada.` }); setBranch(''); await refresh(); },
     onError: (error: Error) => setFeedback({ text: error.message, error: true }),
   });
+  const [pollFeedback, setPollFeedback] = useState<{ text: string; error?: boolean } | null>(null);
+  const pollNow = useMutation({
+    mutationFn: () => methodApi.pollTaskGit(projectId, workItemId),
+    onMutate: () => setPollFeedback(null),
+    onSuccess: async results => {
+      const failed = results.filter(result => !result.success);
+      const done = results.filter(result => result.success);
+      const at = done[0]?.lastPolledAtUtc ? formatDateTime(done[0].lastPolledAtUtc) : null;
+      setPollFeedback(failed.length > 0
+        ? { text: failed.map(result => `${result.repositoryFullName}: ${gitPollStatusMessage(result.status)}`).join(' '), error: true }
+        : { text: `Consulta concluída${at ? ` em ${at}` : ''}: ${done.reduce((sum, result) => sum + result.pullRequestsEvaluated, 0)} PR(s) reavaliado(s) e ${done.reduce((sum, result) => sum + result.branchesPushed, 0)} branch(es) enviada(s). Os cards se movem em instantes, se o GitHub mudou.` });
+      await refresh();
+    },
+    onError: (error: Error) => setPollFeedback({ text: error.message, error: true }),
+  });
   const linkPr = useMutation({
     mutationFn: () => methodApi.linkPullRequestUrl(projectId, view!.methodTaskId, url.trim()),
     onMutate: () => setFeedback(null),
@@ -102,9 +117,29 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
   const submitBranch = (event: FormEvent) => { event.preventDefault(); if (repository && branch.trim()) linkBranch.mutate(); };
   const submitPr = (event: FormEvent) => { event.preventDefault(); if (url.trim()) linkPr.mutate(); };
 
+  const pollRepositories = view.repositories.filter(r => r.mode === 'poll');
+
   return (
     <Wrap>
       {actions}
+      {pollRepositories.length > 0 && <Block aria-labelledby="task-git-poll">
+        <h3 id="task-git-poll"><RefreshCw size={14} aria-hidden="true" />Consulta ao GitHub</h3>
+        <Help>Repositórios sem App são consultados de hora em hora. Use "Consultar agora" para ler o GitHub na hora (uma vez por minuto).</Help>
+        <List aria-label="Repositórios consultados">
+          {pollRepositories.map(r => (
+            <Item key={r.id}>
+              <small>{r.repositoryFullName} · {r.lastPolledAtUtc
+                ? <>última consulta com sucesso: <time dateTime={r.lastPolledAtUtc}>{formatDateTime(r.lastPolledAtUtc)}</time></>
+                : 'nenhuma consulta com sucesso ainda'}</small>
+              {gitPollStatusMessage(r.lastPollStatus) && <small role="alert">{gitPollStatusMessage(r.lastPollStatus)}</small>}
+            </Item>
+          ))}
+        </List>
+        <div><Button type="button" onClick={() => pollNow.mutate()} disabled={pollNow.isPending}>
+          <RefreshCw size={13} aria-hidden="true" />{pollNow.isPending ? 'Consultando...' : 'Consultar agora'}
+        </Button></div>
+        {pollFeedback && <Feedback $error={pollFeedback.error} role={pollFeedback.error ? 'alert' : 'status'}>{pollFeedback.text}</Feedback>}
+      </Block>}
       <Block aria-labelledby="task-git-branches">
         <h3 id="task-git-branches"><GitBranch size={14} aria-hidden="true" />Branches</h3>
         {view.branches.length === 0 ? <Empty>Nenhuma branch vinculada.</Empty> : (

@@ -32,6 +32,18 @@ public interface IMethodGitStore
     // Leitura agregada da aba Git (vínculos, observações e linha do tempo) de uma task do método.
     Task<TaskGitViewDto?> GetTaskGitViewAsync(Guid workItemId, CancellationToken cancellationToken = default)
         => Task.FromResult<TaskGitViewDto?>(null);
+    // Resultado da leitura do modo consulta: código sem texto do GitHub; LastPolledAtUtc só avança com sucesso.
+    Task RecordPollResultAsync(Guid integrationId, string status, bool success, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
+    // Tasks com vínculo de branch exato (sem PR) na integração: resolve PR de branch sem ID (D-2 da T-0004).
+    Task<IReadOnlyList<Guid>> FindBranchLinkTasksAsync(Guid integrationId, string branchName, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Guid>>([]);
+    // Vínculos (branches e PRs) da integração, para a consulta decidir o que ler.
+    Task<IReadOnlyList<TaskGitLinkDto>> ListIntegrationLinksAsync(Guid integrationId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<TaskGitLinkDto>>([]);
+    // Entrada interna "poll:" na fila do webhook (D1); falso quando o mesmo ID já existe (fato já enfileirado).
+    Task<bool> EnqueuePollEvaluationAsync(Guid integrationId, GitPullRequestSnapshot pullRequest, string deliveryId, string correlationId,
+        CancellationToken cancellationToken = default) => Task.FromResult(false);
     Task<GitPullRequestPage> ListPullRequestsAsync(Guid projectId, bool? linked, int page, int pageSize, CancellationToken cancellationToken = default);
     // Busca pontual no tenant para vínculo explícito; não percorrer todas as páginas para achar um ID.
     Task<GitPullRequestObservationDto?> GetPullRequestObservationAsync(Guid projectId, Guid observationId,
