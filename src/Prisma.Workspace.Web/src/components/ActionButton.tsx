@@ -58,16 +58,20 @@ const Root = styled.button`
   }
 `;
 
+// &&& sobe a especificidade: regras da tela como `Card span { ... }` não podem mostrar o anúncio.
 const LiveRegion = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  &&& {
+    position: absolute;
+    display: block;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 `;
 
 const SlowNotice = styled.span`

@@ -3,6 +3,7 @@ import { Bell, CheckCheck, Mail, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { ActionButton } from '../../components/ActionButton';
 import { previewMode } from '../../preview';
 import { notificationService } from './services';
 import type { NotificationPage, NotificationPreference } from './types';
@@ -85,7 +86,7 @@ export function NotificationCenter() {
       <Bell size={17}/>{Boolean(notifications.data?.unread)&&<Badge>{Math.min(99,notifications.data!.unread)}</Badge>}
     </Trigger>
     {open&&<Panel aria-label="Central de notificações">
-      <Header><Bell size={15}/><h2>Notificações</h2>{tab==='items'&&Boolean(notifications.data?.unread)&&<button onClick={()=>markAll.mutate()}><CheckCheck size={12}/>Marcar lidas</button>}</Header>
+      <Header><Bell size={15}/><h2>Notificações</h2>{tab==='items'&&Boolean(notifications.data?.unread)&&<ActionButton loading={markAll.isPending} loadingLabel="Marcando notificações como lidas" onClick={()=>markAll.mutate()}><CheckCheck size={12}/>Marcar lidas</ActionButton>}</Header>
       <Tabs><button aria-selected={tab==='items'} onClick={()=>setTab('items')}><Bell size={11}/> Central</button><button aria-selected={tab==='preferences'} onClick={()=>setTab('preferences')}><Settings2 size={11}/> Preferências</button></Tabs>
       {tab==='items'?<List>{notifications.data?.items.map(item=><Item key={item.id} $unread={!item.isRead} onClick={()=>void openItem(item.id,item.link)}>
         <strong>{item.title}</strong><p>{item.message}</p><small>{item.typeName} · {formatDate(item.createdAt)}</small>
