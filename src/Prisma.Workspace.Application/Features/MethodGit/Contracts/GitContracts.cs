@@ -79,3 +79,28 @@ public sealed record VerifiedGitFact(
     bool OpenPullRequestsReadComplete = false, bool HasOtherOpenPullRequests = false,
     bool HasEffectiveChangesRequested = false,
     string? ObservedGitActorId = null, string? ObservedGitActorName = null);
+
+/// <summary>Aba Git da tarefa (HU-0002, T-0006): vínculos, PRs com revisões, linha do tempo e quem pode vincular.</summary>
+public sealed record TaskGitViewDto(
+    Guid WorkItemId, string MethodTaskId, bool CanLink,
+    IReadOnlyList<TaskGitRepositoryOptionDto> Repositories, IReadOnlyList<TaskGitBranchDto> Branches,
+    IReadOnlyList<TaskGitPullRequestDto> PullRequests, IReadOnlyList<TaskGitTimelineEntryDto> Timeline);
+/// <summary>Repositório habilitado do projeto, para o vínculo manual (o modo e a última consulta servem ao "Consultar agora").</summary>
+public sealed record TaskGitRepositoryOptionDto(Guid Id, string RepositoryFullName, string Mode,
+    DateTimeOffset? LastPolledAtUtc = null, string? LastPollStatus = null);
+public sealed record TaskGitBranchDto(
+    Guid? LinkId, Guid IntegrationId, string RepositoryFullName, string BranchName, string BranchState,
+    DateTimeOffset? LastSeenAtUtc, string Source, DateTimeOffset CreatedAtUtc, string Url);
+public sealed record TaskGitPullRequestDto(
+    Guid LinkId, Guid IntegrationId, string RepositoryFullName, int Number, string Title, string State,
+    bool IsDraft, bool Merged, int ApprovalsCount, bool ChangesRequested, string Url, string HeadBranch,
+    string BaseBranch, string? AuthorName, string Source, DateTimeOffset UpdatedAtUtc, DateTimeOffset LinkedAtUtc);
+/// <summary>
+/// Um fato da linha do tempo do Git. Kind: git_branch_linked, git_branch_pushed, git_pr_linked, git_pr_unlinked,
+/// git_pr_inferred, git_fact (movimento por fato Git, com FactType), git_pr_merged ou git_pr_closed (observados sem movimento).
+/// Channel: ui, mcp, webhook, consulta ou nulo (automático, sem registro do canal).
+/// </summary>
+public sealed record TaskGitTimelineEntryDto(
+    string Kind, DateTimeOffset AtUtc, string? ActorName, string? Channel, string? RepositoryFullName = null,
+    string? Branch = null, int? PullRequestNumber = null, string? Url = null, string? FactType = null,
+    string? FromStatus = null, string? ToStatus = null);

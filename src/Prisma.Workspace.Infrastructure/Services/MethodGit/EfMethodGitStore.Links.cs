@@ -39,8 +39,12 @@ public sealed partial class EfMethodGitStore
         }
         if (pr.UpdatedAtUtc >= row.ProviderUpdatedAtUtc)
         {
+            // Revisões resumidas valem para a head atual (D4): head nova zera o resumo até a próxima leitura das revisões.
+            if (!string.Equals(row.HeadSha, pr.HeadSha, StringComparison.OrdinalIgnoreCase)) { row.ApprovalsCount = 0; row.ChangesRequested = false; }
             row.PullRequestNumber = pr.Number; row.Url = pr.Url; row.Title = pr.Title; row.HeadBranch = pr.HeadBranch;
-            row.BaseBranch = pr.BaseBranch; row.HeadSha = pr.HeadSha; row.MergeSha = pr.MergeSha;
+            // O GitHub devolve merge_commit_sha também para PR aberto ou fechado sem merge (merge de teste):
+            // só o SHA de um merge real é guardado, e a observação passa a distinguir mergeado de fechado.
+            row.BaseBranch = pr.BaseBranch; row.HeadSha = pr.HeadSha; row.MergeSha = pr.IsMerged ? pr.MergeSha : null;
             row.HeadRepositoryId = pr.HeadRepositoryId; row.PullRequestAuthorId = pr.PullRequestAuthorId; row.PullRequestAuthorName = pr.PullRequestAuthorName;
             row.State = pr.State; row.IsDraft = pr.IsDraft; row.ProviderUpdatedAtUtc = pr.UpdatedAtUtc;
             row.ObservedAtUtc = _clock.GetUtcNow(); row.UnlinkedReason = reason;
@@ -245,6 +249,14 @@ public sealed partial class EfMethodGitStore
     private Task<TaskGitLink?> BranchLinkAsync(Guid integrationId, string branchName, CancellationToken ct)
         => Links.Include(x => x.Integration).SingleOrDefaultAsync(x => x.IntegrationId == integrationId
             && x.PullRequestObservationId == null && x.BranchName == branchName, ct);
+    public async Task UpdateObservationReviewsAsync(Guid integrationId, int pullRequestNumber, string headSha, int approvals, bool changesRequested,
+        CancellationToken ct = default)
+    {
+        var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
+        await Observations.Where(x => x.IntegrationId == repository.Id && x.PullRequestNumber == pullRequestNumber && x.HeadSha == headSha
+                && (x.ApprovalsCount != approvals || x.ChangesRequested != changesRequested))
+            .ExecuteUpdateAsync(set => set.SetProperty(x => x.ApprovalsCount, Math.Max(0, approvals)).SetProperty(x => x.ChangesRequested, changesRequested), ct);
+    }
     public async Task<GitPullRequestPage> ListPullRequestsAsync(Guid projectId, bool? linked, int page, int pageSize, CancellationToken ct = default)
     {
         Scope(projectId);

@@ -19,6 +19,8 @@ import {
   type KanbanCardSettings, type KanbanFilterState, type SavedFilterOption
 } from '../features/board/KanbanFilters';
 import { useBoardRealtime } from '../features/board/useBoardRealtime';
+import { GitCardBadges } from '../features/board/GitCardBadges';
+import type { WorkItemGitSummary } from '../features/method-git/gitLabels';
 import {
   Plus,
   Square,
@@ -206,6 +208,7 @@ interface WorkItem {
   checklistDone?: number;
   isBlocked?: boolean;
   customFields?: { fieldId: string; value?: string | null }[];
+  git?: WorkItemGitSummary | null;
 }
 
 interface TagChipDto {
@@ -1590,6 +1593,8 @@ export const Kanban: React.FC = () => {
                             {item.subtitle}
                           </CardSubtitle>
                         )}
+
+                        {cardSettings.showGit && item.git && <GitCardBadges git={item.git} />}
 
                         {((cardSettings.showType && item.taskTypeName) || (cardSettings.showTags && item.tags && item.tags.length > 0) || (showStoryPoints && cardSettings.showPoints && item.points != null)) && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>

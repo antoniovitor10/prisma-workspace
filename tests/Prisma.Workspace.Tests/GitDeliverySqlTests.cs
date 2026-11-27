@@ -15,6 +15,17 @@ using Xunit;
 
 namespace Prisma.Workspace.Tests;
 
+/// <summary>
+/// SQL descartável do método: só no loopback e na porta isolada (3132 por padrão; outra frente de trabalho
+/// define PRISMA_METHOD_GIT_SQL_PORT com a porta do seu próprio contêiner). Nunca usa ambiente implícito.
+/// </summary>
+public static class MethodGitSqlServer
+{
+    public static string Port => Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL_PORT") is { Length: > 0 } port
+        && int.TryParse(port, out var value) && value is > 1024 and < 65536 ? value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "3132";
+    public static bool IsIsolated(string dataSource) => dataSource == $"127.0.0.1,{Port}" || dataSource == $"localhost,{Port}";
+}
+
 [CollectionDefinition("MethodGit SQL", DisableParallelization = true)]
 public sealed class MethodGitSqlCollection { }
 public sealed class MethodGitSqlFactAttribute : FactAttribute
@@ -326,7 +337,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
     {
         var value = Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL"); if (string.IsNullOrWhiteSpace(value)) return;
         var builder = new SqlConnectionStringBuilder(value);
-        if (builder.DataSource is not ("127.0.0.1,3132" or "localhost,3132")) throw new InvalidOperationException("SQL do método deve ser o servidor isolado3132.");
+        if (!MethodGitSqlServer.IsIsolated(builder.DataSource)) throw new InvalidOperationException("SQL do método deve ser o servidor isolado3132.");
         builder.InitialCatalog = "Prisma_MethodGit_Ponte_" + Guid.NewGuid().ToString("N");
         _connection = builder.ConnectionString;
         await using var context = new AppDbContext(Options());
@@ -346,7 +357,7 @@ public sealed class GitDeliverySqlFixture : IAsyncLifetime
     {
         if (_connection is null) return;
         var target = new SqlConnectionStringBuilder(_connection);
-        if (target.DataSource is not ("127.0.0.1,3132" or "localhost,3132") || !target.InitialCatalog.StartsWith("Prisma_MethodGit_Ponte_", StringComparison.Ordinal))
+        if (!MethodGitSqlServer.IsIsolated(target.DataSource) || !target.InitialCatalog.StartsWith("Prisma_MethodGit_Ponte_", StringComparison.Ordinal))
             throw new InvalidOperationException("Limpeza recusada fora do banco descartável próprio.");
         await using var context = new AppDbContext(Options()); await context.Database.EnsureDeletedAsync();
     }

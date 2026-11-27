@@ -385,3 +385,32 @@ describe('arraste de colunas', () => {
     expect(columnIds()).toEqual(['stage-2', 'stage-1']);
   });
 });
+
+describe('selos de Git no cartão (HU-0002, T-0005)', () => {
+  const comGit = {
+    ...cartoes[0],
+    git: { repoName: 'canais-mobile', repoFullName: 'detranse/canais-mobile', branch: 'feat/login', branchState: 'local',
+      prNumber: 7, prState: 'open', prUrl: 'https://github.com/detranse/canais-mobile/pull/7' },
+  };
+
+  it('mostra repositório, branch e PR, e a opção "Git" desligada esconde os selos (CA-14)', async () => {
+    vi.mocked(api.getWorkItems).mockResolvedValue([comGit, cartoes[1]]);
+    await renderRota('/boards/board-1');
+    const card = (await screen.findByRole('heading', { name: /Cartão do quadro um/ })).closest('[data-stage-id]') as HTMLElement;
+    const git = await within(document.body).findByRole('list', { name: 'Git' });
+    expect(within(git).getByTitle('detranse/canais-mobile')).toHaveTextContent('canais-mobile');
+    expect(within(git).getByTitle('feat/login (não enviada)')).toBeInTheDocument();
+    expect(within(git).getByTitle('PR #7: aberto')).toBeInTheDocument();
+    expect(card).toBeTruthy();
+    // Cartão sem vínculo não ganha selos.
+    expect(screen.getAllByRole('list', { name: 'Git' })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    const opcao = await screen.findByRole('checkbox', { name: 'Git' });
+    expect(opcao).toBeChecked();
+    fireEvent.click(opcao);
+    expect(screen.queryByRole('list', { name: 'Git' })).not.toBeInTheDocument();
+    fireEvent.click(opcao);
+    expect(screen.getByRole('list', { name: 'Git' })).toBeInTheDocument();
+  });
+});

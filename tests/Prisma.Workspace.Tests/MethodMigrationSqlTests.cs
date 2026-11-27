@@ -18,7 +18,7 @@ public sealed class MethodMigrationSqlTests
     public async Task AdditiveMigrationUpDownUpPreservesLegacyColumnsAndHumanCards()
     {
         var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL"));
-        Assert.True(connection.DataSource is "127.0.0.1,3132" or "localhost,3132", "Migration só pode executar no SQL próprio3132.");
+        Assert.True(MethodGitSqlServer.IsIsolated(connection.DataSource), "Migration só pode executar no SQL próprio3132.");
         connection.InitialCatalog = "Prisma_MethodGit_Migration_" + Guid.NewGuid().ToString("N");
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(connection.ConnectionString).Options;
         await using var db = new AppDbContext(options);

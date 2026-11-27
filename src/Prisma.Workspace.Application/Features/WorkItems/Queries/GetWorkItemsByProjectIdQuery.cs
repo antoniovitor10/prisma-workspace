@@ -19,13 +19,16 @@ public class GetWorkItemsByProjectIdQueryHandler
 {
     private readonly IWorkItemRepository _workItems;
     private readonly IProjectAccessService _access;
+    private readonly IWorkItemGitSummaryReader _git;
 
     public GetWorkItemsByProjectIdQueryHandler(
         IWorkItemRepository workItems,
-        IProjectAccessService access)
+        IProjectAccessService access,
+        IWorkItemGitSummaryReader git)
     {
         _workItems = workItems;
         _access = access;
+        _git = git;
     }
 
     public async Task<IReadOnlyList<WorkItemDto>> Handle(
@@ -39,6 +42,7 @@ public class GetWorkItemsByProjectIdQueryHandler
             ProjectRole.Viewer, cancellationToken);
 
         var items = await _workItems.GetByProjectIdAsync(request.ProjectId, cancellationToken);
-        return WorkItemCardProjection.ToCards(items, request.CurrentUserId);
+        var git = await _git.GetAsync(items.Select(x => x.Id).ToArray(), cancellationToken);
+        return WorkItemCardProjection.ToCards(items, request.CurrentUserId, git);
     }
 }

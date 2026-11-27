@@ -253,7 +253,7 @@ export function KanbanFilterBar({
   const cardLabels: Record<string, string> = {
     showPriority: 'Prioridade', showDueDate: 'Prazo', showEstimate: 'Estimativa',
     showAssignees: 'Responsáveis', showType: 'Tipo', showTags: 'Tags',
-    showPoints: 'Pontos', showChecklist: 'Checklist', showAttachments: 'Anexos', showTime: 'Tempo',
+    showPoints: 'Pontos', showChecklist: 'Checklist', showAttachments: 'Anexos', showTime: 'Tempo', showGit: 'Git',
   };
 
   return (

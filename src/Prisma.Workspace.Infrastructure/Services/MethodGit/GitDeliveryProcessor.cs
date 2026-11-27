@@ -76,6 +76,9 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
         var reviews = pr.State == "open" || pr.IsMerged || e.EventName == "pull_request_review"
             ? EffectiveReviews(await provider.GetReviewsAsync(repository, number, ct), pr.HeadSha) : [];
         var changesRequested = reviews.Any(review => review.State.Equals("changes_requested", StringComparison.OrdinalIgnoreCase));
+        if (pr.State == "open" || pr.IsMerged || e.EventName == "pull_request_review")
+            await store.UpdateObservationReviewsAsync(repository.Id, number, pr.HeadSha,
+                reviews.Count(review => review.State.Equals("approved", StringComparison.OrdinalIgnoreCase)), changesRequested, ct);
         var candidate = SelectCandidate(e, pr, reviews, internalEvaluation);
         if (candidate is null) return await Finish(delivery, GitDeliveryStates.Ignored, "observation_only", ct);
         if (candidate.Type == MethodGitFactCodes.PullRequestMerged && pr.BaseBranch != repository.DefaultBranch)

@@ -268,7 +268,7 @@ public sealed class MethodGitBranchLinkSqlTests : IClassFixture<GitDeliverySqlFi
     public async Task CA8c_migration_applies_and_reverts_with_existing_app_integration_and_PR_webhook_still_moves_card()
     {
         var connection = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable("PRISMA_METHOD_GIT_SQL"));
-        Assert.True(connection.DataSource is "127.0.0.1,3132" or "localhost,3132", "Migration só pode executar no SQL próprio 3132.");
+        Assert.True(MethodGitSqlServer.IsIsolated(connection.DataSource), "Migration só pode executar no SQL próprio 3132.");
         connection.InitialCatalog = "Prisma_MethodGit_Migration_" + Guid.NewGuid().ToString("N");
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(connection.ConnectionString).Options;
         await using var db = new AppDbContext(options);
