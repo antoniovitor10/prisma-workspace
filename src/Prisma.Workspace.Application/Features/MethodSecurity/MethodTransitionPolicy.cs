@@ -87,7 +87,7 @@ public sealed class MethodTransitionPolicy(
                 : Deny("agent_creation", "O agente só cria tasks em backlog ou concluida, sem autorização implícita.");
         }
         if (from is null) return Deny("method_mapping", "A coluna de origem não possui mapeamento válido do método.");
-        if (task is null || !task.IsTopLevel || task.IsArchived)
+        if (task is null || !task.IsMethodEligible || task.IsArchived)
             return Deny("method_task", "A tarefa não possui identidade válida de topo no método.");
 
         if (actor.Role == MethodRole.System)

@@ -59,7 +59,7 @@ public sealed partial class EfMethodGitStore
         if (source is not ("branch" or "title")) throw new ArgumentException("Origem inferida inválida.", nameof(source));
         var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
         var task = await GetTaskAsync(workItemId, ct) ?? throw Missing();
-        if (task.ProjectId != repository.ProjectId || !task.IsTopLevel || task.IsArchived || task.OrganizationId != repository.OrganizationId) throw Forbidden();
+        if (task.ProjectId != repository.ProjectId || !task.IsMethodEligible || task.IsArchived || task.OrganizationId != repository.OrganizationId) throw Forbidden();
         GitPullRequestObservation? observation = null;
         if (observationId.HasValue)
         {
@@ -99,7 +99,7 @@ public sealed partial class EfMethodGitStore
             || actor.Role == MethodRole.System || string.IsNullOrWhiteSpace(reason) || reason.Length > 1000) throw Forbidden();
         var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
         var task = await GetTaskAsync(workItemId, ct) ?? throw Missing();
-        if (task.ProjectId != repository.ProjectId || !task.IsTopLevel || task.IsArchived) throw Forbidden();
+        if (task.ProjectId != repository.ProjectId || !task.IsMethodEligible || task.IsArchived) throw Forbidden();
         var project = await GetProjectAsync(task.ProjectId, ct) ?? throw Missing();
         await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Edit, PermissionScope.WorkItem, workItemId, ct);
         await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Comment, PermissionScope.WorkItem, workItemId, ct);
@@ -174,7 +174,7 @@ public sealed partial class EfMethodGitStore
         var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
         if (!repository.Enabled) throw new MethodOperationException(409, "git_repository_unavailable", "Integração do repositório indisponível.");
         var task = await GetTaskAsync(workItemId, ct) ?? throw Missing();
-        if (task.ProjectId != repository.ProjectId || !task.IsTopLevel || task.IsArchived || task.OrganizationId != repository.OrganizationId) throw Forbidden();
+        if (task.ProjectId != repository.ProjectId || !task.IsMethodEligible || task.IsArchived || task.OrganizationId != repository.OrganizationId) throw Forbidden();
         if (GitBranchName.ReferencesOtherTask(branchName, task.MethodTaskId)) throw GitBranchName.OtherTaskError(task.MethodTaskId);
         await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Edit, PermissionScope.WorkItem, workItemId, ct);
         await permissions.EnsureAsync(actor.ActorId, PlatformPermission.Comment, PermissionScope.WorkItem, workItemId, ct);

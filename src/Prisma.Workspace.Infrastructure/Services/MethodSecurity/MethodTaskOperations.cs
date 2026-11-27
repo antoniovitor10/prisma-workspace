@@ -61,7 +61,7 @@ public sealed class MethodTaskOperations(AppDbContext db, IMethodAccessContext a
                 && x.WorkItem.Board.OrganizationId == project.OrganizationId, ct))
                 throw new MethodOperationException(409, "ambiguous_method_id", "ID do método já utilizado no projeto, inclusive por card arquivado ou em outro quadro.");
             var item = new WorkItem { Id = Guid.NewGuid(), BoardId = project.BoardId,
-                StageId = project.StageMappings[request.Status], ParentId = null,
+                StageId = project.StageMappings[request.Status], ParentId = await StoryIdAsync(project, request.Hu.Trim(), ct),
                 Title = CardTitle(request.Id, request.Title), Position = 100, CreatedBy = Actor.ActorId,
                 CreatedAt = _clock.GetUtcNow(), UpdatedAt = _clock.GetUtcNow() };
             var stage = await db.Stages.SingleAsync(x => x.Id == item.StageId, ct);
@@ -170,7 +170,8 @@ public sealed class MethodTaskOperations(AppDbContext db, IMethodAccessContext a
     private IQueryable<WorkItem> Items(MethodProjectSnapshot project) => db.WorkItems
         .Include(x => x.CustomFieldValues).Include(x => x.WorkItemTags).ThenInclude(x => x.Tag)
         .Where(x => x.BoardId == project.BoardId && x.Board.ProjectId == project.ProjectId
-            && x.Board.OrganizationId == project.OrganizationId && x.ParentId == null && !x.IsArchived);
+            && x.Board.OrganizationId == project.OrganizationId && !x.IsArchived)
+        .Where(MethodEligibility.HasEligibleParent(db));
 
     private async Task<(WorkItem, MethodTaskSnapshot)> TaskAsync(MethodProjectSnapshot project, string id, CancellationToken ct)
     {
@@ -247,6 +248,21 @@ public sealed class MethodTaskOperations(AppDbContext db, IMethodAccessContext a
         if (!item.WorkItemTags.Any(x => x.TagId == tag.Id)) item.WorkItemTags.Add(new WorkItemTag { WorkItemId = item.Id, TagId = tag.Id });
     }
 
+    private const string AvulsaHu = "avulsa";
+
+    /// <summary>
+    /// HU-0008 (T-0021): a task nasce filha da História do método da HU dela; sem História, nasce no topo (como antes).
+    /// Task avulsa nasce sob a História "Avulsas", criada na primeira vez (D11).
+    /// </summary>
+    private async Task<Guid?> StoryIdAsync(MethodProjectSnapshot project, string hu, CancellationToken ct)
+    {
+        if (hu == AvulsaHu)
+            return (await Services.MethodDocuments.MethodDocumentOperations.EnsureAvulsasAsync(db, project, Actor, _clock.GetUtcNow(), ct)).WorkItemId;
+        return await db.MethodDocuments.AsNoTracking().Where(x => x.ProjectId == project.ProjectId
+                && x.Kind == MethodDocumentKind.Hu && x.MethodKey == hu && x.WorkItem.BoardId == project.BoardId && !x.WorkItem.IsArchived)
+            .Select(x => (Guid?)x.WorkItemId).SingleOrDefaultAsync(ct);
+    }
+
     private void Field(WorkItem item, Guid fieldId, string? value)
     {
         var field = item.CustomFieldValues.SingleOrDefault(x => x.FieldDefinitionId == fieldId);
@@ -286,7 +302,7 @@ public sealed class MethodTaskOperations(AppDbContext db, IMethodAccessContext a
     private static void ValidateContent(string title, string hu, string file, IReadOnlyList<string> covers, string risk)
     {
         if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 160) throw Invalid("Informe título de até 160 caracteres.");
-        if (hu is not { Length: >= 7 and <= 32 } || !hu.StartsWith("HU-", StringComparison.Ordinal) || !hu[3..].All(char.IsAsciiDigit)) throw Invalid("Informe a HU no formato HU-0001.");
+        if (hu != AvulsaHu && (hu is not { Length: >= 7 and <= 32 } || !hu.StartsWith("HU-", StringComparison.Ordinal) || !hu[3..].All(char.IsAsciiDigit))) throw Invalid("Informe a HU no formato HU-0001 ou avulsa.");
         if (string.IsNullOrWhiteSpace(file) || file.Length > 2000 || covers is null || covers.Count > 100
             || covers.Any(x => string.IsNullOrWhiteSpace(x) || x.Length > 200) || string.IsNullOrWhiteSpace(risk) || risk.Length > 2000)
             throw Invalid("Informe arquivo, critérios cobertos e risco com tamanho válido.");
