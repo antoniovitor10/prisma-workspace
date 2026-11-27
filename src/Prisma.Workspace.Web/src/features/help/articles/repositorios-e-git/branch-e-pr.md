@@ -13,9 +13,10 @@ relacionados:
 
 Quando chega um evento de pull request, o Prisma procura a task nesta ordem:
 
-1. um **vínculo explícito** (feito na tela, em **PRs não vinculados**, ou pelo MCP com `vincular_pr`);
-2. o **nome da branch** no formato `task/T-0001-descricao`;
-3. um único `[T-0001]` no **título do PR**.
+1. um **vínculo explícito** (feito na tela, em **PRs não vinculados** ou na aba **Git** da tarefa, ou pelo MCP com `vincular_pr`);
+2. um **vínculo de branch** (pelo MCP com `vincular_branch` ou na aba **Git**): o PR aberto dessa branch é da task, mesmo sem ID no nome;
+3. o **nome da branch** no formato `task/T-0001-descricao`;
+4. um único `[T-0001]` no **título do PR**.
 
 PRs vindos de um fork sempre precisam de vínculo explícito. As mensagens de commit não são lidas pelo Prisma; a convenção `tipo(T-0001): resumo` serve só para o histórico do repositório.
 
@@ -27,7 +28,12 @@ PRs vindos de um fork sempre precisam de vínculo explícito. As mensagens de co
 
 ## Vincular branch {#vincular-branch}
 
-Pelo MCP, `vincular_branch` liga uma branch a uma task. O ID precisa ter o formato `T-0001`, o repositório precisa estar conectado e ativo no projeto e a branch não pode citar outra task. O vínculo começa como local e vira publicado quando o GitHub avisa que a branch existe. Vincular branch **não move o card**.
+Pelo MCP, `vincular_branch` liga uma branch a uma task. O ID precisa ter o formato `T-0001`, o repositório precisa estar conectado e ativo no projeto e a branch não pode citar outra task. O vínculo começa como local ("não enviada") e vira enviado quando o GitHub avisa que a branch existe (ou quando a consulta a encontra, no modo sem administrador). Vincular branch **não move o card**.
+
+## Git no card e na tarefa {#git-no-card}
+
+- No quadro, o card mostra até três selos: o **repositório** (nome curto; o nome completo aparece ao passar o mouse), a **branch** (cortada se for longa; "não enviada" enquanto for local) e o **PR** com o número e o estado (aberto, rascunho, aprovado, mudanças pedidas, mergeado ou fechado). Com mais de um PR, o card mostra o mais recente que não foi fechado sem merge. Desligue os selos em **Filtros** > **Conteúdo do cartão** > **Git**.
+- No detalhe da tarefa, a aba **Git** lista cada branch (com o link para o GitHub) e cada PR (título, estado, aprovações e mudanças pedidas), a **linha do tempo do Git** (branch vinculada, enviada, PR aberto, revisão, merge e fechamento, com data, autor e canal: tela, MCP, webhook ou consulta) e, para quem pode editar a tarefa, os campos **Nome da branch** e **URL do PR** para vincular à mão.
 
 ## PRs não vinculados {#prs-nao-vinculados}
 

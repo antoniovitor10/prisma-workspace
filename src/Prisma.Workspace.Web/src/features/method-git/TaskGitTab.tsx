@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { methodApi } from './client';
 import { formatDateTime, gitBranchStateLabel, gitPollStatusMessage, gitPrState, gitPrStateLabel } from './gitLabels';
+import { ActionButton } from '../../components/ActionButton';
 import { gitChannelLabel, gitTimelineText, taskGitQueryKey, useTaskGit } from './taskGit';
 
 const Wrap = styled.div`display:grid;gap:22px;margin-top:20px;`;
@@ -135,8 +136,8 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
             </Item>
           ))}
         </List>
-        <div><Button type="button" onClick={() => pollNow.mutate()} disabled={pollNow.isPending}>
-          <RefreshCw size={13} aria-hidden="true" />{pollNow.isPending ? 'Consultando...' : 'Consultar agora'}
+        <div><Button as={ActionButton} type="button" onClick={() => pollNow.mutateAsync().catch(() => undefined)} loading={pollNow.isPending} loadingLabel="Consultando o GitHub">
+          <RefreshCw size={13} aria-hidden="true" />Consultar agora
         </Button></div>
         {pollFeedback && <Feedback $error={pollFeedback.error} role={pollFeedback.error ? 'alert' : 'status'}>{pollFeedback.text}</Feedback>}
       </Block>}
@@ -211,8 +212,8 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
               <Field>Nome da branch
                 <input value={branch} onChange={event => setBranch(event.target.value)} placeholder="feat/minha-branch" autoComplete="off" spellCheck={false} />
               </Field>
-              <Button type="submit" disabled={!branch.trim() || !repository || linkBranch.isPending}>
-                <GitBranch size={13} aria-hidden="true" />{linkBranch.isPending ? 'Vinculando...' : 'Vincular branch'}
+              <Button as={ActionButton} type="submit" disabled={!branch.trim() || !repository} loading={linkBranch.isPending} loadingLabel="Vinculando a branch">
+                <GitBranch size={13} aria-hidden="true" />Vincular branch
               </Button>
             </Form>
             <UrlForm onSubmit={submitPr} aria-label="Vincular PR">
@@ -220,8 +221,8 @@ export function TaskGitTab({ projectId, workItemId, onLinked, actions }: {
                 <input value={url} onChange={event => setUrl(event.target.value)} placeholder="https://github.com/dono/repositorio/pull/42"
                   inputMode="url" autoComplete="off" spellCheck={false} />
               </Field>
-              <Button type="submit" disabled={!url.trim() || linkPr.isPending}>
-                <GitPullRequest size={13} aria-hidden="true" />{linkPr.isPending ? 'Vinculando...' : 'Vincular PR'}
+              <Button as={ActionButton} type="submit" disabled={!url.trim()} loading={linkPr.isPending} loadingLabel="Vinculando o PR">
+                <GitPullRequest size={13} aria-hidden="true" />Vincular PR
               </Button>
             </UrlForm>
           </>}
