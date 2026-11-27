@@ -8,7 +8,8 @@ using Prisma.Workspace.Domain.Enums;
 namespace Prisma.Workspace.Application.Features.MethodGit.Repositories;
 
 public sealed partial class GitRepositoryOperations(IMethodGitStore store, IGitProvider provider,
-    IMethodGitSecretStore secrets, IMethodAccessContext access, IPermissionService permissions, TimeProvider? clock = null)
+    IMethodGitSecretStore secrets, IMethodAccessContext access, IPermissionService permissions, TimeProvider? clock = null,
+    IGitReadCredentialStore? credentials = null)
 {
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     public async Task<IReadOnlyList<GitRepositoryDto>> ListAsync(Guid projectId, string actorId, CancellationToken ct)
@@ -35,11 +36,51 @@ public sealed partial class GitRepositoryOperations(IMethodGitStore store, IGitP
         await store.SaveRepositoryAsync(repository, ct);
         return ToDto(repository);
     }
+    /// <summary>
+    /// Modo consulta (HU-0002, RF10): sem App nem webhook. Exige o token de leitura ativo do dono GitHub no projeto,
+    /// lê o repositório com ele (o ID vem do GitHub) e grava a leitura de teste como a primeira consulta com sucesso.
+    /// </summary>
+    public async Task<GitRepositoryDto> RegisterPollAsync(Guid projectId, RegisterPollGitRepositoryRequest request, string actorId, CancellationToken ct)
+    {
+        var project = await EnsureAccessAsync(projectId, actorId, true, ct);
+        var fullName = request.RepositoryFullName?.Trim() ?? string.Empty;
+        if (request.SystemPrincipalId == Guid.Empty || fullName.Length > 300 || !RepositoryPattern().IsMatch(fullName) || fullName.Split('/').Any(p => p is "." or ".."))
+            throw Invalid("Informe o repositório no formato dono/repositório e o sistema de integração.");
+        ValidateBranch(request.DefaultBranch);
+        var owner = fullName.Split('/')[0];
+        var credentialId = credentials is null ? null : await credentials.GetActiveIdAsync(projectId, owner, ct);
+        if (credentialId is null)
+            throw new MethodOperationException(400, "git_read_credential_missing", $"Cadastre antes o token de leitura da organização {owner} neste projeto.");
+        var draft = new GitRepositoryDescriptor(Guid.NewGuid(), project.OrganizationId, projectId, "github", "github.com", 0, fullName,
+            request.DefaultBranch, 0, 0, string.Empty, string.Empty, null, null, request.SystemPrincipalId, request.Enabled,
+            Mode: "poll", ReadCredentialId: credentialId);
+        // Leitura de teste: erros do GitHub (401, 403, 404) sobem com código, sem o texto do provedor.
+        var identity = await provider.GetRepositoryIdentityAsync(draft, ct);
+        var repository = draft with { RepositoryId = identity.Id, RepositoryFullName = identity.FullName };
+        var validation = await provider.ValidateInstallationAsync(repository, ct);
+        if (!validation.Allowed) throw new MethodOperationException(503, validation.ErrorCode ?? "git_installation_unavailable",
+            "Não foi possível ler o repositório com o token de leitura. Confira o token e o acesso ao repositório.");
+        repository = repository with { LastPolledAtUtc = _clock.GetUtcNow(), LastPollStatus = "ok" };
+        await store.SaveRepositoryAsync(repository, ct);
+        return ToDto(repository);
+    }
     public async Task<GitRepositoryDto> UpdateAsync(Guid projectId, Guid integrationId, UpdateGitRepositoryRequest request, string actorId, CancellationToken ct)
     {
         await EnsureAccessAsync(projectId, actorId, true, ct);
         var old = await store.GetRepositoryAsync(integrationId, ct);
         if (old is null || old.ProjectId != projectId) throw new MethodOperationException(404, "git_repository_not_found", "Integração não encontrada.");
+        if (old.IsPoll)
+        {
+            // Modo consulta não tem segredos do webhook nem chave da App: só liga, pausa e troca a branch principal.
+            ValidateBranch(request.DefaultBranch ?? old.DefaultBranch);
+            if (request.AppPrivateKeySecretRef is not null || request.WebhookSecretRef is not null || request.PreviousWebhookSecretRef is not null)
+                throw Invalid("Repositório no modo consulta não usa App nem webhook.");
+            var polled = old with { Enabled = request.Enabled, DefaultBranch = request.DefaultBranch ?? old.DefaultBranch };
+            if (polled.Enabled && !(await provider.ValidateInstallationAsync(polled, ct)).Allowed)
+                throw new MethodOperationException(503, "git_installation_unavailable", "Não foi possível ler o repositório com o token de leitura da organização.");
+            await store.SaveRepositoryAsync(polled, ct);
+            return ToDto(polled);
+        }
         var currentRef = request.WebhookSecretRef ?? old.WebhookSecretRef;
         var rotating = currentRef != old.WebhookSecretRef;
         var previousRef = request.PreviousWebhookSecretRef ?? (rotating ? old.WebhookSecretRef : old.PreviousWebhookSecretRef);
@@ -85,7 +126,8 @@ public sealed partial class GitRepositoryOperations(IMethodGitStore store, IGitP
     }
     private static MethodOperationException Invalid(string message) => new(400, "invalid_git_configuration", message);
     private static GitRepositoryDto ToDto(GitRepositoryDescriptor r) => new(r.Id, r.ProjectId, r.Host, r.RepositoryId, r.RepositoryFullName,
-        r.DefaultBranch, r.AppId, r.InstallationId, r.SystemPrincipalId, r.Enabled, r.OperationalError);
+        r.DefaultBranch, r.IsPoll ? null : r.AppId, r.IsPoll ? null : r.InstallationId, r.SystemPrincipalId, r.Enabled, r.OperationalError,
+        r.Mode, r.ReadCredentialId, r.LastPolledAtUtc, r.LastPollStatus);
     [GeneratedRegex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", RegexOptions.CultureInvariant)] private static partial Regex RepositoryPattern();
 }
 
@@ -95,6 +137,32 @@ public sealed class ListMethodGitRepositoriesHandler(GitRepositoryOperations ope
 public sealed record RegisterMethodGitRepositoryCommand(Guid ProjectId, RegisterGitRepositoryRequest Data, string ActorId) : IRequest<GitRepositoryDto>;
 public sealed class RegisterMethodGitRepositoryHandler(GitRepositoryOperations operations) : IRequestHandler<RegisterMethodGitRepositoryCommand, GitRepositoryDto>
 { public Task<GitRepositoryDto> Handle(RegisterMethodGitRepositoryCommand request, CancellationToken ct) => operations.RegisterAsync(request.ProjectId, request.Data, request.ActorId, ct); }
+public sealed record RegisterPollMethodGitRepositoryCommand(Guid ProjectId, RegisterPollGitRepositoryRequest Data, string ActorId) : IRequest<GitRepositoryDto>;
+public sealed class RegisterPollMethodGitRepositoryHandler(GitRepositoryOperations operations) : IRequestHandler<RegisterPollMethodGitRepositoryCommand, GitRepositoryDto>
+{ public Task<GitRepositoryDto> Handle(RegisterPollMethodGitRepositoryCommand request, CancellationToken ct) => operations.RegisterPollAsync(request.ProjectId, request.Data, request.ActorId, ct); }
+
+/// <summary>Tokens de leitura por organização GitHub (HU-0002, T-0007): só sessão humana administrativa; o valor nunca volta.</summary>
+public sealed class GitReadCredentialOperations(GitRepositoryOperations projects, IGitReadCredentialStore credentials)
+{
+    public async Task<IReadOnlyList<GitReadCredentialDto>> ListAsync(Guid projectId, string actorId, CancellationToken ct)
+    { await projects.EnsureAccessAsync(projectId, actorId, true, ct); return await credentials.ListAsync(projectId, ct); }
+    public async Task<GitReadCredentialDto> SaveAsync(Guid projectId, SaveGitReadCredentialRequest request, string actorId, CancellationToken ct)
+    { await projects.EnsureAccessAsync(projectId, actorId, true, ct); return await credentials.SaveAsync(projectId, request.GitHubOwner, request.Token, actorId, ct); }
+    public async Task<GitReadCredentialDto> RevokeAsync(Guid projectId, Guid credentialId, string actorId, CancellationToken ct)
+    { await projects.EnsureAccessAsync(projectId, actorId, true, ct); return await credentials.RevokeAsync(projectId, credentialId, actorId, ct); }
+}
+public sealed record ListGitReadCredentialsQuery(Guid ProjectId, string ActorId) : IRequest<IReadOnlyList<GitReadCredentialDto>>;
+public sealed class ListGitReadCredentialsHandler(GitReadCredentialOperations operations) : IRequestHandler<ListGitReadCredentialsQuery, IReadOnlyList<GitReadCredentialDto>>
+{ public Task<IReadOnlyList<GitReadCredentialDto>> Handle(ListGitReadCredentialsQuery r, CancellationToken ct) => operations.ListAsync(r.ProjectId, r.ActorId, ct); }
+public sealed record SaveGitReadCredentialCommand(Guid ProjectId, SaveGitReadCredentialRequest Data, string ActorId) : IRequest<GitReadCredentialDto>
+{
+    public override string ToString() => $"SaveGitReadCredentialCommand {{ ProjectId = {ProjectId}, GitHubOwner = {Data.GitHubOwner} }}";
+}
+public sealed class SaveGitReadCredentialHandler(GitReadCredentialOperations operations) : IRequestHandler<SaveGitReadCredentialCommand, GitReadCredentialDto>
+{ public Task<GitReadCredentialDto> Handle(SaveGitReadCredentialCommand r, CancellationToken ct) => operations.SaveAsync(r.ProjectId, r.Data, r.ActorId, ct); }
+public sealed record RevokeGitReadCredentialCommand(Guid ProjectId, Guid CredentialId, string ActorId) : IRequest<GitReadCredentialDto>;
+public sealed class RevokeGitReadCredentialHandler(GitReadCredentialOperations operations) : IRequestHandler<RevokeGitReadCredentialCommand, GitReadCredentialDto>
+{ public Task<GitReadCredentialDto> Handle(RevokeGitReadCredentialCommand r, CancellationToken ct) => operations.RevokeAsync(r.ProjectId, r.CredentialId, r.ActorId, ct); }
 public sealed record UpdateMethodGitRepositoryCommand(Guid ProjectId, Guid IntegrationId, UpdateGitRepositoryRequest Data, string ActorId) : IRequest<GitRepositoryDto>;
 public sealed class UpdateMethodGitRepositoryHandler(GitRepositoryOperations operations) : IRequestHandler<UpdateMethodGitRepositoryCommand, GitRepositoryDto>
 { public Task<GitRepositoryDto> Handle(UpdateMethodGitRepositoryCommand request, CancellationToken ct) => operations.UpdateAsync(request.ProjectId, request.IntegrationId, request.Data, request.ActorId, ct); }

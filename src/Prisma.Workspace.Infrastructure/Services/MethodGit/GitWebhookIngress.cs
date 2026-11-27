@@ -42,7 +42,8 @@ public sealed partial class GitWebhookIngress(
             || string.IsNullOrWhiteSpace(input.CorrelationId) || input.CorrelationId.Length > 64 || input.CorrelationId.Any(char.IsControl))
             throw new MethodOperationException(400, "invalid_git_headers", "Cabeçalhos obrigatórios do webhook inválidos.");
         var repository = await store.GetRepositoryForIngressAsync(input.IntegrationId, cancellationToken);
-        if (repository is null || !repository.Enabled || repository.Provider != provider.Provider)
+        // Modo consulta não tem webhook (nem segredo): qualquer entrega é recusada como não autenticada.
+        if (repository is null || !repository.Enabled || repository.Provider != provider.Provider || repository.IsPoll)
             throw new MethodOperationException(401, "invalid_git_signature", "Webhook não autenticado.");
         var currentSecret = await secrets.ResolveAsync(repository.WebhookSecretRef, cancellationToken);
         var version = "current";

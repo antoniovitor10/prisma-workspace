@@ -67,11 +67,46 @@ export interface GitRepository {
   repositoryId: number;
   repositoryFullName: string;
   defaultBranch: string;
-  appId: number;
-  installationId: number;
+  appId: number | null;
+  installationId: number | null;
   systemPrincipalId: string;
   enabled: boolean;
   operationalError: string | null;
+  /** "app" (GitHub App + webhook) ou "poll" (consulta com token de leitura). */
+  mode: 'app' | 'poll' | string;
+  readCredentialId: string | null;
+  /** Última consulta com sucesso (modo consulta). */
+  lastPolledAtUtc: string | null;
+  /** Código da última consulta, sem texto do GitHub. */
+  lastPollStatus: string | null;
+}
+
+export interface RegisterPollRepositoryInput {
+  repositoryFullName: string;
+  defaultBranch: string;
+  systemPrincipalId: string;
+  enabled: boolean;
+}
+
+/** Token de leitura de uma organização GitHub: o valor nunca volta da API. */
+export interface GitReadCredential {
+  id: string;
+  gitHubOwner: string;
+  tokenPrefix: string;
+  createdAtUtc: string;
+  createdByName: string | null;
+  revokedAtUtc: string | null;
+  repositoriesCount: number;
+}
+
+export interface GitPollResult {
+  integrationId: string;
+  repositoryFullName: string;
+  status: string;
+  success: boolean;
+  lastPolledAtUtc: string | null;
+  pullRequestsEvaluated: number;
+  branchesPushed: number;
 }
 
 export interface RegisterRepositoryInput {

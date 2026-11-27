@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../../styles/theme';
@@ -11,6 +11,7 @@ vi.mock('./client', () => ({ methodApi: {
   identity: vi.fn(), settings: vi.fn(), provision: vi.fn(), updateSettings: vi.fn(), tokens: vi.fn(), issueToken: vi.fn(),
   revokeToken: vi.fn(), repositories: vi.fn(), registerRepository: vi.fn(), updateRepository: vi.fn(),
   tasks: vi.fn(), unlinked: vi.fn(), link: vi.fn(), approveResume: vi.fn(), webhookUrl: vi.fn(),
+  readCredentials: vi.fn(), saveReadCredential: vi.fn(), revokeReadCredential: vi.fn(), registerPollRepository: vi.fn(), pollRepository: vi.fn(),
 } }));
 
 const settings: MethodProjectSettings = {
@@ -52,6 +53,7 @@ beforeEach(() => {
   vi.mocked(methodApi.tokens).mockResolvedValue([]);
   vi.mocked(methodApi.tasks).mockResolvedValue([]);
   vi.mocked(methodApi.repositories).mockResolvedValue([]);
+  vi.mocked(methodApi.readCredentials).mockResolvedValue([]);
   vi.mocked(methodApi.unlinked).mockResolvedValue({ items: [], page: 1, pageSize: 25, total: 0 });
   vi.mocked(methodApi.revokeToken).mockResolvedValue(undefined);
   vi.mocked(methodApi.approveResume).mockResolvedValue({ eventId: 'approval-a' });
@@ -133,7 +135,8 @@ describe('Configuração do método', () => {
     vi.mocked(methodApi.tokens).mockResolvedValue([{ ...token, role: 'sistema', principalDisplayName: 'GitHub' }]);
     vi.mocked(methodApi.registerRepository).mockResolvedValue({ id: 'repository-a', projectId: 'project-a',
       repositoryFullName: 'qa/metodo', repositoryId: 900001, defaultBranch: 'trunk', systemPrincipalId: 'principal-a',
-      appId: 424242, installationId: 1, host: 'github.com', enabled: true, operationalError: null });
+      appId: 424242, installationId: 1, host: 'github.com', enabled: true, operationalError: null,
+      mode: 'app', readCredentialId: null, lastPolledAtUtc: null, lastPollStatus: null });
     show();
     fireEvent.click(await screen.findByRole('button', { name: 'Repositórios' }));
     await screen.findByRole('option', { name: 'GitHub' });
@@ -183,5 +186,84 @@ describe('Configuração do método', () => {
     const before = vi.mocked(methodApi.settings).mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
     await waitFor(() => expect(methodApi.settings).toHaveBeenCalledTimes(before + 1));
+  });
+
+  describe('modo consulta (HU-0002, T-0007 e T-0008)', () => {
+    const readToken = 'github_pat_SEGREDO0123456789abcdefghijklmn';
+    const credential = { id: 'credential-a', gitHubOwner: 'detranse', tokenPrefix: 'github_pat_SEGRE', createdAtUtc: '2026-11-27T10:00:00Z',
+      createdByName: 'Admin', revokedAtUtc: null, repositoriesCount: 0 };
+    const pollRepository = { id: 'repository-p', projectId: 'project-a', repositoryFullName: 'detranse/canais-mobile', repositoryId: 777001,
+      defaultBranch: 'main', systemPrincipalId: 'principal-a', appId: null, installationId: null, host: 'github.com', enabled: true,
+      operationalError: null, mode: 'poll', readCredentialId: 'credential-a', lastPolledAtUtc: '2026-11-27T09:00:00Z', lastPollStatus: 'ok' };
+
+    it('CA-9: escolher "Consulta" troca os campos e conecta sem App nem webhook', async () => {
+      vi.mocked(methodApi.tokens).mockResolvedValue([{ ...token, role: 'sistema', principalDisplayName: 'GitHub' }]);
+      vi.mocked(methodApi.readCredentials).mockResolvedValue([credential]);
+      vi.mocked(methodApi.registerPollRepository).mockResolvedValue(pollRepository);
+      show();
+      fireEvent.click(await screen.findByRole('button', { name: 'Repositórios' }));
+      await screen.findByRole('option', { name: 'GitHub' });
+      expect(screen.getByLabelText('GitHub App ID')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('radio', { name: 'Consulta com token de leitura' }));
+      expect(screen.queryByLabelText('GitHub App ID')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Installation ID')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('ID do repositório')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Referência do segredo do webhook')).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText('Repositório'), { target: { value: 'detranse/canais-mobile' } });
+      fireEvent.change(screen.getByLabelText('Branch principal'), { target: { value: 'main' } });
+      fireEvent.change(screen.getByLabelText('Sistema de integração'), { target: { value: 'principal-a' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Conectar repositório' }));
+      await waitFor(() => expect(methodApi.registerPollRepository).toHaveBeenCalledWith('project-a',
+        { repositoryFullName: 'detranse/canais-mobile', defaultBranch: 'main', systemPrincipalId: 'principal-a', enabled: true }));
+      expect(methodApi.registerRepository).not.toHaveBeenCalled();
+      await screen.findByText(/Repositório conectado no modo consulta/);
+    });
+
+    it('CA-9 e CA-13b: cadastrar o token mostra só o prefixo e não guarda o valor na tela', async () => {
+      let saved = false;
+      vi.mocked(methodApi.readCredentials).mockImplementation(async () => (saved ? [credential] : []));
+      vi.mocked(methodApi.saveReadCredential).mockImplementation(async () => { saved = true; return credential; });
+      const view = show();
+      fireEvent.click(await screen.findByRole('button', { name: 'Repositórios' }));
+      const form = await screen.findByRole('form', { name: 'Salvar token de leitura' });
+      fireEvent.change(within(form).getByLabelText('Organização GitHub'), { target: { value: 'detranse' } });
+      const input = within(form).getByLabelText(/^Token de leitura/);
+      expect(input).toHaveAttribute('type', 'password');
+      fireEvent.change(input, { target: { value: readToken } });
+      fireEvent.click(within(form).getByRole('button', { name: 'Salvar token' }));
+      await waitFor(() => expect(methodApi.saveReadCredential).toHaveBeenCalledWith('project-a', 'detranse', readToken));
+      await screen.findByText('Token de leitura salvo e cifrado. Só o começo dele fica visível.');
+      const list = await screen.findByRole('list', { name: 'Tokens de leitura' });
+      expect(within(list).getByText(/github_pat_SEGRE/)).toBeInTheDocument();
+      expect(within(form).getByLabelText(/^Token de leitura/)).toHaveValue('');
+      expect(document.body.innerHTML).not.toContain(readToken);
+      expect(JSON.stringify(view.client.getQueryCache().getAll().map(query => query.state.data))).not.toContain(readToken);
+    });
+
+    it('CA-13: erro da última consulta aparece sem o texto do GitHub, com a última consulta com sucesso', async () => {
+      vi.mocked(methodApi.repositories).mockResolvedValue([{ ...pollRepository, lastPollStatus: 'git_token_forbidden' }]);
+      show();
+      fireEvent.click(await screen.findByRole('button', { name: 'Repositórios' }));
+      const row = await screen.findByRole('listitem', { name: 'Repositório detranse/canais-mobile' });
+      expect(within(row).getByRole('alert')).toHaveTextContent('falta a aprovação do token pela organização');
+      expect(within(row).getByText(/última consulta com sucesso/).querySelector('time')).toHaveAttribute('dateTime', '2026-11-27T09:00:00Z');
+      expect(within(row).queryByLabelText('URL do webhook')).not.toBeInTheDocument();
+    });
+
+    it('CA-10: "Consultar agora" no repositório roda a consulta e mostra o resultado; recusa dentro de 1 minuto aparece como aviso', async () => {
+      vi.mocked(methodApi.repositories).mockResolvedValue([pollRepository]);
+      vi.mocked(methodApi.pollRepository)
+        .mockResolvedValueOnce({ integrationId: 'repository-p', repositoryFullName: 'detranse/canais-mobile', status: 'ok', success: true,
+          lastPolledAtUtc: '2026-11-27T10:05:00Z', pullRequestsEvaluated: 1, branchesPushed: 0 })
+        .mockRejectedValueOnce(new Error('Uma consulta deste repositório acabou de rodar. Tente de novo em 1 minuto.'));
+      show();
+      fireEvent.click(await screen.findByRole('button', { name: 'Repositórios' }));
+      const row = await screen.findByRole('listitem', { name: 'Repositório detranse/canais-mobile' });
+      fireEvent.click(within(row).getByRole('button', { name: 'Consultar agora' }));
+      await waitFor(() => expect(methodApi.pollRepository).toHaveBeenCalledWith('project-a', 'repository-p'));
+      expect(await screen.findByRole('status')).toHaveTextContent('Consulta de detranse/canais-mobile concluída agora.');
+      fireEvent.click(within(await screen.findByRole('listitem', { name: 'Repositório detranse/canais-mobile' })).getByRole('button', { name: 'Consultar agora' }));
+      expect(await screen.findByText('Uma consulta deste repositório acabou de rodar. Tente de novo em 1 minuto.')).toBeInTheDocument();
+    });
   });
 });

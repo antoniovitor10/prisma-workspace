@@ -28,7 +28,7 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
         var pending = db.ChangeTracker.Entries().Where(Changed).ToArray();
         if (pending.Any(x => x.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken
             or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or GitWebhookDelivery
-            or GitRepositoryIntegration or GitPullRequestObservation or TaskGitLink)) return true;
+            or GitRepositoryIntegration or GitPullRequestObservation or TaskGitLink or GitReadCredential)) return true;
 
         var projects = new HashSet<Guid>();
         var boards = new HashSet<Guid>();
@@ -186,7 +186,7 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
         {
             if (entry.Entity is MethodTaskState state && await IsVersionPulseAsync(entry, state, ct))
                 continue;
-            if (entry.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or AuditLog)
+            if (entry.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or GitReadCredential or AuditLog)
                 throw Denied("method_authority_write", "A credencial não pode modificar diretamente configuração, autorização ou provas do método.");
             if (actor.Role != MethodRole.Human && entry.Entity is Board or Stage or Project or ProjectCustomFieldDefinition
                 or WorkflowStatus or WorkflowTransition or Organization or OrganizationMember or PermissionGrant or ProjectMember or ProjectTeam)

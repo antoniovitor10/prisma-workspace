@@ -31,7 +31,8 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
     private static GitRepositoryDescriptor Descriptor(GitRepositoryIntegration r) => new(r.Id, r.OrganizationId, r.ProjectId, r.Provider, r.Host,
         // Integração em modo consulta não tem App: 0/vazio nunca autenticam no provedor nem no webhook.
         r.RepositoryId, r.RepositoryFullName, r.DefaultBranch, r.AppId ?? 0, r.InstallationId ?? 0, r.AppPrivateKeySecretRef ?? string.Empty,
-        r.WebhookSecretRef ?? string.Empty, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion);
+        r.WebhookSecretRef ?? string.Empty, r.PreviousWebhookSecretRef, r.PreviousSecretValidUntilUtc, r.SystemPrincipalId, r.Enabled, r.RowVersion,
+        null, r.Mode, r.ReadCredentialId, r.LastPolledAtUtc, r.LastPollStatus);
 
     public async Task<GitRepositoryDescriptor?> GetRepositoryForIngressAsync(Guid integrationId, CancellationToken ct = default)
     {
@@ -61,23 +62,39 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         var principal = await db.Set<MethodPrincipal>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == repository.SystemPrincipalId
             && x.ProjectId == repository.ProjectId && x.OrganizationId == Tenant && x.Role == MethodRole.System && x.IsActive, ct);
         if (principal is null || settings.OrganizationId != repository.OrganizationId) throw Forbidden();
+        var poll = repository.IsPoll;
+        if (poll && (repository.ReadCredentialId is not { } credentialId || !await db.Set<GitReadCredential>().AsNoTracking()
+                .AnyAsync(x => x.Id == credentialId && x.ProjectId == repository.ProjectId && x.OrganizationId == Tenant && x.RevokedAtUtc == null, ct)))
+            throw new MethodOperationException(400, "git_read_credential_missing", "Cadastre o token de leitura da organização antes de conectar o repositório no modo consulta.");
         var row = await Repositories.SingleOrDefaultAsync(x => x.Id == repository.Id, ct);
         if (row is null)
         {
             row = new GitRepositoryIntegration { Id = repository.Id, OrganizationId = Tenant, ProjectId = repository.ProjectId,
                 Provider = repository.Provider, Host = repository.Host, RepositoryId = repository.RepositoryId,
-                AppId = repository.AppId, InstallationId = repository.InstallationId, SystemPrincipalId = repository.SystemPrincipalId,
+                Mode = poll ? GitIntegrationModes.Poll : GitIntegrationModes.App,
+                AppId = poll ? null : repository.AppId, InstallationId = poll ? null : repository.InstallationId, SystemPrincipalId = repository.SystemPrincipalId,
                 CreatedAtUtc = _clock.GetUtcNow() };
             db.Add(row);
         }
         else if (row.ProjectId != repository.ProjectId || row.Provider != repository.Provider || row.Host != repository.Host
-            || row.RepositoryId != repository.RepositoryId || row.AppId != repository.AppId || row.InstallationId != repository.InstallationId
+            || row.RepositoryId != repository.RepositoryId || (row.AppId ?? 0) != repository.AppId || (row.InstallationId ?? 0) != repository.InstallationId
+            || row.Mode != (poll ? GitIntegrationModes.Poll : GitIntegrationModes.App)
             || row.SystemPrincipalId != repository.SystemPrincipalId) throw new MethodOperationException(409, "git_repository_immutable", "Identidade da integração não pode ser substituída.");
         if (repository.RowVersion is not null && db.Entry(row).State != EntityState.Added)
             db.Entry(row).Property(x => x.RowVersion).OriginalValue = repository.RowVersion;
         row.RepositoryFullName = repository.RepositoryFullName; row.DefaultBranch = repository.DefaultBranch;
-        row.AppPrivateKeySecretRef = repository.AppPrivateKeySecretRef; row.WebhookSecretRef = repository.WebhookSecretRef;
-        row.PreviousWebhookSecretRef = repository.PreviousWebhookSecretRef; row.PreviousSecretValidUntilUtc = repository.PreviousSecretValidUntilUtc;
+        if (poll)
+        {
+            // Modo consulta: sem App nem webhook; a credencial de leitura é a da organização GitHub no projeto.
+            row.AppPrivateKeySecretRef = null; row.WebhookSecretRef = null; row.PreviousWebhookSecretRef = null; row.PreviousSecretValidUntilUtc = null;
+            row.ReadCredentialId = repository.ReadCredentialId; row.LastPolledAtUtc = repository.LastPolledAtUtc ?? row.LastPolledAtUtc;
+            row.LastPollStatus = repository.LastPollStatus ?? row.LastPollStatus;
+        }
+        else
+        {
+            row.AppPrivateKeySecretRef = repository.AppPrivateKeySecretRef; row.WebhookSecretRef = repository.WebhookSecretRef;
+            row.PreviousWebhookSecretRef = repository.PreviousWebhookSecretRef; row.PreviousSecretValidUntilUtc = repository.PreviousSecretValidUntilUtc;
+        }
         row.Enabled = repository.Enabled; row.UpdatedAtUtc = _clock.GetUtcNow();
         await ScheduleLegacyCandidatesAsync(repository, settings.PrFieldId, ct);
         try { await db.SaveChangesAsync(ct); }
@@ -85,6 +102,19 @@ public sealed partial class EfMethodGitStore(AppDbContext db, IOrganizationConte
         { throw new MethodOperationException(409, "git_repository_changed", "Configuração alterada por outra operação. Atualize os dados antes de salvar."); }
         catch (DbUpdateException exception) when (UniqueViolation(exception))
         { throw new MethodOperationException(409, "git_repository_already_registered", "Repositório já cadastrado para um projeto."); }
+    }
+    public async Task RecordPollResultAsync(Guid integrationId, string status, bool success, CancellationToken ct = default)
+    {
+        var repository = await GetRepositoryAsync(integrationId, ct) ?? throw Missing();
+        if (status.Length is 0 or > 64 || status.Any(c => !(char.IsAsciiLetterOrDigit(c) || c == '_')))
+            throw new ArgumentException("Código de consulta inválido.", nameof(status));
+        var now = _clock.GetUtcNow();
+        // ExecuteUpdate: resultado operacional, sem tocar na identidade nem na versão de configuração lida pela tela.
+        if (success)
+            await Repositories.Where(x => x.Id == repository.Id).ExecuteUpdateAsync(set => set
+                .SetProperty(x => x.LastPollStatus, status).SetProperty(x => x.LastPolledAtUtc, now), ct);
+        else
+            await Repositories.Where(x => x.Id == repository.Id).ExecuteUpdateAsync(set => set.SetProperty(x => x.LastPollStatus, status), ct);
     }
     public async Task<MethodProjectSnapshot?> GetProjectAsync(Guid projectId, CancellationToken ct = default)
     {

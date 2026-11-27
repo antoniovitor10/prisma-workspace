@@ -46,3 +46,20 @@ export function gitBranchStateLabel(state: string | null | undefined): string {
 export function gitBranchUrl(repoFullName: string, branch: string): string {
   return `https://github.com/${repoFullName}/tree/${branch.split('/').map(encodeURIComponent).join('/')}`;
 }
+
+const pollStatusMessages: Record<string, string> = {
+  git_token_invalid: 'O GitHub recusou o token de leitura: ele está inválido, vencido ou foi revogado. Cadastre um novo token da organização.',
+  git_token_forbidden: 'O GitHub recusou o acesso: falta a aprovação do token pela organização ou a leitura deste repositório.',
+  git_repository_not_found: 'Repositório não encontrado para este token. Confira se o token inclui o repositório.',
+  git_credential_revoked: 'O token de leitura desta organização foi revogado no Prisma. Cadastre um novo token.',
+  git_repository_mismatch: 'O nome do repositório agora aponta para outro repositório no GitHub. Confira o cadastro.',
+  git_rate_limited: 'Limite de consultas do GitHub atingido. A próxima tentativa fica para depois do prazo do GitHub.',
+};
+
+/** Mensagem da última consulta do modo consulta (sem o texto do GitHub); nulo quando a última deu certo. */
+export function gitPollStatusMessage(status: string | null | undefined): string | null {
+  if (!status || status === 'ok') return null;
+  return pollStatusMessages[status] ?? 'A última consulta ao GitHub falhou. Tente de novo mais tarde.';
+}
+
+export const formatDateTime = (value: string) => new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
