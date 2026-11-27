@@ -36,7 +36,7 @@ for (const mode of ['light', 'dark'] as const) {
     const spinner = button.locator('[data-action-spinner]');
     await expect(spinner).toBeVisible();
     await expect(spinner).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.getByRole('status').filter({ hasText: 'Criando projeto' })).toBeAttached();
+    await expect(page.getByText('Criando projeto', { exact: true })).toHaveAttribute('aria-live', 'polite');
     const during = await button.boundingBox();
     expect(Math.abs((during?.width ?? 0) - (before?.width ?? 0))).toBeLessThan(1);
 

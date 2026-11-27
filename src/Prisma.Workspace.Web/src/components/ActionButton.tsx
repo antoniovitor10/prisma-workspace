@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -41,8 +42,8 @@ const Root = styled.button`
     cursor: progress;
   }
 
-  /* O spinner ocupa o lugar do ícone inicial, para o texto não andar. */
-  &[aria-busy='true'] > [data-action-spinner] + svg {
+  /* O spinner ocupa o lugar do ícone inicial (só o que vem antes do texto), para o texto não andar. */
+  &[aria-busy='true'][data-leading-icon] > [data-action-spinner] + svg {
     display: none;
   }
 
@@ -90,6 +91,7 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
 function hasLeadingIcon(button: HTMLButtonElement) {
   for (const node of button.childNodes) {
     if (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()) continue;
+    if (node instanceof Element && node.hasAttribute('data-action-spinner')) continue;
     return node instanceof SVGElement;
   }
   return false;
@@ -142,12 +144,21 @@ export function ActionButton({
   const [lock, setLock] = useState<WidthLock | null>(null);
   const inFlight = useRef(false);
   const mounted = useRef(true);
+  const element = useRef<HTMLButtonElement | null>(null);
   const busy = Boolean(loading) || pending || awaitingLoading;
 
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
+
+  // Marca se há ícone antes do texto: só ele dá lugar ao spinner (um ícone final, como uma
+  // seta depois do texto, continua visível).
+  useLayoutEffect(() => {
+    const button = element.current;
+    if (!button) return;
+    button.toggleAttribute('data-leading-icon', busy && hasLeadingIcon(button));
+  }, [busy]);
 
   useEffect(() => {
     if (!awaitingLoading) return;
@@ -198,7 +209,11 @@ export function ActionButton({
     <>
       <Root
         {...props}
-        ref={ref}
+        ref={(node: HTMLButtonElement | null) => {
+          element.current = node;
+          if (typeof ref === 'function') return ref(node);
+          if (ref) ref.current = node;
+        }}
         style={busy && lock ? lockedStyle(lock, style) : style}
         aria-busy={busy || undefined}
         aria-disabled={busy || ariaDisabled || undefined}
@@ -207,7 +222,8 @@ export function ActionButton({
         {busy && <Loader2 aria-hidden="true" focusable="false" data-action-spinner="" />}
         {children}
       </Root>
-      <LiveRegion role="status">{busy ? loadingLabel : ''}</LiveRegion>
+      {/* aria-live sem role="status": não concorre com as regiões de status da própria tela. */}
+      <LiveRegion aria-live="polite" aria-atomic="true">{busy ? loadingLabel : ''}</LiveRegion>
       {busy && slow && <SlowNotice role="status">{SLOW_ACTION_MESSAGE}</SlowNotice>}
     </>
   );

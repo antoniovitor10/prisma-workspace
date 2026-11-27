@@ -108,7 +108,7 @@ describe('Projects', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button.querySelector('[data-action-spinner]')).toHaveAttribute('aria-hidden', 'true');
     expect(button).toHaveTextContent('Criar projeto');
-    expect(screen.getByRole('status')).toHaveTextContent('Criando projeto');
+    expect(screen.getByText('Criando projeto')).toHaveAttribute('aria-live', 'polite');
     await waitFor(() => expect(createProject).toHaveBeenCalledTimes(1));
     finish('novo');
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Criar projeto' })).not.toBeInTheDocument());

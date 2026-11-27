@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Plus } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { useState } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -44,6 +44,15 @@ describe('ActionButton', () => {
     expect(screen.getByRole('button', { name: 'Criar projeto' })).toBe(button);
     // O spinner toma o lugar do ícone inicial: o ícone fica logo depois dele, escondido pelo CSS.
     expect(spinnerOf(button)?.nextElementSibling?.tagName.toLowerCase()).toBe('svg');
+  });
+
+  it('troca só o ícone que vem antes do texto; o ícone final continua visível', () => {
+    renderWithTheme(<>
+      <ActionButton loading><Plus size={14} />Criar</ActionButton>
+      <ActionButton loading>Concluir<ArrowRight size={14} /></ActionButton>
+    </>);
+    expect(screen.getByRole('button', { name: 'Criar' })).toHaveAttribute('data-leading-icon');
+    expect(screen.getByRole('button', { name: 'Concluir' })).not.toHaveAttribute('data-leading-icon');
   });
 
   it('herda a aparência do botão da tela pelo as', () => {
@@ -168,7 +177,8 @@ describe('ActionButton', () => {
     const request = deferred();
     renderWithTheme(<ActionButton loadingLabel="Criando organização" onClick={() => request.promise}>Criar organização</ActionButton>);
     const button = screen.getByRole('button', { name: 'Criar organização' });
-    const status = screen.getByRole('status');
+    const status = document.querySelector('[aria-live="polite"]');
+    expect(screen.queryByRole('status')).toBeNull();
     expect(status).toHaveTextContent('');
 
     fireEvent.click(button);
