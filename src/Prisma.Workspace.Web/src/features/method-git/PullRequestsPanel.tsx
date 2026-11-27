@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 function externalUrl(value: string): string | undefined {
   try { const url = new URL(value); return url.protocol === 'https:' ? url.href : undefined; }
@@ -32,7 +33,7 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
   return <section aria-labelledby="method-unlinked-title">
-    <h3 id="method-unlinked-title">PRs não vinculados</h3>
+    <HelpTitleRow><h3 id="method-unlinked-title">PRs não vinculados</h3><HelpButton target="integrationPullRequests" label="Ajuda sobre PRs não vinculados" /></HelpTitleRow>
     <Hint>Confira a branch e escolha a task deste projeto. Vincular um PR mantém a autorização humana necessária para iniciar a execução.</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
     {action.success && <Feedback role="status">{action.success}</Feedback>}

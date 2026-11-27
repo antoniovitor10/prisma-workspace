@@ -11,6 +11,7 @@ import { projectMemberSuccessMessage, translateProjectHistoryKind } from './proj
 import { ExternalPortalSettings } from '../features/portal/ExternalPortalSettings';
 import { Page as BasePage } from '../components/PageLayout';
 import { MethodSettingsPanel } from '../features/method-git/MethodSettingsPanel';
+import { HelpButton } from '../features/help/HelpPanel';
 
 interface OrganizationMember { userId: string; name: string; role: number; isActive: boolean; }
 interface TeamSummary { id: string; name: string; }
@@ -221,7 +222,7 @@ export function ProjectSettings() {
     </>}
 
     {secao==='pessoas'&&<>
-    <Wide><header><Users size={16}/><h2>Membros e papéis</h2><small>{project.members?.length??0} pessoa(s)</small></header><List>{project.members?.map(item=>{
+    <Wide><header><Users size={16}/><h2>Membros e papéis</h2><HelpButton target="projectPeople" label="Ajuda sobre acesso ao projeto" /><small>{project.members?.length??0} pessoa(s)</small></header><List>{project.members?.map(item=>{
       const name=memberNames.get(item.userId)??item.userId;
       const organizationRole=organizationMembers.get(item.userId)?.role;
       const inheritedAdminLabel=organizationRole?organizationAdminRoleLabels.get(organizationRole):undefined;
