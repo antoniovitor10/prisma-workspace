@@ -5,6 +5,7 @@ import { type FormEvent, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../../services/api';
 import type { OrganizationSummary } from './OrganizationState';
+import { ActionButton } from '../../components/ActionButton';
 
 const Overlay = styled(Dialog.Overlay)`
   position: fixed;
@@ -91,8 +92,8 @@ export function NewOrganizationDialog({ onClose, onCreated, restoreFocus }: {
       {create.error && <small role="alert">{create.error instanceof Error ? create.error.message : 'Não foi possível criar a organização.'}</small>}
       <Actions>
         <Button type="button" onClick={onClose} disabled={create.isPending}>Cancelar</Button>
-        <Button $primary type="submit" disabled={create.isPending || !name.trim()}>
-          {create.isPending ? 'Criando...' : 'Criar organização'}
+        <Button as={ActionButton} $primary type="submit" loading={create.isPending} loadingLabel="Criando organização" disabled={!name.trim()}>
+          Criar organização
         </Button>
       </Actions>
     </form></Card>

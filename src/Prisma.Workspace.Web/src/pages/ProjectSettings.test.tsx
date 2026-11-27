@@ -148,7 +148,46 @@ describe('configurações do projeto por categoria', () => {
     fireEvent.change(screen.getByRole('combobox',{name:'Papel de Pessoa Teste'}),{target:{value:'1'}});
 
     await waitFor(()=>expect(setProjectMember).toHaveBeenCalledWith('project-1','user-2',1));
-    expect(await screen.findByRole('status')).toHaveTextContent('Papel do membro atualizado.');
+    expect(await screen.findByText('Papel do membro atualizado.')).toHaveAttribute('role','status');
+  });
+
+  it('mostra o loading padrão em "Arquivar projeto" e não arquiva duas vezes (HU-0001)', async () => {
+    let finish!: () => void;
+    const archive = vi.spyOn(api, 'archiveProject').mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }) as never);
+    renderSettings();
+    const button = screen.getByRole('button', { name: 'Arquivar projeto' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button.querySelector('[data-action-spinner]')).toHaveAttribute('aria-hidden', 'true');
+    expect(button).toHaveTextContent('Arquivar projeto');
+    await waitFor(() => expect(archive).toHaveBeenCalledTimes(1));
+    fireEvent.click(button);
+    expect(archive).toHaveBeenCalledTimes(1);
+    finish();
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'));
+    expect(archive).toHaveBeenCalledTimes(1);
+  });
+
+  it('mostra o loading só na linha do membro que está sendo removido (HU-0001)', async () => {
+    let finish!: () => void;
+    const remove = vi.spyOn(api, 'removeProjectMember').mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }) as never);
+    renderSettings('/projects/project-1/settings?secao=pessoas');
+    const pessoa = await screen.findByRole('button', { name: 'Remover Pessoa Teste' });
+    const gestora = screen.getByRole('button', { name: 'Remover Gestora Teste' });
+
+    fireEvent.click(pessoa);
+    fireEvent.click(pessoa);
+
+    await waitFor(() => expect(remove).toHaveBeenCalledTimes(1));
+    expect(remove).toHaveBeenCalledWith('project-1', 'user-2');
+    expect(pessoa).toHaveAttribute('aria-busy', 'true');
+    expect(pessoa.querySelector('[data-action-spinner]')).not.toBeNull();
+    expect(gestora).not.toHaveAttribute('aria-busy');
+    finish();
+    await waitFor(() => expect(pessoa).not.toHaveAttribute('aria-busy'));
   });
 
   it('respeita a categoria vinda na URL', () => {

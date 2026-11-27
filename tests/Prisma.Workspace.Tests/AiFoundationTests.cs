@@ -599,6 +599,30 @@ public class AiFoundationTests
         Assert.Equal(10, usage.InputTokens); Assert.Equal(5, usage.OutputTokens); Assert.Equal("success", usage.Outcome);
     }
     [Fact]
+    public async Task HelpArticlesReachTheProviderUnredactedWhileTheQuestionStaysRedacted()
+    {
+        await using var f = new Fixture(); await f.SeedAsync();
+        var c = new AiConversation { OrganizationId = f.Org, UserId = "tenant" }; f.Db.AiConversations.Add(c); await f.Db.SaveChangesAsync();
+        var help = new { page = "/projects/x/settings", articles = new[] { new { @ref = "repositorios-e-git/github-app", title = "GitHub App", updatedAt = "2026-11-27", stale = true,
+            content = "## Campos (âncora: campos)\nO campo Referência do segredo do webhook recebe o nome da configuração. Emita um token de sistema antes." } } };
+        await f.Service.ExecuteAsync("message", "tenant", c.Id, JsonSerializer.SerializeToElement(new { text = "como faço? senha: Abc@1234", help }), (_, _) => Task.CompletedTask, default);
+        var system = f.Provider.Received[0].Content;
+        Assert.Contains("Emita um token de sistema antes.", system);
+        Assert.Contains("[A:repositorios-e-git/github-app]", system);
+        Assert.Contains("pode estar desatualizado: sim", system);
+        Assert.DoesNotContain("Abc@1234", JsonSerializer.Serialize(f.Provider.Received));
+    }
+    [Fact]
+    public async Task HelpWithCredentialShapedValueIsRefusedBeforeCallingTheProvider()
+    {
+        await using var f = new Fixture(); await f.SeedAsync();
+        var c = new AiConversation { OrganizationId = f.Org, UserId = "tenant" }; f.Db.AiConversations.Add(c); await f.Db.SaveChangesAsync();
+        var help = new { articles = new[] { new { @ref = "integracoes/tokens", title = "Tokens", updatedAt = "2026-11-27", stale = false,
+            content = "Use pmt_" + new string('a', 43) } } };
+        var error = await Assert.ThrowsAsync<AiException>(() => f.Service.ExecuteAsync("message", "tenant", c.Id, JsonSerializer.SerializeToElement(new { text = "como faço?", help }), (_, _) => Task.CompletedTask, default));
+        Assert.Equal(400, error.Status); Assert.Equal(0, f.Provider.Calls);
+    }
+    [Fact]
     public async Task ReachedQuotaPreventsCallingProviderAndZeroMeansUnlimited()
     {
         await using var f = new Fixture(); await f.SeedAsync();

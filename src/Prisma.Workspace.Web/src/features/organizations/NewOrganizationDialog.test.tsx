@@ -83,4 +83,26 @@ describe('NewOrganizationDialog', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
     client.clear();
   });
+
+  it('mostra o loading padrão em "Criar organização" e envia uma vez só (HU-0001)', async () => {
+    let finish!: (value: { id: string; name: string }) => void;
+    const create = vi.spyOn(api, 'createOrganization').mockImplementation(() => new Promise(resolve => { finish = resolve; }) as never);
+    const { client, onCreated } = mount();
+    fireEvent.change(screen.getByLabelText('Nome da organização'), { target: { value: 'Pessoal' } });
+    const button = screen.getByRole('button', { name: 'Criar organização' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveTextContent('Criar organização');
+    expect(button.querySelector('[data-action-spinner]')).not.toBeNull();
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    fireEvent.click(button);
+    expect(create).toHaveBeenCalledTimes(1);
+    finish({ id: 'new-org', name: 'Pessoal' });
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'));
+    client.clear();
+  });
 });

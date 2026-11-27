@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { previewMode, previewProject, previewTeams } from '../preview';
 import { api } from '../services/api';
+import { ActionButton } from '../components/ActionButton';
 
 interface Member {
   userId: string; name: string; weeklyCapacityHours: number; weekHours: number; isLeader?: boolean;
@@ -85,13 +86,13 @@ function TeamCard({ team, users, projects, run }: {
   const labelForUser = (user: UserDto) => user.displayName || user.email || user.userName || user.id;
   return <Card $inactive={!team.isActive}>
     <CardHeader><Users size={18}/><div><h2>{team.name} {!team.isActive && <Badge>Desativada</Badge>}</h2><p>{team.members.length} pessoas · {team.totalWeeklyCapacityHours}h de capacidade semanal{team.leaderName ? ` · Líder: ${team.leaderName}`:''}</p></div>
-      <span><button onClick={() => setEditing(value => !value)} title="Configurar equipe"><Pencil size={15}/></button>{team.isActive ? <button onClick={() => run(() => api.setTeamActive(team.id,false))} title="Desativar equipe"><Archive size={15}/></button> : <button onClick={() => run(() => api.setTeamActive(team.id,true))} title="Reativar equipe"><RotateCcw size={15}/></button>}</span>
+      <span><button onClick={() => setEditing(value => !value)} title="Configurar equipe"><Pencil size={15}/></button>{team.isActive ? <ActionButton onClick={() => run(() => api.setTeamActive(team.id,false))} title="Desativar equipe" loadingLabel={`Desativando ${team.name}`}><Archive size={15}/></ActionButton> : <ActionButton onClick={() => run(() => api.setTeamActive(team.id,true))} title="Reativar equipe" loadingLabel={`Reativando ${team.name}`}><RotateCcw size={15}/></ActionButton>}</span>
     </CardHeader>
     {editing && <Editor onSubmit={submit}>
       <label>Nome<input required value={form.name} onChange={event=>setForm({...form,name:event.target.value})}/></label>
       <label>Capacidade padrão<input type="number" min={1} max={168} value={form.defaultWeeklyCapacityHours} onChange={event=>setForm({...form,defaultWeeklyCapacityHours:Number(event.target.value)})}/></label>
       <label>Líder<select aria-label="Líder da equipe" value={form.leaderId} onChange={event=>setForm({...form,leaderId:event.target.value})}><option value="">Sem líder</option>{team.members.map(member=><option key={member.userId} value={member.userId}>{member.name}</option>)}</select></label>
-      <Button><Check size={14}/>Salvar</Button>
+      <Button as={ActionButton} type="submit" loadingLabel="Salvando equipe"><Check size={14}/>Salvar</Button>
     </Editor>}
     <MembersHead><span>Pessoa</span><span>Uso na semana</span><span>Capacidade</span><span/></MembersHead>
     {team.members.map(member => {
@@ -100,7 +101,7 @@ function TeamCard({ team, users, projects, run }: {
         <strong>{member.isLeader && <Crown size={13}/>} {member.name}</strong>
         <div className="usage"><Track><span style={{width:`${percentage}%`}}/></Track><small>{member.weekHours}h de {member.weeklyCapacityHours}h</small></div>
         <input aria-label={`Capacidade de ${member.name}`} type="number" min={1} max={168} defaultValue={member.weeklyCapacityHours} onBlur={event => { const value=Number(event.target.value); if(value!==member.weeklyCapacityHours) run(()=>api.updateTeamMemberCapacity(team.id,member.userId,value)); }}/>
-        <button onClick={()=>run(()=>api.removeTeamMember(team.id,member.userId))} title="Remover da equipe"><X size={14}/></button>
+        <ActionButton onClick={()=>run(()=>api.removeTeamMember(team.id,member.userId))} title="Remover da equipe" loadingLabel={`Removendo ${member.name} da equipe`}><X size={14}/></ActionButton>
       </MemberRow>;
     })}
     {!team.members.length && <Message>Adicione pessoas para definir líder e capacidade.</Message>}
@@ -110,7 +111,7 @@ function TeamCard({ team, users, projects, run }: {
           <option value="">Adicionar membro...</option>
           {users.filter(user=>!team.members.some(member=>member.userId===user.id)).map(user=><option key={user.id} value={user.id}>{labelForUser(user)}</option>)}
         </select>
-        <Button disabled={!pick} onClick={async()=>{
+        <Button as={ActionButton} disabled={!pick} loadingLabel="Adicionando membro" onClick={async()=>{
           if(!pick) return;
           setMemberFeedback(null);
           try {
@@ -139,7 +140,7 @@ export function Teams() {
   const create=useMutation({mutationFn:()=>api.createTeam(name,40),onSuccess:()=>{setName('');return queryClient.invalidateQueries({queryKey:['teams']});}});
   const submit=(event:FormEvent)=>{event.preventDefault();if(name.trim())create.mutate();};
   return <Page>
-    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><CreateArea><Create onSubmit={submit}><label>Nome da nova equipe<input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/></label><Button disabled={create.isPending}><Plus size={15}/>Criar equipe</Button></Create>{create.error&&<ActionFeedback role="alert" $error $compact>{(create.error as Error).message}</ActionFeedback>}</CreateArea></Header>
+    <Header><div><h1><Users size={25}/>Equipes</h1><p>Liderança, projetos e capacidade de trabalho em um único lugar.</p></div><CreateArea><Create onSubmit={submit}><label>Nome da nova equipe<input required maxLength={150} placeholder="Nome da nova equipe" value={name} onChange={event=>setName(event.target.value)}/></label><Button as={ActionButton} type="submit" loading={create.isPending} loadingLabel="Criando equipe"><Plus size={15}/>Criar equipe</Button></Create>{create.error&&<ActionFeedback role="alert" $error $compact>{(create.error as Error).message}</ActionFeedback>}</CreateArea></Header>
     {action.error && <ActionFeedback role="alert" $error>{(action.error as Error).message}</ActionFeedback>}
     <Grid>{teamsQuery.data?.map(team=><TeamCard key={team.id} team={team} users={usersQuery.data??[]} projects={projectsQuery.data??[]} run={run=>action.mutateAsync(run)}/>)}</Grid>
     {!teamsQuery.isLoading && !teamsQuery.data?.length && <Message>Nenhuma equipe cadastrada.</Message>}

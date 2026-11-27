@@ -9,6 +9,7 @@ import styled from 'styled-components';
 import { z } from 'zod';
 import { WorkItemKind } from '../features/workItems/workItemKinds';
 import { WorkItemKindSelector } from './WorkItemKindSelector';
+import { ActionButton } from './ActionButton';
 import { previewMode, previewProject } from '../preview';
 import { api } from '../services/api';
 import type { ProjectSummary } from '../pages/Projects';
@@ -411,7 +412,7 @@ export function QuickCreateDialog({ open, currentProjectId, initialKind, onOpenC
     },
   });
 
-  const canSubmit = !mutation.isPending && title.trim().length > 0 && projects.length > 0 && boardId.length > 0;
+  const canSubmit = title.trim().length > 0 && projects.length > 0 && boardId.length > 0;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -467,8 +468,8 @@ export function QuickCreateDialog({ open, currentProjectId, initialKind, onOpenC
             )}
             <QuickFooter>
               <small>Os demais campos podem ser preenchidos no detalhe.</small>
-              <CreateButton type="submit" disabled={!canSubmit}>
-                {mutation.isPending ? <LoaderCircle size={14} /> : <Plus size={14} />}Criar item
+              <CreateButton as={ActionButton} type="submit" disabled={!canSubmit} loading={mutation.isPending} loadingLabel="Criando item">
+                <Plus size={14} />Criar item
               </CreateButton>
             </QuickFooter>
           </QuickForm>

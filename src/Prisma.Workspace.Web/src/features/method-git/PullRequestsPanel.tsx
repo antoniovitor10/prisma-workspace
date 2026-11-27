@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
+import { ActionButton } from '../../components/ActionButton';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 function externalUrl(value: string): string | undefined {
   try { const url = new URL(value); return url.protocol === 'https:' ? url.href : undefined; }
@@ -32,13 +34,13 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
   return <section aria-labelledby="method-unlinked-title">
-    <h3 id="method-unlinked-title">PRs não vinculados</h3>
+    <HelpTitleRow><h3 id="method-unlinked-title">PRs não vinculados</h3><HelpButton target="integrationPullRequests" label="Ajuda sobre PRs não vinculados" /></HelpTitleRow>
     <Hint>Confira a branch e escolha a task deste projeto. Vincular um PR mantém a autorização humana necessária para iniciar a execução.</Hint>
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
     {action.success && <Feedback role="status">{action.success}</Feedback>}
     {tasks.isError && <Feedback role="alert">{tasks.error.message}</Feedback>}
     {requests.isPending ? <Hint role="status">Carregando PRs...</Hint> : requests.isError ? <Feedback role="alert">
-      {requests.error.message} <Button type="button" onClick={() => void requests.refetch()}>Tentar novamente</Button>
+      {requests.error.message} <Button as={ActionButton} type="button" loadingLabel="Carregando PRs" onClick={() => requests.refetch()}>Tentar novamente</Button>
     </Feedback> : <>
       {requests.data.items.length === 0 ? <Hint>Nenhum PR aguardando vínculo.</Hint> : <List>
         {requests.data.items.map(request => <Row key={request.id}>
@@ -59,8 +61,8 @@ export function PullRequestsPanel({ projectId, canEdit }: { projectId: string; c
             </select></Field>
             <Field>Motivo do vínculo do PR #{request.pullRequestNumber}<input required maxLength={1000} value={reasons[request.id] ?? ''}
               onChange={event => setReasons(current => ({ ...current, [request.id]: event.target.value }))} /></Field>
-            <Actions><Button $primary type="submit" disabled={action.pending !== null || !selection[request.id] || !reasons[request.id]?.trim()}>
-              {action.pending === request.id ? 'Vinculando...' : `Vincular PR #${request.pullRequestNumber}`}</Button></Actions>
+            <Actions><Button as={ActionButton} $primary type="submit" disabled={(action.pending !== null && action.pending !== request.id) || !selection[request.id] || !reasons[request.id]?.trim()}
+              loading={action.pending === request.id} loadingLabel={`Vinculando PR #${request.pullRequestNumber}`}>{`Vincular PR #${request.pullRequestNumber}`}</Button></Actions>
           </Form>}
         </Row>)}
       </List>}

@@ -6,7 +6,9 @@ import { TokensPanel } from './TokensPanel';
 import { RepositoriesPanel } from './RepositoriesPanel';
 import { PullRequestsPanel } from './PullRequestsPanel';
 import { ResumePanel } from './ResumePanel';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 import { Actions, Button, Feedback, Field, Form, Header, Hint, Navigation, Surface } from './styles';
+import { ActionButton } from '../../components/ActionButton';
 
 type View = 'tokens' | 'repositories' | 'unlinked' | 'resume';
 interface Props { projectId: string; boards?: { id: string; name: string }[] }
@@ -36,9 +38,10 @@ export function MethodSettingsPanel({ projectId, boards = [] }: Props) {
   const currentView = tabs.find(tab => tab.id === view && tab.visible)?.id ?? 'unlinked';
 
   return <Surface aria-labelledby="method-settings-title">
-    <Header><div><h2 id="method-settings-title">Método de trabalho</h2>
+    <Header><div><HelpTitleRow><h2 id="method-settings-title">Método de trabalho</h2><HelpButton target="integrations" label="Ajuda sobre integrações" /></HelpTitleRow>
       <Hint>Acompanhe as tasks com agentes e evidências do GitHub. As pessoas continuam movimentando os cards pelo quadro.</Hint></div>
-      {settings.data && canManage && <Button type="button" disabled={action.pending !== null} onClick={() => void action.run('toggle',
+      {settings.data && canManage && <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== 'toggle'} loading={action.pending === 'toggle'}
+        loadingLabel={settings.data.enabled ? 'Pausando método' : 'Reativando método'} onClick={() => action.run('toggle',
         () => methodApi.updateSettings(projectId, !settings.data!.enabled, settings.data!.autonomyLevel),
         settings.data!.enabled ? 'Método pausado para integrações e agentes.' : 'Método reativado.')}>
         {settings.data.enabled ? 'Pausar método' : 'Reativar método'}</Button>}
@@ -48,7 +51,7 @@ export function MethodSettingsPanel({ projectId, boards = [] }: Props) {
     {identity.isPending || settings.isPending ? <Hint role="status">Carregando configuração do método...</Hint>
       : identity.isError || settings.isError ? <Feedback role="alert">
         {identity.error?.message ?? settings.error?.message ?? 'Não foi possível consultar a configuração.'}
-        <Actions><Button type="button" onClick={() => { void identity.refetch(); void settings.refetch(); }}>Tentar novamente</Button></Actions>
+        <Actions><Button as={ActionButton} type="button" loadingLabel="Carregando configuração do método" onClick={() => Promise.all([identity.refetch(), settings.refetch()])}>Tentar novamente</Button></Actions>
       </Feedback> : !settings.data ? <>
         <h3>Método ainda não configurado</h3>
         <Hint>O quadro terá as sete colunas do método e cada task será um card, identificado pela HU.</Hint>
@@ -60,8 +63,8 @@ export function MethodSettingsPanel({ projectId, boards = [] }: Props) {
             Em revisão, Em teste, Concluída e Bloqueada. As colunas e os cards existentes serão preservados.</Hint>}
           {!boardId && boards.some(board => board.name === 'Método') && <Hint>Já existe um quadro chamado Método neste projeto.
             Selecione-o acima para configurá-lo; a opção atual solicita outro quadro com esse nome.</Hint>}
-          <Actions><Button $primary type="submit" disabled={action.pending !== null}>
-            {action.pending === 'provision' ? 'Configurando método...' : 'Configurar método neste projeto'}</Button></Actions>
+          <Actions><Button as={ActionButton} $primary type="submit" disabled={action.pending !== null && action.pending !== 'provision'}
+            loading={action.pending === 'provision'} loadingLabel="Configurando método">Configurar método neste projeto</Button></Actions>
         </Form> : <Hint>Peça a um administrador com permissão de gerenciar o projeto para configurar o método.</Hint>}
       </> : <>
         <Hint>Quadro: <strong>{settings.data.boardName}</strong> · {settings.data.enabled ? 'Método ativo' : 'Método pausado'}</Hint>

@@ -79,6 +79,37 @@ describe('Assistente Prisma', () => {
     wrap(<AiAnswer text="Veja [T:1001] e [T:9999]" sources={[{ reference: 'T:1001', title: 'Permitida', path: '/projects/p/backlog?item=t' }]}/>);
     expect(screen.getByRole('link', { name: '[T:1001]' })).toHaveAttribute('href', '/projects/p/backlog?item=t'); expect(screen.queryByRole('link', { name: '[T:9999]' })).not.toBeInTheDocument();
   });
+  it('transforma a referência da ajuda em "Abrir na ajuda" só quando o artigo existe (CA-4)', () => {
+    wrap(<AiAnswer text="Pause na seção Integrações. [A:integracoes/integracoes#ativar-ou-pausar] Veja também [A:integracoes/inventado]"/>);
+    expect(screen.getByRole('link', { name: 'Abrir na ajuda: Integrações do projeto' })).toHaveAttribute('href', '/ajuda/integracoes/integracoes#ativar-ou-pausar');
+    expect(screen.getByText(/\[artigo de ajuda indisponível\]/)).toBeInTheDocument();
+  });
+  it('pergunta de uso envia o artigo da página atual; pergunta sobre dados não envia (CA-4)', async () => {
+    vi.spyOn(api, 'request').mockImplementation(async (url, init) => {
+      if (url === '/api/ai/status') return { enabled: true, remainingTokens: null };
+      if (url === '/api/ai/options') return { connections: [] };
+      if (url === '/api/ai/conversations' && init?.method === 'POST') return { id: 'c1', title: 'Nova' };
+      if (url === '/api/ai/conversations') return [];
+      return { messages: [] };
+    });
+    const sse = () => new Response('event: delta\ndata: {"text":"Use Pausar. [A:integracoes/integracoes#ativar-ou-pausar]"}\n\nevent: done\ndata: {}\n\n', { status: 200 });
+    const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => sse());
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={['/projects/11111111-1111-4111-8111-111111111111/settings?secao=metodo']}><AiAssistant/></MemoryRouter></ThemeProvider></QueryClientProvider>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir assistente Prisma' }));
+    fireEvent.change(screen.getByLabelText('Pergunte ao workspace'), { target: { value: 'Como faço para pausar a integração?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }));
+    expect(await screen.findByRole('link', { name: 'Abrir na ajuda: Integrações do projeto' })).toHaveAttribute('href', '/ajuda/integracoes/integracoes#ativar-ou-pausar');
+    const body = JSON.parse(String(fetch.mock.calls[0][1]?.body));
+    expect(body.help.page).toBe('/projects/11111111-1111-4111-8111-111111111111/settings');
+    expect(body.help.articles[0]).toMatchObject({ ref: 'integracoes/integracoes', title: 'Integrações do projeto', updatedAt: '2026-11-27' });
+    expect(body.help.articles[0].content).toContain('(âncora: ativar-ou-pausar)');
+    fireEvent.change(screen.getByLabelText('Pergunte ao workspace'), { target: { value: 'Quais são minhas tarefas?' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Enviar pergunta' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(String(fetch.mock.calls[1][1]?.body)).help).toBeUndefined();
+  });
   it('decodifica eventos SSE separados em vários blocos UTF-8', async () => {
     const bytes = new TextEncoder().encode('event: delta\ndata: {"text":"Olá"}\n\nevent: done\ndata: {}\n\n');
     const stream = new ReadableStream({ start(c) { c.enqueue(bytes.slice(0, 33)); c.enqueue(bytes.slice(33)); c.close(); } });

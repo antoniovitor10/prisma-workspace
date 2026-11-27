@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import styled from 'styled-components';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 import { TaskStateGraph } from './TaskStateGraph';
 
@@ -30,7 +31,7 @@ export function TaskTimeline({ workItemId, createdAt }: { workItemId: string; cr
     </Toggle>
     {graph ? <><h3>Grafo de estados</h3><TaskStateGraph workItemId={workItemId} createdAt={createdAt} createdByName={creator ?? undefined} /></> : <>
       {query.isLoading && <p role="status">Carregando movimentações...</p>}
-      {query.isError && <div role="alert"><p>Não foi possível carregar a linha do tempo.</p><Toggle type="button" onClick={() => void query.refetch()}>Tentar novamente</Toggle></div>}
+      {query.isError && <div role="alert"><p>Não foi possível carregar a linha do tempo.</p><Toggle as={ActionButton} type="button" loadingLabel="Carregando movimentações" onClick={() => query.refetch()}>Tentar novamente</Toggle></div>}
       {!query.isLoading && !query.isError && !query.data?.items.length && <p>Nenhuma movimentação registrada.</p>}
       {!!query.data?.items.length && <Entries aria-label="Movimentações entre colunas">
         {query.data.items.map(item => {

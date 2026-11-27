@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, FileUp, Inbox, KeyRound, LoaderCircle, Mail, MessageSquare, Paperclip, Search, Send, ShieldCheck, Star } from 'lucide-react';
+import { CheckCircle2, FileUp, Inbox, KeyRound, Mail, MessageSquare, Paperclip, Search, Send, ShieldCheck, Star } from 'lucide-react';
 import styled from 'styled-components';
 import { api } from '../services/api';
 import type { CreatedExternalRequest, ExternalForm, ExternalFormField, ExternalPortal, PublicExternalRequest } from '../types/portal';
+import { ActionButton } from '../components/ActionButton';
 
 const Shell = styled.main`
   min-height: 100vh;
@@ -211,20 +212,20 @@ export function PublicPortal() {
           {portal.requiresAuthentication&&Boolean(portal.accessModes&8)&&<label>Código de verificação<input inputMode="numeric" maxLength={6} value={auth.verificationCode} onChange={event=>setAuth({...auth,verificationCode:event.target.value})}/></label>}
           {portal.requiresAuthentication&&Boolean(portal.accessModes&2)&&!api.getToken()&&<label>Senha para login<input type="password" value={loginPassword} onChange={event=>setLoginPassword(event.target.value)}/></label>}
           {auth.invitationToken&&<label>Convite<input readOnly value="Convite identificado"/></label>}
-          <footer>{portal.requiresAuthentication&&Boolean(portal.accessModes&2)&&!api.getToken()&&<Button type="button" $secondary disabled={busy||!email||!loginPassword} onClick={login}><ShieldCheck size={13}/>Entrar</Button>}{portal.requiresAuthentication&&Boolean(portal.accessModes&8)&&<Button type="button" $secondary disabled={busy||!email} onClick={requestCode}><KeyRound size={13}/>Enviar código</Button>}<Button disabled={busy}>{busy?<LoaderCircle size={13}/>:<Send size={13}/>}Gerar protocolo</Button></footer>
+          <footer>{portal.requiresAuthentication&&Boolean(portal.accessModes&2)&&!api.getToken()&&<Button as={ActionButton} type="button" $secondary disabled={busy||!email||!loginPassword} loadingLabel="Entrando" onClick={login}><ShieldCheck size={13}/>Entrar</Button>}{portal.requiresAuthentication&&Boolean(portal.accessModes&8)&&<Button as={ActionButton} type="button" $secondary disabled={busy||!email} loadingLabel="Enviando código" onClick={requestCode}><KeyRound size={13}/>Enviar código</Button>}<Button as={ActionButton} type="submit" loading={busy} loadingLabel="Gerando protocolo"><Send size={13}/>Gerar protocolo</Button></footer>
         </Form> : <Empty>Nenhum formulário publicado neste portal.</Empty>)}
         {trackingView && <>
-          <Inline onSubmit={event=>{event.preventDefault();void loadRequest();}}><input aria-label="Protocolo" placeholder="Protocolo" value={protocol} onChange={event=>setProtocol(event.target.value)}/><input aria-label="Chave" placeholder="Chave de acompanhamento" value={accessKey} onChange={event=>setAccessKey(event.target.value)}/><Button disabled={busy||!protocol}><Search size={13}/>Consultar</Button></Inline>
+          <Inline onSubmit={event=>{event.preventDefault();void loadRequest();}}><input aria-label="Protocolo" placeholder="Protocolo" value={protocol} onChange={event=>setProtocol(event.target.value)}/><input aria-label="Chave" placeholder="Chave de acompanhamento" value={accessKey} onChange={event=>setAccessKey(event.target.value)}/><Button as={ActionButton} type="submit" disabled={!protocol} loading={busy} loadingLabel="Consultando solicitação"><Search size={13}/>Consultar</Button></Inline>
           {request&&<>
             <RequestHeader><div><h2>{request.title}</h2><p>{request.protocol} · aberta em {new Date(request.createdAt).toLocaleString('pt-BR')}</p></div><Status>{request.status}</Status></RequestHeader>
             {request.description&&<Notice><Inbox size={14}/>{request.description}</Notice>}
             <Timeline>{request.messages.map(message=><Message key={message.id} $agent={message.authorType===2}><strong>{message.authorName}</strong><p>{message.content}</p><small>{new Date(message.createdAt).toLocaleString('pt-BR')}</small></Message>)}{request.messages.length===0&&<Empty>A conversa aparecerá aqui quando houver uma resposta.</Empty>}</Timeline>
             <Attachments>{request.attachments.map(attachment=><a key={attachment.id} href={api.externalAttachmentUrl(request.protocol,accessKey,attachment.id)}><Paperclip size={11}/>{attachment.fileName}</a>)}</Attachments>
             <Actions>
-              <Inline onSubmit={sendReply}><textarea aria-label="Resposta" placeholder="Escreva uma resposta..." value={reply} onChange={event=>setReply(event.target.value)}/><Button disabled={busy||!reply.trim()}><MessageSquare size={13}/>Responder</Button></Inline>
+              <Inline onSubmit={sendReply}><textarea aria-label="Resposta" placeholder="Escreva uma resposta..." value={reply} onChange={event=>setReply(event.target.value)}/><Button as={ActionButton} type="submit" disabled={!reply.trim()} loading={busy} loadingLabel="Enviando resposta"><MessageSquare size={13}/>Responder</Button></Inline>
               <label><Button as="span" $secondary><FileUp size={13}/>Enviar anexo</Button><input hidden type="file" onChange={event=>void upload(event.target.files?.[0])}/></label>
-              {request.completedAt&&!request.rating&&<Rating><span>Avalie o atendimento:</span>{[1,2,3,4,5].map(value=><button key={value} aria-label={`${value} estrelas`} onClick={()=>void rate(value)}><Star size={18}/></button>)}<input placeholder="Comentário opcional" value={ratingComment} onChange={event=>setRatingComment(event.target.value)}/></Rating>}
-              {request.completedAt&&!request.completionConfirmedAt&&<Button onClick={async()=>{await api.confirmExternalRequestCompletion(request.protocol,accessKey);await loadRequest(request.protocol,accessKey);}}><CheckCircle2 size={13}/>Confirmar conclusão</Button>}
+              {request.completedAt&&!request.rating&&<Rating><span>Avalie o atendimento:</span>{[1,2,3,4,5].map(value=><ActionButton key={value} aria-label={`${value} estrelas`} loadingLabel="Enviando avaliação" onClick={()=>rate(value)}><Star size={18}/></ActionButton>)}<input placeholder="Comentário opcional" value={ratingComment} onChange={event=>setRatingComment(event.target.value)}/></Rating>}
+              {request.completedAt&&!request.completionConfirmedAt&&<Button as={ActionButton} loadingLabel="Confirmando conclusão" onClick={async()=>{await api.confirmExternalRequestCompletion(request.protocol,accessKey);await loadRequest(request.protocol,accessKey);}}><CheckCircle2 size={13}/>Confirmar conclusão</Button>}
               {request.completionConfirmedAt&&<Notice><CheckCircle2 size={14}/>Conclusão confirmada pelo solicitante.</Notice>}
             </Actions>
           </>}

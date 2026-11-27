@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import styled from 'styled-components';
 import { api } from '../../services/api';
 import type { BulkOption } from './KanbanBulkToolbar';
+import { ActionButton } from '../../components/ActionButton';
 
 const Button = styled.button<{ $primary?: boolean; $danger?: boolean }>`
   height:32px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 10px;
@@ -78,6 +79,7 @@ export function AutomationManager({
   const [actionValue, setActionValue] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{message:string;error?:boolean}|null>(null);
 
   const reset = useCallback(() => {
@@ -116,7 +118,7 @@ export function AutomationManager({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!triggerStageId || !actionValue) return;
-    setBusy(true);setFeedback(null);
+    setBusy(true);setSubmitting(true);setFeedback(null);
     const data={triggerStageId,actionType,actionValue,isActive};
     try {
       if(editingId) await api.updateAutomation(boardId,editingId,data);
@@ -124,7 +126,7 @@ export function AutomationManager({
       setFeedback({message:editingId?'Automação atualizada.':'Automação criada.'});
       reset();await load();
     } catch(error){setFeedback({message:(error as Error).message,error:true});}
-    finally{setBusy(false);}
+    finally{setBusy(false);setSubmitting(false);}
   };
 
   const edit = (rule: AutomationRule) => {
@@ -164,11 +166,11 @@ export function AutomationManager({
           <Field>Quando entrar em<select autoFocus required value={triggerStageId} onChange={e=>{setTriggerStageId(e.target.value);if(actionType===ACTION.move&&actionValue===e.target.value)setActionValue('');}}><option value="">Selecione</option>{stages.map(stage=><option key={stage.id} value={stage.id}>{stage.label}</option>)}</select></Field>
           <Field>Ação<select value={actionType} onChange={e=>{setActionType(Number(e.target.value));setActionValue('');}}><option value={ACTION.move}>Mover para etapa</option><option value={ACTION.assign}>Atribuir usuário</option><option value={ACTION.priority}>Definir prioridade</option><option value={ACTION.addTag}>Adicionar tag</option></select></Field>
           <Field>Destino<select required value={actionValue} onChange={e=>setActionValue(e.target.value)}><option value="">Selecione</option>{options.map(option=><option key={option.id} value={option.id}>{option.label}</option>)}</select></Field>
-          <div><Active><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)}/>Ativa</Active><Button $primary type="submit" disabled={busy||!triggerStageId||!actionValue}><Plus size={13}/>{editingId?'Salvar':'Criar'}</Button>{editingId&&<Button type="button" onClick={reset}>Cancelar</Button>}</div>
+          <div><Active><input type="checkbox" checked={isActive} onChange={e=>setIsActive(e.target.checked)}/>Ativa</Active><Button as={ActionButton} $primary type="submit" loading={submitting} loadingLabel={editingId?'Salvando automação':'Criando automação'} disabled={(busy&&!submitting)||!triggerStageId||!actionValue}><Plus size={13}/>{editingId?'Salvar':'Criar'}</Button>{editingId&&<Button type="button" onClick={reset}>Cancelar</Button>}</div>
         </Form>
         {feedback&&<Feedback role="status" aria-live="polite" $error={feedback.error}>{feedback.message}</Feedback>}
         <List aria-label="Regras configuradas">
-          {rules.map(rule=><Rule key={rule.id}><div><strong>{rule.triggerStageName} → {actionLabel(rule.actionType)} {targetLabel(rule)}</strong><span>{rule.isActive?'Ativa':'Pausada'}</span></div><Actions><Button type="button" onClick={()=>toggle(rule)} disabled={busy}>{rule.isActive?'Pausar':'Ativar'}</Button><Button type="button" aria-label="Editar automação" onClick={()=>edit(rule)}><Pencil size={13}/></Button><Button $danger type="button" aria-label="Excluir automação" onClick={()=>remove(rule)}><Trash2 size={13}/></Button></Actions></Rule>)}
+          {rules.map(rule=><Rule key={rule.id}><div><strong>{rule.triggerStageName} → {actionLabel(rule.actionType)} {targetLabel(rule)}</strong><span>{rule.isActive?'Ativa':'Pausada'}</span></div><Actions><Button as={ActionButton} type="button" loadingLabel={rule.isActive?'Pausando automação':'Ativando automação'} onClick={()=>toggle(rule)} disabled={busy}>{rule.isActive?'Pausar':'Ativar'}</Button><Button type="button" aria-label="Editar automação" onClick={()=>edit(rule)}><Pencil size={13}/></Button><Button as={ActionButton} $danger type="button" aria-label="Excluir automação" loadingLabel="Excluindo automação" onClick={()=>remove(rule)}><Trash2 size={13}/></Button></Actions></Rule>)}
           {!busy&&rules.length===0&&<Rule><div><strong>Nenhuma automação configurada</strong><span>Crie a primeira regra acima.</span></div></Rule>}
         </List>
       </Dialog>

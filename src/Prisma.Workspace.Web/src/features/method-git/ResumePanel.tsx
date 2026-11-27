@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { methodApi } from './client';
 import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
+import { ActionButton } from '../../components/ActionButton';
+import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 export function ResumePanel({ projectId, enabled }: { projectId: string; enabled: boolean }) {
   const tasks = useQuery({ queryKey: [...methodKey(projectId), 'tasks'], queryFn: () => methodApi.tasks(projectId), retry: false });
@@ -13,13 +15,13 @@ export function ResumePanel({ projectId, enabled }: { projectId: string; enabled
     && task.blockingEventId && task.cycleId && task.blockingOriginStatus === 'em-desenvolvimento') ?? [];
 
   return <section aria-labelledby="method-resume-title">
-    <h3 id="method-resume-title">Liberação de retomada</h3>
+    <HelpTitleRow><h3 id="method-resume-title">Liberação de retomada</h3><HelpButton target="integrationResume" label="Ajuda sobre retomadas" /></HelpTitleRow>
     <Hint>Libere o agente para retomar o próprio bloqueio de uma execução autorizada. A liberação mantém a task bloqueada até o agente retomar.</Hint>
     {!enabled && <Hint>Reative o método para liberar retomadas para o agente.</Hint>}
     {action.error && <Feedback role="alert">{action.error}</Feedback>}
     {action.success && <Feedback role="status">{action.success}</Feedback>}
     {tasks.isPending ? <Hint role="status">Carregando bloqueios...</Hint> : tasks.isError ? <Feedback role="alert">
-      {tasks.error.message} <Button type="button" onClick={() => void tasks.refetch()}>Tentar novamente</Button>
+      {tasks.error.message} <Button as={ActionButton} type="button" loadingLabel="Carregando bloqueios" onClick={() => tasks.refetch()}>Tentar novamente</Button>
     </Feedback> : blocked.length === 0 ? <Hint>Nenhum bloqueio de execução autorizada aguardando liberação.</Hint> : <List>
       {blocked.map(task => <Row key={task.workItemId}>
         <strong>{task.id} · {task.title}</strong>
@@ -32,7 +34,8 @@ export function ResumePanel({ projectId, enabled }: { projectId: string; enabled
         }}>
           <Field>Motivo da liberação de {task.id}<input required maxLength={1000} value={reasons[task.workItemId] ?? ''}
             onChange={event => setReasons(current => ({ ...current, [task.workItemId]: event.target.value }))} /></Field>
-          <Actions><Button $primary type="submit" disabled={!enabled || action.pending !== null || !reasons[task.workItemId]?.trim()}>
+          <Actions><Button as={ActionButton} $primary type="submit" disabled={!enabled || (action.pending !== null && action.pending !== task.workItemId) || !reasons[task.workItemId]?.trim()}
+            loading={action.pending === task.workItemId} loadingLabel={`Liberando retomada de ${task.id}`}>
             Liberar retomada de {task.id}</Button></Actions>
         </Form>}
       </Row>)}

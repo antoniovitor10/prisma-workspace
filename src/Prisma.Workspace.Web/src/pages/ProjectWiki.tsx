@@ -13,6 +13,7 @@ import {
 import { api } from '../services/api';
 import { DependencyAutocomplete, type DependencyWorkItemOption } from '../features/task/DependencyAutocomplete';
 import type { ProjectSummary } from './Projects';
+import { ActionButton } from '../components/ActionButton';
 
 interface WikiNode { id: string; parentPageId: string | null; title: string; position: number; updatedAt: string; lockedByOther: boolean; }
 interface WikiLock { lockedByUserId: string | null; lockedByName: string | null; lockedAt: string | null; lockedByOther: boolean; }
@@ -245,7 +246,7 @@ export function ProjectWiki() {
         <header>
           <FileText size={15} />
           <strong>Wiki</strong>
-          <NewBtn onClick={() => createPage.mutate(null)}><Plus size={12} />Página</NewBtn>
+          <NewBtn as={ActionButton} loading={createPage.isPending && createPage.variables === null} loadingLabel="Criando página" onClick={() => createPage.mutate(null)}><Plus size={12} />Página</NewBtn>
         </header>
         <Tree>
           {treeQuery.isLoading ? <Row $depth={0}>Carregando...</Row>
@@ -405,8 +406,8 @@ function WikiAttachments({ projectId, pageId, canEdit }: { projectId: string; pa
           <FileChip key={item.id}>
             <span className="name" title={item.fileName}>{item.fileName}</span>
             <span className="size">{fmtBytes(item.fileSize)}</span>
-            <button title="Baixar" onClick={() => void download(item)}><Download size={13} /></button>
-            {canEdit && <button title="Remover" onClick={() => { if (confirm(`Remover "${item.fileName}"?`)) remove.mutate(item.id); }}><Trash2 size={12} /></button>}
+            <ActionButton title="Baixar" loadingLabel={`Baixando ${item.fileName}`} onClick={() => download(item)}><Download size={13} /></ActionButton>
+            {canEdit && <ActionButton title="Remover" loading={remove.isPending && remove.variables === item.id} loadingLabel={`Removendo ${item.fileName}`} onClick={() => { if (confirm(`Remover "${item.fileName}"?`)) remove.mutate(item.id); }}><Trash2 size={12} /></ActionButton>}
           </FileChip>
         ))}</div>}
     </Attach>
@@ -451,7 +452,7 @@ export function WikiTaskLinks({ projectId, pageId, canEdit }: { projectId: strin
           resultsLabel="Tarefas disponíveis para vínculo"
           onSelect={setSelectedTask}
         />
-        <HeadBtn type="submit" disabled={!selectedTask || link.isPending}><Plus size={12} />{link.isPending ? 'Vinculando...' : 'Vincular'}</HeadBtn>
+        <HeadBtn as={ActionButton} type="submit" disabled={!selectedTask} loading={link.isPending} loadingLabel="Vinculando tarefa"><Plus size={12} />Vincular</HeadBtn>
       </LinkTaskForm>}
       {link.error && <LinkError role="alert">{(link.error as Error).message}</LinkError>}
       {items.length === 0 ? <span className="none">Nenhuma tarefa vinculada.</span>
@@ -461,7 +462,7 @@ export function WikiTaskLinks({ projectId, pageId, canEdit }: { projectId: strin
               onClick={() => navigate(`/projects/${projectId}/backlog?item=${item.workItemId}`)}>
               <strong>#{item.number}</strong> · {item.title}
             </span>
-            {canEdit && <button title="Desvincular" onClick={() => unlink.mutate(item.workItemId)}><X size={13} /></button>}
+            {canEdit && <ActionButton title="Desvincular" loading={unlink.isPending && unlink.variables === item.workItemId} loadingLabel="Desvinculando tarefa" onClick={() => unlink.mutate(item.workItemId)}><X size={13} /></ActionButton>}
           </FileChip>
         ))}</div>}
     </Attach>
@@ -494,7 +495,7 @@ function HistoryDrawer({ projectId, pageId, canEdit, onClose, onReverted }: { pr
         <>
           <RevPreview dangerouslySetInnerHTML={{ __html: preview.data.contentHtml || '<p><em>Vazio</em></p>' }} />
           {canEdit && <RevActions>
-            <HeadBtn onClick={() => revert.mutate(selected)} disabled={revert.isPending}><RotateCcw size={12} />{revert.isPending ? 'Restaurando...' : 'Restaurar esta versão'}</HeadBtn>
+            <HeadBtn as={ActionButton} loading={revert.isPending} loadingLabel="Restaurando versão" onClick={() => revert.mutate(selected)}><RotateCcw size={12} />Restaurar esta versão</HeadBtn>
           </RevActions>}
         </>
       )}

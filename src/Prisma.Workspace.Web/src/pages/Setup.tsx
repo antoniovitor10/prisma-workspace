@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { BrandGem, BrandMark } from '../components/BrandMark';
 import { api, SetupApiError, type SetupInput, type SetupStatus } from '../services/api';
 import { useThemeMode } from '../styles/ThemeMode';
+import { ActionButton } from '../components/ActionButton';
 
 type ViewState = 'loading' | 'ready' | 'unavailable' | 'completed' | 'error';
 
@@ -507,7 +508,7 @@ export function Setup({ onExit }: { onExit: (setupCompleted: boolean) => void })
 
                 <Actions>
                   <BackLink type="button" onClick={goToLogin}>Voltar para o login</BackLink>
-                  <Submit type="submit" disabled={submitting}>{submitting ? 'Configurando...' : <>Concluir configuração <ArrowRight size={17} /></>}</Submit>
+                  <Submit as={ActionButton} type="submit" loading={submitting} loadingLabel="Configurando a instalação">Concluir configuração <ArrowRight size={17} /></Submit>
                 </Actions>
               </Form>
             </>

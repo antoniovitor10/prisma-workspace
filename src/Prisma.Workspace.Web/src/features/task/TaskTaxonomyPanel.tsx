@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from 'react';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 
 interface Catalog { id: string; name: string; color: string; }
@@ -73,7 +74,7 @@ export const TaskTaxonomyPanel: React.FC<Props> = ({ workItemId, taskTypeId, poi
         </select>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <input style={{ ...select, flex: 1 }} placeholder="Novo tipo..." value={newType} onChange={e => setNewType(e.target.value)} />
-          <button type="button" onClick={createType} style={{ padding: '7px 10px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Criar</button>
+          <ActionButton type="button" loadingLabel="Criando tipo" onClick={createType} style={{ padding: '7px 10px', borderRadius: 6, background: '#1E7BD7', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Criar</ActionButton>
         </div>
       </div>
 
@@ -83,9 +84,10 @@ export const TaskTaxonomyPanel: React.FC<Props> = ({ workItemId, taskTypeId, poi
           {tags.map(t => {
             const on = tagIds.includes(t.id);
             return (
-              <button
+              <ActionButton
                 key={t.id}
                 type="button"
+                loadingLabel={on ? `Removendo a tag ${t.name}` : `Aplicando a tag ${t.name}`}
                 onClick={() => toggleTag(t.id)}
                 style={{
                   fontSize: 14, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
@@ -94,14 +96,14 @@ export const TaskTaxonomyPanel: React.FC<Props> = ({ workItemId, taskTypeId, poi
                 }}
               >
                 {t.name}
-              </button>
+              </ActionButton>
             );
           })}
           {tags.length === 0 && <span style={{ fontSize: 14, color: '#94A3B8' }}>Nenhuma tag ainda.</span>}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <input style={{ ...select, flex: 1 }} placeholder="Nova tag..." value={newTag} onChange={e => setNewTag(e.target.value)} />
-          <button type="button" onClick={createTag} style={{ padding: '7px 10px', borderRadius: 6, background: '#64748B', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Criar</button>
+          <ActionButton type="button" loadingLabel="Criando tag" onClick={createTag} style={{ padding: '7px 10px', borderRadius: 6, background: '#64748B', color: '#fff', fontWeight: 700, fontSize: 14 }}>+ Criar</ActionButton>
         </div>
       </div>
 

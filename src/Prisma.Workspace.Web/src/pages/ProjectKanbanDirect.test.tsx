@@ -100,6 +100,8 @@ describe('confirmação D62 por quadro', () => {
     fireEvent.click(screen.getByRole('button', {name:'Salvar'}));
     expect(update).not.toHaveBeenCalled();
     fireEvent.click(screen.getByLabelText('Aceito concluir também todos os 2 descendentes abertos, sem movê-los'));
+    // O botão com loading padrão (HU-0001) espera o envio anterior terminar antes de aceitar outro clique.
+    await waitFor(()=>expect(screen.getByRole('button', {name:'Salvar'})).not.toHaveAttribute('aria-busy'));
     fireEvent.click(screen.getByRole('button', {name:'Salvar'}));
     await waitFor(()=>expect(update).toHaveBeenCalledWith('stage-1', {
       name:'A fazer', category:4, confirmCategoryChange:true, confirmDescendants:true, impactToken:'snapshot-1'
@@ -252,13 +254,17 @@ describe('Kanban do projeto abre direto', () => {
     expect(confirm).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText('Ao excluir, transferir tarefas para'), { target: { value: 'stage-2' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Excluir coluna$/ }));
+    // O botão com loading padrão (HU-0001) espera a tentativa anterior terminar antes de aceitar outro clique.
+    const excluir = screen.getByRole('button', { name: /^Excluir coluna$/ });
+    await waitFor(() => expect(excluir).not.toHaveAttribute('aria-busy'));
+    fireEvent.click(excluir);
 
     expect(confirm).toHaveBeenCalledWith('Excluir a coluna "A fazer"? 1 tarefa(s) serão transferidas para "Concluído".');
     expect(removeStage).not.toHaveBeenCalled();
 
     confirm.mockReturnValue(true);
-    fireEvent.click(screen.getByRole('button', { name: /^Excluir coluna$/ }));
+    await waitFor(() => expect(excluir).not.toHaveAttribute('aria-busy'));
+    fireEvent.click(excluir);
     await waitFor(() => expect(removeStage).toHaveBeenCalledWith('stage-1', 'stage-2'));
   });
 

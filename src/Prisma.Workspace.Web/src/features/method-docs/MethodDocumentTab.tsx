@@ -9,6 +9,7 @@ import { splitFrontmatter } from './frontmatter';
 import { channelLabels, documentNoun, formatDateTime } from './labels';
 import { MarkdownEditor } from './MarkdownEditor';
 import { MarkdownView } from './MarkdownView';
+import { ActionButton } from '../../components/ActionButton';
 import { Alert, Button, Muted, Notice } from './styles';
 import {
   LOCKED_MESSAGE, documentErrorMessage, isVersionConflict, methodDocumentsKey, useMethodDocument, useSaveMethodDocument,
@@ -98,7 +99,7 @@ export function MethodDocumentTab({ projectId, workItemId, documentKey, kind }: 
           <MarkdownEditor initialValue={editing.body} documentLabel={noun} saving={save.isPending}
             error={documentErrorMessage(save.error)} onSave={onSave}
             onCancel={() => { save.reset(); setEditing(null); }} />
-          {conflict && <div><Button type="button" $secondary onClick={() => void reload()}>Recarregar documento</Button></div>}
+          {conflict && <div><Button as={ActionButton} type="button" $secondary loadingLabel="Recarregando documento" onClick={() => reload()}>Recarregar documento</Button></div>}
         </>
         : <Body><MarkdownView content={split.body} aria-label={`Conteúdo do ${noun}`} /></Body>}
       <DocumentVersions projectId={projectId} documentKey={documentKey} currentVersion={doc.version} />

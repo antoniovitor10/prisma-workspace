@@ -1,6 +1,7 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import { MarkdownView } from './MarkdownView';
+import { ActionButton } from '../../components/ActionButton';
 import { Alert, Button } from './styles';
 
 /**
@@ -128,8 +129,9 @@ export function MarkdownEditor({ initialValue, documentLabel, saving, error, onS
       {error && <Alert>{error}</Alert>}
       <ActionBar>
         <Button type="button" $secondary aria-label="Cancelar edição" disabled={saving} onClick={onCancel}>Cancelar</Button>
-        <Button type="button" aria-label={`Salvar ${documentLabel}`} disabled={saving} onClick={() => onSave(value)}>
-          {saving ? 'Salvando...' : 'Salvar'}
+        <Button as={ActionButton} type="button" aria-label={`Salvar ${documentLabel}`} loading={saving}
+          loadingLabel={`Salvando ${documentLabel}`} onClick={() => onSave(value)}>
+          Salvar
         </Button>
       </ActionBar>
     </Wrap>

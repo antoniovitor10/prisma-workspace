@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   ChevronDown,
+  CircleHelp,
   Clock,
   LogOut,
   Menu,
@@ -16,6 +17,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { ActionButton } from '../components/ActionButton';
 import { BrandMark } from '../components/BrandMark';
 import { GlobalSearchDialog, QuickCreateDialog } from '../components/GlobalActions';
 import { DEFAULT_CREATE_KINDS, KIND_COLORS, KIND_ICONS } from '../components/WorkItemKindSelector';
@@ -27,6 +29,7 @@ import { visibleNavEntries } from './navigation';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import { useThemeMode } from '../styles/ThemeMode';
+import { PageHelpButton } from '../features/help/PageHelpButton';
 
 /* ─── layout ─── */
 
@@ -645,7 +648,8 @@ export function Topbar() {
     }
   }, []);
 
-  const logout = () => { setAccountOpen(false); void api.logout(); };
+  // O menu fica aberto até o servidor responder, para o "Sair" mostrar o loading padrão (HU-0001).
+  const logout = async () => { try { await api.logout(); } finally { setAccountOpen(false); } };
 
   return (
     <>
@@ -708,6 +712,9 @@ export function Topbar() {
         {/* active timer */}
         {timer && (
           <ActiveTimer
+            as={ActionButton}
+            loading={stopTimer.isPending}
+            loadingLabel="Parando apontamento"
             onClick={() => stopTimer.mutate(timer.workItemId)}
             title="Parar apontamento"
           >
@@ -759,6 +766,9 @@ export function Topbar() {
         {/* notifications */}
         <NotificationCenter />
 
+        {/* Ajuda da página atual (HU-0003, CA-3) */}
+        <PageHelpButton />
+
         <ThemeButton
           type="button"
           aria-label={mode === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
@@ -797,8 +807,14 @@ export function Topbar() {
                   <Building2 size={14} />Nova organização
                 </DropItem>
               )}
+              <DropItem
+                role="menuitem"
+                onClick={() => { setAccountOpen(false); navigate('/ajuda'); }}
+              >
+                <CircleHelp size={14} />Central de ajuda
+              </DropItem>
               <DropDivider />
-              <DropItem role="menuitem" onClick={logout}>
+              <DropItem as={ActionButton} role="menuitem" loadingLabel="Saindo" onClick={logout}>
                 <LogOut size={14} />Sair
               </DropItem>
             </AccountDropdown>
@@ -842,6 +858,9 @@ export function Topbar() {
                 <Settings size={17} />Configurações
               </MobileNavItem>
             )}
+            <MobileNavItem to="/ajuda" role="menuitem">
+              <CircleHelp size={17} />Central de ajuda
+            </MobileNavItem>
           </MobileMenu>
         </MobileOverlay>
       )}
