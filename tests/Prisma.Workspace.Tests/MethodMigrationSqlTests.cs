@@ -72,7 +72,7 @@ public sealed class MethodMigrationSqlTests
         command.CommandText = """
             SELECT t.name, c.name, ty.name, c.max_length, c.is_nullable, c.is_identity, c.is_computed
             FROM sys.tables t JOIN sys.columns c ON t.object_id=c.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id
-            WHERE t.name NOT IN ('__EFMigrationsHistory','MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks','GitReadCredentials')
+            WHERE t.name NOT IN ('__EFMigrationsHistory','MethodDocuments','MethodDocumentRevisions','MethodPrincipals','MethodProjectSettings','MethodApiTokens','MethodAuthorizationEvents','MethodStageMappings','MethodTaskStates','GitRepositoryIntegrations','GitPullRequestObservations','GitWebhookDeliveries','GitAppliedFacts','TaskGitLinks','GitReadCredentials')
             ORDER BY t.name,c.column_id
             """;
         var rows = new List<object?[]>();
