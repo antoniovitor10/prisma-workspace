@@ -82,6 +82,20 @@ public class GitTransitionTests
         Assert.True((await f.Process("closed")).Moved); Assert.Equal(MethodStatusCodes.InDevelopment, f.Store.Tasks[0].StatusCode);
     }
     [Fact]
+    public async Task Merged_webhook_with_lagging_API_retries_instead_of_recording_closed_without_merge()
+    {
+        var f = new Fixture(MethodStatusCodes.InReview);
+        // A API ainda não reflete o merge que o webhook já anunciou.
+        f.Provider.PullRequests[(f.Store.Repository.Id, 1)] = f.Pr with { State = "closed", ClosedAtUtc = f.Store.Now };
+        var lagging = await f.Processor.ProcessAsync(f.Delivery(f.Event("closed") with { State = "closed", IsMerged = true }));
+        Assert.Equal(GitDeliveryStates.RetryableFailure, lagging.Status); Assert.Equal("merge_not_visible_yet", lagging.Code);
+        Assert.Empty(f.Move.Requests); Assert.Equal(MethodStatusCodes.InReview, f.Store.Tasks[0].StatusCode);
+        // Na nova tentativa a API já mostra o merge: o card vai para em-teste.
+        f.SetMerged();
+        Assert.True((await f.Processor.ProcessAsync(f.Delivery(f.Event("closed") with { State = "closed", IsMerged = true }))).Moved);
+        Assert.Equal(MethodStatusCodes.InTest, f.Store.Tasks[0].StatusCode);
+    }
+    [Fact]
     public async Task Effective_changes_requested_returns_to_development_but_old_HEAD_does_not()
     {
         var f = new Fixture(MethodStatusCodes.InReview);

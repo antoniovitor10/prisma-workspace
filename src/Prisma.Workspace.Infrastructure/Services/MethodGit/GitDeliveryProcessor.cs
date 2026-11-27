@@ -64,6 +64,11 @@ public sealed class GitDeliveryProcessor(IMethodGitStore store, IGitProvider pro
             return await Finish(delivery, GitDeliveryStates.Ignored, "unsupported_event", ct);
         if (e.PullRequestNumber is not { } number) return await Finish(delivery, GitDeliveryStates.PermanentFailure, "missing_pull_request", ct);
         var pr = await provider.GetPullRequestAsync(repository, number, ct);
+        // Logo depois do merge, a API do GitHub pode ainda devolver o PR fechado sem `merged`.
+        // Se o próprio webhook diz que houve merge, a leitura está atrasada: tenta de novo em vez de
+        // registrar "fechado sem merge" (que devolveria o card para em-desenvolvimento).
+        if (e.EventName == "pull_request" && e.Action == "closed" && e.IsMerged && !pr.IsMerged)
+            return await Finish(delivery, GitDeliveryStates.RetryableFailure, "merge_not_visible_yet", ct);
         var resolution = await resolver.ResolveAsync(repository, number, pr.HeadBranch, pr.Title, ct,
             allowInference: pr.HeadRepositoryId == repository.RepositoryId);
         var observation = await store.UpsertObservationAsync(repository.Id, pr, resolution.Task is null ? resolution.Reason : null, ct);
