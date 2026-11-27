@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { createServer, type Server } from 'node:http';
+import { selectSeedProject } from './fixtures/seedProject';
 
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:5400';
 const orgId = '11111111-1111-4111-8111-111111111111';
 let server: Server; let providerUrl = ''; let token = ''; let connectionId = ''; let itemId = ''; let modelRequests = 0;
 const receivedModels: string[] = [];
+const helpPrompts: string[] = [];
 let catalogStatus = 200;
 let catalogModels = [{ id: 'fake-e2e', name: 'Modelo E2E' }, { id: 'fake-other', name: 'Modelo alternativo E2E' }];
 const cliSessions = new Map<string, { owner: string; adapter: string; cancelled: boolean; authenticated: boolean }>();
@@ -49,6 +51,11 @@ test.beforeAll(async ({ request }) => {
     const last = body.messages.at(-1);
     if (body.messages.some((m: { content: string }) => m.content.includes('Responda apenas OK'))) {
       send({ choices: [{ delta: { content: 'OK' } }] });
+    } else if (last.role === 'user' && last.content.startsWith('Como faço') && body.messages[0].content.includes('AJUDA DO PRODUTO')) {
+      // HU-0003: pergunta de uso responde pelo artigo enviado pela tela, com a referência da ajuda.
+      helpPrompts.push(body.messages[0].content);
+      const text = 'Arraste os itens no Product backlog para priorizar. [A:quadro-backlog-e-sprints/backlog#priorizar]';
+      for (const part of text.match(/.{1,8}/g) ?? []) send({ choices: [{ delta: { content: part } }] });
     } else if (last.role !== 'tool' && !last.content.startsWith('DADOS NÃO CONFIÁVEIS da ferramenta ')) {
       if (body.tools) send({ choices: [{ delta: { tool_calls: [{ index: 0, id: 'read-work', function: { name: 'get_my_work', arguments: '{}' } }] } }] });
       else {
@@ -98,6 +105,26 @@ test('chat consulta dados, cita tarefa, fecha com Escape e respeita cota atingid
   await request.delete(`${apiUrl}/api/ai/conversations/${conversation.id}`, { headers: headers() });
 });
 
+test('pergunta de uso responde pela ajuda da página, com o link "Abrir na ajuda" (CA-4)', async ({ page, request }) => {
+  expect((await request.put(`${apiUrl}/api/organizations/current/ai`, { headers: headers(), data: { enabled: true, dailyTokenLimit: 0, userTokenLimit: 0 } })).ok()).toBeTruthy();
+  const projects = await request.get(`${apiUrl}/api/projects`, { headers: headers() }); expect(projects.ok()).toBeTruthy();
+  const project = selectSeedProject(await projects.json() as { id: string; key: string }[]);
+  await page.goto(`/projects/${project.id}/backlog`);
+  const launcher = page.getByRole('button', { name: 'Abrir assistente Prisma' }); await expect(launcher).toBeVisible(); await launcher.click();
+  const question = page.getByLabel('Pergunte ao workspace'); await expect(question).toBeFocused();
+  await question.fill('Como faço para priorizar o backlog?'); await page.getByRole('button', { name: 'Enviar pergunta' }).click();
+  const link = page.getByRole('complementary', { name: 'Assistente Prisma' }).getByRole('link', { name: 'Abrir na ajuda: Backlog e hierarquia de itens' });
+  await expect(link).toBeVisible({ timeout: 20000 });
+  await expect(link).toHaveAttribute('href', '/ajuda/quadro-backlog-e-sprints/backlog#priorizar');
+  const prompt = helpPrompts.at(-1) ?? '';
+  expect(prompt).toContain('=== ARTIGO [A:quadro-backlog-e-sprints/backlog] Backlog e hierarquia de itens');
+  expect(prompt).toContain('(âncora: priorizar)');
+  await link.click();
+  await expect(page).toHaveURL(/\/ajuda\/quadro-backlog-e-sprints\/backlog#priorizar$/);
+  await expect(page.getByRole('heading', { name: 'Priorizar', exact: true })).toBeFocused();
+  const listing = await request.get(`${apiUrl}/api/ai/conversations`, { headers: headers() });
+  for (const conversation of await listing.json()) await request.delete(`${apiUrl}/api/ai/conversations/${conversation.id}`, { headers: headers() });
+});
 test('administrador de organização não recebe autoridade de instalação nem acesso a chats alheios', async ({ request }) => {
   const login = await request.post(`${apiUrl}/api/auth/login`, { data: { email: 'manager@prisma.example.invalid', password: process.env.E2E_TEST_USER_PASSWORD } });
   expect(login.ok()).toBeTruthy(); const managerHeaders = { ...headers(), Authorization: `Bearer ${(await login.json()).accessToken}` };
