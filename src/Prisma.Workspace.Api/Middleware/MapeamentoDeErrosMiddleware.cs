@@ -29,8 +29,11 @@ public class MapeamentoDeErrosMiddleware
         }
         catch (Prisma.Workspace.Application.Features.MethodGit.Contracts.MethodOperationException ex)
         {
-            await WriteProblemAsync(context, ApiErrors.Problem(ex.StatusCode, ex.Code,
-                ex.StatusCode == 409 ? "Conflito de estado" : "Operação do método recusada", ex.Message, context.TraceIdentifier));
+            var problem = ApiErrors.Problem(ex.StatusCode, ex.Code,
+                ex.StatusCode == 409 ? "Conflito de estado" : "Operação do método recusada", ex.Message, context.TraceIdentifier);
+            // HU-0008: o código estável também em "code", que a tela e o MCP leem (o "type" continua igual).
+            problem.Extensions["code"] = ex.Code;
+            await WriteProblemAsync(context, problem);
         }
         catch (DomainException ex)
         {
