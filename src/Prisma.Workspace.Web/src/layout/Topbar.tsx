@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   ChevronDown,
+  CircleHelp,
   Clock,
   LogOut,
   Menu,
@@ -27,6 +28,7 @@ import { visibleNavEntries } from './navigation';
 import { previewMode } from '../preview';
 import { api } from '../services/api';
 import { useThemeMode } from '../styles/ThemeMode';
+import { PageHelpButton } from '../features/help/PageHelpButton';
 
 /* ─── layout ─── */
 
@@ -759,6 +761,9 @@ export function Topbar() {
         {/* notifications */}
         <NotificationCenter />
 
+        {/* Ajuda da página atual (HU-0003, CA-3) */}
+        <PageHelpButton />
+
         <ThemeButton
           type="button"
           aria-label={mode === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
@@ -797,6 +802,12 @@ export function Topbar() {
                   <Building2 size={14} />Nova organização
                 </DropItem>
               )}
+              <DropItem
+                role="menuitem"
+                onClick={() => { setAccountOpen(false); navigate('/ajuda'); }}
+              >
+                <CircleHelp size={14} />Central de ajuda
+              </DropItem>
               <DropDivider />
               <DropItem role="menuitem" onClick={logout}>
                 <LogOut size={14} />Sair
@@ -842,6 +853,9 @@ export function Topbar() {
                 <Settings size={17} />Configurações
               </MobileNavItem>
             )}
+            <MobileNavItem to="/ajuda" role="menuitem">
+              <CircleHelp size={17} />Central de ajuda
+            </MobileNavItem>
           </MobileMenu>
         </MobileOverlay>
       )}

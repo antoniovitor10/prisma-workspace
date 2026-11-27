@@ -9,6 +9,7 @@ import { api } from '../services/api';
 import { AuditLogPanel } from '../features/audit/AuditLogPanel';
 import { WorkflowTemplatesPanel } from '../features/organizations/WorkflowTemplatesPanel';
 import { HeaderLead, Page, PageHeader, PrimaryAction } from '../components/PageLayout';
+import { HelpButton } from '../features/help/HelpPanel';
 
 const roles = [
   [1, 'Administrador'], [2, 'Gestor'], [3, 'Gerente de projeto'], [4, 'Scrum Master'],
@@ -216,7 +217,7 @@ export function OrganizationSettings() {
         <div style={{padding:18}}><strong style={{fontSize:15}}>{roleLabel(accessQuery.data?.role ?? current.role)}</strong><p style={{marginTop:7,fontSize:13.5,color:'#64748b'}}>Os módulos e ações são liberados pelo perfil e por permissões específicas.</p></div>
       </Section>
 
-      <Wide><header><Users size={16}/><h2>Membros</h2><p>{membersQuery.data?.filter(item => item.isActive).length ?? 0} ativos</p></header>
+      <Wide><header><Users size={16}/><h2>Membros</h2><HelpButton target="organizationInvite" label="Ajuda sobre membros e convites" /><p>{membersQuery.data?.filter(item => item.isActive).length ?? 0} ativos</p></header>
         <Members>{membersQuery.data?.map(member => <MemberRow key={member.userId}>
           <MemberNameEditor
             member={member}
