@@ -113,6 +113,8 @@ public class AppDbContext : IdentityDbContext
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
+    public DbSet<MethodDocument> MethodDocuments => Set<MethodDocument>();
+    public DbSet<MethodDocumentRevision> MethodDocumentRevisions => Set<MethodDocumentRevision>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -289,6 +291,10 @@ public class AppDbContext : IdentityDbContext
         builder.Entity<TaskType>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
         builder.Entity<DayJustification>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId);
 
+        builder.Entity<MethodDocument>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId
+            && (CurrentMethodProjectId == null || x.ProjectId == CurrentMethodProjectId));
+        builder.Entity<MethodDocumentRevision>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId
+            && (CurrentMethodProjectId == null || x.ProjectId == CurrentMethodProjectId));
         builder.Entity<MethodProjectSettings>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId
             && (CurrentMethodProjectId == null || x.ProjectId == CurrentMethodProjectId));
         builder.Entity<MethodPrincipal>().HasQueryFilter(x => x.OrganizationId == CurrentOrganizationId

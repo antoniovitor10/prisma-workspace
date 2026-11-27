@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { ActionButton } from '../../components/ActionButton';
 
 export type AiChoice = { connectionId: string | null; model: string | null };
 type Option = { id: string; name: string; provider: string; type: string; model: string; isDefault: boolean };
@@ -30,7 +31,7 @@ export function AiConversationControls({ tenantId, choice, disabled, dirty, onCo
       {choice.model && !validModel && <option value={choice.model}>{choice.model} (salvo; confira disponibilidade)</option>}
       {catalogReady && catalog.data?.models.map(m => <option key={m.id} value={m.id}>{m.name === m.id ? m.id : `${m.name} — ${m.id}`}</option>)}
     </select></label> : <p className="default-model">{defaultConnection ? `${providers[defaultConnection.provider] ?? defaultConnection.provider} · ${defaultConnection.model}` : 'A conexão padrão será usada.'}</p>}
-    <button className="text-action" type="button" disabled={disabled || options.isFetching || !!choice.connectionId && catalog.isFetching} onClick={() => { void options.refetch(); if (choice.connectionId) void catalog.refetch(); }}>Atualizar conexões</button>
+    <ActionButton className="text-action" type="button" disabled={disabled} loading={options.isFetching || !!choice.connectionId && catalog.isFetching} loadingLabel="Atualizando conexões" onClick={() => Promise.all([options.refetch(), choice.connectionId ? catalog.refetch() : undefined])}>Atualizar conexões</ActionButton>
     {options.isError && <p className="selector-notice" role="alert">Não foi possível carregar as conexões. Tente atualizar.</p>}
     {missing && <p className="selector-notice" role="alert">Esta conexão não está mais disponível. Escolha outra ou o padrão da instalação.</p>}
     {choice.connectionId && !missing && !catalog.isFetching && (catalog.isError || catalog.data?.state !== 'ready' && !catalog.isPending) && <p className="selector-notice" role="alert">{catalog.isError ? 'Não foi possível carregar os modelos. Tente atualizar.' : catalog.data?.message ?? 'Não foi possível carregar os modelos. Tente atualizar.'}</p>}

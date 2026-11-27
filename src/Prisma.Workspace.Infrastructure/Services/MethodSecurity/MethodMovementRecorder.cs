@@ -97,7 +97,8 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
                     continue;
                 }
                 var row = group.Single();
-                if (row.BoardId != boardId || row.ParentId is not null || row.IsArchived) continue;
+                if (row.BoardId != boardId || row.IsArchived
+                    || !await MethodEligibility.HasEligibleParentAsync(db, row.ParentId, row.BoardId, ct)) continue;
                 var state = states.SingleOrDefault(x => x.WorkItemId == row.WorkItemId);
                 if (state is null)
                 {
@@ -119,7 +120,8 @@ internal sealed class MethodMovementRecorder(AppDbContext db, IMethodAccessConte
             ?? await db.Set<MethodTaskState>().IgnoreQueryFilters().SingleOrDefaultAsync(x => x.ProjectId == settings.ProjectId
                 && x.WorkItemId == item.Id && x.OrganizationId == settings.OrganizationId, ct);
         var active = change.Entry.State != EntityState.Deleted && change.Destination.ProjectId == settings.ProjectId
-            && settings.BoardId == change.Destination.Id && item.ParentId is null && !item.IsArchived && ValidId(change.MethodId);
+            && settings.BoardId == change.Destination.Id && !item.IsArchived && ValidId(change.MethodId)
+            && await MethodEligibility.HasEligibleParentAsync(db, item.ParentId, item.BoardId, ct);
         if (active && await DuplicatedAsync(change, ct))
         {
             var fieldWasEdited = db.ChangeTracker.Entries<WorkItemCustomFieldValue>().Any(x => MethodWriteGuard.Changed(x)

@@ -5,6 +5,7 @@ import { methodKey, useMethodAction } from './useMethodAction';
 import { Actions, Button, Feedback, Field, Form, Hint, List, Row } from './styles';
 import { formatDateTime, gitPollStatusMessage } from './gitLabels';
 import type { GitRepository } from './types';
+import { ActionButton } from '../../components/ActionButton';
 import { HelpButton, HelpTitleRow } from '../help/HelpPanel';
 
 const initial = { repositoryFullName: '', repositoryId: '', defaultBranch: '', appId: '', installationId: '',
@@ -69,7 +70,7 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
           <Field>Token de leitura<input required type="password" autoComplete="off" spellCheck={false} placeholder="github_pat_..." value={readToken}
             onChange={event => setReadToken(event.target.value)} />
             <small>Pull requests: read e Contents: read. A organização pode exigir a aprovação de um admin.</small></Field>
-          <Actions><Button $primary type="submit">{action.pending === 'credential' ? 'Salvando...' : 'Salvar token'}</Button></Actions>
+          <Actions><Button as={ActionButton} $primary type="submit" loading={action.pending === 'credential'} loadingLabel="Salvando token de leitura">Salvar token</Button></Actions>
         </fieldset>
       </Form>
       {credentials.isError ? <Feedback role="alert">{credentials.error.message}</Feedback>
@@ -80,9 +81,10 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
               <small>{credential.tokenPrefix}… · cadastrado em <time dateTime={credential.createdAtUtc}>{formatDateTime(credential.createdAtUtc)}</time>
                 {credential.createdByName ? ` por ${credential.createdByName}` : ''} · {credential.repositoriesCount} repositório(s)</small>
               {credential.revokedAtUtc && <small>Revogado em <time dateTime={credential.revokedAtUtc}>{formatDateTime(credential.revokedAtUtc)}</time></small>}</div>
-              {!credential.revokedAtUtc && <Button type="button" disabled={action.pending !== null} onClick={() => {
+              {!credential.revokedAtUtc && <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== credential.id}
+                loading={action.pending === credential.id} loadingLabel="Revogando token de leitura" onClick={() => {
                 if (window.confirm(`Revogar o token de leitura de ${credential.gitHubOwner}? Os repositórios dela param de ser consultados até um novo token.`))
-                  void action.run(credential.id, () => methodApi.revokeReadCredential(projectId, credential.id), 'Token de leitura revogado.');
+                  return action.run(credential.id, () => methodApi.revokeReadCredential(projectId, credential.id), 'Token de leitura revogado.');
               }}>Revogar token</Button>}
             </div>
           </Row>)}
@@ -113,11 +115,11 @@ export function RepositoriesPanel({ projectId }: { projectId: string }) {
           {pollOwner && !ownerHasToken ? `Cadastre antes o token de leitura da organização ${pollOwner} (acima).`
             : 'O Prisma lê o repositório com o token da organização para confirmar o acesso e passa a consultá-lo de hora em hora.'}
         </Hint>}
-        <Actions><Button $primary type="submit">{action.pending === 'register' ? 'Conectando...' : 'Conectar repositório'}</Button></Actions>
+        <Actions><Button as={ActionButton} $primary type="submit" loading={action.pending === 'register'} loadingLabel="Conectando repositório">Conectar repositório</Button></Actions>
       </fieldset>
     </Form>
     {repositories.isPending ? <Hint role="status">Carregando repositórios...</Hint> : repositories.isError ? <Feedback role="alert">
-      {repositories.error.message} <Button type="button" onClick={() => void repositories.refetch()}>Tentar novamente</Button>
+      {repositories.error.message} <Button as={ActionButton} type="button" loadingLabel="Carregando repositórios" onClick={() => repositories.refetch()}>Tentar novamente</Button>
     </Feedback> : repositories.data.length === 0 ? <Hint>Nenhum repositório conectado.</Hint> : <List aria-label="Repositórios conectados">
       {repositories.data.map(repository => <RepositoryRow key={repository.id} projectId={projectId} repository={repository} action={action}
         onCopy={setCopyMessage} />)}
@@ -146,9 +148,10 @@ function RepositoryRow({ projectId, repository, action, onCopy }: {
         : 'nenhuma consulta com sucesso ainda'}</small>
         : <small>App {repository.appId} · Instalação {repository.installationId}</small>}</div>
       <Actions style={{ gridColumn: 'auto' }}>
-        {poll && repository.enabled && <Button type="button" disabled={action.pending !== null} onClick={() => void pollNow()}>
-          {action.pending === `poll:${repository.id}` ? 'Consultando...' : 'Consultar agora'}</Button>}
-        <Button type="button" disabled={action.pending !== null} onClick={() => void action.run(repository.id,
+        {poll && repository.enabled && <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== `poll:${repository.id}`}
+          loading={action.pending === `poll:${repository.id}`} loadingLabel="Consultando o GitHub" onClick={() => pollNow()}>Consultar agora</Button>}
+        <Button as={ActionButton} type="button" disabled={action.pending !== null && action.pending !== repository.id} loading={action.pending === repository.id}
+          loadingLabel={repository.enabled ? 'Pausando integração' : 'Reativando integração'} onClick={() => action.run(repository.id,
           () => methodApi.updateRepository(projectId, repository.id, !repository.enabled), repository.enabled ? 'Integração pausada.' : 'Integração reativada.')}>
           {repository.enabled ? 'Pausar integração' : 'Reativar integração'}</Button>
       </Actions>

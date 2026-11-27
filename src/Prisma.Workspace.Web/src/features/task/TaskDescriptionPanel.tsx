@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Pencil } from 'lucide-react';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 
 interface Props {
@@ -144,7 +145,7 @@ export const TaskDescriptionPanel: React.FC<Props> = ({ workItemId, description,
           placeholder="Descreva a tarefa... (use **negrito**, *itálico*, e - para listas)"
         />
         <Row>
-          <Save type="button" onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Save>
+          <Save as={ActionButton} type="button" loading={saving} loadingLabel="Salvando descrição" onClick={save}>Salvar</Save>
           <Cancel type="button" onClick={() => { setValue(description ?? ''); setEditing(false); }}>Cancelar</Cancel>
           <Hint>Suporta **negrito**, *itálico* e listas com &quot;- &quot;</Hint>
         </Row>

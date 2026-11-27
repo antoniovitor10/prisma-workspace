@@ -70,7 +70,8 @@ export interface MethodCommentDto { id: string; workItemId: string; text: string
 export interface MethodPullRequestLinkDto { id: string; workItemId: string; url: string | null; source: string; }
 
 export class PrismaApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  /** `code` do problem+json (ex.: method_document_version_conflict), quando a API manda. */
+  constructor(public readonly status: number, message: string, public readonly code?: string) {
     super(`Prisma HTTP ${status}: ${message}`);
     this.name = 'PrismaApiError';
   }
@@ -147,6 +148,7 @@ export class PrismaApi {
       throw new Error('Não foi possível conectar ao Prisma no prazo. Confira PRISMA_URL e a disponibilidade da API.');
     }
     if (!response.ok) {
+      let code: string | undefined;
       let message = ({ 400: 'Requisição inválida.', 401: 'Autenticação inválida ou expirada.',
         403: 'Sem permissão para esta operação.', 404: 'Registro não encontrado.',
         409: 'Conflito ao salvar o registro.', 429: 'Limite de requisições atingido. Tente novamente em instantes.' } as Record<number, string>)[response.status]
@@ -154,12 +156,13 @@ export class PrismaApi {
       // Erros de servidor não expõem stack trace, SQL ou configuração da instalação.
       if (response.status < 500) {
         try {
-          const problem = await response.json() as { detail?: string; title?: string; errors?: Record<string, string[]> };
+          const problem = await response.json() as { detail?: string; title?: string; code?: string; errors?: Record<string, string[]> };
+          if (typeof problem.code === 'string' && /^[a-z0-9_]{1,80}$/.test(problem.code)) code = problem.code;
           const details = problem.errors ? Object.values(problem.errors).flat().filter(x => typeof x === 'string').join(' ') : '';
           message = details || problem.detail || problem.title || message;
         } catch { /* Resposta não estruturada: mantém a mensagem segura. */ }
       }
-      throw new PrismaApiError(response.status, this.redact(message) + ([401, 403].includes(response.status) ? ' Pare e avise; confira o token e as permissões com o administrador.' : ''));
+      throw new PrismaApiError(response.status, this.redact(message) + ([401, 403].includes(response.status) ? ' Pare e avise; confira o token e as permissões com o administrador.' : ''), code);
     }
     if (response.status === 204) return undefined as T;
     const text = await response.text();
@@ -210,6 +213,15 @@ export class PrismaApi {
 
   async linkMethodBranch(id: string, repository: string, branch: string): Promise<MethodGitLinkDto> {
     return this.request(await this.methodPath(`/tasks/${encodeURIComponent(id)}/branches`), 'POST', { repository, branch });
+  }
+
+  /** Rota do método no projeto do token; o cliente de documentos (T-0023) fica em documents.ts. */
+  async methodRequest<T>(suffix: string, method = 'GET', body?: unknown): Promise<T> {
+    return this.request(await this.methodPath(suffix), method, body);
+  }
+  /** Comentários do card (rota legada, só leitura); usada pelo retrato antes/depois da T-0025. */
+  async getWorkItemComments(id: string): Promise<CommentDto[]> {
+    return this.request(`/api/WorkItems/${encodeURIComponent(id)}/comments`);
   }
 
   // Somente dependências ainda usam as rotas legadas, sempre com escopo e permissão da API.

@@ -84,7 +84,7 @@ public sealed class GitPullRequestOperations(IMethodGitStore store, IGitProvider
         if (methodId.Length is < 6 or > 32 || !methodId.StartsWith("T-", StringComparison.Ordinal)
             || !methodId[2..].All(char.IsAsciiDigit)) throw new MethodOperationException(400, "invalid_method_task_id", "ID da task inválido; use T-0001.");
         var tasks = await store.FindTasksAsync(projectId, methodId, ct);
-        if (tasks.Count != 1 || !tasks[0].IsTopLevel || tasks[0].IsArchived) throw new MethodOperationException(409, "ambiguous_method_task", "Task ausente, ambígua ou fora do método.");
+        if (tasks.Count != 1 || !tasks[0].IsMethodEligible || tasks[0].IsArchived) throw new MethodOperationException(409, "ambiguous_method_task", "Task ausente, ambígua ou fora do método.");
         return tasks[0];
     }
     private async Task EnsureLinkPermission(Guid id, string actorId, CancellationToken ct)

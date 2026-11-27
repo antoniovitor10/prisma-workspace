@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from 'react';
+import { ActionButton } from '../../components/ActionButton';
 import { api } from '../../services/api';
 import { resolveUserDisplayLabel, userDisplayLabel } from '../../utils/userDisplayName';
 
@@ -80,12 +81,13 @@ export const TaskApprovalPanel: React.FC<Props> = ({ workItemId, users }) => {
             <option value="">Aprovador...</option>
             {users.map(u => <option key={u.id} value={u.id}>{userDisplayLabel(u)}</option>)}
           </select>
-          <button
+          <ActionButton
             type="button"
+            loadingLabel="Solicitando aprovação"
             onClick={request}
             disabled={!approverId}
             style={{ padding: '7px 10px', borderRadius: 6, background: approverId ? '#1E7BD7' : '#CBD5E1', color: '#fff', fontWeight: 700, fontSize: 14 }}
-          >Solicitar</button>
+          >Solicitar</ActionButton>
         </div>
       )}
       {hasPending && <span style={{ fontSize: 14, color: '#B45309' }}>Aguardando decisão do aprovador.</span>}

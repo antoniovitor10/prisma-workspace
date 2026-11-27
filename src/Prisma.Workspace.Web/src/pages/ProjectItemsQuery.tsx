@@ -35,6 +35,7 @@ import {
   type Segment,
   type SortBy,
 } from './ProjectItemsQuery.logic';
+import { ActionButton } from '../components/ActionButton';
 
 interface SavedFilterOption { id: string; name: string; filterJson: string; }
 const EMPTY_ITEMS: BacklogItem[] = [];
@@ -192,8 +193,8 @@ export function ProjectItemsQuery({ project }: { project: ProjectSummary }) {
       <SavedPanel aria-label="Consultas pessoais salvas">
         <strong><Bookmark size={13}/>Minhas consultas</strong>
         {!anchorBoardId && <span>Crie um quadro no projeto para salvar consultas pessoais.</span>}
-        {saving && <><input autoFocus aria-label="Nome da consulta" placeholder="Nome da consulta" value={saveName} onChange={event=>setSaveName(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&saveName.trim())saveMutation.mutate();}}/><Button $primary disabled={!saveName.trim()||saveMutation.isPending} onClick={()=>saveMutation.mutate()}>Salvar agora</Button></>}
-        {(savedQuery.data??[]).map(saved=><SavedChip key={saved.id}><button onClick={()=>loadSaved(saved)}>{saved.name}</button><button aria-label={`Excluir consulta ${saved.name}`} onClick={()=>deleteMutation.mutate(saved.id)}><Trash2 size={12}/></button></SavedChip>)}
+        {saving && <><input autoFocus aria-label="Nome da consulta" placeholder="Nome da consulta" value={saveName} onChange={event=>setSaveName(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&saveName.trim())saveMutation.mutate();}}/><Button as={ActionButton} $primary disabled={!saveName.trim()} loading={saveMutation.isPending} loadingLabel="Salvando consulta" onClick={()=>saveMutation.mutate()}>Salvar agora</Button></>}
+        {(savedQuery.data??[]).map(saved=><SavedChip key={saved.id}><button onClick={()=>loadSaved(saved)}>{saved.name}</button><ActionButton aria-label={`Excluir consulta ${saved.name}`} loading={deleteMutation.isPending&&deleteMutation.variables===saved.id} loadingLabel={`Excluindo consulta ${saved.name}`} onClick={()=>deleteMutation.mutate(saved.id)}><Trash2 size={12}/></ActionButton></SavedChip>)}
         {anchorBoardId&&!savedQuery.isLoading&&(savedQuery.data?.length??0)===0&&!saving&&<span>Nenhuma consulta salva ainda.</span>}
       </SavedPanel>
 

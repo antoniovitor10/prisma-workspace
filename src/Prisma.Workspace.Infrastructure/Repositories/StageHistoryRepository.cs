@@ -1,5 +1,6 @@
 using Prisma.Workspace.Application.Interfaces;
 using Prisma.Workspace.Domain.Entities;
+using Prisma.Workspace.Domain.Services;
 using Prisma.Workspace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,10 +20,16 @@ public class StageHistoryRepository : IStageHistoryRepository
 
     public async Task<IReadOnlyList<StageHistory>> GetByBoardIdAsync(Guid boardId, CancellationToken cancellationToken = default)
     {
+        // Lead time conta os mesmos cards que o quadro mostra (regra única de visibilidade).
+        var cards = _context.WorkItems
+            .Where(w => w.BoardId == boardId)
+            .Where(WorkItemBoardVisibility.IsBoardCardExpression)
+            .Select(w => w.Id);
+
         return await _context.StageHistories
             .AsNoTracking()
             .Include(h => h.Stage)
-            .Where(h => h.WorkItem.BoardId == boardId)
+            .Where(h => h.WorkItem.BoardId == boardId && cards.Contains(h.WorkItemId))
             .ToListAsync(cancellationToken);
     }
 }

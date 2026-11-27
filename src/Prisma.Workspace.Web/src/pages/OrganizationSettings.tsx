@@ -9,6 +9,7 @@ import { api } from '../services/api';
 import { AuditLogPanel } from '../features/audit/AuditLogPanel';
 import { WorkflowTemplatesPanel } from '../features/organizations/WorkflowTemplatesPanel';
 import { HeaderLead, Page, PageHeader, PrimaryAction } from '../components/PageLayout';
+import { ActionButton } from '../components/ActionButton';
 import { HelpButton } from '../features/help/HelpPanel';
 
 const roles = [
@@ -209,7 +210,7 @@ export function OrganizationSettings() {
           <label>Idioma<select aria-label="Idioma" disabled={!canAdmin} value={form.locale} onChange={event => setForm({...form, locale: event.target.value})}><option value="pt-BR">Português (Brasil)</option><option value="en-US">English (US)</option></select></label>
           <label>Fuso horário<input disabled={!canAdmin} value={form.timeZone} onChange={event => setForm({...form, timeZone: event.target.value})}/></label>
           <label>Início da semana<select aria-label="Início da semana" disabled={!canAdmin} value={form.weekStartDay} onChange={event => setForm({...form, weekStartDay: Number(event.target.value)})}><option value={1}>Segunda-feira</option><option value={0}>Domingo</option></select></label>
-          <footer>{saveOrganization.error && <small>{(saveOrganization.error as Error).message}</small>}{canAdmin && <Button disabled={saveOrganization.isPending}><Check size={14}/>Salvar preferências</Button>}</footer>
+          <footer>{saveOrganization.error && <small>{(saveOrganization.error as Error).message}</small>}{canAdmin && <Button as={ActionButton} type="submit" loading={saveOrganization.isPending} loadingLabel="Salvando preferências"><Check size={14}/>Salvar preferências</Button>}</footer>
         </Form>
       </Section>
 
@@ -231,7 +232,7 @@ export function OrganizationSettings() {
         {canManageMembers && <Invite onSubmit={submitInvite}>
           <label>E-mail<input required type="email" value={invite.email} onChange={event => setInvite({...invite,email:event.target.value})} placeholder="pessoa@empresa.com"/></label>
           <label>Perfil<select aria-label="Perfil do convite" value={invite.role} onChange={event => setInvite({...invite,role:Number(event.target.value)})}>{roles.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-          <footer>{sendInvite.error && <small>{(sendInvite.error as Error).message}</small>}<Button disabled={sendInvite.isPending}><Mail size={14}/>Gerar convite</Button></footer>
+          <footer>{sendInvite.error && <small>{(sendInvite.error as Error).message}</small>}<Button as={ActionButton} type="submit" loading={sendInvite.isPending} loadingLabel="Gerando convite"><Mail size={14}/>Gerar convite</Button></footer>
           {inviteLink && <InviteResult>
             <UserRoundCheck size={15}/>
             <code>{inviteLink}</code>
@@ -252,9 +253,9 @@ export function OrganizationSettings() {
           <label>ID do recurso<input disabled={grant.scope === 1} required={grant.scope !== 1} value={grant.scopeId} onChange={event => setGrant({...grant,scopeId:event.target.value})} placeholder="UUID"/></label>
           <label>Permissão<select aria-label="Permissão específica" value={grant.permission} onChange={event => setGrant({...grant,permission:Number(event.target.value)})}>{permissions.map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select></label>
           <label>Decisão<select aria-label="Decisão da permissão" value={grant.isAllowed ? 'allow':'deny'} onChange={event => setGrant({...grant,isAllowed:event.target.value==='allow'})}><option value="allow">Permitir</option><option value="deny">Negar</option></select></label>
-          <footer><Button disabled={saveGrant.isPending}>Aplicar</Button></footer>
+          <footer><Button as={ActionButton} type="submit" loading={saveGrant.isPending} loadingLabel="Aplicando permissão">Aplicar</Button></footer>
         </GrantForm>
-        {grantsQuery.data?.length ? grantsQuery.data.map(item => <GrantRow key={item.id}><span>{membersQuery.data?.find(member => member.userId === item.userId)?.name ?? item.userId}</span><span>{scopeLabel(item.scope)}</span><span>{permissionLabel(item.permission)}</span><strong>{item.isAllowed ? 'Permitido':'Negado'}</strong><button onClick={() => deleteGrant.mutate(item.id)} aria-label="Remover permissão">×</button></GrantRow>) : <Empty>Nenhuma exceção cadastrada. Os perfis-base estão em uso.</Empty>}
+        {grantsQuery.data?.length ? grantsQuery.data.map(item => <GrantRow key={item.id}><span>{membersQuery.data?.find(member => member.userId === item.userId)?.name ?? item.userId}</span><span>{scopeLabel(item.scope)}</span><span>{permissionLabel(item.permission)}</span><strong>{item.isAllowed ? 'Permitido':'Negado'}</strong><ActionButton onClick={() => deleteGrant.mutate(item.id)} loading={deleteGrant.isPending && deleteGrant.variables === item.id} loadingLabel="Removendo permissão" aria-label="Remover permissão">×</ActionButton></GrantRow>) : <Empty>Nenhuma exceção cadastrada. Os perfis-base estão em uso.</Empty>}
       </Wide>}
       <div style={{gridColumn:'1/-1'}}><WorkflowTemplatesPanel organizationId={current.id} canManage={canAdmin}/></div>
       {canAdmin&&<div style={{gridColumn:'1/-1'}}><AuditLogPanel/></div>}

@@ -58,7 +58,8 @@ export class TaskService {
   }
   async criarTask(input: CreateTaskInput): Promise<MethodTask> {
     requireTaskId(input.id);
-    if (!/^HU-\d{4,}$/.test(input.hu)) throw new Error('HU inválida. Use HU-0001.');
+    // `avulsa`: a API põe a Tarefa sob a História AVULSAS (T-0021); HU-XXXX: sob a História, se existir.
+    if (!/^(HU-\d{4,}|avulsa)$/.test(input.hu)) throw new Error('HU inválida. Use HU-0001 ou avulsa.');
     if (input.risco !== 'normal' && input.risco !== 'alto') throw new Error('Risco deve ser normal ou alto.');
     const identity = await this.api.initialize();
     const status = input.status ?? 'backlog';

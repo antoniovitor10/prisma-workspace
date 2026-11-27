@@ -1,4 +1,7 @@
 import type { ExternalForm, ExternalRequestTriageInput } from '../types/portal';
+import type {
+  MethodDocument, MethodDocumentRevision, MethodDocumentSummary, SaveMethodDocumentInput, UpdateMethodDocumentHeaderInput,
+} from '../types/methodDocuments';
 
 /**
  * Base das chamadas à API.
@@ -75,6 +78,26 @@ async function readSetupResponse<T>(response: Response): Promise<T> {
     error?.detail ?? validationMessage ?? error?.title ?? 'Não foi possível concluir a configuração.',
   );
 }
+
+/**
+ * Erro de uma chamada da API com o status HTTP e o `code` do problem+json, quando houver.
+ * Continua sendo um `Error` com a mesma mensagem de antes: quem só lê `message` não muda.
+ */
+export class ApiRequestError extends Error {
+  public readonly status: number;
+  public readonly code: string | null;
+
+  constructor(status: number, code: string | null, message: string) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/** Chave do documento do método na URL: cada segmento codificado ('HU-0001/prd' vira '.../HU-0001/prd'). */
+const methodDocumentPath = (projectId: string, key: string) =>
+  `/api/projects/${encodeURIComponent(projectId)}/method/documents/${key.split('/').map(encodeURIComponent).join('/')}`;
 
 const isJwt = (token: string) => token.split('.').length === 3;
 
@@ -186,7 +209,11 @@ export const api = {
       const validationMessage = errorJson?.errors
         ? (Object.values(errorJson.errors).flat().find(value => typeof value === 'string') as string | undefined)
         : undefined;
-      throw new Error(errorJson?.detail || validationMessage || errorJson?.title || 'Erro na requisição.');
+      throw new ApiRequestError(
+        response.status,
+        typeof errorJson?.code === 'string' ? errorJson.code : null,
+        errorJson?.detail || validationMessage || errorJson?.title || 'Erro na requisição.',
+      );
     }
 
     if (response.status === 204) return null;
@@ -1394,5 +1421,31 @@ export const api = {
   },
   async removeProjectTeam(projectId: string, teamId: string) {
     return this.request(`/api/projects/${projectId}/teams/${teamId}`, { method: 'DELETE' });
+  },
+
+  // Documentos do método (HU-0008): só a sessão humana da SPA, nunca o token do método.
+  async getMethodDocuments(projectId: string, options: { workItemId?: string; since?: string } = {}): Promise<MethodDocumentSummary[]> {
+    const params = new URLSearchParams();
+    if (options.since) params.set('desde', options.since);
+    if (options.workItemId) params.set('workItemId', options.workItemId);
+    const query = params.toString();
+    return this.request(`/api/projects/${encodeURIComponent(projectId)}/method/documents${query ? `?${query}` : ''}`);
+  },
+  async getMethodDocument(projectId: string, key: string): Promise<MethodDocument> {
+    return this.request(methodDocumentPath(projectId, key));
+  },
+  async getMethodDocumentRevisions(projectId: string, key: string): Promise<MethodDocumentRevision[]> {
+    return this.request(`${methodDocumentPath(projectId, key)}/revisions`);
+  },
+  async getMethodDocumentRevision(projectId: string, key: string, version: number): Promise<MethodDocumentRevision> {
+    return this.request(`${methodDocumentPath(projectId, key)}/revisions/${encodeURIComponent(String(version))}`);
+  },
+  async saveMethodDocument(projectId: string, key: string, input: SaveMethodDocumentInput): Promise<MethodDocument> {
+    return this.request(methodDocumentPath(projectId, key), {
+      method: 'PUT', body: JSON.stringify({ content: input.content, baseVersion: input.baseVersion })
+    });
+  },
+  async updateMethodDocumentHeader(projectId: string, key: string, input: UpdateMethodDocumentHeaderInput): Promise<MethodDocument> {
+    return this.request(`${methodDocumentPath(projectId, key)}/header`, { method: 'PATCH', body: JSON.stringify(input) });
   }
 };

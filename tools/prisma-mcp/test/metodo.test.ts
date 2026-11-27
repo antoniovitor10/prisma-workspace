@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readMetodo, parseFrontmatter } from '../src/metodo.js';
+import { readMetodo, parseFrontmatter, scanMetodoDocuments } from '../src/metodo.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURE = join(here, 'fixtures', 'trabalho');
@@ -123,4 +123,46 @@ test('parseFrontmatter recusa documento sem frontmatter ou com YAML quebrado', (
   assert.throws(() => parseFrontmatter('# sem frontmatter\n', 'x.md'), /x\.md/);
   assert.throws(() => parseFrontmatter('---\nid: [aberto\n---\n', 'y.md'), /y\.md/);
   assert.deepEqual(parseFrontmatter('---\nid: T-0001\n---\ncorpo').metadata, { id: 'T-0001' });
+});
+
+// T-0023: épicos, PRDs e avulsas.
+test('readMetodo lê epicos/, prd.md e avulsas/tasks (hu: avulsa)', async () => {
+  const dir = await copiaFixture();
+  try {
+    await mkdir(join(dir, 'epicos'), { recursive: true });
+    await mkdir(join(dir, 'avulsas', 'tasks'), { recursive: true });
+    await writeFile(join(dir, 'epicos', 'EPIC-0001-x.md'), '---\nid: EPIC-0001\ntitulo: "Épico"\nstatus: aberta\n---\n\n# EPIC-0001\n');
+    await writeFile(join(dir, 'avulsas', 'tasks', 'T-0015-x.md'), '---\nid: T-0015\ntitulo: "Avulsa"\nhu: avulsa\ndepende_de: [T-9001]\n---\n\n# T-0015\n');
+    await writeFile(join(dir, 'HU-9001-exemplo-teste', 'prd.md'), '---\nhu: HU-9001\n---\n\n# PRD\n');
+    const hu = join(dir, 'HU-9001-exemplo-teste', 'hu.md');
+    await writeFile(hu, (await readFile(hu, 'utf8')).replace('id: HU-9001', 'id: HU-9001\nepico: EPIC-0001'));
+    const metodo = await readMetodo(dir);
+    assert.deepEqual(metodo.epicos.map(e => [e.id, e.status, e.arquivo]), [['EPIC-0001', 'aberta', 'docs/trabalho/epicos/EPIC-0001-x.md']]);
+    assert.deepEqual(metodo.prds.map(p => [p.hu, p.arquivo]), [['HU-9001', 'docs/trabalho/HU-9001-exemplo-teste/prd.md']]);
+    assert.equal(metodo.hus[0].epico, 'EPIC-0001');
+    const avulsa = metodo.tasks.find(t => t.id === 'T-0015');
+    assert.deepEqual([avulsa?.hu, avulsa?.arquivo, avulsa?.depende_de], ['avulsa', 'docs/trabalho/avulsas/tasks/T-0015-x.md', ['T-9001']]);
+    const scan = await scanMetodoDocuments(dir);
+    assert.deepEqual(scan.documents.map(d => [d.key, d.kind, d.parentKey]), [
+      ['EPIC-0001', 'epic', null], ['HU-9001', 'hu', 'EPIC-0001'], ['HU-9001/prd', 'prd', 'HU-9001'],
+      ['T-0015', 'task', 'AVULSAS'], ['T-9001', 'task', 'HU-9001'], ['T-9002', 'task', 'HU-9001'], ['T-9003', 'task', 'HU-9001'],
+    ]);
+    assert.deepEqual(scan.erros, []);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('recusa task em avulsas/ sem hu: avulsa e HU com épico que não existe; a varredura só lista o erro', async () => {
+  const dir = await copiaFixture();
+  try {
+    await mkdir(join(dir, 'avulsas', 'tasks'), { recursive: true });
+    await writeFile(join(dir, 'avulsas', 'tasks', 'T-0016-x.md'), '---\nid: T-0016\ntitulo: "x"\nhu: HU-9001\n---\n');
+    await assert.rejects(readMetodo(dir), /avulsa/);
+    const scan = await scanMetodoDocuments(dir);
+    assert.ok(!scan.documents.some(d => d.key === 'T-0016'));
+    assert.match(scan.erros[0].erro, /T-0016/);
+    await rm(join(dir, 'avulsas'), { recursive: true });
+    const hu = join(dir, 'HU-9001-exemplo-teste', 'hu.md');
+    await writeFile(hu, (await readFile(hu, 'utf8')).replace('id: HU-9001', 'id: HU-9001\nepico: EPIC-0042'));
+    await assert.rejects(readMetodo(dir), /EPIC-0042/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

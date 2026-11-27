@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { api } from '../../services/api';
@@ -68,4 +68,52 @@ it('não grava scroll temporário enquanto a lista carrega e só persiste após 
   cleanup();vi.unstubAllGlobals();window.history.replaceState({},'',originalUrl);
   if(originalScroll)Object.defineProperty(window,'scrollY',originalScroll);
  }
+});
+
+// Digita como o navegador: cada tecla parte do valor atual do campo e dispara o evento
+// de entrada sem esperar o React Router aplicar a URL (T-0016).
+function typeFast(input:HTMLInputElement,text:string){
+ const setValue=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!;
+ act(()=>{for(const char of text){setValue.call(input,input.value+char);input.dispatchEvent(new Event('input',{bubbles:true}));}});
+}
+it('guarda todas as letras digitadas em sequência imediata e leva a busca para a URL ao parar',async()=>{
+ show('');
+ await screen.findByRole('textbox',{name:'Título de História principal'});
+ const search=screen.getByRole('textbox',{name:'Pesquisar backlog'}) as HTMLInputElement;
+ typeFast(search,'Tarefa');
+ expect(search).toHaveValue('Tarefa');
+ await waitFor(()=>expect(screen.getByLabelText('Endereço')).toHaveTextContent('bl.q=Tarefa'));
+ expect(search).toHaveValue('Tarefa');
+ expect(screen.getByRole('textbox',{name:'Título de Tarefa filha'})).toBeInTheDocument();
+});
+function History(){const navigate=useNavigate();return <><button onClick={()=>navigate(-1)}>Voltar</button><button onClick={()=>navigate(1)}>Avançar</button></>;}
+it('acompanha voltar e avançar do navegador e "Limpar filtros", mesmo com digitação pendente',async()=>{
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+ const base='/projects/project-1/backlog';
+ render(<MemoryRouter initialEntries={[`${base}?bl.q=História`,`${base}?bl.q=Tarefa`]} initialIndex={1}><ThemeProvider theme={theme}><QueryClientProvider client={client}><Location/><History/><BacklogPlanner project={project}/></QueryClientProvider></ThemeProvider></MemoryRouter>);
+ await screen.findByRole('textbox',{name:'Título de Tarefa filha'});
+ const search=screen.getByRole('textbox',{name:'Pesquisar backlog'}) as HTMLInputElement;
+ expect(search).toHaveValue('Tarefa');
+ fireEvent.click(screen.getByRole('button',{name:'Voltar'}));
+ await waitFor(()=>expect(search).toHaveValue('História'));
+ expect(screen.getByLabelText('Endereço')).toHaveTextContent('bl.q=Hist');
+ fireEvent.click(screen.getByRole('button',{name:'Avançar'}));
+ await waitFor(()=>expect(search).toHaveValue('Tarefa'));
+ typeFast(search,' filha');
+ expect(search).toHaveValue('Tarefa filha');
+ fireEvent.click(screen.getByRole('button',{name:'Limpar filtros'}));
+ await waitFor(()=>expect(screen.getByLabelText('Endereço')).not.toHaveTextContent('bl.q'));
+ expect(search).toHaveValue('');
+ // A digitação descartada pelo "Limpar filtros" não volta quando o prazo do envio passa.
+ await act(async()=>{await new Promise(resolve=>setTimeout(resolve,450));});
+ expect(search).toHaveValue('');
+ expect(screen.getByLabelText('Endereço')).not.toHaveTextContent('bl.q');
+});
+it('envia a busca para a URL ao sair do campo, sem esperar o prazo',async()=>{
+ show('');
+ await screen.findByRole('textbox',{name:'Título de História principal'});
+ const search=screen.getByRole('textbox',{name:'Pesquisar backlog'}) as HTMLInputElement;
+ typeFast(search,'Card');
+ fireEvent.blur(search);
+ await waitFor(()=>expect(screen.getByLabelText('Endereço')).toHaveTextContent('bl.q=Card'));
 });

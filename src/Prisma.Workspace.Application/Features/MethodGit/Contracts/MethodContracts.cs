@@ -30,7 +30,7 @@ public sealed record MethodTaskSnapshot(
     Guid? ActiveAuthorizationEventId, DateTimeOffset? AuthorizedAtUtc,
     DateTimeOffset? LastInteractiveChangeAtUtc, Guid? BlockingEventId,
     Guid? BlockingPrincipalId, string? BlockingOriginStatusCode, Guid? ResumeApprovalEventId,
-    bool IsTopLevel, bool IsArchived, byte[] RowVersion, DateTimeOffset? LastManualChangeAtUtc = null);
+    bool IsMethodEligible, bool IsArchived, byte[] RowVersion, DateTimeOffset? LastManualChangeAtUtc = null);
 
 public sealed record MethodMutation(
     Guid ProjectId, Guid BoardId, Guid? WorkItemId, Guid? FromStageId, Guid? ToStageId,

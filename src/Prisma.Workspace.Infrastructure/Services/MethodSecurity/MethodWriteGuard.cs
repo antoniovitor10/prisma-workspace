@@ -28,7 +28,7 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
         var pending = db.ChangeTracker.Entries().Where(Changed).ToArray();
         if (pending.Any(x => x.Entity is MethodProjectSettings or MethodStageMapping or MethodPrincipal or MethodApiToken
             or MethodTaskState or MethodAuthorizationEvent or GitAppliedFact or GitWebhookDelivery
-            or GitRepositoryIntegration or GitPullRequestObservation or TaskGitLink or GitReadCredential)) return true;
+            or GitRepositoryIntegration or GitPullRequestObservation or TaskGitLink or GitReadCredential or MethodDocumentRevision)) return true;
 
         var projects = new HashSet<Guid>();
         var boards = new HashSet<Guid>();
@@ -69,7 +69,7 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
         _settings.Clear();
         db.ChangeTracker.DetectChanges();
         var pending = db.ChangeTracker.Entries().Where(Changed).ToArray();
-        if (pending.Any(x => x.Entity is MethodAuthorizationEvent or GitAppliedFact
+        if (pending.Any(x => x.Entity is MethodAuthorizationEvent or GitAppliedFact or MethodDocumentRevision
             && x.State is EntityState.Modified or EntityState.Deleted))
             throw Denied("method_history_immutable", "As provas do método são permanentes e não podem ser alteradas ou apagadas.");
         if (IsMethodActor) await ValidateScopeAsync(pending, ct);
@@ -127,9 +127,21 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
                         throw Denied("structured_pr_required", "Vincule o PR pela operação dedicada para preservar o vínculo estruturado.");
                 }
             }
+            // HU-0008 (D7, ADR-0106): religar a task de topo (ou de uma História do método) a uma História do método
+            // no mesmo quadro não é troca de identidade; qualquer outra mudança de pai continua sendo.
+            var parentChanged = stored is not null && stored.ParentId != item.ParentId;
+            var relink = parentChanged && stored!.BoardId == item.BoardId && stored.IsArchived == item.IsArchived
+                && item.ParentId is { } newParent
+                && await MethodEligibility.HasEligibleParentAsync(db, stored.ParentId, item.BoardId, ct)
+                && await MethodEligibility.IsMethodStoryAsync(db, newParent, item.BoardId, ct);
             var identityChanged = fields.Any(x => ((WorkItemCustomFieldValue)x.Entity).FieldDefinitionId == settings.MethodIdFieldId
                     && (x.State is EntityState.Added or EntityState.Deleted || x.Property(nameof(WorkItemCustomFieldValue.Value)).IsModified))
-                || stored is not null && (stored.BoardId != item.BoardId || stored.ParentId != item.ParentId || stored.IsArchived != item.IsArchived);
+                || stored is not null && (stored.BoardId != item.BoardId || parentChanged && !relink || stored.IsArchived != item.IsArchived);
+            // Épico e História do método: sem coluna, sem ID T-, fora da matriz de transições (HU-0008, T-0020).
+            var planningItem = settings.BoardId == destination.Id && item.StageId is null && !IsMethodTaskId(currentId)
+                && item.Kind is WorkItemKind.Epic or WorkItemKind.UserStory
+                && (item.ParentId is null || item.Kind == WorkItemKind.UserStory
+                    && await IsMethodEpicAsync(item.ParentId.Value, destination.Id, ct));
             var writesStage = created || entry.Property(x => x.StageId).IsModified && stored!.StageId != item.StageId
                 || stored is not null && stored.BoardId != item.BoardId;
             if (!created && entry.Property(x => x.StageId).IsModified
@@ -139,7 +151,15 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
                 && entry.Property(x => x.StageId).OriginalValue != stored!.StageId) throw Conflict();
             if (!created && entry.Property(x => x.BoardId).OriginalValue != stored!.BoardId) throw Conflict();
             var reason = Reason(item.Id);
-            if (created || writesStage || identityChanged)
+            if (planningItem && IsMethodActor && (created || writesStage || identityChanged))
+            {
+                // Permissões efetivas (Create/Edit) já foram exigidas em ValidateScopeAsync; o sistema não cria itens.
+                if (organization is null || organization.OrganizationId != Actor!.OrganizationId || access is null)
+                    throw Denied("method_tenant_scope", "Organização inválida para a credencial.");
+                if (Actor.Role == MethodRole.System)
+                    throw Denied("system_cannot_create", "O sistema de integração não cria nem reorganiza itens de planejamento.");
+            }
+            else if (created || writesStage || identityChanged)
             {
                 if (IsMethodActor)
                 {
@@ -150,8 +170,9 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
                     await policy.EnsureAllowedAsync(new MethodMutation(source.ProjectId, source.Id, item.Id, stored?.StageId,
                         item.StageId, reason, created, identityChanged, destination.ProjectId, destination.Id,
                         db.MethodExecution?.Request.GitFact), ct);
-                    if (Actor.Role != MethodRole.Human && created && item.ParentId is not null)
-                        throw Denied("method_top_level", "Tasks do método devem ser itens de topo.");
+                    if (Actor.Role != MethodRole.Human && created && item.ParentId is { } parentId
+                        && !await MethodEligibility.IsMethodStoryAsync(db, parentId, destination.Id, ct))
+                        throw Denied("method_top_level", "Tasks do método devem ser itens de topo ou filhas de uma História do método.");
                 }
                 else if (Actor?.IsInteractiveHuman != true && settings.Enabled
                     && settings.StageMappings.Any(x => x.StatusCode == MethodStatusCodes.InDevelopment && x.StageId == item.StageId)
@@ -336,6 +357,23 @@ internal sealed class MethodWriteGuard(AppDbContext db, IOrganizationContext? or
             catch (JsonException) { }
         }
         return string.Empty;
+    }
+
+    private static bool IsMethodTaskId(string? id)
+        => id is { Length: >= 6 and <= 32 } && id.StartsWith("T-", StringComparison.Ordinal) && id[2..].All(char.IsAsciiDigit);
+
+    /// <summary>Épico do método: Epic com documento Epic no mesmo quadro (inclui o que está pendente na gravação).</summary>
+    private async Task<bool> IsMethodEpicAsync(Guid epicId, Guid boardId, CancellationToken ct)
+    {
+        var local = db.WorkItems.Local.SingleOrDefault(x => x.Id == epicId);
+        var epic = local is not null ? new { local.Kind, local.BoardId, local.IsArchived }
+            : await db.WorkItems.IgnoreQueryFilters().AsNoTracking().Where(x => x.Id == epicId)
+                .Select(x => new { x.Kind, x.BoardId, x.IsArchived }).SingleOrDefaultAsync(ct);
+        if (epic is null || epic.Kind != WorkItemKind.Epic || epic.BoardId != boardId || epic.IsArchived) return false;
+        return db.ChangeTracker.Entries<MethodDocument>().Any(x => x.State != EntityState.Deleted
+                && x.Entity.WorkItemId == epicId && x.Entity.Kind == MethodDocumentKind.Epic)
+            || await db.Set<MethodDocument>().IgnoreQueryFilters().AsNoTracking()
+                .AnyAsync(x => x.WorkItemId == epicId && x.Kind == MethodDocumentKind.Epic, ct);
     }
 
     internal static bool Changed(EntityEntry entry) => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted;

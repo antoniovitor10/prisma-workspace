@@ -1799,6 +1799,143 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("char(64)");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MethodKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UpdatedByName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UpdatedVia")
+                        .IsRequired()
+                        .HasColumnType("varchar(8)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WorkItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "MethodKey")
+                        .IsUnique()
+                        .HasFilter("[MethodKey] IS NOT NULL");
+
+                    b.HasIndex("ProjectId", "UpdatedAtUtc");
+
+                    b.HasIndex("WorkItemId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("MethodDocuments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodDocuments_Kind", "[Kind] IN (1, 2, 3, 4)");
+
+                            t.HasCheckConstraint("CK_MethodDocuments_Via", "[UpdatedVia] IN ('ui', 'mcp')");
+                        });
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodDocumentRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AuthorUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("char(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Via")
+                        .IsRequired()
+                        .HasColumnType("varchar(8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("DocumentId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("MethodDocumentRevisions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MethodDocumentRevisions_Via", "[Via] IN ('ui', 'mcp')");
+                        });
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodPrincipal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4291,6 +4428,40 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodDocument", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.WorkItem", "WorkItem")
+                        .WithMany()
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("WorkItem");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodDocumentRevision", b =>
+                {
+                    b.HasOne("Prisma.Workspace.Domain.Entities.MethodDocument", "Document")
+                        .WithMany("Revisions")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Prisma.Workspace.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+                });
+
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodPrincipal", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
@@ -5069,6 +5240,11 @@ namespace Prisma.Workspace.Infrastructure.Persistence.Migrations
                     b.Navigation("Messages");
 
                     b.Navigation("TriageEvents");
+                });
+
+            modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodDocument", b =>
+                {
+                    b.Navigation("Revisions");
                 });
 
             modelBuilder.Entity("Prisma.Workspace.Domain.Entities.MethodProjectSettings", b =>

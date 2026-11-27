@@ -342,6 +342,20 @@ try
             var dbContext = services.GetRequiredService<Prisma.Workspace.Infrastructure.Persistence.AppDbContext>();
             var userManager = services.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser>>();
             await dbContext.Database.MigrateAsync();
+            // T-0019: correção dos itens que a edição transformou em Subtarefa. Desligada por padrão;
+            // "dry-run" só lista, "apply" corrige. A lista só tem identificadores (sem título nem nome).
+            var repairMode = Prisma.Workspace.Infrastructure.Services.WorkItems.WorkItemKindRepairRoutine
+                .ParseMode(app.Configuration["Maintenance:WorkItemKindRepair"]);
+            if (repairMode != Prisma.Workspace.Infrastructure.Services.WorkItems.WorkItemKindRepairMode.Off)
+            {
+                var repair = await new Prisma.Workspace.Infrastructure.Services.WorkItems.WorkItemKindRepairRoutine(dbContext)
+                    .RunAsync(repairMode == Prisma.Workspace.Infrastructure.Services.WorkItems.WorkItemKindRepairMode.Apply);
+                foreach (var entry in repair.Entries)
+                    Log.Warning("T-0019 {Mode}: item {WorkItemId} #{Number} org {OrganizationId} projeto {ProjectId} pai {ParentKind} {KindBefore}->{KindAfter} evento {SourceEventId} corrigido={Repaired} motivo={Reason}",
+                        repairMode, entry.WorkItemId, entry.Number, entry.OrganizationId, entry.ProjectId, entry.ParentKind,
+                        entry.KindBefore, entry.KindAfter, entry.SourceEventId, entry.Repaired && repair.Applied, entry.NotRepairedReason);
+                Log.Warning("T-0019 {Mode}: {Count} itens listados, {Repaired} corrigíveis.", repairMode, repair.Entries.Count, repair.RepairedCount);
+            }
             var demoEnabled = app.Configuration.GetValue<bool>("Seed:DemoEnabled");
             if (app.Environment.IsDevelopment() && demoEnabled)
             {

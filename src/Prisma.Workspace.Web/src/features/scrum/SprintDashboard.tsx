@@ -12,7 +12,6 @@ import {
   Gauge,
   History,
   ListTree,
-  LoaderCircle,
   Pencil,
   Plus,
   Target,
@@ -43,6 +42,7 @@ import { api } from '../../services/api';
 import type { BacklogItem, Sprint, Team, TeamMember } from '../../types/scrum';
 import { buildBurndown, buildVelocity, calculateNetCapacity, calculateSprintProgress } from '../../utils/scrumAnalytics';
 import type { ProjectSummary } from '../../pages/Projects';
+import { ActionButton } from '../../components/ActionButton';
 
 const SprintBacklogPanel = lazy(() => import('./SprintBacklogPanel'));
 const SprintHistoryPanel = lazy(() => import('./SprintHistoryPanel'));
@@ -743,7 +743,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
               <label>Meta<textarea placeholder="Qual resultado a equipe pretende alcançar?" {...register('goal')} /></label>
               <DateGrid><label>Início<input type="date" {...register('startDate')} /></label><label>Fim<input type="date" {...register('endDate')} /></label></DateGrid>
               {(errors.teamId || errors.name || errors.startDate || errors.endDate) && <FormError>{errors.teamId?.message || errors.name?.message || errors.startDate?.message || errors.endDate?.message}</FormError>}
-              <footer><Secondary type="button" onClick={() => setCreateOpen(false)}>Cancelar</Secondary><Primary type="submit" disabled={createMutation.isPending}>{createMutation.isPending ? <LoaderCircle size={14} /> : <CalendarDays size={14} />}Criar sprint</Primary></footer>
+              <footer><Secondary type="button" onClick={() => setCreateOpen(false)}>Cancelar</Secondary><Primary as={ActionButton} type="submit" loading={createMutation.isPending} loadingLabel="Criando sprint"><CalendarDays size={14} />Criar sprint</Primary></footer>
             </SprintForm>
           </DialogContent>
         </Dialog.Portal>
@@ -761,7 +761,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
               <label>Nome<input required maxLength={200} value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} /></label>
               <label>Meta<textarea maxLength={1000} value={editForm.goal} onChange={(event) => setEditForm({ ...editForm, goal: event.target.value })} /></label>
               <DateGrid><label>Início<input required type="date" value={editForm.startDate} onChange={(event) => setEditForm({ ...editForm, startDate: event.target.value })} /></label><label>Fim<input required type="date" min={editForm.startDate} value={editForm.endDate} onChange={(event) => setEditForm({ ...editForm, endDate: event.target.value })} /></label></DateGrid>
-              <footer><Secondary type="button" onClick={() => setEditOpen(false)}>Voltar</Secondary><Primary type="submit" disabled={updateMutation.isPending}><Pencil size={13} />Salvar sprint</Primary></footer>
+              <footer><Secondary type="button" onClick={() => setEditOpen(false)}>Voltar</Secondary><Primary as={ActionButton} type="submit" loading={updateMutation.isPending} loadingLabel="Salvando sprint"><Pencil size={13} />Salvar sprint</Primary></footer>
             </SprintForm>
           </DialogContent>
         </Dialog.Portal>
@@ -789,7 +789,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
                 <label><span><input type="radio" checked={incompleteItemsAction === 2} onChange={() => setIncompleteItemsAction(2)} /> Enviar para outra sprint</span></label>
                 {incompleteItemsAction === 2 && <label>Sprint de destino<select required value={targetSprintId} onChange={(event) => setTargetSprintId(event.target.value)}><option value="">Selecione...</option>{(sprintQuery.data ?? []).filter((sprint) => sprint.id !== selectedSprint?.id && sprint.status < 3).map((sprint) => <option key={sprint.id} value={sprint.id}>{sprint.name}</option>)}</select></label>}
               </>}
-              <footer><Secondary type="button" onClick={() => setLifecycleStatus(null)}>Voltar</Secondary><Primary type="submit" disabled={statusMutation.isPending || (unfinishedItemCount > 0 && incompleteItemsAction === 2 && !targetSprintId)}>{lifecycleStatus === 3 ? <CheckCircle2 size={13} /> : <Ban size={13} />}{lifecycleStatus === 3 ? 'Concluir' : 'Cancelar'}</Primary></footer>
+              <footer><Secondary type="button" onClick={() => setLifecycleStatus(null)}>Voltar</Secondary><Primary as={ActionButton} type="submit" loading={statusMutation.isPending} loadingLabel={lifecycleStatus === 3 ? 'Concluindo sprint' : 'Cancelando sprint'} disabled={unfinishedItemCount > 0 && incompleteItemsAction === 2 && !targetSprintId}>{lifecycleStatus === 3 ? <CheckCircle2 size={13} /> : <Ban size={13} />}{lifecycleStatus === 3 ? 'Concluir' : 'Cancelar'}</Primary></footer>
             </SprintForm>
           </DialogContent>
         </Dialog.Portal>
@@ -811,7 +811,7 @@ export function SprintDashboard({ project }: SprintDashboardProps) {
               </p>
               <footer>
                 <Secondary type="button" onClick={() => setDeleteOpen(false)}>Voltar</Secondary>
-                <Primary type="submit" disabled={deleteMutation.isPending}><Trash2 size={13} />Excluir</Primary>
+                <Primary as={ActionButton} type="submit" loading={deleteMutation.isPending} loadingLabel="Excluindo sprint"><Trash2 size={13} />Excluir</Primary>
               </footer>
             </SprintForm>
           </DialogContent>
