@@ -4,7 +4,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-export interface Requisicao { method: string; path: string; headers: IncomingMessage['headers']; body: string; }
+export interface Requisicao { method: string; path: string; headers: IncomingMessage['headers']; body: string; /** Caminho com a query. */ url?: string; }
 export type Resposta = { status?: number; json?: unknown; text?: string };
 export type Rota = (req: Requisicao) => Resposta | Promise<Resposta>;
 
@@ -20,10 +20,12 @@ export async function startFakePrisma(): Promise<FakePrisma> {
   const rotas: { method: string; path: string | RegExp; rota: Rota }[] = [];
   const requisicoes: Requisicao[] = [];
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
+    // Junta os bytes antes de decodificar: um caractere UTF-8 pode ficar dividido entre dois pedaços.
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = Buffer.concat(chunks).toString('utf8');
     const path = (req.url ?? '/').split('?')[0];
-    const r: Requisicao = { method: req.method ?? 'GET', path, headers: req.headers, body };
+    const r: Requisicao = { method: req.method ?? 'GET', path, headers: req.headers, body, url: req.url ?? '/' };
     requisicoes.push(r);
     const alvo = [...rotas].reverse().find(x => x.method === r.method
       && (typeof x.path === 'string' ? x.path === path : x.path.test(path)));
