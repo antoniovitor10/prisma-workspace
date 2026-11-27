@@ -4,6 +4,7 @@ import type {
   MethodTask, MethodToken, PullRequestPage, RegisterRepositoryInput, TaskGitView,
   GitReadCredential, GitPollResult, RegisterPollRepositoryInput,
 } from './types';
+import type { CompareUrlInput, CompareUrlResult, OpenPullRequestInput, OpenPullRequestResult, PullRequestDraft } from './pullRequestTypes';
 
 const base = (projectId: string) => `/api/projects/${encodeURIComponent(projectId)}/method`;
 
@@ -63,4 +64,15 @@ export const methodApi = {
   linkPullRequestUrl: (projectId: string, methodTaskId: string, url: string) => request<unknown>(
     `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/pull-requests`, 'POST', { url, reason: 'Vínculo manual pela aba Git da tarefa.' }),
   webhookUrl: (integrationId: string) => `${api.baseUrl || window.location.origin}/api/integrations/git/github/${encodeURIComponent(integrationId)}/webhook`,
+};
+
+// HU-0007: rascunho do PR (T-0026), abrir PR pela App (T-0027) e link de comparação (T-0029). O servidor põe
+// "[T-XXXX] " no título e a linha "Task no Prisma: <link>" no corpo; a tela só mostra a prévia.
+export const pullRequestApi = {
+  draft: (projectId: string, methodTaskId: string) => request<PullRequestDraft>(
+    `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/pull-request-draft`),
+  open: (projectId: string, methodTaskId: string, data: OpenPullRequestInput) => request<OpenPullRequestResult>(
+    `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/pull-requests/open`, 'POST', data),
+  compareUrl: (projectId: string, methodTaskId: string, data: CompareUrlInput) => request<CompareUrlResult>(
+    `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/pull-requests/compare-url`, 'POST', data),
 };

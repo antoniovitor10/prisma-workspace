@@ -11,13 +11,16 @@ import { registerDocumentTools } from './document-tools.js';
 import { MethodDocumentService } from './sync.js';
 
 export type ToolExecutor = (operation: () => Promise<{ summary: string; data: Record<string, unknown> }>) => Promise<CallToolResult>;
+import { linhaRascunhoPr, PR_BODY_MAX, PR_TITLE_MAX } from './pr-draft.js';
 
 const taskId = z.string().regex(/^T-\d{4,}$/, 'Use o ID do método, como T-0001.');
 const status = z.enum(METHOD_STATUSES);
 const text = z.string().trim().min(1, 'Informe um texto não vazio.');
 
 function taskSummary(task: MethodTask): string {
-  const base = `${task.id} · ${task.titulo} · ${task.status}\nArquivo: ${task.arquivo ?? 'não informado'} · HU: ${task.hu ?? 'não informada'} · PR: ${task.pr ?? 'não vinculado'}`;
+  const head = `${task.id} · ${task.titulo} · ${task.status}\nArquivo: ${task.arquivo ?? 'não informado'} · HU: ${task.hu ?? 'não informada'} · PR: ${task.pr ?? 'não vinculado'}`;
+  const base = task.rascunho_pr === undefined ? head
+    : `${head}\n${linhaRascunhoPr(task.rascunho_pr && { updatedAtUtc: task.rascunho_pr.gravado_em, actorName: task.rascunho_pr.autor })}`;
   if (!task.git?.length) return base;
   const links = task.git.map(link => `Git: ${link.repositorio ?? 'repositório não informado'} · `
     + `${link.branch ? `branch ${link.branch} (${link.estado_branch})` : 'sem branch'}`
@@ -140,6 +143,18 @@ export function createMcpServer(service: TaskService = new TaskService(),
 
   // Documentos do método e sincronização com docs/trabalho (T-0023).
   registerDocumentTools(server, execute, documents);
+  server.registerTool('preparar_pr', {
+    description: 'Ao terminar a task, antes de mover_status em-revisao: grava no Prisma o rascunho de título e corpo do PR (o mesmo texto do relatório). '
+      + 'Gravar de novo sobrescreve; a versão anterior fica no histórico. Quem abre o PR é uma pessoa, pelo botão Abrir PR do card.',
+    inputSchema: {
+      id: taskId,
+      titulo: z.string().trim().min(1, 'Informe o título do PR.').max(PR_TITLE_MAX, `O título do PR deve ter até ${PR_TITLE_MAX} caracteres.`),
+      corpo: z.string().max(PR_BODY_MAX, 'O corpo do PR deve ter até 60.000 caracteres.'),
+    }, annotations: write,
+  }, ({ id, titulo, corpo }) => execute(async () => {
+    const rascunho = await service.prepararPr(id, titulo, corpo);
+    return { summary: rascunho.mudou ? `Rascunho do PR gravado na ${id}.` : `Rascunho do PR sem mudança na ${id}.`, data: { rascunho } };
+  }));
   return server;
 }
 

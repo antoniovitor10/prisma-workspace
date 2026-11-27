@@ -23,7 +23,8 @@ Conectar um repositório faz o Prisma acompanhar as branches e os pull requests 
 ## Criar e instalar a GitHub App {#github-app}
 
 1. No GitHub, crie a App em **Settings** > **Developer settings** > **GitHub Apps** > **New GitHub App** (na sua conta ou na organização dona do repositório).
-2. Em permissões do repositório, marque só **Pull requests: Read-only** (o **Metadata: Read-only** vem junto). O Prisma pede ao GitHub um acesso limitado a esse repositório com essas duas permissões; qualquer outra configuração é recusada.
+2. Em permissões do repositório, marque **Pull requests: Read and write** (o **Metadata: Read-only** vem junto). Contents fica sem acesso ou só leitura: o Prisma nunca escreve código, não cria branch e não faz merge. Para acompanhar PRs e mover o card, o Prisma pede ao GitHub um acesso só de leitura, limitado a esse repositório; a escrita em Pull requests é pedida apenas quando uma pessoa logada confirma **Abrir PR** no Prisma (veja [Abrir o PR pelo Prisma](/ajuda/repositorios-e-git/branch-e-pr#abrir-pr)). Com **Pull requests: Read-only** tudo funciona, menos o botão **Abrir PR**.
+   Se a App já estava instalada só com leitura, depois de mudar a permissão o GitHub pede que cada instalação **aceite a nova permissão** (aviso na página da instalação, em **Configure**). Até o aceite, o botão mostra "A App ainda não tem permissão para abrir PR neste repositório. Aceite a nova permissão da instalação no GitHub ou avise o administrador."
 3. Gere uma chave privada em **Private keys** > **Generate a private key**. O arquivo baixado vai para o administrador da instalação cadastrar no servidor; não guarde esse arquivo no repositório nem cole o conteúdo no Prisma.
 4. Instale a App só no repositório que será conectado (**Install App** > **Only select repositories**).
 

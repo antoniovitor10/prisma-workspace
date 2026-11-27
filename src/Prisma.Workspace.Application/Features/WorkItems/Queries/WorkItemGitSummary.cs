@@ -7,7 +7,8 @@ public sealed record WorkItemGitLinkRow(
     Guid WorkItemId, Guid IntegrationId, string RepositoryFullName, string? BranchName, string BranchState,
     DateTimeOffset CreatedAtUtc, int? PrNumber = null, string? PrUrl = null, string? PrHeadBranch = null,
     string? PrState = null, bool PrIsDraft = false, bool PrMerged = false, int PrApprovals = 0,
-    bool PrChangesRequested = false, DateTimeOffset? PrUpdatedAtUtc = null);
+    bool PrChangesRequested = false, DateTimeOffset? PrUpdatedAtUtc = null,
+    Guid? LinkId = null, string? IntegrationMode = null, string? DefaultBranch = null, string? MethodTaskId = null);
 
 /// <summary>
 /// Regras do resumo Git do cartão (HU-0002, RF1 a RF3, D4 e D5).
@@ -71,7 +72,9 @@ public static class WorkItemGitSummary
         var branchState = chosen.Pr is not null ? "remote" : chosen.Branch?.BranchState ?? "remote";
         return new WorkItemGitSummaryDto(ShortName(fullName), fullName, branch, branchState,
             chosen.Pr?.PrNumber, chosen.Pr is null ? null : PrState(chosen.Pr.PrState ?? "open", chosen.Pr.PrIsDraft, chosen.Pr.PrMerged,
-                chosen.Pr.PrApprovals, chosen.Pr.PrChangesRequested), chosen.Pr?.PrUrl);
+                chosen.Pr.PrApprovals, chosen.Pr.PrChangesRequested), chosen.Pr?.PrUrl,
+            // HU-0007: o botão Abrir PR do card usa o vínculo da branch, o modo e a principal cadastrada do repositório.
+            chosen.Branch?.LinkId, chosen.Any.IntegrationMode, chosen.Any.DefaultBranch, chosen.Any.MethodTaskId);
     }
 
     private static bool IsClosedWithoutMerge(WorkItemGitLinkRow link) => link.PrState == "closed" && !link.PrMerged;

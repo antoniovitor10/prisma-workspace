@@ -28,7 +28,9 @@ public sealed class EfWorkItemGitSummaryReader(AppDbContext db, IOrganizationCon
                 x.Observation != null && x.Observation.State == "closed" && x.Observation.MergeSha != null,
                 x.Observation == null ? 0 : x.Observation.ApprovalsCount,
                 x.Observation != null && x.Observation.ChangesRequested,
-                x.Observation == null ? null : x.Observation.ProviderUpdatedAtUtc))
+                x.Observation == null ? null : x.Observation.ProviderUpdatedAtUtc,
+                x.Id, x.Integration.Mode, x.Integration.DefaultBranch,
+                db.Set<MethodTaskState>().Where(state => state.WorkItemId == x.WorkItemId).Select(state => state.MethodTaskId).FirstOrDefault()))
             .ToListAsync(cancellationToken);
         return WorkItemGitSummary.Summarize(rows);
     }

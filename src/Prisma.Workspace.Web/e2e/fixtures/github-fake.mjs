@@ -21,6 +21,12 @@
 //
 // Modo consulta (token de leitura, só GET): GET /repos/{dono}/{repo}, GET /repos/{dono}/{repo}/branches/{nome}
 // e as mesmas leituras de PR da App, com o token cadastrado em /__fixture/read-token.
+//   PUT  /__fixture/app-permissions                    { pull_requests: "read" | "write" } (padrão "read": a App ainda sem escrita)
+//   POST /__fixture/pr-failure                         { kind: already_exists|nothing_to_compare|head_missing|draft_unsupported|invalid, times? }
+//   GET  /__fixture/created                            PRs criados por POST /repos/{r}/pulls (título, head, base, draft, corpo)
+//
+// HU-0007 (abrir PR pelo card): POST /repos/{r}/pulls exige token com pull_requests:write, que só sai quando a
+// fixture concede a escrita; o filtro head=dono:branch da lista funciona como na API real.
 import { createServer } from 'node:http';
 import { createPublicKey, createVerify, randomBytes } from 'node:crypto';
 
@@ -35,7 +41,8 @@ function newRepo(r) {
 }
 function reset() {
   const initial = newRepo({ id: 900001, full_name: 'qa/metodo', default_branch: 'main', installation_id: 1 });
-  state = { repos: new Map([[initial.full_name, initial]]), current: initial.full_name, failures: [], calls: [], tokens: new Map(), readTokens: new Map() };
+  state = { repos: new Map([[initial.full_name, initial]]), current: initial.full_name, failures: [], calls: [], tokens: new Map(), readTokens: new Map(),
+    grant: { pull_requests: 'read' }, prFailures: [], created: [] };
 }
 reset();
 
@@ -100,6 +107,15 @@ function fullPull(repo, n) {
 async function body(req) { let s = ''; for await (const c of req) s += c; return s ? JSON.parse(s) : {}; }
 const fixtureRepo = url => state.repos.get(url.searchParams.get('repo') ?? state.current);
 
+// Respostas 422 no formato da API real (POST /repos/{owner}/{repo}/pulls).
+const PR_FAILURES = {
+  already_exists: head => ({ message: 'Validation Failed', errors: [{ resource: 'PullRequest', code: 'custom', message: `A pull request already exists for ${head}.` }] }),
+  nothing_to_compare: (head, base) => ({ message: 'Validation Failed', errors: [{ resource: 'PullRequest', code: 'custom', message: `No commits between ${base} and ${head}` }] }),
+  head_missing: () => ({ message: 'Validation Failed', errors: [{ resource: 'PullRequest', field: 'head', code: 'invalid' }] }),
+  draft_unsupported: () => ({ message: 'Validation Failed', errors: [{ resource: 'PullRequest', code: 'custom', message: 'Draft pull requests are not supported in this repository.' }] }),
+  invalid: () => ({ message: 'Validation Failed', errors: [{ resource: 'PullRequest', field: 'title', code: 'missing_field' }] }),
+};
+
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://fake');
   const path = url.pathname;
@@ -140,6 +156,17 @@ createServer(async (req, res) => {
       }
       if (req.method === 'POST' && path === '/__fixture/fail') { const f = await body(req); state.failures.push({ ...f, re: new RegExp(f.match), times: f.times ?? 1 }); return json(res, 204); }
       if (req.method === 'GET' && path === '/__fixture/calls') return json(res, 200, state.calls);
+      if (req.method === 'PUT' && path === '/__fixture/app-permissions') {
+        const g = await body(req);
+        if (!['read', 'write'].includes(g.pull_requests)) return json(res, 400, { message: 'pull_requests deve ser read ou write' });
+        state.grant = { pull_requests: g.pull_requests }; return json(res, 200, state.grant);
+      }
+      if (req.method === 'POST' && path === '/__fixture/pr-failure') {
+        const f = await body(req);
+        if (!PR_FAILURES[f.kind]) return json(res, 400, { message: 'tipo de falha desconhecido' });
+        state.prFailures.push({ kind: f.kind, times: f.times ?? 1, repo: f.repo ?? null }); return json(res, 204);
+      }
+      if (req.method === 'GET' && path === '/__fixture/created') return json(res, 200, state.created);
       return json(res, 404, { message: 'rota de controle desconhecida' });
     }
 
@@ -162,12 +189,14 @@ createServer(async (req, res) => {
       if (!repos.length) return json(res, 404, { message: 'instalação desconhecida' });
       const pedido = await body(req);
       const perms = pedido.permissions ?? {};
-      const proibidas = Object.entries(perms).filter(([k, v]) => !(['pull_requests', 'metadata'].includes(k) && v === 'read'));
+      // Só leitura de PRs e metadados; escrita de PRs apenas quando a fixture concede (a App real precisa do aceite da instalação).
+      const proibidas = Object.entries(perms).filter(([k, v]) => !((k === 'metadata' && v === 'read')
+        || (k === 'pull_requests' && (v === 'read' || (v === 'write' && state.grant.pull_requests === 'write')))));
       if (proibidas.length) return json(res, 422, { message: `permissão não concedida à App de teste: ${proibidas.map(([k, v]) => `${k}:${v}`).join(',')}` });
       const allowed = pedido.repository_ids ? pedido.repository_ids.map(Number) : repos.map(r => r.id);
       if (!allowed.every(id => repos.some(r => r.id === id))) return json(res, 422, { message: 'repositório fora da instalação' });
       const token = `ghs_fake_${randomBytes(18).toString('hex')}`;
-      state.tokens.set(token, { expires: Date.now() + 3600_000, repoIds: new Set(allowed) });
+      state.tokens.set(token, { expires: Date.now() + 3600_000, repoIds: new Set(allowed), write: perms.pull_requests === 'write' });
       return json(res, 201, { token, expires_at: new Date(Date.now() + 3600_000).toISOString(), permissions: perms, repository_selection: 'selected' });
     }
 
@@ -198,14 +227,35 @@ createServer(async (req, res) => {
     m = /^\/repos\/([^/]+\/[^/]+)\/pulls(?:\/(\d+)(\/reviews)?)?$/.exec(path);
     const repo = m && state.repos.get(decodeURIComponent(m[1]));
     if (!m || !repo || !tok.repoIds.has(repo.id)) return json(res, 404, { message: 'Not Found' });
+    if (req.method === 'POST' && !m[2]) {
+      if (!tok.write) return json(res, 403, { message: 'Resource not accessible by integration' });
+      const pedido = await body(req);
+      const owner = repo.full_name.split('/')[0];
+      const head = String(pedido.head ?? ''); const base = String(pedido.base ?? repo.default_branch);
+      const falhaPr = state.prFailures.find(f => f.times > 0 && (!f.repo || f.repo === repo.full_name));
+      if (falhaPr) { falhaPr.times--; return json(res, 422, PR_FAILURES[falhaPr.kind](`${owner}:${head}`, base)); }
+      if (!head || !String(pedido.title ?? '').trim()) return json(res, 422, PR_FAILURES.invalid());
+      if ([...repo.pulls.keys()].some(n => { const p = fullPull(repo, n); return p.state === 'open' && p.head.ref === head; }))
+        return json(res, 422, PR_FAILURES.already_exists(`${owner}:${head}`));
+      const n = Math.max(0, ...repo.pulls.keys()) + 1;
+      const agora = new Date().toISOString();
+      repo.pulls.set(n, { title: pedido.title, body: pedido.body ?? null, draft: !!pedido.draft, state: 'open',
+        head: { ref: head }, base: { ref: base }, created_at: agora, updated_at: agora,
+        user: { id: 99_000_001, login: 'prisma-metodo-vitor[bot]', type: 'Bot' } });
+      state.created.push({ repo: repo.full_name, number: n, title: pedido.title, head, base, draft: !!pedido.draft, body: pedido.body ?? null });
+      return json(res, 201, fullPull(repo, n));
+    }
     if (req.method === 'GET' && !m[2]) {
       const st = url.searchParams.get('state') ?? 'open';
+      // head=dono:branch (como a API real): só PRs cuja head é essa branch do repositório do dono.
+      const headFilter = url.searchParams.get('head');
       // Ordenação como a API real: sort=created (padrão)|updated; direction padrão desc para created, asc nos demais.
       const sort = url.searchParams.get('sort') ?? 'created';
       const direction = url.searchParams.get('direction') ?? (sort === 'created' ? 'desc' : 'asc');
       const key = sort === 'updated' ? 'updated_at' : 'created_at';
       const list = [...repo.pulls.keys()].map(n => fullPull(repo, n))
         .filter(p => st === 'all' || p.state === st)
+        .filter(p => !headFilter || (headFilter === `${repo.full_name.split('/')[0]}:${p.head.ref}` && p.head.repo?.id === repo.id))
         .sort((a, b) => (a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : a.number - b.number) * (direction === 'desc' ? -1 : 1))
         .map(({ merged: _merged, ...resumo }) => resumo);
       return json(res, 200, page(list, url));

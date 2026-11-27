@@ -168,6 +168,7 @@ export interface TaskGitRepositoryOption {
   mode: 'app' | 'poll' | string;
   lastPolledAtUtc: string | null;
   lastPollStatus: string | null;
+  defaultBranch?: string | null;
 }
 export interface TaskGitBranch {
   linkId: string | null;
@@ -211,6 +212,9 @@ export interface TaskGitTimelineEntry {
   factType: string | null;
   fromStatus: string | null;
   toStatus: string | null;
+  /** HU-0007: título do rascunho (git_pr_draft_saved) e se o PR foi aberto como rascunho (git_pr_opened). */
+  title?: string | null;
+  draft?: boolean | null;
 }
 export interface TaskGitView {
   workItemId: string;
@@ -220,4 +224,7 @@ export interface TaskGitView {
   branches: TaskGitBranch[];
   pullRequests: TaskGitPullRequest[];
   timeline: TaskGitTimelineEntry[];
+  /** HU-0007: pessoa na tela com Editar, Comentar e Mudar status. */
+  canOpenPullRequest?: boolean;
+  pullRequestDraft?: { updatedAtUtc: string; actorName: string | null } | null;
 }

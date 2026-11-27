@@ -1,11 +1,14 @@
 import { PrismaApi, type MethodGitLinkDto, type MethodTaskDto } from './api.js';
 import { assertCreationStatus, getProjectRules, isTaskStatus, type TaskStatus } from './rules.js';
+import { obterRascunhoPr, prepararPr, type PrDraftResult } from './pr-draft.js';
 
 export interface MethodTask {
   id: string; titulo: string; status: TaskStatus; hu: string | null; arquivo: string | null;
   cobre: string[]; risco: string | null; pr: string | null; prisma_id: string;
   /** Vínculos Git (branch e PR); só em obter_task. */
   git?: MethodGitLink[];
+  /** Rascunho do PR (sem o corpo); só em obter_task. null = nenhum. */
+  rascunho_pr?: { gravado_em: string; autor: string | null; titulo: string } | null;
 }
 export interface MethodGitLink {
   repositorio: string | null; branch: string | null; estado_branch: string;
@@ -43,7 +46,12 @@ export class TaskService {
   async initialize(): Promise<void> { await this.api.getMethodRules(); }
   async regrasDoProjeto() { return getProjectRules(await this.api.getMethodRules()); }
   async obterTask(id: string): Promise<MethodTask> {
-    return toMethodTask(await this.api.getMethodTask(requireTaskId(id)));
+    const task = toMethodTask(await this.api.getMethodTask(requireTaskId(id)));
+    const draft = await obterRascunhoPr(this.api, id);
+    return { ...task, rascunho_pr: draft ? { gravado_em: draft.updatedAtUtc, autor: draft.actorName, titulo: draft.title } : null };
+  }
+  async prepararPr(id: string, titulo: string, corpo: string): Promise<PrDraftResult> {
+    return prepararPr(this.api, requireTaskId(id), titulo, corpo);
   }
   async listarTasks(status?: TaskStatus): Promise<MethodTask[]> {
     if (status !== undefined && !isTaskStatus(status)) throw new Error('Status inválido. Consulte regras_do_projeto.');

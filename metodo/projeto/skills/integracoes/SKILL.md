@@ -3,7 +3,7 @@ name: integracoes
 description: Integrações externas e internas do Prisma WorkSpace - GitHub App e webhook do método Git, servidor MCP do rastreador (tools/prisma-mcp), provedores de IA por API e a ponte das CLIs de IA (prisma-ai-bridge), e-mail SMTP do portal e convites, SignalR do quadro - com configuração, autenticação, onde está no código e armadilhas. Use em task que mexa em qualquer uma delas, ao configurar o rastreador prisma e ao depurar webhook, MCP, chat de IA ou e-mail.
 metadata:
   origem: projeto
-  versao: "1"
+  versao: "2"
   revisar_em: "2026-12-31"
 ---
 
@@ -29,6 +29,7 @@ metadata:
 - **Auth:** token opaco do método (`pmt_` + 43 caracteres), com papel `agente`, `humano` ou `sistema`, emitido na UI do projeto e mostrado uma vez. JWT de login não é aceito. Com 401 ou 403 o adaptador manda parar e avisar.
 - **Configuração:** `PRISMA_URL`, `PRISMA_TOKEN`, `PRISMA_PROJECT` (obrigatórias, `tools/prisma-mcp/src/config.ts:12-24`), `PRISMA_BOARD` e `PRISMA_ROLE` (opcionais). Neste projeto `prisma.url` é `https://prisma.nordevs.com.br` (`metodo/projeto/config.yaml`).
 - **Regra do papel `agente`:** nenhum token autoriza task nem libera retomada; isso é ação de uma pessoa na UI.
+- **Rascunho e abertura do PR (HU-0007):** `preparar_pr(id, titulo, corpo)` grava o rascunho do PR (`PUT .../method/tasks/{id}/pull-request-draft`, evento `git_pr_draft_saved`; o atual é o último). Abrir o PR é `POST .../method/tasks/{id}/pull-requests/open`, só para sessão da UI (token do método recebe 403 `interactive_pr_required`), com token de instalação de escrita pedido no clique (ADR-0106).
 - **Onde:** `tools/prisma-mcp/src/` (`server.ts`, `api.ts`, `rules.ts`, `tasks.ts`, `import.ts`), testes em `tools/prisma-mcp/test`, Node >= 22. Os testes não rodam no CI.
 
 ## IA (provedores e ponte CLI)
