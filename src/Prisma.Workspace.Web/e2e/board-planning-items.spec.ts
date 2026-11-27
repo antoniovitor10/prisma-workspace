@@ -108,7 +108,11 @@ test('quadro sem método mostra só os cards de execução, no Kanban, na sprint
       await page.screenshot({ path: `${screenshots}/T-0022-sprint-${info.project.name}.png`, scale: 'css' });
 
       // Minhas tarefas: a Tarefa filha da História entra e a História atribuída continua.
+      // O painel pessoal é pesado (até 500 itens): espera a resposta real antes de procurar os itens.
+      const myWork = page.waitForResponse(response => new URL(response.url()).pathname === '/api/me/work'
+        && response.request().method() === 'GET');
       await authenticatedGoto('/me/tasks');
+      expect((await myWork).status(), 'GET /api/me/work').toBe(200);
       await page.getByRole('textbox', { name: 'Pesquisar meu trabalho' }).fill(factory.batch);
       await expect(page.getByRole('button', { name: new RegExp(`^Abrir tarefa \\d+: ${s.storyTask.title}$`) })).toBeVisible();
       await expect(page.getByRole('button', { name: new RegExp(`^Abrir tarefa \\d+: ${s.story.title}$`) })).toBeVisible();
