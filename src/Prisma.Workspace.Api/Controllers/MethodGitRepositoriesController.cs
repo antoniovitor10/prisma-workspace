@@ -44,13 +44,17 @@ public sealed class MethodGitEndpointFilter(IConfiguration configuration) : IAsy
             { if (method.StatusCode == 429) context.HttpContext.Response.Headers.RetryAfter = "60";
                 executed.Result = Problem(method.StatusCode, method.Code, method.Message); executed.ExceptionHandled = true; }
             else if (executed.Exception is GitHubUnavailableException github)
-            { executed.Result = Problem(503, github.Code, "GitHub indisponível ou sem acesso completo. Avise o administrador."); executed.ExceptionHandled = true; }
+            { executed.Result = GitHubProblem(github); executed.ExceptionHandled = true; }
         }
         catch (MethodOperationException method)
         { if (method.StatusCode == 429) context.HttpContext.Response.Headers.RetryAfter = "60";
             context.Result = Problem(method.StatusCode, method.Code, method.Message); }
-        catch (GitHubUnavailableException github) { context.Result = Problem(503, github.Code, "GitHub indisponível ou sem acesso completo. Avise o administrador."); }
+        catch (GitHubUnavailableException github) { context.Result = GitHubProblem(github); }
     }
+    // 404 do GitHub (PR, branch ou repositório inexistente para a credencial) tem mensagem própria; o resto segue como indisponível.
+    private static ObjectResult GitHubProblem(GitHubUnavailableException github) => github.Code == "git_not_found"
+        ? Problem(404, github.Code, "Não encontrado no GitHub: confira o repositório e o número do PR ou o nome da branch.")
+        : Problem(503, github.Code, "GitHub indisponível ou sem acesso completo. Avise o administrador.");
     private static ObjectResult Problem(int status, string code, string message)
     {
         var problem = new ProblemDetails { Status = status, Title = message };

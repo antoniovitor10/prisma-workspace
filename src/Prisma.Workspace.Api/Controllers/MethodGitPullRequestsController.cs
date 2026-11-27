@@ -24,6 +24,9 @@ public sealed class MethodGitPullRequestsController(IMediator mediator) : Contro
     [HttpPost("tasks/{id}/pull-requests")]
     public async Task<IActionResult> LinkUrl(Guid projectId, string id, LinkMethodPullRequestRequest request, CancellationToken ct)
         => Ok(await mediator.Send(new LinkMethodGitPullRequestCommand(projectId, id, request, ActorId), ct));
+    [HttpGet("tasks/{workItemId:guid}/git")]
+    public async Task<IActionResult> TaskGit(Guid projectId, Guid workItemId, CancellationToken ct)
+        => Ok(await mediator.Send(new GetMethodTaskGitQuery(projectId, workItemId, ActorId), ct));
     [HttpPost("tasks/{id}/branches")]
     public async Task<IActionResult> LinkBranch(Guid projectId, string id, LinkMethodBranchRequest request, CancellationToken ct)
         => Ok(await mediator.Send(new LinkMethodGitBranchCommand(projectId, id, request, ActorId), ct));

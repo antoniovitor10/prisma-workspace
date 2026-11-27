@@ -125,3 +125,64 @@ export interface MethodTask {
 }
 
 export interface PullRequestPage { items: ObservedPullRequest[]; page: number; pageSize: number; total: number }
+
+/** Aba Git da tarefa (HU-0002, T-0006). */
+export interface TaskGitRepositoryOption {
+  id: string;
+  repositoryFullName: string;
+  mode: 'app' | 'poll' | string;
+  lastPolledAtUtc: string | null;
+  lastPollStatus: string | null;
+}
+export interface TaskGitBranch {
+  linkId: string | null;
+  integrationId: string;
+  repositoryFullName: string;
+  branchName: string;
+  branchState: 'local' | 'remote' | string;
+  lastSeenAtUtc: string | null;
+  source: string;
+  createdAtUtc: string;
+  url: string;
+}
+export interface TaskGitPullRequest {
+  linkId: string;
+  integrationId: string;
+  repositoryFullName: string;
+  number: number;
+  title: string;
+  state: 'open' | 'closed' | string;
+  isDraft: boolean;
+  merged: boolean;
+  approvalsCount: number;
+  changesRequested: boolean;
+  url: string;
+  headBranch: string;
+  baseBranch: string;
+  authorName: string | null;
+  source: string;
+  updatedAtUtc: string;
+  linkedAtUtc: string;
+}
+export interface TaskGitTimelineEntry {
+  kind: string;
+  atUtc: string;
+  actorName: string | null;
+  channel: string | null;
+  repositoryFullName: string | null;
+  branch: string | null;
+  pullRequestNumber: number | null;
+  url: string | null;
+  factType: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+}
+export interface TaskGitView {
+  workItemId: string;
+  methodTaskId: string;
+  canLink: boolean;
+  repositories: TaskGitRepositoryOption[];
+  branches: TaskGitBranch[];
+  pullRequests: TaskGitPullRequest[];
+  timeline: TaskGitTimelineEntry[];
+}

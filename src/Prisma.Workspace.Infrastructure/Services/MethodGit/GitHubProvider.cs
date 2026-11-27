@@ -224,7 +224,8 @@ public sealed partial class GitHubProvider : IGitProvider
                     throw new GitHubUnavailableException("git_rate_limited", retry ?? _clock.GetUtcNow().AddMinutes(1));
                 }
                 throw new GitHubUnavailableException((int)response.StatusCode is >= 300 and < 400 ? "git_repository_moved"
-                    : response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden ? "git_access_unavailable" : "git_api_unavailable", retry);
+                    : response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden ? "git_access_unavailable"
+                    : response.StatusCode == HttpStatusCode.NotFound ? "git_not_found" : "git_api_unavailable", retry);
             }
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var memory = new MemoryStream();

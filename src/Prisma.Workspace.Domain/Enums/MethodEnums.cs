@@ -10,6 +10,8 @@ public static class MethodChannels
     public const string Mcp = "mcp";
     public const string Webhook = "webhook";
     public const string Reconciliation = "reconciliacao";
+    /// <summary>Consulta ao GitHub com token de leitura (modo sem admin, HU-0002).</summary>
+    public const string Poll = "consulta";
 }
 
 public static class MethodGitFactCodes

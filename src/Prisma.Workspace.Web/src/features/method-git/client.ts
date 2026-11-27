@@ -1,7 +1,7 @@
 import { api } from '../../services/api';
 import type {
   GitRepository, IssuedToken, IssueTokenInput, MethodIdentity, MethodProjectSettings,
-  MethodTask, MethodToken, PullRequestPage, RegisterRepositoryInput,
+  MethodTask, MethodToken, PullRequestPage, RegisterRepositoryInput, TaskGitView,
 } from './types';
 
 const base = (projectId: string) => `/api/projects/${encodeURIComponent(projectId)}/method`;
@@ -42,5 +42,11 @@ export const methodApi = {
   approveResume: (projectId: string, task: MethodTask, reason: string) => request<unknown>(
     `${base(projectId)}/tasks/${encodeURIComponent(task.workItemId)}/resume-approval`, 'POST',
     { blockingEventId: task.blockingEventId, cycleId: task.cycleId, reason }),
+  taskGit: (projectId: string, workItemId: string) => request<TaskGitView>(
+    `${base(projectId)}/tasks/${encodeURIComponent(workItemId)}/git`),
+  linkBranch: (projectId: string, methodTaskId: string, repository: string, branch: string) => request<unknown>(
+    `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/branches`, 'POST', { repository, branch }),
+  linkPullRequestUrl: (projectId: string, methodTaskId: string, url: string) => request<unknown>(
+    `${base(projectId)}/tasks/${encodeURIComponent(methodTaskId)}/pull-requests`, 'POST', { url, reason: 'Vínculo manual pela aba Git da tarefa.' }),
   webhookUrl: (integrationId: string) => `${api.baseUrl || window.location.origin}/api/integrations/git/github/${encodeURIComponent(integrationId)}/webhook`,
 };
